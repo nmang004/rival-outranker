@@ -18,30 +18,63 @@ class Crawler {
       
       // Fetch the webpage
       console.log(`Crawling page: ${normalizedUrl}`);
-      const response = await axios.get(normalizedUrl, {
-        headers: {
-          'User-Agent': this.USER_AGENT,
-          'Accept': 'text/html,application/xhtml+xml,application/xml',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        timeout: this.REQUEST_TIMEOUT,
-        maxContentLength: this.MAX_CONTENT_SIZE,
-        validateStatus: (status) => status < 500, // Accept 4xx errors to analyze them
-      });
+      let response;
       
-      // Check for successful response
-      if (response.status !== 200) {
+      try {
+        response = await axios.get(normalizedUrl, {
+          headers: {
+            'User-Agent': this.USER_AGENT,
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+          timeout: this.REQUEST_TIMEOUT,
+          maxContentLength: this.MAX_CONTENT_SIZE,
+          validateStatus: (status) => status < 500, // Accept 4xx errors to analyze them
+        });
+      } catch (fetchError) {
+        console.error(`Error fetching page ${normalizedUrl}:`, 
+          fetchError instanceof Error ? fetchError.message : String(fetchError));
+        
+        // Return a standardized error output for the analyzer
         return {
           url: normalizedUrl,
-          statusCode: response.status,
-          meta: { ogTags: {}, twitterTags: {} },
+          statusCode: 0,
+          meta: { 
+            title: "Error Page", 
+            description: "Could not access page content", 
+            ogTags: {}, 
+            twitterTags: {} 
+          },
           content: { text: '', wordCount: 0, paragraphs: [] },
           headings: { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] },
           links: { internal: [], external: [] },
           images: [],
           schema: [],
           mobileCompatible: false,
-          error: `HTTP error: ${response.status} ${response.statusText}`
+          performance: { loadTime: 0 },
+          error: fetchError instanceof Error ? fetchError.message : 'Network error occurred'
+        };
+      }
+      
+      // Check for successful response
+      if (!response || response.status !== 200 || !response.data) {
+        return {
+          url: normalizedUrl,
+          statusCode: response?.status || 0,
+          meta: { 
+            title: "Error Page", 
+            description: "Could not access page content", 
+            ogTags: {}, 
+            twitterTags: {} 
+          },
+          content: { text: '', wordCount: 0, paragraphs: [] },
+          headings: { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] },
+          links: { internal: [], external: [] },
+          images: [],
+          schema: [],
+          mobileCompatible: false,
+          performance: { loadTime: 0 },
+          error: `HTTP error: ${response?.status || 'unknown'} ${response?.statusText || 'No response'}`
         };
       }
       
@@ -68,16 +101,31 @@ class Crawler {
       };
     } catch (error) {
       console.error('Error crawling page:', error);
+      
+      // Create a minimal but valid structure for analysis
       return {
-        url,
+        url: typeof url === 'string' ? url : 'unknown-url',
         statusCode: error.response?.status || 0,
-        meta: { ogTags: {}, twitterTags: {} },
-        content: { text: '', wordCount: 0, paragraphs: [] },
-        headings: { h1: [], h2: [], h3: [], h4: [], h5: [], h6: [] },
+        meta: { 
+          title: "Error Page", 
+          description: "Error crawling page", 
+          ogTags: {}, 
+          twitterTags: {} 
+        },
+        content: { 
+          text: 'Error crawling page content', 
+          wordCount: 3, 
+          paragraphs: ['Error crawling page content'] 
+        },
+        headings: { 
+          h1: ['Error Page'], 
+          h2: [], h3: [], h4: [], h5: [], h6: [] 
+        },
         links: { internal: [], external: [] },
         images: [],
         schema: [],
         mobileCompatible: false,
+        performance: { loadTime: 0 },
         error: error.message || 'Unknown error occurred while crawling'
       };
     }
