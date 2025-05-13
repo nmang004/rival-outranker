@@ -252,6 +252,58 @@ export default function ResultsPage() {
       
       {/* Next Steps */}
       <NextSteps url={data.url} />
+      
+      {/* Ranking Factors */}
+      <div className="bg-white shadow rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">SEO Ranking Factors</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Our SEO assessment evaluates these critical ranking factors to determine your overall score. Here's how each factor impacts your website's performance in search engines:
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="border rounded-lg p-4">
+            <h3 className="text-md font-medium text-primary-600 mb-2">Keyword Optimization (25%)</h3>
+            <p className="text-sm text-gray-600">Evaluates keyword presence, density, and placement. Well-optimized keywords help search engines understand your content's relevance.</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="text-md font-medium text-primary-600 mb-2">Meta Tags & Structure (15%)</h3>
+            <p className="text-sm text-gray-600">Assesses your title tags, meta descriptions, and heading structure. These elements are crucial for both search engines and user engagement.</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="text-md font-medium text-primary-600 mb-2">Content Quality (20%)</h3>
+            <p className="text-sm text-gray-600">Analyzes content depth, readability, and relevance. High-quality, original content is one of the most important ranking factors.</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="text-md font-medium text-primary-600 mb-2">Technical SEO (15%)</h3>
+            <p className="text-sm text-gray-600">Evaluates schema markup, page speed, and other technical elements that affect search engine crawling and indexing.</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="text-md font-medium text-primary-600 mb-2">User Experience (15%)</h3>
+            <p className="text-sm text-gray-600">Measures mobile-friendliness, navigation, and other elements that impact how users interact with your site.</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="text-md font-medium text-primary-600 mb-2">E-E-A-T Factors (10%)</h3>
+            <p className="text-sm text-gray-600">Assesses Experience, Expertise, Authoritativeness, and Trustworthiness signals in your content, which are increasingly important for rankings.</p>
+          </div>
+        </div>
+        
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h3 className="text-md font-medium mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            How Our Scoring Works
+          </h3>
+          <p className="text-sm text-gray-600">
+            Our scoring algorithm combines these factors with varying weights to calculate your overall SEO score. Scores above 70 are considered excellent, 50-69 good, and below 50 needs improvement. Prioritize fixing factors with lower scores for the most significant impact on your rankings.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

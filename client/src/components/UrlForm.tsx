@@ -30,7 +30,30 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
       
       onSubmit(urlToSubmit);
     } else {
-      // Add protocol if missing
+      // Check if the input contains commas (multiple URLs)
+      if (url.includes(',')) {
+        // Split by comma and add to the URLs list
+        const splitUrls = url.split(',').map(u => u.trim()).filter(u => u.length > 0);
+        
+        if (splitUrls.length > 0) {
+          // Process and submit the first URL
+          let urlToSubmit = splitUrls[0];
+          if (urlToSubmit && !urlToSubmit.startsWith('http://') && !urlToSubmit.startsWith('https://')) {
+            urlToSubmit = 'https://' + urlToSubmit;
+          }
+          
+          // Store the rest for later processing
+          setUrls(prevUrls => [...prevUrls, ...splitUrls.slice(1)]);
+          
+          // Clear the input field
+          setUrl('');
+          
+          onSubmit(urlToSubmit);
+          return;
+        }
+      }
+      
+      // Handle single URL case
       let urlToSubmit = url.trim();
       if (urlToSubmit && !urlToSubmit.startsWith('http://') && !urlToSubmit.startsWith('https://')) {
         urlToSubmit = 'https://' + urlToSubmit;
@@ -42,7 +65,18 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
   
   const handleAddUrl = () => {
     if (url.trim()) {
-      setUrls([...urls, url.trim()]);
+      // Check for comma-separated URLs
+      if (url.includes(',')) {
+        // Split by comma and add all to the URLs list
+        const splitUrls = url.split(',')
+          .map(u => u.trim())
+          .filter(u => u.length > 0);
+        
+        setUrls(prevUrls => [...prevUrls, ...splitUrls]);
+      } else {
+        // Add single URL
+        setUrls([...urls, url.trim()]);
+      }
       setUrl("");
     }
   };
@@ -54,8 +88,27 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
   };
   
   const handleBulkInput = (value: string) => {
-    const lines = value.split('\n').filter(line => line.trim().length > 0);
-    setUrls(lines);
+    // First split by line breaks
+    const lines = value.split('\n');
+    
+    // Process each line to handle potential comma-separated URLs within a line
+    const processedUrls: string[] = [];
+    
+    lines.forEach(line => {
+      if (line.includes(',')) {
+        // If line contains commas, split by comma and add each URL
+        const commaUrls = line.split(',')
+          .map(u => u.trim())
+          .filter(u => u.length > 0);
+        
+        processedUrls.push(...commaUrls);
+      } else if (line.trim().length > 0) {
+        // If it's a single URL per line, just add it
+        processedUrls.push(line.trim());
+      }
+    });
+    
+    setUrls(processedUrls);
   };
 
   return (
@@ -95,7 +148,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
             </div>
             <div className="flex justify-between mt-1.5 ml-1">
               <p className="text-xs text-muted-foreground">
-                Enter a complete URL including https:// or http://
+                Enter a complete URL including https:// or http:// (or multiple URLs separated by commas)
               </p>
               <button 
                 type="button" 
@@ -200,14 +253,17 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
             
             <div className="mb-3">
               <label className="block text-sm font-medium text-foreground mb-2">
-                Or paste multiple URLs (one per line)
+                Or paste multiple URLs (one per line or comma-separated)
               </label>
               <Textarea
-                placeholder="https://example.com&#10;https://example.org&#10;https://another-site.com"
+                placeholder="https://example.com&#10;https://example.org&#10;https://another-site.com,https://more-sites.com"
                 className="min-h-[100px] focus:ring-primary focus:border-primary/70 border-primary/20"
                 onChange={(e) => handleBulkInput(e.target.value)}
                 disabled={isLoading}
               />
+              <p className="text-xs text-muted-foreground mt-1 ml-1">
+                Enter one URL per line or separate multiple URLs with commas
+              </p>
             </div>
             
             <div className="border border-muted rounded-md p-3 mb-4 max-h-[200px] overflow-y-auto bg-muted/10">
