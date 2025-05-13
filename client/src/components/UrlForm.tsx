@@ -28,14 +28,14 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
     <form onSubmit={handleSubmit} className="mb-6">
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-grow">
-          <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
-            Website URL
+          <label htmlFor="url" className="block text-sm font-medium text-foreground mb-2">
+            Enter a website URL to analyze
           </label>
-          <div className="mt-1 relative rounded-md shadow-sm">
+          <div className="relative rounded-md shadow-sm">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-gray-400"
+                className="h-5 w-5 text-primary/60"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -51,24 +51,27 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
             <Input 
               type="text"
               id="url"
-              className="pl-10 pr-12 py-3 focus:ring-primary-500 focus:border-primary-500"
+              className="pl-10 py-6 focus:ring-primary focus:border-primary/70 border-primary/20 text-foreground bg-white shadow-sm"
               placeholder="https://example.com"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={isLoading}
             />
           </div>
+          <p className="text-xs text-muted-foreground mt-1.5 ml-1">
+            Enter a complete URL including https:// or http://
+          </p>
         </div>
         <div className="flex items-end">
           <Button 
             type="submit" 
-            className="px-6 py-3 h-[46px]"
+            className="px-8 py-3 h-[48px] sage-bg-gradient hover:opacity-90 transition-opacity"
             disabled={isLoading || !url.trim()}
           >
             {isLoading ? (
               <>
                 <svg 
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
+                  className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" 
                   xmlns="http://www.w3.org/2000/svg" 
                   fill="none" 
                   viewBox="0 0 24 24"
@@ -91,8 +94,8 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
               </>
             ) : (
               <>
-                <Search className="mr-2 h-4 w-4" />
-                Analyze
+                <Search className="mr-2 h-5 w-5" />
+                Analyze SEO
               </>
             )}
           </Button>
