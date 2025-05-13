@@ -173,6 +173,62 @@ export default function Home() {
             isLoading={analyzeMutation.isPending || isSubmitting}
             initialUrl={formUrl}
           />
+          
+          {/* Advanced Analysis Options */}
+          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-primary/10">
+            <div className="flex items-center mb-3">
+              <div className="rounded-full p-1.5 bg-primary/10 mr-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </div>
+              <h4 className="text-sm font-medium">Advanced Analysis Options</h4>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="p-3 bg-white rounded-md border border-primary/5 hover:shadow-sm transition-shadow">
+                <div className="flex items-center">
+                  <div className="rounded-full p-1 bg-primary/5 mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                      <path d="M17 18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v9Z"></path>
+                      <path d="m17 9-3-3H9"></path>
+                      <path d="M12 13v2"></path>
+                      <path d="M12 7v2"></path>
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium">Competitor Analysis</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-7">Identify and analyze your top competitors by location</p>
+              </div>
+              
+              <div className="p-3 bg-white rounded-md border border-primary/5 hover:shadow-sm transition-shadow">
+                <div className="flex items-center">
+                  <div className="rounded-full p-1 bg-primary/5 mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium">Deep Content Analysis</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-7">In-depth content review with section-by-section insights</p>
+              </div>
+              
+              <div className="p-3 bg-white rounded-md border border-primary/5 hover:shadow-sm transition-shadow">
+                <div className="flex items-center">
+                  <div className="rounded-full p-1 bg-primary/5 mr-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                      <path d="M7 10v12"></path>
+                      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56L19 19"></path>
+                      <path d="M2 10h5.3a1 1 0 0 1 .7 1.7L6 14"></path>
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium">SEO Benchmarking</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-7">Compare your site to industry standards and best practices</p>
+              </div>
+            </div>
+          </div>
         </div>
         
         {(analyzeMutation.isPending || isSubmitting) && (
