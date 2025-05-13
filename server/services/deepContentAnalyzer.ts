@@ -137,7 +137,9 @@ class DeepContentAnalyzer {
     primaryKeyword: string
   ): Promise<DeepContentAnalysisResult> {
     try {
-      const $ = cheerio.load(pageData.content.text);
+      // Use raw HTML if available, otherwise fall back to content text
+      const htmlContent = pageData.rawHtml || pageData.content.text;
+      const $ = cheerio.load(htmlContent);
       
       // 1. Analyze content structure
       const structureMetrics = this.analyzeContentStructure($, pageData, primaryKeyword);

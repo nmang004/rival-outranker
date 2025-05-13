@@ -67,6 +67,7 @@ export interface CrawlerOutput {
   mobileCompatible: boolean;
   statusCode: number;
   error?: string;
+  rawHtml?: string;
 }
 
 // Page speed metrics with Core Web Vitals

@@ -98,6 +98,7 @@ class Crawler {
             parseInt(response.headers['x-response-time'] as string) : 
             undefined
         },
+        rawHtml: response.data // Store raw HTML for deep content analysis
       };
     } catch (error) {
       console.error('Error crawling page:', error);
@@ -126,7 +127,8 @@ class Crawler {
         schema: [],
         mobileCompatible: false,
         performance: { loadTime: 0 },
-        error: error.message || 'Unknown error occurred while crawling'
+        error: error.message || 'Unknown error occurred while crawling',
+        rawHtml: '<html><body>Error crawling page content</body></html>'
       };
     }
   }
