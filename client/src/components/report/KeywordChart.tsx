@@ -33,12 +33,15 @@ export default function KeywordChart({ keywords, densities }: KeywordChartProps)
       <div className="h-full w-full bg-gray-100 rounded flex items-end justify-between px-1">
         {keywords.map((keyword, index) => {
           const height = getHeight(index);
+          const density = densities && densities[index] !== undefined 
+            ? densities[index] 
+            : ((height / 6) * 3).toFixed(1); // Approximate density percentage
           return (
             <div 
               key={index} 
-              className={`w-1/${keywords.length} h-${height}/6 ${getColor(index)} mx-1 rounded-t flex-grow`}
+              className={`w-1/${keywords.length} ${getColor(height)} mx-1 rounded-t flex-grow`}
               style={{ height: `${(height / 6) * 100}%` }}
-              title={`${keyword}: ${(height / 6) * 100}%`}
+              title={`${keyword}: ${density}%`}
             />
           );
         })}

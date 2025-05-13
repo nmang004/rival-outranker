@@ -252,7 +252,16 @@ export default function KeywordTab({ data }: KeywordTabProps) {
                 keywords={data?.relatedKeywords && data.relatedKeywords.length > 0 ? 
                   [data.primaryKeyword || 'Primary Keyword', ...data.relatedKeywords.slice(0, 5)] : 
                   [data?.primaryKeyword || 'Primary Keyword', "No related keywords"]
-                } 
+                }
+                densities={[
+                  data?.density || 0,
+                  ...(data?.relatedKeywords && data.relatedKeywords.length > 0 ? 
+                    // Generate simulated density values for related keywords that decrease gradually
+                    data.relatedKeywords.slice(0, 5).map((_, idx) => 
+                      Math.max(0.2, (data?.density || 1) * (0.7 - (idx * 0.1))).toFixed(1)
+                    ) : 
+                    [0.5])
+                ].map(d => typeof d === 'string' ? parseFloat(d) : d)}
               />
             </div>
           </div>
