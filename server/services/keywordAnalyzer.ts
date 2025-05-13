@@ -21,7 +21,58 @@ class KeywordAnalyzer {
         return "HVAC";  // Set a default relevant to this industry
       }
       
-      // If the URL contains clear business category indicators, prioritize those
+      // First prioritize H1 headings, looking for service or product terms
+      if (pageData.headings.h1.length > 0) {
+        const h1Text = pageData.headings.h1[0].toLowerCase();
+        
+        // Check for common product/service patterns in H1
+        const productServiceTerms = [
+          "service", "services", "product", "products", "solution", "solutions",
+          "package", "packages", "plan", "plans", "consultation", "consultations",
+          "repair", "repairs", "installation", "installations", "maintenance",
+          "replacement", "system", "systems", "equipment", "tool", "tools"
+        ];
+        
+        // Extract potential product/service terms from H1
+        for (const term of productServiceTerms) {
+          if (h1Text.includes(term)) {
+            // Look for words surrounding the service/product term
+            const words = h1Text.split(/\s+/);
+            const termIndex = words.findIndex(w => w.includes(term));
+            
+            if (termIndex > 0) {
+              // If service/product term has a preceding word (likely a descriptor)
+              // e.g., "Air Conditioning Services", "HVAC Solutions"
+              const precedingWords = words.slice(Math.max(0, termIndex - 2), termIndex);
+              
+              // Filter out stop words and common modifiers
+              const filteredPrecedingWords = precedingWords.filter(w => 
+                !this.stopWords.has(w) && 
+                !['our', 'your', 'the', 'best', 'professional', 'quality', 'affordable'].includes(w)
+              );
+              
+              if (filteredPrecedingWords.length > 0) {
+                // Combine the preceding words to form the primary keyword
+                const keyword = filteredPrecedingWords.join(' ');
+                return keyword.charAt(0).toUpperCase() + keyword.slice(1);
+              }
+            }
+          }
+        }
+        
+        // If no specific service/product pattern found, extract the most significant noun phrases from H1
+        const h1Words = h1Text.split(/\s+/).filter(w => !this.stopWords.has(w));
+        if (h1Words.length > 0) {
+          // Try to identify multi-word phrases in H1
+          if (h1Words.length >= 2) {
+            return (h1Words[0] + ' ' + h1Words[1]).charAt(0).toUpperCase() + (h1Words[0] + ' ' + h1Words[1]).slice(1);
+          } else {
+            return h1Words[0].charAt(0).toUpperCase() + h1Words[0].slice(1);
+          }
+        }
+      }
+      
+      // If URL contains clear business category indicators, prioritize those
       const url = pageData.url.toLowerCase();
       if (url.includes('airdocs') || url.includes('heating') || url.includes('cooling')) {
         return "HVAC";  // Air conditioning and heating services
@@ -32,6 +83,9 @@ class KeywordAnalyzer {
       const h1Keywords = this.extractKeywordsFromTexts(pageData.headings.h1);
       const metaKeywords = this.extractKeywordsFromText(pageData.meta.description || '');
       const urlKeywords = this.extractKeywordsFromUrl(pageData.url);
+      
+      // Give higher weight to H1 keywords - add them multiple times to increase their weight
+      const extraH1Keywords = [...h1Keywords, ...h1Keywords]; // Duplicate H1 keywords to give them more weight
       
       // Give higher priority to industry-specific terms
       const industryTerms = ["hvac", "air conditioning", "heating", "cooling", "furnace", "ac", "air conditioner"];
@@ -44,8 +98,8 @@ class KeywordAnalyzer {
         }
       }
       
-      // Combine all keywords
-      const allKeywords = [...titleKeywords, ...h1Keywords, ...metaKeywords, ...urlKeywords];
+      // Combine all keywords with extra weight for H1
+      const allKeywords = [...titleKeywords, ...h1Keywords, ...extraH1Keywords, ...metaKeywords, ...urlKeywords];
       
       // Count occurrences of each keyword
       const keywordCounts = this.countKeywordOccurrences(allKeywords);
