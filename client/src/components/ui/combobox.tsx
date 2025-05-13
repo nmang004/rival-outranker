@@ -21,53 +21,37 @@ interface ComboboxProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
-  disabled?: boolean
 }
 
 export function Combobox({
   options,
   value,
   onChange,
-  placeholder = "Select an option...",
-  disabled = false,
+  placeholder = "Select an option",
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [searchQuery, setSearchQuery] = React.useState("")
-
-  // Filter options based on search query
-  const filteredOptions = React.useMemo(() => {
-    if (!searchQuery) return options
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [options, searchQuery])
 
   return (
-    <Popover open={open && !disabled} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          disabled={disabled}
         >
           {value
-            ? options.find((option) => option.value === value)?.label || placeholder
+            ? options.find((option) => option.value === value)?.label
             : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput 
-            placeholder={`Search ${placeholder.toLowerCase()}...`} 
-            className="h-9"
-            onValueChange={setSearchQuery}
-          />
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup className="max-h-60 overflow-y-auto">
-            {filteredOptions.map((option) => (
+          <CommandInput placeholder={placeholder} className="h-9" />
+          <CommandEmpty>No option found.</CommandEmpty>
+          <CommandGroup className="max-h-64 overflow-auto">
+            {options.map((option) => (
               <CommandItem
                 key={option.value}
                 value={option.value}
