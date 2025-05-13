@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { crawler } from "./services/crawler";
 import { analyzer } from "./services/analyzer";
+import { competitorAnalyzer } from "./services/competitorAnalyzer";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -145,6 +146,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error retrieving analyses:", error);
       res.status(500).json({ error: "Failed to retrieve analyses" });
+    }
+  });
+
+  // API endpoint for competitor analysis
+  app.get("/api/competitors", async (req: Request, res: Response) => {
+    try {
+      const url = req.query.url as string;
+      const keyword = req.query.keyword as string;
+      
+      if (!url) {
+        return res.status(400).json({ error: "URL parameter is required" });
+      }
+      
+      if (!keyword) {
+        return res.status(400).json({ error: "Keyword parameter is required" });
+      }
+      
+      // Get competitor analysis
+      const competitorAnalysis = await competitorAnalyzer.analyzeCompetitors(url, keyword);
+      
+      return res.json(competitorAnalysis);
+    } catch (error) {
+      console.error("Error performing competitor analysis:", error);
+      res.status(500).json({ error: "Failed to analyze competitors" });
     }
   });
 

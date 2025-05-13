@@ -164,6 +164,39 @@ export const seoAnalysisResultSchema = z.object({
   recommendations: z.array(z.string()),
 });
 
+// Competitor Analysis Types
+export const competitorSchema = z.object({
+  url: z.string(),
+  title: z.string(),
+  description: z.string(),
+  keywordDensity: z.number(),
+  contentLength: z.number(),
+  h1Count: z.number(),
+  h2Count: z.number(),
+  h3Count: z.number(),
+  internalLinksCount: z.number(),
+  externalLinksCount: z.number(),
+  imageCount: z.number(),
+  imagesWithAlt: z.number(),
+  loadTime: z.number().optional(),
+  pageSize: z.number().optional(),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string())
+});
+
+export const competitorAnalysisResultSchema = z.object({
+  keyword: z.string(),
+  competitors: z.array(competitorSchema),
+  comparisonMetrics: z.object({
+    avgKeywordDensity: z.number(),
+    avgContentLength: z.number(),
+    avgH1Count: z.number(),
+    avgH2Count: z.number(),
+    avgImagesWithAlt: z.number(),
+    topKeywords: z.array(z.string())
+  })
+});
+
 export type SeoScore = z.infer<typeof seoScoreSchema>;
 export type KeywordAnalysis = z.infer<typeof keywordAnalysisSchema>;
 export type MetaTagsAnalysis = z.infer<typeof metaTagsAnalysisSchema>;
@@ -176,3 +209,5 @@ export type PageSpeedAnalysis = z.infer<typeof pageSpeedAnalysisSchema>;
 export type UserEngagementAnalysis = z.infer<typeof userEngagementAnalysisSchema>;
 export type EatAnalysis = z.infer<typeof eatAnalysisSchema>;
 export type SeoAnalysisResult = z.infer<typeof seoAnalysisResultSchema>;
+export type Competitor = z.infer<typeof competitorSchema>;
+export type CompetitorAnalysisResult = z.infer<typeof competitorAnalysisResultSchema>;
