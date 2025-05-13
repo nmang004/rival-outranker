@@ -199,13 +199,13 @@ const COUNTRIES = Object.keys(GEO_DATA);
 
 export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisProps) {
   const [country, setCountry] = useState("United States");
-  const [city, setCity] = useState("");
+  const [city, setCity] = useState("all-cities");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<{country: string, city: string} | null>(null);
   const [showDetectedAlert, setShowDetectedAlert] = useState(false);
 
   // Generate the full location string (country or city + country)
-  const fullLocation = city ? `${city}, ${country}` : country;
+  const fullLocation = city && city !== "all-cities" ? `${city}, ${country}` : country;
 
   // Cities available for the selected country
   const availableCities = GEO_DATA[country as keyof typeof GEO_DATA] || [];
@@ -302,7 +302,7 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
   const applyDetectedLocation = () => {
     if (detectedLocation) {
       setCountry(detectedLocation.country);
-      setCity(detectedLocation.city);
+      setCity(detectedLocation.city || "all-cities");
     }
     setShowDetectedAlert(false);
   };
@@ -310,7 +310,12 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
   // Reset city when country changes
   const handleCountryChange = (newCountry: string) => {
     setCountry(newCountry);
-    setCity("");
+    setCity("all-cities");
+  };
+
+  // Handle city selection
+  const handleCityChange = (newCity: string) => {
+    setCity(newCity);
   };
 
   const handleAnalyze = () => {
@@ -402,12 +407,12 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
                 <label htmlFor="city" className="text-sm font-medium">
                   Select City (Optional):
                 </label>
-                <Select value={city} onValueChange={setCity}>
+                <Select value={city} onValueChange={handleCityChange}>
                   <SelectTrigger id="city" className="w-full">
                     <SelectValue placeholder={`All cities in ${country}`} />
                   </SelectTrigger>
                   <SelectContent className="max-h-[200px]">
-                    <SelectItem value="">All cities in {country}</SelectItem>
+                    <SelectItem value="all-cities">All cities in {country}</SelectItem>
                     {availableCities.map((cityName) => (
                       <SelectItem key={cityName} value={cityName}>
                         {cityName}
