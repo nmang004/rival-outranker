@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import UrlForm from "@/components/UrlForm";
 import { useMutation } from "@tanstack/react-query";
@@ -19,9 +19,11 @@ export default function Home() {
 
   const analyzeMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await apiRequest('POST', '/api/analyze', { url });
-      const data = await response.json();
-      return data;
+      const response = await apiRequest('/api/analyze', {
+        method: 'POST',
+        data: { url }
+      });
+      return response;
     },
     onSuccess: (data) => {
       toast({
@@ -32,7 +34,7 @@ export default function Home() {
       // Poll for results in the background
       pollForResults(data.url);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: "Analysis failed",
         description: error.message || "There was an error analyzing the URL. Please try again.",
@@ -137,20 +139,86 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-white to-muted/20">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-white to-primary/5 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute top-1/3 right-0 w-80 h-80 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-3xl"></div>
+        
+        {/* Decorative patterns */}
+        <div className="absolute top-20 right-[10%] opacity-20">
+          <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <path d="M60 0C26.863 0 0 26.863 0 60s26.863 60 60 60 60-26.863 60-60S93.137 0 60 0zm0 100c-22.091 0-40-17.909-40-40s17.909-40 40-40 40 17.909 40 40-17.909 40-40 40z" 
+                  fill="currentColor" className="text-primary/40" />
+          </svg>
+        </div>
+        
+        <div className="absolute bottom-[20%] left-[5%] opacity-20 rotate-45">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" className="text-primary/70" />
+            <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" className="text-primary/70" />
+          </svg>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 pt-10 pb-16 sm:px-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent">
+      <div className="max-w-7xl mx-auto px-6 pt-16 pb-20 sm:px-8 text-center relative z-10">
+        <div className="animate-float inline-block mb-6">
+          <div className="bg-white p-3 rounded-full shadow-md border border-primary/10">
+            <div className="rounded-full bg-primary/10 p-2">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="text-primary"
+              >
+                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent leading-tight animate-fade-in">
           SEO Best Practices Assessment
         </h1>
-        <h2 className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto">
+        
+        <h2 className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in">
           Analyze your website's SEO performance and get actionable recommendations to improve your rankings
         </h2>
         
-        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mb-10 border border-primary/10">
-          <div className="text-left mb-4">
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-xl p-8 mb-10 border border-primary/10 relative animate-fade-in">
+          {/* Card decorative elements */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/50 rounded-t-xl"></div>
+          <div className="absolute -top-4 -right-4 bg-white p-2 rounded-full shadow-lg border border-primary/10 z-10">
+            <div className="rounded-full bg-primary p-2 text-white">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m15 9-6 6"></path>
+                <path d="m9 9 6 6"></path>
+              </svg>
+            </div>
+          </div>
+          
+          <div className="text-left mb-6">
             <div className="flex items-center">
-              <div className="rounded-full p-2 bg-primary/10 mr-3">
+              <div className="rounded-full p-3 bg-primary/10 mr-4 animate-pulse-slow">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
                   <path d="M9.5 3H4a2 2 0 0 0-2 2v5.5"></path>
                   <path d="M14.5 21H20a2 2 0 0 0 2-2v-5.5"></path>
@@ -162,11 +230,13 @@ export default function Home() {
                   <path d="m7.5 15.5 9-9"></path>
                 </svg>
               </div>
-              <h3 className="text-lg font-medium">Analyze Your Website</h3>
+              <div>
+                <h3 className="text-xl font-semibold gradient-text">Analyze Your Website</h3>
+                <p className="text-muted-foreground mt-1">
+                  Enter URLs below to receive a detailed analysis of their SEO performance across 10+ critical factors.
+                </p>
+              </div>
             </div>
-            <p className="text-muted-foreground mt-2 mb-4 ml-10">
-              Enter URLs below to receive a detailed analysis of their SEO performance across 10+ critical factors.
-            </p>
           </div>
         
           <UrlForm 
@@ -323,253 +393,73 @@ export default function Home() {
             <div className="flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-destructive mr-3"
-                viewBox="0 0 24 24"
+                className="h-6 w-6 text-destructive mr-3"
                 fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <p className="text-destructive font-medium">{error}</p>
+              <div>
+                <h3 className="text-destructive font-medium">Error analyzing website</h3>
+                <p className="text-muted-foreground text-sm mt-1">{error}</p>
+              </div>
             </div>
           </div>
         )}
       </div>
-
+      
       {/* Features Section */}
-      <div className="bg-white py-16">
+      <div className="bg-gradient-to-tr from-primary/5 to-white py-16">
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold gradient-heading mb-3">Complete SEO Analysis In Minutes</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Our comprehensive analysis tool evaluates all critical SEO factors to help you improve your search rankings
+            <h2 className="text-3xl font-bold gradient-heading mb-4">Comprehensive SEO Analysis</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Our tool analyzes over 70 SEO factors to provide actionable insights that help improve your website's visibility in search engines
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-md border border-primary/10 card-hover relative">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-3xl rounded-tr-xl z-0"></div>
-              <div className="relative z-10">
-                <div className="p-2.5 bg-primary/10 rounded-lg inline-block mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <path d="M3 3v18h18"></path>
-                    <path d="m18 17-2-4-3 3-2-8-3 6"></path>
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Comprehensive Analysis</h3>
-                <p className="text-muted-foreground">
-                  Our tool evaluates 10+ SEO factors including:
-                </p>
-                <ul className="text-sm text-muted-foreground mt-3 space-y-2">
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Keyword optimization & usage</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>On-page technical factors</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Content quality evaluation</span>
-                  </li>
-                </ul>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-primary/10 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="rounded-full w-12 h-12 bg-primary/10 flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                  <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
               </div>
+              <h3 className="text-lg font-medium mb-2">On-Page SEO Analysis</h3>
+              <p className="text-muted-foreground text-sm">
+                Analyze meta tags, heading structure, content quality, keyword usage, and internal linking to optimize individual pages
+              </p>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-md border border-primary/10 card-hover relative">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-3xl rounded-tr-xl z-0"></div>
-              <div className="relative z-10">
-                <div className="p-2.5 bg-primary/10 rounded-lg inline-block mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
-                    <line x1="16" y1="8" x2="2" y2="22"/>
-                    <line x1="17.5" y1="15" x2="9" y2="15"/>
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Actionable Recommendations</h3>
-                <p className="text-muted-foreground">
-                  Get specific, prioritized action items with:
-                </p>
-                <ul className="text-sm text-muted-foreground mt-3 space-y-2">
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Step-by-step implementation guides</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Priority-based action plans</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Code examples & implementation details</span>
-                  </li>
-                </ul>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-primary/10 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="rounded-full w-12 h-12 bg-primary/10 flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
               </div>
+              <h3 className="text-lg font-medium mb-2">Technical SEO Audit</h3>
+              <p className="text-muted-foreground text-sm">
+                Evaluate page speed, mobile-friendliness, schema markup, SSL security, and crawlability to improve technical performance
+              </p>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-md border border-primary/10 card-hover relative">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-3xl rounded-tr-xl z-0"></div>
-              <div className="relative z-10">
-                <div className="p-2.5 bg-primary/10 rounded-lg inline-block mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Deep Content Analysis</h3>
-                <p className="text-muted-foreground">
-                  Advanced evaluation of content factors:
-                </p>
-                <ul className="text-sm text-muted-foreground mt-3 space-y-2">
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Keyword density & distribution</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>Readability & engagement metrics</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-4 w-4 text-primary mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>E-E-A-T signal analysis</span>
-                  </li>
-                </ul>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-primary/10 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div className="rounded-full w-12 h-12 bg-primary/10 flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+                </svg>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Advanced Options Section */}
-      <div className="max-w-7xl mx-auto px-6 py-12 sm:px-8">
-        <div className="bg-white p-8 rounded-xl shadow-md border border-primary/10">
-          <h3 className="text-xl font-semibold mb-6 flex items-center text-foreground">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2 text-primary"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            Advanced Analysis Options
-          </h3>
-            
-          <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked
-                  />
-                  <div className="h-5 w-5 rounded border border-primary/50 group-hover:border-primary peer-checked:bg-primary peer-checked:border-primary transition-colors"></div>
-                  <div className="absolute top-[3px] left-[4px] opacity-0 peer-checked:opacity-100 text-white">
-                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-foreground font-medium">Deep content analysis</span>
-                  <p className="text-xs text-muted-foreground mt-1">Advanced content evaluation with NLP analysis</p>
-                </div>
-              </label>
-            </div>
-            
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked
-                  />
-                  <div className="h-5 w-5 rounded border border-primary/50 group-hover:border-primary peer-checked:bg-primary peer-checked:border-primary transition-colors"></div>
-                  <div className="absolute top-[3px] left-[4px] opacity-0 peer-checked:opacity-100 text-white">
-                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-foreground font-medium">Include competitor analysis</span>
-                  <p className="text-xs text-muted-foreground mt-1">Compare your site with top-ranking competitors</p>
-                </div>
-              </label>
-            </div>
-            
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    defaultChecked
-                  />
-                  <div className="h-5 w-5 rounded border border-primary/50 group-hover:border-primary peer-checked:bg-primary peer-checked:border-primary transition-colors"></div>
-                  <div className="absolute top-[3px] left-[4px] opacity-0 peer-checked:opacity-100 text-white">
-                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-foreground font-medium">Generate PDF report</span>
-                  <p className="text-xs text-muted-foreground mt-1">Receive a downloadable report with all analysis data</p>
-                </div>
-              </label>
-            </div>
-            
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                  />
-                  <div className="h-5 w-5 rounded border border-primary/50 group-hover:border-primary peer-checked:bg-primary peer-checked:border-primary transition-colors"></div>
-                  <div className="absolute top-[3px] left-[4px] opacity-0 peer-checked:opacity-100 text-white">
-                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-foreground font-medium">Schedule regular monitoring</span>
-                  <p className="text-xs text-muted-foreground mt-1">Set up recurring analysis to track performance over time</p>
-                </div>
-              </label>
+              <h3 className="text-lg font-medium mb-2">User Experience Signals</h3>
+              <p className="text-muted-foreground text-sm">
+                Measure readability, accessibility, and engagement metrics to ensure your content meets user expectations and search engine standards
+              </p>
             </div>
           </div>
         </div>
