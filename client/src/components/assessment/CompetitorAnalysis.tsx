@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatUrl } from "@/lib/formatters";
-import { Loader2, Globe, BarChart2, FileText, Star, AlertTriangle } from "lucide-react";
+import { Loader2, Globe, BarChart2, FileText, Star, AlertTriangle, MapPin } from "lucide-react";
 
 interface CompetitorAnalysisProps {
   url: string;
@@ -201,12 +201,14 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
   const [country, setCountry] = useState("United States");
   const [city, setCity] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [detectedLocation, setDetectedLocation] = useState<{country: string, city: string} | null>(null);
+  const [showDetectedAlert, setShowDetectedAlert] = useState(false);
 
   // Generate the full location string (country or city + country)
   const fullLocation = city ? `${city}, ${country}` : country;
 
   // Cities available for the selected country
-  const availableCities = GEO_DATA[country] || [];
+  const availableCities = GEO_DATA[country as keyof typeof GEO_DATA] || [];
 
   // Fetch competitor analysis data
   const { data, isLoading, isError, refetch } = useQuery<any>({
@@ -214,6 +216,96 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
     enabled: isAnalyzing,
     refetchOnWindowFocus: false
   });
+
+  // Detect geo-location from URL on component mount
+  useEffect(() => {
+    detectGeoFromUrl(url);
+  }, [url]);
+
+  // Detect potential geo-location information from URL
+  const detectGeoFromUrl = (urlString: string) => {
+    try {
+      // Parse URL to get domain and path information
+      const parsedUrl = new URL(urlString);
+      const domain = parsedUrl.hostname;
+      const path = parsedUrl.pathname;
+      
+      // Look for country TLDs
+      const tldMatches: {[key: string]: string} = {
+        '.uk': 'United Kingdom',
+        '.ca': 'Canada',
+        '.au': 'Australia',
+        '.de': 'Germany',
+        '.fr': 'France',
+        '.es': 'Spain',
+        '.it': 'Italy',
+        '.jp': 'Japan',
+        '.in': 'India',
+        '.br': 'Brazil',
+        '.mx': 'Mexico',
+        '.cn': 'China',
+        '.kr': 'South Korea',
+        '.nl': 'Netherlands',
+        '.za': 'South Africa',
+        '.ae': 'United Arab Emirates',
+        '.sg': 'Singapore'
+      };
+      
+      let detectedCountry = 'United States'; // Default
+      let detectedCity = '';
+      
+      // Check for country TLD
+      for (const [tld, countryName] of Object.entries(tldMatches)) {
+        if (domain.endsWith(tld)) {
+          detectedCountry = countryName;
+          break;
+        }
+      }
+      
+      // Check for cities in URL (domain or path)
+      const urlText = domain + path;
+      
+      // Try to find cities from the detected country in the URL
+      if (GEO_DATA[detectedCountry as keyof typeof GEO_DATA]) {
+        for (const city of GEO_DATA[detectedCountry as keyof typeof GEO_DATA]) {
+          // Convert to lowercase and replace spaces with dashes or nothing for comparison
+          const cityLower = city.toLowerCase();
+          const cityDashed = cityLower.replace(/\s+/g, '-');
+          const cityNoSpace = cityLower.replace(/\s+/g, '');
+          
+          if (
+            urlText.toLowerCase().includes(cityLower) || 
+            urlText.toLowerCase().includes(cityDashed) || 
+            urlText.toLowerCase().includes(cityNoSpace)
+          ) {
+            detectedCity = city;
+            break;
+          }
+        }
+      }
+      
+      // If location info was detected, save it and show alert
+      if (detectedCountry !== 'United States' || detectedCity) {
+        setDetectedLocation({
+          country: detectedCountry,
+          city: detectedCity
+        });
+        setShowDetectedAlert(true);
+      }
+    } catch (error) {
+      console.error('Error detecting geo from URL:', error);
+      // Silently fail - we'll just use default location
+    }
+  };
+
+  // Apply detected location values
+  const applyDetectedLocation = () => {
+    if (detectedLocation) {
+      setCountry(detectedLocation.country);
+      setCity(detectedLocation.city);
+    }
+    setShowDetectedAlert(false);
+  };
 
   // Reset city when country changes
   const handleCountryChange = (newCountry: string) => {
@@ -244,6 +336,48 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
               <p className="text-sm text-muted-foreground mb-2">This feature helps you identify competitors targeting your primary keyword in specific regions.</p>
               <h4 className="font-medium mb-2">Primary Keyword: <Badge className="bg-primary/20 text-primary hover:bg-primary/30">{keyword}</Badge></h4>
             </div>
+            
+            {/* Alert for detected location from URL */}
+            {showDetectedAlert && detectedLocation && (
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-md p-3">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <MapPin className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-medium text-blue-800">
+                      Detected location from URL!
+                    </h3>
+                    <div className="mt-1 text-sm text-blue-700">
+                      <p>
+                        We detected that your URL might be targeting: 
+                        <span className="font-medium">
+                          {detectedLocation.city 
+                            ? ` ${detectedLocation.city}, ${detectedLocation.country}` 
+                            : ` ${detectedLocation.country}`}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="mt-2 flex">
+                      <Button
+                        size="sm"
+                        onClick={applyDetectedLocation}
+                        className="mr-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        Use this location
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowDetectedAlert(false)}
+                      >
+                        Ignore
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="space-y-4">
               <div>
