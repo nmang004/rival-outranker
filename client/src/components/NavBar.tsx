@@ -142,22 +142,22 @@ export default function NavBar() {
       {/* Mobile menu */}
       <div className={`${mobileMenuOpen ? 'block' : 'hidden'} sm:hidden shadow-lg`}>
         <div className="pt-2 pb-3 space-y-1 bg-white">
-          <Link href="/">
+          <Link href="/" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/")}>
               Dashboard
             </div>
           </Link>
-          <Link href="/deep-content">
+          <Link href="/deep-content" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/deep-content")}>
               Deep Content Analysis
             </div>
           </Link>
-          <Link href="/competitor-analysis">
+          <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/competitor-analysis")}>
               Competitor Analysis
             </div>
           </Link>
-          <Link href="/history">
+          <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/history")}>
               Analysis History
             </div>
