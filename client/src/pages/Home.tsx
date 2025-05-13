@@ -49,8 +49,8 @@ export default function Home() {
         if (response.ok) {
           const result = await response.json();
           
-          // Check if the result has actual analysis data
-          if (result && result.analysis && result.analysis.overallScore) {
+          // Check if the result has actual analysis data with an overallScore
+          if (result && result.overallScore && result.overallScore.score) {
             setLocation(`/results?url=${encodeURIComponent(url)}`);
             return true;
           }
@@ -78,6 +78,12 @@ export default function Home() {
         // If max attempts reached, show error state instead of redirecting
         setError("Analysis timed out. Please try again.");
         setIsSubmitting(false);
+        
+        toast({
+          title: "Analysis timed out",
+          description: "The analysis is taking longer than expected. Please try again.",
+          variant: "destructive",
+        });
       }
     };
     
@@ -111,15 +117,37 @@ export default function Home() {
         
         <UrlForm 
           onSubmit={handleSubmit} 
-          isLoading={analyzeMutation.isPending}
+          isLoading={analyzeMutation.isPending || isSubmitting}
           initialUrl={formUrl}
         />
         
-        {analyzeMutation.isPending && (
+        {(analyzeMutation.isPending || isSubmitting) && (
           <div className="mt-4 p-4 bg-blue-50 rounded-md">
             <div className="flex items-center">
               <Loader2 className="h-5 w-5 text-blue-500 animate-spin mr-2" />
               <p className="text-blue-700">Analyzing your website. This may take up to 30 seconds...</p>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 rounded-md">
+            <div className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-red-500 mr-2"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <p className="text-red-700">{error}</p>
             </div>
           </div>
         )}
