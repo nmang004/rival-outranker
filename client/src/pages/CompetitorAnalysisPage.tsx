@@ -1,368 +1,226 @@
-import { useState, FormEvent } from "react";
-import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { urlFormSchema } from "@shared/schema";
-import { Loader2, Search, Map, Globe, BarChart2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Combobox } from "@/components/ui/combobox";
-import { US_CITIES } from "@shared/us-cities";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Check, ChevronRight, Globe, MapPin, Search } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { Combobox } from '@/components/ui/combobox';
+import { US_CITIES } from '@shared/us-cities';
+
+const formSchema = z.object({
+  url: z.string().url({ message: 'Please enter a valid URL including https://' }),
+  city: z.string().min(2, { message: 'Please select a city' }),
+});
 
 export default function CompetitorAnalysisPage() {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [formUrl, setFormUrl] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
-
+  const [, navigate] = useLocation();
+  const [selectedCity, setSelectedCity] = useState('');
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      url: '',
+      city: '',
+    },
+  });
+  
   const cityOptions = US_CITIES.map(city => ({
     value: `${city.city}, ${city.state}`,
     label: `${city.city}, ${city.state}`
   }));
-
-  const analyzeMutation = useMutation({
-    mutationFn: async (data: { url: string, city: string }) => {
-      const response = await apiRequest('POST', '/api/competitors', data);
-      return response;
-    },
-    onSuccess: (data) => {
-      setIsSubmitting(false);
-      setAnalysisProgress(100);
+  
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      // Submit the form data
+      await apiRequest('/api/competitors', {
+        method: 'POST',
+        data: {
+          url: values.url,
+          city: values.city,
+        },
+      });
       
-      // Redirect to results page with the analysis parameters
-      setTimeout(() => {
-        setLocation(`/competitor-results?url=${encodeURIComponent(formUrl)}&city=${encodeURIComponent(selectedCity)}`);
-      }, 500);
-    },
-    onError: (error: any) => {
-      setIsSubmitting(false);
-      setError(error.message || "An error occurred during analysis");
-      toast({
-        title: "Analysis failed",
-        description: error.message || "Failed to analyze competitors.",
-        variant: "destructive"
+      // Navigate to results page with URL and city parameters
+      navigate(`/competitor-results?url=${encodeURIComponent(values.url)}&city=${encodeURIComponent(values.city)}`);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      form.setError('root', { 
+        type: 'manual',
+        message: 'Failed to analyze competitors. Please try again.' 
       });
     }
-  });
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-    setAnalysisProgress(0);
-    
-    try {
-      // Validate URL
-      const parsed = urlFormSchema.safeParse({ url: formUrl });
-      
-      if (!parsed.success) {
-        setError("Please enter a valid URL");
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!selectedCity) {
-        setError("Please select a city for local competitor analysis");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Start progress simulation
-      const interval = setInterval(() => {
-        setAnalysisProgress(prev => {
-          const newProgress = prev + (100 - prev) * 0.1;
-          return Math.min(newProgress, 95);
-        });
-      }, 800);
-      
-      // Submit URL for analysis
-      analyzeMutation.mutate({ url: formUrl, city: selectedCity });
-      
-      return () => clearInterval(interval);
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
-      setIsSubmitting(false);
-    }
-  };
+  }
   
   return (
-    <div className="container py-8 px-4 mx-auto">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2 tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Competitor Analysis
-          </h1>
-          <p className="text-muted-foreground">
-            Identify and analyze your top competitors based on location and industry
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-lg border border-primary/10 overflow-hidden mb-8">
-          <div className="p-6">
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold mb-2">Enter URL and Location</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  We'll find your top local competitors and analyze their SEO strategies.
-                </p>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight gradient-heading">
+          Competitor SEO Analysis
+        </h1>
+        <p className="mt-4 text-muted-foreground text-lg">
+          Identify and analyze your top competitors in a specific location to gain strategic SEO insights
+        </p>
+      </div>
+      
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Globe className="mr-2 h-5 w-5 text-primary" />
+            Competitor Analysis Tool
+          </CardTitle>
+          <CardDescription>
+            Enter your website URL and select a location to analyze your top competitors in that market
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your Website URL</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center space-x-2">
+                        <div className="relative flex-grow">
+                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            placeholder="https://example.com"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Include the full URL with https://
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Combobox
+                          options={cityOptions}
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select a city"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Choose a city to analyze competitors in that market
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="pt-4">
+                <Button 
+                  type="submit" 
+                  className="w-full md:w-auto" 
+                  disabled={form.formState.isSubmitting}
+                >
+                  {form.formState.isSubmitting ? (
+                    <>Analyzing<span className="loading-dots">...</span></>
+                  ) : (
+                    <>
+                      Analyze Competitors
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="url">Your Website URL</Label>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <Input
-                        id="url"
-                        type="url"
-                        placeholder="https://example.com"
-                        value={formUrl}
-                        onChange={(e) => setFormUrl(e.target.value)}
-                        disabled={isSubmitting}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="city">Select City for Local Analysis</Label>
-                    <div className="mt-1.5">
-                      <Combobox
-                        options={cityOptions}
-                        value={selectedCity}
-                        onChange={setSelectedCity}
-                        placeholder="Select a city..."
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting || !formUrl || !selectedCity}
-                    className="w-full"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing Competitors...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-2 h-4 w-4" />
-                        Find & Analyze Competitors
-                      </>
-                    )}
-                  </Button>
+              {form.formState.errors.root && (
+                <div className="p-3 text-sm text-white bg-destructive rounded-md">
+                  {form.formState.errors.root.message}
                 </div>
-                
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-              </form>
-            </div>
+              )}
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Competitor Intelligence</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-primary mt-1" />
+                <span>Identify your top 5 competitors in any location</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-primary mt-1" />
+                <span>Compare keyword strategies and content gaps</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-primary mt-1" />
+                <span>Analyze competitor backlink profiles and domain authority</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Local SEO Focus</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-primary mt-1" />
+                <span>Get location-specific competitor insights</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-primary mt-1" />
+                <span>Discover local ranking factors and opportunities</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-primary mt-1" />
+                <span>Uncover local business citations and directory presence</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="bg-muted p-6 rounded-lg">
+        <h3 className="text-lg font-medium mb-3">Why Analyze Competitors?</h3>
+        <p className="text-muted-foreground mb-4">
+          Understanding your competition is critical for SEO success. Our competitor analysis tool helps you:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="bg-background p-4 rounded-md">
+            <h4 className="font-medium mb-2">Identify Opportunities</h4>
+            <p className="text-sm text-muted-foreground">Discover content and keyword gaps you can target to gain market share</p>
           </div>
-          
-          {(analyzeMutation.isPending || isSubmitting) && (
-            <div className="p-4 pt-0">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Analyzing competitors...</span>
-                  <span>{Math.round(analysisProgress)}%</span>
-                </div>
-                <Progress value={analysisProgress} className="h-2" />
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <Map className="h-5 w-5 mr-2 text-primary" />
-                Geo-Targeted Analysis
-              </CardTitle>
-              <CardDescription>Location-specific competitor data</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Local search visibility comparison</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Location-based keyword rankings</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>City-specific competitor identification</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Local business listing comparison</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <Globe className="h-5 w-5 mr-2 text-primary" />
-                Competitive Landscape
-              </CardTitle>
-              <CardDescription>Industry positioning insights</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Top competitor identification</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Market share estimation</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Competitive strength assessment</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Audience overlap analysis</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <BarChart2 className="h-5 w-5 mr-2 text-primary" />
-                Performance Benchmarking
-              </CardTitle>
-              <CardDescription>Compare metrics against competitors</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Domain authority comparison</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Backlink profile analysis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Content quality assessment</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Page speed benchmarking</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <Search className="h-5 w-5 mr-2 text-primary" />
-                Strategy Insights
-              </CardTitle>
-              <CardDescription>Actionable competitive intelligence</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Keyword gap analysis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Content strategy comparison</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Technical SEO comparison</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                  <span>Growth opportunity identification</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-lg border border-primary/10 p-6">
-          <h2 className="text-lg font-semibold mb-3">How Competitor Analysis Works</h2>
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="rounded-full h-6 w-6 bg-primary/10 text-primary flex items-center justify-center font-medium mr-3 mt-0.5">1</div>
-              <div>
-                <h3 className="font-medium">Local Competitor Identification</h3>
-                <p className="text-sm text-muted-foreground">
-                  We identify your top competitors based on your location and industry to ensure relevant comparisons.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="rounded-full h-6 w-6 bg-primary/10 text-primary flex items-center justify-center font-medium mr-3 mt-0.5">2</div>
-              <div>
-                <h3 className="font-medium">Competitive Metrics Analysis</h3>
-                <p className="text-sm text-muted-foreground">
-                  We analyze key SEO metrics of your competitors and benchmark your performance against them.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="rounded-full h-6 w-6 bg-primary/10 text-primary flex items-center justify-center font-medium mr-3 mt-0.5">3</div>
-              <div>
-                <h3 className="font-medium">Keyword Gap Analysis</h3>
-                <p className="text-sm text-muted-foreground">
-                  We identify valuable keywords your competitors are ranking for that you're missing.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="rounded-full h-6 w-6 bg-primary/10 text-primary flex items-center justify-center font-medium mr-3 mt-0.5">4</div>
-              <div>
-                <h3 className="font-medium">Content and Link Strategy Comparison</h3>
-                <p className="text-sm text-muted-foreground">
-                  We compare content quality, backlink profiles, and overall SEO strategy with your competitors.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="rounded-full h-6 w-6 bg-primary/10 text-primary flex items-center justify-center font-medium mr-3 mt-0.5">5</div>
-              <div>
-                <h3 className="font-medium">Actionable Opportunity Identification</h3>
-                <p className="text-sm text-muted-foreground">
-                  We provide specific recommendations based on competitor strengths and weaknesses to improve your SEO.
-                </p>
-              </div>
-            </div>
+          <div className="bg-background p-4 rounded-md">
+            <h4 className="font-medium mb-2">Benchmark Performance</h4>
+            <p className="text-sm text-muted-foreground">Compare your metrics against industry leaders to set realistic goals</p>
+          </div>
+          <div className="bg-background p-4 rounded-md">
+            <h4 className="font-medium mb-2">Refine Strategy</h4>
+            <p className="text-sm text-muted-foreground">Learn from competitor successes and failures to improve your approach</p>
           </div>
         </div>
       </div>
