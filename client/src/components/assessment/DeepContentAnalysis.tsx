@@ -460,7 +460,7 @@ export default function DeepContentAnalysis({ url }: DeepContentAnalysisProps) {
                 <Newspaper className="h-4 w-4 mr-1 text-primary" /> Top Topics
               </h4>
               <div className="flex flex-wrap gap-2">
-                {semanticRelevance.topicCoverage.keyTopics.map((topic, index) => (
+                {semanticRelevance.topicCoverage.keyTopics.map((topic: string, index: number) => (
                   <Badge key={index} variant="outline" className="bg-primary/10 text-primary">
                     {topic}
                   </Badge>
@@ -522,7 +522,7 @@ export default function DeepContentAnalysis({ url }: DeepContentAnalysisProps) {
                           </tr>
                         </thead>
                         <tbody>
-                          {semanticRelevance.entityAnalysis.entities.map((entity, index) => (
+                          {semanticRelevance.entityAnalysis.entities.map((entity: { type: string; name: string; frequency: number }, index: number) => (
                             <tr key={index} className={index % 2 === 0 ? 'bg-muted/10' : ''}>
                               <td className="py-1.5 px-1">{entity.name}</td>
                               <td className="py-1.5 px-1 capitalize">{entity.type}</td>
@@ -706,7 +706,7 @@ export default function DeepContentAnalysis({ url }: DeepContentAnalysisProps) {
           <AlertTitle>Content Improvement Recommendations</AlertTitle>
           <AlertDescription>
             <ul className="mt-2 space-y-1">
-              {recommendations.map((recommendation, index) => (
+              {recommendations.map((recommendation: string, index: number) => (
                 <li key={index} className="flex">
                   <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
                   <span>{recommendation}</span>
