@@ -1461,22 +1461,80 @@ class DeepContentAnalyzer {
       // Get page title
       const title = pageData.title || 'Untitled Page';
       
-      // Extract the content sections (introduction, main content, conclusion)
-      // Using the cheerio instance that was loaded with the raw HTML
-      const paragraphs = $('p').toArray();
-      const paragraphTexts = paragraphs.map(p => $(p).text().trim()).filter(text => text.length > 0);
+      // Initialize content section arrays
+      const headers: {content: string, type: string, level: number}[] = [];
+      const paragraphs: {content: string, section: string}[] = [];
+      const ctaElements: {content: string, type: string}[] = [];
       
-      if (paragraphTexts.length === 0) {
-        return {
-          title,
-          introduction: { content: "No content found", annotations: [] },
-          mainContent: [],
-          conclusion: { content: "No content found", annotations: [] }
-        };
-      }
+      // Extract headers (h1, h2, h3, h4, h5, h6)
+      $('h1, h2, h3, h4, h5, h6').each((i, el) => {
+        const tagName = $(el).prop('tagName').toLowerCase();
+        const level = parseInt(tagName.replace('h', ''));
+        const content = $(el).text().trim();
+        if (content.length > 0) {
+          headers.push({
+            content,
+            type: tagName,
+            level
+          });
+        }
+      });
       
-      // Identify introduction (first paragraph or two)
-      const introductionText = paragraphTexts.slice(0, Math.min(2, paragraphTexts.length)).join('\n\n');
+      // Extract paragraph content
+      $('p').each((i, el) => {
+        const content = $(el).text().trim();
+        if (content.length > 0) {
+          // Try to determine which section this paragraph belongs to
+          let section = 'body';
+          
+          // Check if it's under any of the extracted headers
+          const prevHeaders = $('h1, h2, h3, h4, h5, h6').filter((j, header) => {
+            return $(header).index() < $(el).index();
+          });
+          
+          if (prevHeaders.length > 0) {
+            const lastHeader = $(prevHeaders[prevHeaders.length - 1]).text().trim();
+            section = lastHeader;
+          }
+          
+          paragraphs.push({
+            content,
+            section
+          });
+        }
+      });
+      
+      // Extract potential CTAs
+      $('a, button, input[type="submit"], input[type="button"], .cta, [class*="cta"]').each((i, el) => {
+        let type = $(el).prop('tagName').toLowerCase();
+        let content = $(el).text().trim();
+        
+        // For inputs, use value as the content
+        if (type === 'input') {
+          content = $(el).attr('value') || '';
+          type = $(el).attr('type') || 'button';
+        }
+        
+        if (content.length > 0) {
+          ctaElements.push({
+            content,
+            type
+          });
+        }
+      });
+      
+      // Group paragraphs by section
+      const paragraphsBySection: {[key: string]: string[]} = {};
+      paragraphs.forEach(p => {
+        if (!paragraphsBySection[p.section]) {
+          paragraphsBySection[p.section] = [];
+        }
+        paragraphsBySection[p.section].push(p.content);
+      });
+      
+      // Create the introduction section
+      const introductionParagraphs = paragraphs.slice(0, Math.min(2, paragraphs.length));
+      const introductionText = introductionParagraphs.map(p => p.content).join('\n\n');
       const introAnnotations: ContentAnnotation[] = [];
       
       // Check if introduction mentions the primary keyword

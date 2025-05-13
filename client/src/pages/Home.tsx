@@ -4,7 +4,7 @@ import UrlForm from "@/components/UrlForm";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { urlFormSchema } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 
@@ -15,6 +15,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
   const analyzeMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -175,59 +176,124 @@ export default function Home() {
           />
           
           {/* Advanced Analysis Options */}
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-primary/10">
-            <div className="flex items-center mb-3">
-              <div className="rounded-full p-1.5 bg-primary/10 mr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
+          <div className="mt-6">
+            <button 
+              type="button"
+              onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+              className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-primary/10 hover:bg-slate-100 transition-colors"
+            >
+              <div className="flex items-center">
+                <div className="rounded-full p-1.5 bg-primary/10 mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                </div>
+                <h4 className="text-sm font-medium">Advanced Analysis Options</h4>
               </div>
-              <h4 className="text-sm font-medium">Advanced Analysis Options</h4>
-            </div>
+              <ChevronDown 
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${showAdvancedOptions ? 'transform rotate-180' : ''}`} 
+              />
+            </button>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="p-3 bg-white rounded-md border border-primary/5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center">
-                  <div className="rounded-full p-1 bg-primary/5 mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
-                      <path d="M17 18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v9Z"></path>
-                      <path d="m17 9-3-3H9"></path>
-                      <path d="M12 13v2"></path>
-                      <path d="M12 7v2"></path>
-                    </svg>
+            {showAdvancedOptions && (
+              <div className="overflow-hidden">
+                <div className="p-4 pt-2 border border-t-0 border-primary/10 rounded-b-lg bg-white">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    <div className="p-3 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors">
+                      <div className="flex items-start">
+                        <input 
+                          type="checkbox" 
+                          id="competitor-analysis"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mt-0.5"
+                        />
+                        <div className="ml-2">
+                          <label htmlFor="competitor-analysis" className="flex items-center cursor-pointer">
+                            <div className="rounded-full p-1 bg-primary/5 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium">Competitor Analysis</span>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1 ml-6">Identify and analyze your top competitors by location</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors">
+                      <div className="flex items-start">
+                        <input 
+                          type="checkbox" 
+                          id="deep-content"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mt-0.5"
+                        />
+                        <div className="ml-2">
+                          <label htmlFor="deep-content" className="flex items-center cursor-pointer">
+                            <div className="rounded-full p-1 bg-primary/5 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium">Deep Content Analysis</span>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1 ml-6">In-depth content review with section-by-section insights</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors">
+                      <div className="flex items-start">
+                        <input 
+                          type="checkbox" 
+                          id="export-pdf"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mt-0.5"
+                        />
+                        <div className="ml-2">
+                          <label htmlFor="export-pdf" className="flex items-center cursor-pointer">
+                            <div className="rounded-full p-1 bg-primary/5 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium">Export PDF Report</span>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1 ml-6">Generate a comprehensive PDF report for offline sharing</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-slate-50 rounded-md hover:bg-slate-100 transition-colors">
+                      <div className="flex items-start">
+                        <input 
+                          type="checkbox" 
+                          id="recurring-scan"
+                          className="rounded border-gray-300 text-primary focus:ring-primary mt-0.5"
+                        />
+                        <div className="ml-2">
+                          <label htmlFor="recurring-scan" className="flex items-center cursor-pointer">
+                            <div className="rounded-full p-1 bg-primary/5 mr-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
+                                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                                <path d="M16 21h5v-5"></path>
+                              </svg>
+                            </div>
+                            <span className="text-xs font-medium">Schedule Recurring Scan</span>
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-1 ml-6">Monitor SEO performance with scheduled weekly scans</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-xs font-medium">Competitor Analysis</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-7">Identify and analyze your top competitors by location</p>
               </div>
-              
-              <div className="p-3 bg-white rounded-md border border-primary/5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center">
-                  <div className="rounded-full p-1 bg-primary/5 mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
-                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                    </svg>
-                  </div>
-                  <span className="text-xs font-medium">Deep Content Analysis</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-7">In-depth content review with section-by-section insights</p>
-              </div>
-              
-              <div className="p-3 bg-white rounded-md border border-primary/5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center">
-                  <div className="rounded-full p-1 bg-primary/5 mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary/80">
-                      <path d="M7 10v12"></path>
-                      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56L19 19"></path>
-                      <path d="M2 10h5.3a1 1 0 0 1 .7 1.7L6 14"></path>
-                    </svg>
-                  </div>
-                  <span className="text-xs font-medium">SEO Benchmarking</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-7">Compare your site to industry standards and best practices</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
         
