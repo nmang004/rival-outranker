@@ -3,56 +3,67 @@ import KeywordChart from "@/components/report/KeywordChart";
 import { CheckCircle, XCircle } from "lucide-react";
 
 interface KeywordTabProps {
-  data: KeywordAnalysis;
+  data?: KeywordAnalysis;
 }
 
 export default function KeywordTab({ data }: KeywordTabProps) {
+  // Return placeholder if data is undefined
+  if (!data) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-10">
+          <p className="text-gray-500">Keyword analysis data not available.</p>
+        </div>
+      </div>
+    );
+  }
+
   const keywordElements = [
     { 
       name: "Title Tag", 
-      present: data.titlePresent, 
+      present: data.titlePresent ?? false, 
       analysis: data.titlePresent ? 
         "Primary keyword is present in the title." : 
         "Primary keyword is missing from the title." 
     },
     { 
       name: "Meta Description", 
-      present: data.descriptionPresent, 
+      present: data.descriptionPresent ?? false, 
       analysis: data.descriptionPresent ? 
         "Keyword appears in the meta description." : 
         "Keyword is missing from the meta description." 
     },
     { 
       name: "H1 Heading", 
-      present: data.h1Present, 
+      present: data.h1Present ?? false, 
       analysis: data.h1Present ? 
         "H1 contains the primary keyword." : 
         "H1 does not contain the primary keyword." 
     },
     { 
       name: "H2-H6 Headings", 
-      present: data.headingsPresent, 
+      present: data.headingsPresent ?? false, 
       analysis: data.headingsPresent ? 
         "Found in subheadings." : 
         "Not found in subheadings." 
     },
     { 
       name: "First 100 Words", 
-      present: data.contentPresent, 
+      present: data.contentPresent ?? false, 
       analysis: data.contentPresent ? 
         "Keyword appears in the introduction." : 
         "Keyword missing from the introduction." 
     },
     { 
       name: "URL", 
-      present: data.urlPresent, 
+      present: data.urlPresent ?? false, 
       analysis: data.urlPresent ? 
         "URL contains the target keyword." : 
         "URL does not contain the target keyword." 
     },
     { 
       name: "Image Alt Text", 
-      present: data.altTextPresent, 
+      present: data.altTextPresent ?? false, 
       analysis: data.altTextPresent ? 
         "Images use the keyword in alt text." : 
         "Images don't use the keyword in alt text." 
@@ -63,29 +74,30 @@ export default function KeywordTab({ data }: KeywordTabProps) {
   const generateRecommendations = () => {
     const recommendations = [];
     
-    if (!data.titlePresent) {
+    if (data?.titlePresent === false) {
       recommendations.push("Place the primary keyword at the beginning of your title tag.");
     }
     
-    if (!data.h1Present) {
+    if (data?.h1Present === false) {
       recommendations.push("Include the primary keyword in your H1 heading.");
     }
     
-    if (!data.altTextPresent) {
+    if (data?.altTextPresent === false) {
       recommendations.push("Add alt text to images that includes variations of your target keywords.");
     }
     
-    if (data.density < 0.5) {
+    const density = data?.density ?? 0;
+    if (density < 0.5) {
       recommendations.push("Increase keyword density slightly, but maintain natural language flow.");
-    } else if (data.density > 3) {
+    } else if (density > 3) {
       recommendations.push("Reduce keyword density to avoid keyword stuffing.");
     }
     
-    if (!data.headingsPresent) {
+    if (data?.headingsPresent === false) {
       recommendations.push("Use keywords in your H2 and H3 subheadings.");
     }
     
-    if (!data.contentPresent) {
+    if (data?.contentPresent === false) {
       recommendations.push("Include your primary keyword in the first 100 words of your content.");
     }
     
@@ -102,11 +114,11 @@ export default function KeywordTab({ data }: KeywordTabProps) {
         <div className="flex items-center justify-between">
           <h4 className="text-base font-medium text-gray-900">Keyword Optimization</h4>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            data.overallScore.score >= 70 ? 'bg-blue-100 text-blue-800' : 
-            data.overallScore.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+            (data?.overallScore?.score ?? 0) >= 70 ? 'bg-blue-100 text-blue-800' : 
+            (data?.overallScore?.score ?? 0) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
             'bg-red-100 text-red-800'
           }`}>
-            Score: {data.overallScore.score}/100
+            Score: {data?.overallScore?.score ?? 0}/100
           </span>
         </div>
         <p className="mt-1 text-sm text-gray-500">Analysis of keyword usage and placement throughout the page.</p>
@@ -120,13 +132,13 @@ export default function KeywordTab({ data }: KeywordTabProps) {
             <h5 className="text-sm font-medium text-gray-700 mb-2">Detected Primary Keyword</h5>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
-                {data.primaryKeyword || "No primary keyword detected"}
+                {data?.primaryKeyword || "No primary keyword detected"}
               </span>
             </div>
             <div className="mt-3">
               <h5 className="text-sm font-medium text-gray-700 mb-1">Related Keywords</h5>
               <div className="flex flex-wrap gap-2">
-                {data.relatedKeywords.length > 0 ? (
+                {data?.relatedKeywords && data.relatedKeywords.length > 0 ? (
                   data.relatedKeywords.map((keyword, index) => (
                     <span 
                       key={index} 
@@ -194,7 +206,9 @@ export default function KeywordTab({ data }: KeywordTabProps) {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm text-gray-500">Primary Keyword Density</div>
-                <div className="text-lg font-medium text-gray-900">{data.density.toFixed(1)}%</div>
+                <div className="text-lg font-medium text-gray-900">
+                  {(data?.density ?? 0).toFixed(1)}%
+                </div>
               </div>
               <div>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -218,9 +232,9 @@ export default function KeywordTab({ data }: KeywordTabProps) {
             </div>
             <div className="chart-container h-36">
               <KeywordChart 
-                keywords={data.relatedKeywords.length > 0 ? 
-                  [data.primaryKeyword, ...data.relatedKeywords.slice(0, 5)] : 
-                  [data.primaryKeyword, "No related keywords"]
+                keywords={data?.relatedKeywords && data.relatedKeywords.length > 0 ? 
+                  [data.primaryKeyword || 'Primary Keyword', ...data.relatedKeywords.slice(0, 5)] : 
+                  [data?.primaryKeyword || 'Primary Keyword', "No related keywords"]
                 } 
               />
             </div>
