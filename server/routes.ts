@@ -154,6 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const url = req.query.url as string;
       const keyword = req.query.keyword as string;
+      const location = req.query.location as string || 'United States';
       
       if (!url) {
         return res.status(400).json({ error: "URL parameter is required" });
@@ -163,8 +164,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Keyword parameter is required" });
       }
       
-      // Get competitor analysis
-      const competitorAnalysis = await competitorAnalyzer.analyzeCompetitors(url, keyword);
+      console.log(`Analyzing competitors for URL: ${url}, Keyword: ${keyword}, Location: ${location}`);
+      
+      // Get competitor analysis with location
+      const competitorAnalysis = await competitorAnalyzer.analyzeCompetitors(url, keyword, location);
       
       return res.json(competitorAnalysis);
     } catch (error) {
