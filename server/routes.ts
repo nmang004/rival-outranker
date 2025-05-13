@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { crawler } from "./services/crawler";
 import { analyzer } from "./services/analyzer";
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
+import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -173,6 +174,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error performing competitor analysis:", error);
       res.status(500).json({ error: "Failed to analyze competitors" });
+    }
+  });
+  
+  // API endpoint for deep content analysis
+  app.get("/api/deep-content", async (req: Request, res: Response) => {
+    try {
+      const url = req.query.url as string;
+      
+      if (!url) {
+        return res.status(400).json({ error: "URL parameter is required" });
+      }
+      
+      // Crawl the webpage if needed
+      console.log(`Performing deep content analysis for URL: ${url}`);
+      
+      try {
+        // Crawl the page
+        const pageData = await crawler.crawlPage(url);
+        
+        // Extract primary keyword first
+        const keywordAnalysisResult = await analyzer.analyzePage(url, pageData);
+        const primaryKeyword = keywordAnalysisResult.keywordAnalysis.primaryKeyword;
+        
+        // Perform deep content analysis
+        const deepAnalysisResult = await deepContentAnalyzer.analyzeContent(pageData, primaryKeyword);
+        
+        return res.json(deepAnalysisResult);
+      } catch (analysisError) {
+        console.error("Error during deep content analysis:", analysisError);
+        return res.status(500).json({ error: "Failed to perform deep content analysis" });
+      }
+    } catch (error) {
+      console.error("Error in deep content analysis request:", error);
+      res.status(500).json({ error: "Failed to analyze content" });
     }
   });
 

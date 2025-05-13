@@ -6,6 +6,7 @@ import ContentTab from "./ContentTab";
 import TechnicalTab from "./TechnicalTab";
 import UXTab from "./UXTab";
 import CompetitorAnalysis from "./CompetitorAnalysis";
+import DeepContentAnalysis from "./DeepContentAnalysis";
 import { SeoAnalysisResult } from "@shared/schema";
 
 interface AssessmentTabsProps {
@@ -61,6 +62,12 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
             >
               Competitor Analysis
             </TabsTrigger>
+            <TabsTrigger 
+              value="deep-content" 
+              className="px-1 py-4 data-[state=active]:border-primary-500 data-[state=active]:text-primary-600 data-[state=active]:shadow-none rounded-none border-b-2 data-[state=inactive]:border-transparent data-[state=inactive]:text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            >
+              Deep Content Analysis
+            </TabsTrigger>
           </TabsList>
         </div>
         
@@ -101,6 +108,12 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
               url={data.url} 
               keyword={data.keywordAnalysis.primaryKeyword} 
             />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="deep-content" className="p-0 mt-0">
+          <div className="p-4 sm:p-6">
+            <DeepContentAnalysis url={data.url} />
           </div>
         </TabsContent>
       </Tabs>
