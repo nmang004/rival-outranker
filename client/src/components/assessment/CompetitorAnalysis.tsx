@@ -16,31 +16,210 @@ interface CompetitorAnalysisProps {
 }
 
 // Default locations for geo-based competitor analysis
-const LOCATIONS = [
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Germany",
-  "France",
-  "Spain",
-  "Italy",
-  "Japan",
-  "India",
-  "Brazil",
-  "Mexico"
-];
+// Organized by country with major cities
+const GEO_DATA = {
+  "United States": [
+    "New York",
+    "Los Angeles",
+    "Chicago", 
+    "Houston",
+    "Phoenix",
+    "Philadelphia",
+    "San Antonio",
+    "San Diego",
+    "Dallas",
+    "San Francisco",
+    "Seattle",
+    "Denver",
+    "Washington DC",
+    "Boston",
+    "Austin",
+    "Miami",
+    "Atlanta",
+    "Las Vegas"
+  ],
+  "United Kingdom": [
+    "London",
+    "Manchester",
+    "Birmingham",
+    "Glasgow",
+    "Liverpool",
+    "Edinburgh",
+    "Leeds",
+    "Bristol",
+    "Sheffield",
+    "Newcastle",
+    "Cardiff"
+  ],
+  "Canada": [
+    "Toronto",
+    "Montreal",
+    "Vancouver", 
+    "Calgary",
+    "Edmonton",
+    "Ottawa",
+    "Quebec City",
+    "Winnipeg",
+    "Halifax"
+  ],
+  "Australia": [
+    "Sydney",
+    "Melbourne",
+    "Brisbane",
+    "Perth",
+    "Adelaide",
+    "Gold Coast",
+    "Canberra",
+    "Newcastle"
+  ],
+  "Germany": [
+    "Berlin",
+    "Hamburg",
+    "Munich",
+    "Cologne",
+    "Frankfurt",
+    "Stuttgart",
+    "Düsseldorf",
+    "Leipzig",
+    "Dortmund"
+  ],
+  "France": [
+    "Paris",
+    "Marseille",
+    "Lyon",
+    "Toulouse",
+    "Nice",
+    "Nantes",
+    "Strasbourg",
+    "Bordeaux"
+  ],
+  "Spain": [
+    "Madrid",
+    "Barcelona",
+    "Valencia",
+    "Seville",
+    "Zaragoza",
+    "Malaga",
+    "Bilbao"
+  ],
+  "Italy": [
+    "Rome",
+    "Milan",
+    "Naples",
+    "Turin",
+    "Palermo",
+    "Bologna",
+    "Florence",
+    "Venice"
+  ],
+  "Japan": [
+    "Tokyo",
+    "Osaka",
+    "Yokohama",
+    "Nagoya",
+    "Sapporo",
+    "Fukuoka",
+    "Kobe",
+    "Kyoto"
+  ],
+  "India": [
+    "Mumbai",
+    "Delhi",
+    "Bangalore",
+    "Hyderabad",
+    "Chennai",
+    "Kolkata",
+    "Pune",
+    "Ahmedabad",
+    "Jaipur"
+  ],
+  "Brazil": [
+    "São Paulo",
+    "Rio de Janeiro",
+    "Brasília",
+    "Salvador",
+    "Fortaleza",
+    "Belo Horizonte",
+    "Manaus",
+    "Curitiba"
+  ],
+  "Mexico": [
+    "Mexico City",
+    "Guadalajara",
+    "Monterrey",
+    "Puebla",
+    "Tijuana",
+    "León",
+    "Juárez",
+    "Cancún"
+  ],
+  "China": [
+    "Shanghai",
+    "Beijing",
+    "Guangzhou",
+    "Shenzhen",
+    "Chengdu",
+    "Tianjin",
+    "Wuhan",
+    "Hangzhou"
+  ],
+  "South Korea": [
+    "Seoul",
+    "Busan",
+    "Incheon",
+    "Daegu",
+    "Daejeon",
+    "Gwangju"
+  ],
+  "Netherlands": [
+    "Amsterdam",
+    "Rotterdam",
+    "Utrecht",
+    "The Hague",
+    "Eindhoven"
+  ],
+  "South Africa": [
+    "Johannesburg",
+    "Cape Town",
+    "Durban",
+    "Pretoria",
+    "Port Elizabeth"
+  ],
+  "United Arab Emirates": [
+    "Dubai",
+    "Abu Dhabi",
+    "Sharjah",
+    "Ajman"
+  ],
+  "Singapore": ["Singapore"]
+};
+
+// Get flat list of all countries for initial dropdown
+const COUNTRIES = Object.keys(GEO_DATA);
 
 export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisProps) {
-  const [location, setLocation] = useState("United States");
+  const [country, setCountry] = useState("United States");
+  const [city, setCity] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Generate the full location string (country or city + country)
+  const fullLocation = city ? `${city}, ${country}` : country;
+
+  // Cities available for the selected country
+  const availableCities = GEO_DATA[country] || [];
 
   // Fetch competitor analysis data
   const { data, isLoading, isError, refetch } = useQuery<any>({
-    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&keyword=${encodeURIComponent(keyword)}&location=${encodeURIComponent(location)}`],
+    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&keyword=${encodeURIComponent(keyword)}&location=${encodeURIComponent(fullLocation)}`],
     enabled: isAnalyzing,
     refetchOnWindowFocus: false
   });
+
+  // Reset city when country changes
+  const handleCountryChange = (newCountry: string) => {
+    setCountry(newCountry);
+    setCity("");
+  };
 
   const handleAnalyze = () => {
     setIsAnalyzing(true);
@@ -66,29 +245,50 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
               <h4 className="font-medium mb-2">Primary Keyword: <Badge className="bg-primary/20 text-primary hover:bg-primary/30">{keyword}</Badge></h4>
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="location" className="text-sm font-medium">
-                Select Location:
-              </label>
-              <Select defaultValue={location} onValueChange={setLocation}>
-                <SelectTrigger id="location" className="w-full">
-                  <SelectValue placeholder="Select a location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LOCATIONS.map((loc) => (
-                    <SelectItem key={loc} value={loc}>
-                      {loc}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="country" className="text-sm font-medium">
+                  Select Country:
+                </label>
+                <Select defaultValue={country} onValueChange={handleCountryChange}>
+                  <SelectTrigger id="country" className="w-full">
+                    <SelectValue placeholder="Select a country" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {COUNTRIES.map((countryName) => (
+                      <SelectItem key={countryName} value={countryName}>
+                        {countryName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label htmlFor="city" className="text-sm font-medium">
+                  Select City (Optional):
+                </label>
+                <Select value={city} onValueChange={setCity}>
+                  <SelectTrigger id="city" className="w-full">
+                    <SelectValue placeholder={`All cities in ${country}`} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    <SelectItem value="">All cities in {country}</SelectItem>
+                    {availableCities.map((cityName) => (
+                      <SelectItem key={cityName} value={cityName}>
+                        {cityName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
               <Button
                 onClick={handleAnalyze}
                 className="w-full mt-4 sage-bg-gradient hover:opacity-90 transition-opacity"
               >
                 <Globe className="mr-2 h-4 w-4" />
-                Analyze Competitors in {location}
+                Analyze Competitors in {fullLocation}
               </Button>
             </div>
           </div>
@@ -98,7 +298,7 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
   }
 
   if (isLoading) {
-    return <CompetitorAnalysisLoading location={location} />;
+    return <CompetitorAnalysisLoading location={fullLocation} />;
   }
 
   if (isError || !data) {
@@ -130,10 +330,10 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
       <CardHeader>
         <CardTitle className="text-xl flex items-center">
           <Globe className="mr-2 h-5 w-5 text-primary" />
-          Competitor Analysis: {location}
+          Competitor Analysis: {fullLocation}
         </CardTitle>
         <CardDescription>
-          Top competitors for keyword "{keyword}" in {location}
+          Top competitors for keyword "{keyword}" in {fullLocation}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
