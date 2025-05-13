@@ -44,9 +44,19 @@ export default function NavBar() {
                   Dashboard
                 </div>
               </Link>
+              <Link href="/deep-content">
+                <div className={linkClass("/deep-content")}>
+                  Deep Content
+                </div>
+              </Link>
+              <Link href="/competitor-analysis">
+                <div className={linkClass("/competitor-analysis")}>
+                  Competitors
+                </div>
+              </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
-                  Analysis History
+                  History
                 </div>
               </Link>
             </div>
@@ -135,6 +145,16 @@ export default function NavBar() {
           <Link href="/">
             <div className={mobileLinkClass("/")}>
               Dashboard
+            </div>
+          </Link>
+          <Link href="/deep-content">
+            <div className={mobileLinkClass("/deep-content")}>
+              Deep Content Analysis
+            </div>
+          </Link>
+          <Link href="/competitor-analysis">
+            <div className={mobileLinkClass("/competitor-analysis")}>
+              Competitor Analysis
             </div>
           </Link>
           <Link href="/history">

@@ -6,6 +6,10 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import ResultsPage from "@/pages/ResultsPage";
 import History from "@/pages/History";
+import DeepContentAnalysisPage from "@/pages/DeepContentAnalysisPage";
+import DeepContentResultsPage from "@/pages/DeepContentResultsPage";
+import CompetitorAnalysisPage from "@/pages/CompetitorAnalysisPage";
+import CompetitorResultsPage from "@/pages/CompetitorResultsPage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 
@@ -19,6 +23,10 @@ function Router() {
             <Route path="/" component={Home} />
             <Route path="/results" component={ResultsPage} />
             <Route path="/history" component={History} />
+            <Route path="/deep-content" component={DeepContentAnalysisPage} />
+            <Route path="/deep-content-results" component={DeepContentResultsPage} />
+            <Route path="/competitor-analysis" component={CompetitorAnalysisPage} />
+            <Route path="/competitor-results" component={CompetitorResultsPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
