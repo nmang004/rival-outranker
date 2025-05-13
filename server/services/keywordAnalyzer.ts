@@ -265,7 +265,7 @@ class KeywordAnalyzer {
       }
       
       // Higher weight based on frequency in content
-      const contentFrequency = this.countKeywordOccurrences(contentText, keyword);
+      const contentFrequency = this.countSingleKeywordOccurrences(contentText, keyword);
       weight += contentFrequency;
       
       // Store the weighted value
@@ -276,18 +276,29 @@ class KeywordAnalyzer {
   }
 
   /**
-   * Count occurrences of a keyword in text
+   * Count occurrences of a single keyword in text
    */
-  private countKeywordOccurrences(text: string, keyword: string): number {
-    const regex = new RegExp(`\\b${this.escapeRegExp(keyword)}\\b`, 'gi');
-    const matches = text.match(regex);
-    return matches ? matches.length : 0;
+  private countSingleKeywordOccurrences(text: string, keyword: string): number {
+    if (!text || !keyword) return 0;
+    
+    try {
+      const escapedKeyword = this.escapeRegExp(keyword);
+      if (!escapedKeyword) return 0;
+      
+      const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'gi');
+      const matches = text.match(regex);
+      return matches ? matches.length : 0;
+    } catch (error) {
+      console.error('Error counting keyword occurrences:', error);
+      return 0;
+    }
   }
 
   /**
    * Escape special characters for use in RegExp
    */
   private escapeRegExp(string: string): string {
+    if (!string || typeof string !== 'string') return '';
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
@@ -363,7 +374,7 @@ class KeywordAnalyzer {
     const words = content.split(/\s+/).length;
     if (words === 0) return 0;
     
-    const keywordOccurrences = this.countKeywordOccurrences(content, keyword);
+    const keywordOccurrences = this.countSingleKeywordOccurrences(content, keyword);
     
     // Keyword density as a percentage
     return (keywordOccurrences / words) * 100;
