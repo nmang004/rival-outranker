@@ -138,11 +138,11 @@ export default function Home() {
   return (
     <div className="bg-gradient-to-b from-white to-muted/20">
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-20 sm:px-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent">
+      <div className="max-w-7xl mx-auto px-6 pt-10 pb-16 sm:px-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent">
           SEO Best Practices Assessment
         </h1>
-        <h2 className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+        <h2 className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto">
           Analyze your website's SEO performance and get actionable recommendations to improve your rankings
         </h2>
         
