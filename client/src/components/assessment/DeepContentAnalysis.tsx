@@ -185,13 +185,202 @@ export default function DeepContentAnalysis({ url }: DeepContentAnalysisProps) {
         </div>
         
         {/* Tabs for different analysis aspects */}
-        <Tabs defaultValue="structure" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-4">
+        <Tabs defaultValue="annotated" className="w-full">
+          <TabsList className="grid grid-cols-5 mb-4">
+            <TabsTrigger value="annotated">Annotated Content</TabsTrigger>
             <TabsTrigger value="structure">Structure</TabsTrigger>
             <TabsTrigger value="readability">Readability</TabsTrigger>
             <TabsTrigger value="semantics">Semantics</TabsTrigger>
             <TabsTrigger value="engagement">Engagement</TabsTrigger>
           </TabsList>
+          
+          {/* Annotated Content Tab */}
+          <TabsContent value="annotated" className="space-y-4">
+            <div className="mb-4">
+              <h3 className="text-xl font-medium mb-2">{data.annotatedContent.title}</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Review your content with our suggestions for improvement. Each annotation highlights specific issues and provides actionable recommendations.
+              </p>
+            </div>
+            
+            {/* Introduction Section */}
+            <div className="border rounded-lg p-4 bg-white">
+              <h4 className="text-lg font-medium mb-2 flex items-center">
+                <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                Introduction
+              </h4>
+              <div className="relative mt-2 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
+                <p className="whitespace-pre-line">{data.annotatedContent.introduction.content}</p>
+              </div>
+              
+              {data.annotatedContent.introduction.annotations.length > 0 ? (
+                <div className="mt-3 space-y-3">
+                  <h5 className="text-sm font-medium">Suggested Improvements:</h5>
+                  {data.annotatedContent.introduction.annotations.map((annotation, index) => (
+                    <div key={index} className="border-l-2 pl-3 py-1 text-sm" 
+                      style={{ 
+                        borderColor: annotation.severity === 'high' ? '#ef4444' : 
+                                    annotation.severity === 'medium' ? '#f97316' : '#84cc16'
+                      }}
+                    >
+                      <div className="flex items-start">
+                        <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
+                          annotation.severity === 'high' ? 'bg-red-500' : 
+                          annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
+                        }`}>
+                          {annotation.severity}
+                        </span>
+                        <p className="font-medium">{annotation.issue}</p>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 text-sm flex items-center text-green-600">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Your introduction looks good! No issues found.
+                </div>
+              )}
+            </div>
+            
+            {/* Main Content Sections */}
+            {data.annotatedContent.mainContent.map((section, idx) => (
+              <div key={idx} className="border rounded-lg p-4 bg-white">
+                <h4 className="text-base font-medium mb-2 flex items-center">
+                  <AlignJustify className="h-4 w-4 mr-2 text-primary" />
+                  Content Section {idx + 1}
+                </h4>
+                <div className="relative mt-2 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
+                  <p className="whitespace-pre-line">{section.content}</p>
+                </div>
+                
+                {section.annotations.length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    <h5 className="text-sm font-medium">Suggested Improvements:</h5>
+                    {section.annotations.map((annotation, index) => (
+                      <div key={index} className="border-l-2 pl-3 py-1 text-sm"
+                        style={{ 
+                          borderColor: annotation.severity === 'high' ? '#ef4444' : 
+                                      annotation.severity === 'medium' ? '#f97316' : '#84cc16'
+                        }}
+                      >
+                        <div className="flex items-start">
+                          <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
+                            annotation.severity === 'high' ? 'bg-red-500' : 
+                            annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
+                          }`}>
+                            {annotation.severity}
+                          </span>
+                          <p className="font-medium">{annotation.issue}</p>
+                        </div>
+                        <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 text-sm flex items-center text-green-600">
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    This section looks good! No issues found.
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            {/* Conclusion Section */}
+            <div className="border rounded-lg p-4 bg-white">
+              <h4 className="text-lg font-medium mb-2 flex items-center">
+                <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                Conclusion
+              </h4>
+              <div className="relative mt-2 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
+                <p className="whitespace-pre-line">{data.annotatedContent.conclusion.content}</p>
+              </div>
+              
+              {data.annotatedContent.conclusion.annotations.length > 0 ? (
+                <div className="mt-3 space-y-3">
+                  <h5 className="text-sm font-medium">Suggested Improvements:</h5>
+                  {data.annotatedContent.conclusion.annotations.map((annotation, index) => (
+                    <div key={index} className="border-l-2 pl-3 py-1 text-sm"
+                      style={{ 
+                        borderColor: annotation.severity === 'high' ? '#ef4444' : 
+                                    annotation.severity === 'medium' ? '#f97316' : '#84cc16'
+                      }}
+                    >
+                      <div className="flex items-start">
+                        <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
+                          annotation.severity === 'high' ? 'bg-red-500' : 
+                          annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
+                        }`}>
+                          {annotation.severity}
+                        </span>
+                        <p className="font-medium">{annotation.issue}</p>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 text-sm flex items-center text-green-600">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Your conclusion looks good! No issues found.
+                </div>
+              )}
+            </div>
+            
+            <div className="rounded-lg p-4 bg-white border border-slate-200 mt-4">
+              <h4 className="text-sm font-medium mb-2 flex items-center">
+                <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                Content Type Breakdown
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <div className="bg-slate-50 p-2 rounded">
+                  <div className="flex items-center">
+                    <span className="bg-red-100 text-red-800 px-1.5 py-0.5 rounded mr-1.5">
+                      {data.annotatedContent.introduction.annotations.filter(a => a.type === 'structure').length +
+                       data.annotatedContent.mainContent.reduce((sum, section) => 
+                          sum + section.annotations.filter(a => a.type === 'structure').length, 0) +
+                       data.annotatedContent.conclusion.annotations.filter(a => a.type === 'structure').length}
+                    </span>
+                    <span>Structure Issues</span>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <div className="flex items-center">
+                    <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded mr-1.5">
+                      {data.annotatedContent.introduction.annotations.filter(a => a.type === 'readability').length +
+                       data.annotatedContent.mainContent.reduce((sum, section) => 
+                          sum + section.annotations.filter(a => a.type === 'readability').length, 0) +
+                       data.annotatedContent.conclusion.annotations.filter(a => a.type === 'readability').length}
+                    </span>
+                    <span>Readability Issues</span>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <div className="flex items-center">
+                    <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded mr-1.5">
+                      {data.annotatedContent.introduction.annotations.filter(a => a.type === 'semantics').length +
+                       data.annotatedContent.mainContent.reduce((sum, section) => 
+                          sum + section.annotations.filter(a => a.type === 'semantics').length, 0) +
+                       data.annotatedContent.conclusion.annotations.filter(a => a.type === 'semantics').length}
+                    </span>
+                    <span>Semantic Issues</span>
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-2 rounded">
+                  <div className="flex items-center">
+                    <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded mr-1.5">
+                      {data.annotatedContent.introduction.annotations.filter(a => a.type === 'engagement').length +
+                       data.annotatedContent.mainContent.reduce((sum, section) => 
+                          sum + section.annotations.filter(a => a.type === 'engagement').length, 0) +
+                       data.annotatedContent.conclusion.annotations.filter(a => a.type === 'engagement').length}
+                    </span>
+                    <span>Engagement Issues</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
           
           {/* Content Structure Tab */}
           <TabsContent value="structure" className="space-y-4">

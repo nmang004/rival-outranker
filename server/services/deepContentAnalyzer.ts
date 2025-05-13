@@ -96,6 +96,20 @@ interface ContentEngagementMetrics {
   };
 }
 
+interface ContentAnnotation {
+  content: string;
+  issue: string;
+  suggestion: string;
+  position: number;
+  severity: 'high' | 'medium' | 'low';
+  type: 'structure' | 'readability' | 'semantics' | 'engagement';
+}
+
+interface AnnotatedContentSection {
+  content: string;
+  annotations: ContentAnnotation[];
+}
+
 interface DeepContentAnalysisResult {
   overallScore: {
     score: number;
@@ -106,6 +120,12 @@ interface DeepContentAnalysisResult {
   semanticRelevance: SemanticRelevanceMetrics;
   engagement: ContentEngagementMetrics;
   recommendations: string[];
+  annotatedContent: {
+    title: string;
+    introduction: AnnotatedContentSection;
+    mainContent: AnnotatedContentSection[];
+    conclusion: AnnotatedContentSection;
+  };
 }
 
 class DeepContentAnalyzer {
@@ -147,13 +167,25 @@ class DeepContentAnalyzer {
         engagementMetrics
       );
       
+      // 7. Create annotated content sections
+      const annotatedContent = this.createAnnotatedContent(
+        $, 
+        pageData, 
+        primaryKeyword,
+        structureMetrics,
+        readabilityMetrics,
+        semanticMetrics,
+        engagementMetrics
+      );
+      
       return {
         overallScore,
         structure: structureMetrics,
         readability: readabilityMetrics,
         semanticRelevance: semanticMetrics,
         engagement: engagementMetrics,
-        recommendations
+        recommendations,
+        annotatedContent
       };
     } catch (error) {
       console.error('Error in deep content analysis:', error);
@@ -1389,8 +1421,260 @@ class DeepContentAnalyzer {
       },
       recommendations: [
         "Unable to perform deep content analysis. Please try again."
-      ]
+      ],
+      annotatedContent: {
+        title: "Unable to analyze",
+        introduction: {
+          content: "Content analysis failed",
+          annotations: []
+        },
+        mainContent: [],
+        conclusion: {
+          content: "Content analysis failed",
+          annotations: []
+        }
+      }
     };
+  }
+  
+  /**
+   * Create annotated content with improvement suggestions
+   */
+  private createAnnotatedContent(
+    $: cheerio.CheerioAPI,
+    pageData: CrawlerOutput,
+    primaryKeyword: string,
+    structureMetrics: ContentStructureMetrics,
+    readabilityMetrics: ReadabilityMetrics,
+    semanticMetrics: SemanticRelevanceMetrics,
+    engagementMetrics: ContentEngagementMetrics
+  ): DeepContentAnalysisResult['annotatedContent'] {
+    try {
+      // Get page title
+      const title = pageData.title || 'Untitled Page';
+      
+      // Extract the content sections (introduction, main content, conclusion)
+      const paragraphs = $('p').toArray();
+      const paragraphTexts = paragraphs.map(p => $(p).text().trim()).filter(text => text.length > 0);
+      
+      if (paragraphTexts.length === 0) {
+        return {
+          title,
+          introduction: { content: "No content found", annotations: [] },
+          mainContent: [],
+          conclusion: { content: "No content found", annotations: [] }
+        };
+      }
+      
+      // Identify introduction (first paragraph or two)
+      const introductionText = paragraphTexts.slice(0, Math.min(2, paragraphTexts.length)).join('\n\n');
+      const introAnnotations: ContentAnnotation[] = [];
+      
+      // Check if introduction mentions the primary keyword
+      if (!this.textContainsKeyword(introductionText, primaryKeyword)) {
+        introAnnotations.push({
+          content: introductionText,
+          issue: 'Primary keyword missing from introduction',
+          suggestion: `Consider adding the primary keyword "${primaryKeyword}" early in your introduction to establish relevance.`,
+          position: 0,
+          severity: 'high',
+          type: 'semantics'
+        });
+      }
+      
+      // Check introduction length
+      if (introductionText.split(' ').length < 30) {
+        introAnnotations.push({
+          content: introductionText,
+          issue: 'Introduction too short',
+          suggestion: 'Expand your introduction to provide more context and engage readers from the start.',
+          position: 0,
+          severity: 'medium',
+          type: 'structure'
+        });
+      }
+      
+      // Process main content (middle paragraphs)
+      const mainContentTexts = paragraphTexts.slice(
+        Math.min(2, paragraphTexts.length), 
+        Math.max(2, paragraphTexts.length - 1)
+      );
+      
+      const mainContent: AnnotatedContentSection[] = mainContentTexts.map((text, index) => {
+        const annotations: ContentAnnotation[] = [];
+        
+        // Check paragraph length
+        const wordCount = text.split(' ').length;
+        if (wordCount > 150) {
+          annotations.push({
+            content: text,
+            issue: 'Paragraph too long',
+            suggestion: 'Break this paragraph into smaller, more digestible chunks of 3-5 sentences each.',
+            position: 0,
+            severity: 'medium',
+            type: 'readability'
+          });
+        }
+        
+        // Check sentence complexity
+        const avgWordPerSentence = this.estimateAvgWordsPerSentence(text);
+        if (avgWordPerSentence > 25) {
+          annotations.push({
+            content: text,
+            issue: 'Complex sentences',
+            suggestion: 'Simplify your sentences by breaking long ones into shorter statements. Aim for 15-20 words per sentence.',
+            position: 0,
+            severity: 'medium',
+            type: 'readability'
+          });
+        }
+        
+        // Check for passive voice (simple detection)
+        if (this.hasPassiveVoice(text)) {
+          annotations.push({
+            content: text,
+            issue: 'Passive voice detected',
+            suggestion: 'Convert passive voice to active voice for more engaging and direct content.',
+            position: 0,
+            severity: 'low',
+            type: 'engagement'
+          });
+        }
+        
+        // Check keyword density in paragraph
+        if (this.textContainsKeyword(text, primaryKeyword)) {
+          const keywordDensity = this.calculateKeywordDensity(text, primaryKeyword);
+          if (keywordDensity > 5) {
+            annotations.push({
+              content: text,
+              issue: 'Keyword stuffing',
+              suggestion: `Reduce usage of "${primaryKeyword}" as it appears excessive. Aim for natural inclusion.`,
+              position: 0,
+              severity: 'high',
+              type: 'semantics'
+            });
+          }
+        }
+        
+        return {
+          content: text,
+          annotations
+        };
+      });
+      
+      // Identify conclusion (last paragraph)
+      const conclusionText = paragraphTexts.slice(-1)[0];
+      const conclusionAnnotations: ContentAnnotation[] = [];
+      
+      // Check if conclusion has a call-to-action
+      if (!this.hasCTA(conclusionText)) {
+        conclusionAnnotations.push({
+          content: conclusionText,
+          issue: 'Missing call-to-action',
+          suggestion: 'Add a clear call-to-action to guide readers on next steps after reading your content.',
+          position: 0,
+          severity: 'medium',
+          type: 'engagement'
+        });
+      }
+      
+      // Check if conclusion summarizes key points
+      if (conclusionText.split(' ').length < 40) {
+        conclusionAnnotations.push({
+          content: conclusionText,
+          issue: 'Conclusion too brief',
+          suggestion: 'Expand your conclusion to summarize key points and reinforce your main message.',
+          position: 0,
+          severity: 'medium',
+          type: 'structure'
+        });
+      }
+      
+      return {
+        title,
+        introduction: {
+          content: introductionText,
+          annotations: introAnnotations
+        },
+        mainContent,
+        conclusion: {
+          content: conclusionText,
+          annotations: conclusionAnnotations
+        }
+      };
+    } catch (error) {
+      console.error('Error creating annotated content:', error);
+      return {
+        title: pageData.title || 'Untitled Page',
+        introduction: { content: "Error analyzing content", annotations: [] },
+        mainContent: [],
+        conclusion: { content: "Error analyzing content", annotations: [] }
+      };
+    }
+  }
+  
+  /**
+   * Check if text contains a keyword (case insensitive)
+   */
+  private textContainsKeyword(text: string, keyword: string): boolean {
+    return text.toLowerCase().includes(keyword.toLowerCase());
+  }
+  
+  /**
+   * Calculate keyword density in text
+   */
+  private calculateKeywordDensity(text: string, keyword: string): number {
+    const words = text.split(/\s+/);
+    const keywordRegex = new RegExp(keyword, 'gi');
+    const keywordCount = (text.match(keywordRegex) || []).length;
+    
+    return (keywordCount / words.length) * 100;
+  }
+  
+  /**
+   * Simple check for passive voice markers
+   */
+  private hasPassiveVoice(text: string): boolean {
+    const passiveMarkers = [
+      ' is ', ' are ', ' was ', ' were ', ' be ', ' been ', ' being ',
+      ' has been ', ' have been ', ' had been ', ' will be ', ' will have been '
+    ];
+    
+    return passiveMarkers.some(marker => text.includes(marker) && 
+      text.includes(marker + 'made') ||
+      text.includes(marker + 'done') ||
+      text.includes(marker + 'created') ||
+      text.includes(marker + 'built') ||
+      text.includes(marker + 'written') ||
+      text.includes(marker + 'seen') ||
+      text.includes(marker + 'found') ||
+      text.includes(marker + 'given')
+    );
+  }
+  
+  /**
+   * Check if text includes a call-to-action
+   */
+  private hasCTA(text: string): boolean {
+    const ctaMarkers = [
+      'call ', 'contact', 'sign up', 'signup', 'register', 'subscribe',
+      'download', 'learn more', 'click', 'buy', 'purchase', 'order', 'shop',
+      'visit', 'check out', 'discover', 'try', 'get started', 'join', 'read more'
+    ];
+    
+    return ctaMarkers.some(marker => text.toLowerCase().includes(marker));
+  }
+  
+  /**
+   * Estimate average words per sentence in text
+   */
+  private estimateAvgWordsPerSentence(text: string): number {
+    // Split by sentence-ending punctuation
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    if (sentences.length === 0) return 0;
+    
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    return words.length / sentences.length;
   }
 }
 
