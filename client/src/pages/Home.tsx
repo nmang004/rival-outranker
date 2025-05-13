@@ -6,6 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { urlFormSchema } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -13,6 +14,7 @@ export default function Home() {
   const [formUrl, setFormUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
 
   const analyzeMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -41,6 +43,8 @@ export default function Home() {
   const pollForResults = async (url: string) => {
     let attempts = 0;
     const maxAttempts = 30; // 30 seconds
+    const minWaitTime = 5; // Minimum wait time in seconds to show analysis progress
+    const startTime = Date.now();
     
     const checkResults = async () => {
       try {
@@ -51,6 +55,16 @@ export default function Home() {
           
           // Check if the result has actual analysis data
           if (result && typeof result.overallScore === 'number' && result.results) {
+            // Calculate elapsed time since we started polling
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            
+            // If we haven't waited the minimum time, don't redirect yet
+            if (elapsedSeconds < minWaitTime) {
+              console.log(`Results ready but waiting for minimum display time (${elapsedSeconds}/${minWaitTime}s)`);
+              return false; // Keep polling until minimum time elapsed
+            }
+            
+            // Minimum wait time elapsed, redirect to results
             setLocation(`/results?url=${encodeURIComponent(url)}`);
             return true;
           }
@@ -66,9 +80,18 @@ export default function Home() {
     const poll = async () => {
       attempts++;
       
+      // Update the progress percentage based on the minimum wait time
+      // Progress goes from 0 to 90% during the minimum wait period
+      // The last 10% is reserved for when actual results come in
+      const progressPerAttempt = 90 / minWaitTime;
+      const newProgress = Math.min(90, progressPerAttempt * attempts);
+      setAnalysisProgress(newProgress);
+      
       const hasResults = await checkResults();
       
       if (hasResults) {
+        // Set to 100% when complete
+        setAnalysisProgress(100);
         return;
       }
       
@@ -78,6 +101,7 @@ export default function Home() {
         // If max attempts reached, show error state instead of redirecting
         setError("Analysis timed out. Please try again.");
         setIsSubmitting(false);
+        setAnalysisProgress(0);
         
         toast({
           title: "Analysis timed out",
@@ -94,6 +118,7 @@ export default function Home() {
     setFormUrl(url);
     setError(null);
     setIsSubmitting(true);
+    setAnalysisProgress(0); // Reset progress bar
     
     // Validate URL
     try {
@@ -101,6 +126,7 @@ export default function Home() {
       analyzeMutation.mutate(url);
     } catch (error) {
       setIsSubmitting(false);
+      setAnalysisProgress(0);
       toast({
         title: "Invalid URL",
         description: "Please enter a valid URL including http:// or https://",
@@ -125,7 +151,19 @@ export default function Home() {
           <div className="mt-4 p-4 bg-blue-50 rounded-md">
             <div className="flex items-center">
               <Loader2 className="h-5 w-5 text-blue-500 animate-spin mr-2" />
-              <p className="text-blue-700">Analyzing your website. This may take up to 30 seconds...</p>
+              <div className="w-full">
+                <p className="text-blue-700 font-medium">Analyzing your website...</p>
+                <p className="text-blue-600 text-sm mt-1 mb-2">
+                  We're checking various SEO factors including keywords, meta tags, content quality, 
+                  mobile optimization, and technical performance. Please wait.
+                </p>
+                <div className="w-full">
+                  <Progress value={analysisProgress} className="h-2" />
+                  <p className="text-xs text-right mt-1 text-blue-600">
+                    {analysisProgress < 100 ? "Analyzing..." : "Analysis complete!"}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
