@@ -26,15 +26,28 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
     }
   }, [initialUrl]);
   
+  // Helper function to normalize URLs
+  const normalizeUrl = (url: string): string => {
+    // Clean up URL string - remove extra spaces
+    url = url.trim();
+
+    // Handle double protocol issues (e.g., https://https://)
+    url = url.replace(/^(https?:\/\/)+/i, '$1');
+    
+    // Add protocol if missing
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    return url;
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
     if (multipleMode && urls.length > 0) {
       // Submit the first URL in the list
-      let urlToSubmit = urls[0].trim();
-      if (urlToSubmit && !urlToSubmit.startsWith('http://') && !urlToSubmit.startsWith('https://')) {
-        urlToSubmit = 'https://' + urlToSubmit;
-      }
+      let urlToSubmit = normalizeUrl(urls[0]);
       
       // Remove the first URL from the list
       setUrls(urls.slice(1));
@@ -48,10 +61,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
         
         if (splitUrls.length > 0) {
           // Process and submit the first URL
-          let urlToSubmit = splitUrls[0];
-          if (urlToSubmit && !urlToSubmit.startsWith('http://') && !urlToSubmit.startsWith('https://')) {
-            urlToSubmit = 'https://' + urlToSubmit;
-          }
+          let urlToSubmit = normalizeUrl(splitUrls[0]);
           
           // Store the rest for later processing
           setUrls(prevUrls => [...prevUrls, ...splitUrls.slice(1)]);
@@ -65,12 +75,10 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
       }
       
       // Handle single URL case
-      let urlToSubmit = url.trim();
-      if (urlToSubmit && !urlToSubmit.startsWith('http://') && !urlToSubmit.startsWith('https://')) {
-        urlToSubmit = 'https://' + urlToSubmit;
+      if (url.trim()) {
+        const urlToSubmit = normalizeUrl(url);
+        onSubmit(urlToSubmit);
       }
-      
-      onSubmit(urlToSubmit);
     }
   };
   
@@ -81,12 +89,13 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
         // Split by comma and add all to the URLs list
         const splitUrls = url.split(',')
           .map(u => u.trim())
-          .filter(u => u.length > 0);
+          .filter(u => u.length > 0)
+          .map(u => normalizeUrl(u)); // Normalize each URL
         
         setUrls(prevUrls => [...prevUrls, ...splitUrls]);
       } else {
         // Add single URL
-        setUrls([...urls, url.trim()]);
+        setUrls([...urls, normalizeUrl(url.trim())]);
       }
       setUrl("");
     }
@@ -112,12 +121,13 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
         // If line contains commas, split by comma and add each URL
         const commaUrls = line.split(',')
           .map(u => u.trim())
-          .filter(u => u.length > 0);
+          .filter(u => u.length > 0)
+          .map(u => normalizeUrl(u)); // Normalize each URL
         
         processedUrls.push(...commaUrls);
       } else if (line.trim().length > 0) {
         // If it's a single URL per line, just add it
-        processedUrls.push(line.trim());
+        processedUrls.push(normalizeUrl(line.trim()));
       }
     });
     

@@ -137,6 +137,12 @@ class Crawler {
    * Validate and normalize the URL
    */
   private normalizeUrl(url: string): string {
+    // Clean up URL string - remove extra spaces
+    url = url.trim();
+    
+    // Handle double protocol issues (e.g., https://https://)
+    url = url.replace(/^(https?:\/\/)+/i, '$1');
+    
     // Add protocol if missing
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'https://' + url;
