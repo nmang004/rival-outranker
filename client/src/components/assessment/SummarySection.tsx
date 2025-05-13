@@ -1,9 +1,12 @@
 interface SummarySectionProps {
-  strengths: string[];
-  weaknesses: string[];
+  strengths?: string[];
+  weaknesses?: string[];
 }
 
-export default function SummarySection({ strengths, weaknesses }: SummarySectionProps) {
+export default function SummarySection({ 
+  strengths = [], 
+  weaknesses = []
+}: SummarySectionProps) {
   // Generate a summary message based on strengths and weaknesses
   const getSummaryMessage = () => {
     const strengthCount = strengths.length;

@@ -1,9 +1,9 @@
 import { PageSpeedAnalysis, MobileAnalysis, KeywordAnalysis } from "@shared/schema";
 
 interface KeyMetricsProps {
-  pageSpeed: PageSpeedAnalysis;
-  mobileFriendliness: MobileAnalysis;
-  keywordOptimization: KeywordAnalysis;
+  pageSpeed?: PageSpeedAnalysis;
+  mobileFriendliness?: MobileAnalysis;
+  keywordOptimization?: KeywordAnalysis;
 }
 
 export default function KeyMetrics({ 
@@ -11,6 +11,12 @@ export default function KeyMetrics({
   mobileFriendliness, 
   keywordOptimization 
 }: KeyMetricsProps) {
+  // Default values if props are undefined
+  const pageSpeedScore = pageSpeed?.score ?? 0;
+  const mobileScore = mobileFriendliness?.overallScore?.score ?? 0;
+  const keywordScore = keywordOptimization?.overallScore?.score ?? 0;
+  const isMobileFriendly = mobileFriendliness?.isMobileFriendly ?? false;
+
   return (
     <div className="col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
       {/* Page Speed Metric */}
@@ -33,8 +39,8 @@ export default function KeyMetrics({
           <div className="ml-3">
             <div className="text-sm font-medium text-gray-500">Page Speed</div>
             <div className="flex items-center">
-              <div className="text-xl font-semibold text-gray-800">{pageSpeed.score}</div>
-              <StatusLabel score={pageSpeed.score} />
+              <div className="text-xl font-semibold text-gray-800">{pageSpeedScore}</div>
+              <StatusLabel score={pageSpeedScore} />
             </div>
           </div>
         </div>
@@ -62,9 +68,9 @@ export default function KeyMetrics({
             <div className="text-sm font-medium text-gray-500">Mobile Friendliness</div>
             <div className="flex items-center">
               <div className="text-xl font-semibold text-gray-800">
-                {mobileFriendliness.isMobileFriendly ? mobileFriendliness.overallScore.score : 0}
+                {isMobileFriendly ? mobileScore : 0}
               </div>
-              <StatusLabel score={mobileFriendliness.overallScore.score} />
+              <StatusLabel score={mobileScore} />
             </div>
           </div>
         </div>
@@ -91,8 +97,8 @@ export default function KeyMetrics({
           <div className="ml-3">
             <div className="text-sm font-medium text-gray-500">Keyword Optimization</div>
             <div className="flex items-center">
-              <div className="text-xl font-semibold text-gray-800">{keywordOptimization.overallScore.score}</div>
-              <StatusLabel score={keywordOptimization.overallScore.score} />
+              <div className="text-xl font-semibold text-gray-800">{keywordScore}</div>
+              <StatusLabel score={keywordScore} />
             </div>
           </div>
         </div>

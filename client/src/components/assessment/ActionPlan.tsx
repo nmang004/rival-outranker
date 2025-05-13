@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 
 interface ActionPlanProps {
-  data: SeoAnalysisResult;
+  data?: SeoAnalysisResult;
 }
 
 export default function ActionPlan({ data }: ActionPlanProps) {
@@ -14,57 +14,62 @@ export default function ActionPlan({ data }: ActionPlanProps) {
   
   // Generate prioritized action items based on the analysis
   const generateActionItems = () => {
+    // If data is undefined, return an empty array
+    if (!data) return [];
+    
     const actionItems = [];
+    const url = data.url || '';
+    const primaryKeyword = data?.keywordAnalysis?.primaryKeyword || 'main topic';
     
     // Get most critical title tag issues
-    if (!data.keywordAnalysis.titlePresent) {
+    if (data?.keywordAnalysis?.titlePresent === false) {
       actionItems.push({
         id: "title",
         priority: 1,
         title: "Optimize Title Tag and H1 Heading",
         description: "Rewrite your title tag to include the primary keyword at the beginning and ensure your H1 heading contains the primary keyword.",
-        current: data.metaTagsAnalysis.title || "No title tag found",
-        suggestion: `${data.keywordAnalysis.primaryKeyword}: Optimized Page Title | ${data.url.split('/').pop() || 'Your Brand'}`
+        current: data?.metaTagsAnalysis?.title || "No title tag found",
+        suggestion: `${primaryKeyword}: Optimized Page Title | ${url.split('/').pop() || 'Your Brand'}`
       });
     }
     
     // Get meta description issues
-    if (!data.metaTagsAnalysis.description || !data.keywordAnalysis.descriptionPresent) {
+    if (!data?.metaTagsAnalysis?.description || data?.keywordAnalysis?.descriptionPresent === false) {
       actionItems.push({
         id: "meta-desc",
         priority: 2,
         title: "Add/Optimize Meta Description",
         description: "Create a compelling meta description that includes your primary keyword and clearly describes the page content.",
-        current: data.metaTagsAnalysis.description || "No meta description found",
-        suggestion: `Discover our comprehensive guide to ${data.keywordAnalysis.primaryKeyword}. Learn expert strategies, best practices, and proven techniques for better results.`
+        current: data?.metaTagsAnalysis?.description || "No meta description found",
+        suggestion: `Discover our comprehensive guide to ${primaryKeyword}. Learn expert strategies, best practices, and proven techniques for better results.`
       });
     }
     
     // Get image alt text issues
-    if (!data.keywordAnalysis.altTextPresent && data.imageAnalysis.withoutAltCount > 0) {
+    if (data?.keywordAnalysis?.altTextPresent === false && data?.imageAnalysis?.withoutAltCount > 0) {
       actionItems.push({
         id: "img-alt",
         priority: 3,
         title: "Add Image Alt Text",
-        description: `Add descriptive alt text to ${data.imageAnalysis.withoutAltCount} image(s) that includes relevant keywords.`,
-        example: `<img src="example.jpg" alt="${data.keywordAnalysis.primaryKeyword} - descriptive text about the image">`
+        description: `Add descriptive alt text to ${data?.imageAnalysis?.withoutAltCount} image(s) that includes relevant keywords.`,
+        example: `<img src="example.jpg" alt="${primaryKeyword} - descriptive text about the image">`
       });
     }
     
     // Get content depth issues
-    if (data.contentAnalysis.wordCount < 600) {
+    if (data?.contentAnalysis?.wordCount < 600) {
       actionItems.push({
         id: "content-depth",
         priority: 4,
         title: "Enhance Content Depth",
         description: "Expand your content with more comprehensive information, aiming for at least 600-1000 words for better topic coverage.",
-        current: `Current word count: ${data.contentAnalysis.wordCount} words`,
+        current: `Current word count: ${data?.contentAnalysis?.wordCount} words`,
         suggestion: "Add sections covering additional aspects of the topic, examples, statistics, and expert insights."
       });
     }
     
     // Get internal linking issues
-    if (data.internalLinksAnalysis.count < 3) {
+    if (data?.internalLinksAnalysis?.count < 3) {
       actionItems.push({
         id: "internal-links",
         priority: 5,
@@ -75,13 +80,13 @@ export default function ActionPlan({ data }: ActionPlanProps) {
     }
     
     // Get schema markup issues
-    if (!data.schemaMarkupAnalysis.hasSchemaMarkup) {
+    if (data?.schemaMarkupAnalysis?.hasSchemaMarkup === false) {
       actionItems.push({
         id: "schema",
         priority: 6,
         title: "Add Schema Markup",
         description: "Implement schema markup to enhance visibility in search results and potentially earn rich snippets.",
-        suggestion: `Consider adding ${data.url.includes('/product') ? 'Product' : 'Article'} schema, FAQ schema, or BreadcrumbList schema depending on your content.`
+        suggestion: `Consider adding ${url.includes('/product') ? 'Product' : 'Article'} schema, FAQ schema, or BreadcrumbList schema depending on your content.`
       });
     }
     
