@@ -1,0 +1,40 @@
+Project Brief: SEO Best Practices Assessment Tool
+Objective:
+Develop a web application where users can input a URL, and the app will crawl the provided webpage to assess its adherence to SEO best practices based on the comprehensive guide we created. The app should generate a detailed report highlighting strengths, weaknesses, and actionable recommendations.
+Key Features:
+URL Input & Crawling:
+Allow users to input a URL.
+Crawl the webpage to extract relevant data (meta tags, headings, content, images, etc.).
+Assessment Criteria:
+Evaluate the webpage against the following best practices:
+Keyword Optimization: Check for keyword usage in title tags, meta descriptions, headings, and content.
+Meta Tags: Assess the presence, length, and relevance of title tags and meta descriptions.
+Content Depth: Analyze word count, content structure, and use of headings (H1, H2, H3).
+Internal Links: Count and evaluate internal links for relevance and anchor text.
+Image Optimization: Check for alt text, file size, and descriptive filenames.
+Schema Markup: Detect the presence of structured data (e.g., FAQ, How-To).
+Mobile-Friendliness: Test responsiveness and mobile usability.
+Page Speed: Measure loading speed and identify bottlenecks.
+User Engagement Signals: Highlight potential issues with bounce rate, dwell time, and navigation.
+E-E-A-T Factors: Look for indicators of expertise, authority, and trustworthiness (e.g., author bios, external citations).
+Report Generation:
+Provide a user-friendly report with:
+A score or grade for overall SEO performance.
+Detailed feedback for each assessed area.
+Actionable recommendations for improvement.
+Additional Features (Optional):
+Save or export reports as PDFs.
+Compare multiple URLs for benchmarking.
+Integrate with Google Analytics or Search Console for deeper insights.
+Tech Stack Suggestions:
+Frontend: React.js or Vue.js for a responsive and interactive UI.
+Backend: Node.js or Python (Flask/Django) for crawling and data processing.
+Database: MongoDB or PostgreSQL for storing user data and reports.
+APIs/Tools:
+Lighthouse API for page speed and mobile-friendliness.
+Schema.org validator for structured data.
+OpenAI or NLP tools for content analysis.
+Deliverables:
+A functional web app with the above features.
+Documentation for setup, usage, and maintenance.
+Optional: A roadmap for future enhancements (e.g., multi-language support, advanced analytics).
