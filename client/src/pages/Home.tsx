@@ -49,8 +49,8 @@ export default function Home() {
         if (response.ok) {
           const result = await response.json();
           
-          // Check if the result has actual analysis data with an overallScore
-          if (result && result.overallScore && result.overallScore.score) {
+          // Check if the result has actual analysis data
+          if (result && typeof result.overallScore === 'number' && result.results) {
             setLocation(`/results?url=${encodeURIComponent(url)}`);
             return true;
           }

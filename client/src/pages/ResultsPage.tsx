@@ -33,8 +33,8 @@ export default function ResultsPage() {
     queryKey: [`/api/analysis?url=${encodeURIComponent(url || "")}`],
     enabled: !!url,
     refetchInterval: (data) => {
-      // Poll until we get complete data with an overallScore
-      return (data && data.overallScore && data.overallScore.score) ? false : 1000;
+      // Poll until we get complete data with results
+      return (data && typeof data.overallScore === 'number' && data.results) ? false : 1000;
     },
     retry: 5,
     retryDelay: 1000,

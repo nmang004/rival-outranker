@@ -17,24 +17,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Show the analysis is in progress
       res.status(202).json({ message: "Analysis started", url });
       
-      // Crawl the webpage
-      const pageData = await crawler.crawlPage(url);
-      
-      // Analyze the page data
-      const analysisResult = await analyzer.analyzePage(url, pageData);
-      
-      // Store the analysis result
-      const analysisData = {
-        url: analysisResult.url,
-        overallScore: analysisResult.overallScore.score,
-        results: analysisResult
-      };
-      
-      // Validate the analysis data
-      const validatedData = insertAnalysisSchema.parse(analysisData);
-      
-      // Save to storage
-      await storage.createAnalysis(validatedData);
+      try {
+        // Crawl the webpage
+        console.log("Crawling page:", url);
+        const pageData = await crawler.crawlPage(url);
+        
+        // Analyze the page data
+        console.log("Analyzing page:", url);
+        const analysisResult = await analyzer.analyzePage(url, pageData);
+        
+        // Store the analysis result
+        const analysisData = {
+          url: analysisResult.url,
+          overallScore: analysisResult.overallScore.score,
+          results: analysisResult
+        };
+        
+        // Validate and save to storage
+        const validatedData = insertAnalysisSchema.parse(analysisData);
+        await storage.createAnalysis(validatedData);
+        
+        console.log("Analysis completed for:", url);
+      } catch (analysisError) {
+        console.error("Error during analysis:", analysisError);
+        
+        // Even if analysis fails, create a minimal valid analysis record to prevent timeouts
+        const fallbackAnalysis = {
+          url,
+          overallScore: 0,
+          results: {
+            url,
+            timestamp: new Date(),
+            overallScore: {
+              score: 0,
+              category: 'poor' as const
+            },
+            strengths: [],
+            weaknesses: ["Analysis could not be completed. Please try again."],
+            keywordAnalysis: {
+              primaryKeyword: "",
+              density: 0,
+              relatedKeywords: [],
+              titlePresent: false,
+              descriptionPresent: false,
+              h1Present: false,
+              headingsPresent: false,
+              contentPresent: false,
+              urlPresent: false,
+              altTextPresent: false,
+              overallScore: { score: 0, category: 'poor' as const }
+            }
+          }
+        };
+        
+        try {
+          await storage.createAnalysis(fallbackAnalysis);
+        } catch (storageError) {
+          console.error("Failed to create fallback analysis:", storageError);
+        }
+      }
       
       return;
     } catch (error) {
