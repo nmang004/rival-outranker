@@ -11,6 +11,8 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [formUrl, setFormUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const analyzeMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -46,12 +48,17 @@ export default function Home() {
         
         if (response.ok) {
           const result = await response.json();
-          setLocation(`/results?url=${encodeURIComponent(url)}`);
-          return true;
+          
+          // Check if the result has actual analysis data
+          if (result && result.analysis && result.analysis.overallScore) {
+            setLocation(`/results?url=${encodeURIComponent(url)}`);
+            return true;
+          }
         }
         
         return false;
       } catch (error) {
+        console.error("Error checking results:", error);
         return false;
       }
     };
@@ -68,8 +75,9 @@ export default function Home() {
       if (attempts < maxAttempts) {
         setTimeout(poll, 1000); // Poll every second
       } else {
-        // If max attempts reached, redirect anyway and let the results page handle loading state
-        setLocation(`/results?url=${encodeURIComponent(url)}`);
+        // If max attempts reached, show error state instead of redirecting
+        setError("Analysis timed out. Please try again.");
+        setIsSubmitting(false);
       }
     };
     
@@ -78,12 +86,15 @@ export default function Home() {
 
   const handleSubmit = async (url: string) => {
     setFormUrl(url);
+    setError(null);
+    setIsSubmitting(true);
     
     // Validate URL
     try {
       urlFormSchema.parse({ url });
       analyzeMutation.mutate(url);
     } catch (error) {
+      setIsSubmitting(false);
       toast({
         title: "Invalid URL",
         description: "Please enter a valid URL including http:// or https://",
