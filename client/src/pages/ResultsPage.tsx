@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,15 @@ import AssessmentTabs from "@/components/assessment/AssessmentTabs";
 import ActionPlan from "@/components/assessment/ActionPlan";
 import NextSteps from "@/components/assessment/NextSteps";
 import { SeoAnalysisResult } from "@shared/schema";
-import { formatDate } from "@/lib/formatters";
+import { formatDate, formatUrl } from "@/lib/formatters";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Globe, Clock, BarChart } from "lucide-react";
 
 export default function ResultsPage() {
   const search = useSearch();
@@ -22,26 +30,60 @@ export default function ResultsPage() {
   const params = new URLSearchParams(search);
   const url = params.get("url");
   
+  // State for selected URL
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(url);
+  
+  // For recent analyses dropdown
+  const [recentUrls, setRecentUrls] = useState<string[]>([]);
+  
   // Redirect to home if no URL is provided
   useEffect(() => {
     if (!url) {
       setLocation("/");
+    } else {
+      setSelectedUrl(url);
     }
   }, [url, setLocation]);
   
-  const { data: apiResponse, isLoading, isError, error } = useQuery<any>({
-    queryKey: [`/api/analysis?url=${encodeURIComponent(url || "")}`],
-    enabled: !!url,
+  // Fetch recent analyses to populate the dropdown
+  const recentAnalysesQuery = useQuery<{url: string, timestamp: string}[]>({
+    queryKey: ['/api/analyses']
+  });
+  
+  // Process URL data when we get recentAnalysesQuery results
+  useEffect(() => {
+    if (recentAnalysesQuery.data && Array.isArray(recentAnalysesQuery.data)) {
+      // Extract unique URLs using a map to preserve uniqueness
+      const urlsMap: Record<string, boolean> = {};
+      recentAnalysesQuery.data.forEach(item => {
+        if (item.url) {
+          urlsMap[item.url] = true;
+        }
+      });
+      setRecentUrls(Object.keys(urlsMap));
+    }
+  }, [recentAnalysesQuery.data]);
+  
+  // Define a type for the API response
+  interface ApiResponse {
+    url: string;
+    results?: any; // We'll keep this as any for now since it's a complex structure
+  }
+  
+  // Fetch the analysis for the selected URL
+  const { data: apiResponse, isLoading, isError, error } = useQuery<ApiResponse>({
+    queryKey: [`/api/analysis?url=${encodeURIComponent(selectedUrl || "")}`],
+    enabled: !!selectedUrl,
     refetchInterval: (data) => {
       // Poll until we get complete data with results
-      return (data && data.results) ? false : 1000;
+      return data && 'results' in data ? false : 1000;
     },
     retry: 5,
     retryDelay: 1000,
   });
   
   // Extract the actual analysis data from the response
-  const data = apiResponse?.results ?? {};
+  const data = apiResponse && 'results' in apiResponse ? apiResponse.results : {};
 
   useEffect(() => {
     if (isError) {
@@ -53,12 +95,21 @@ export default function ResultsPage() {
     }
   }, [isError, error, toast]);
 
-  if (!url) {
+  // Handle URL selection change
+  const handleUrlChange = (newUrl: string) => {
+    setSelectedUrl(newUrl);
+    // Update the browser URL without full navigation
+    const newParams = new URLSearchParams();
+    newParams.set("url", newUrl);
+    window.history.replaceState({}, "", `${window.location.pathname}?${newParams.toString()}`);
+  };
+
+  if (!selectedUrl) {
     return null;
   }
 
   if (isLoading || !apiResponse || !apiResponse.results) {
-    return <ResultsPageSkeleton url={url} />;
+    return <ResultsPageSkeleton url={selectedUrl} />;
   }
 
   const handleExportPDF = () => {
@@ -79,6 +130,44 @@ export default function ResultsPage() {
 
   return (
     <div id="results-section" className="px-4 sm:px-0">
+      {/* URL Selection Bar */}
+      {recentUrls.length > 1 && (
+        <div className="bg-white shadow rounded-lg p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex-grow">
+              <label htmlFor="url-selector" className="block text-sm font-medium text-gray-700 mb-1">
+                Select a URL to view analysis
+              </label>
+              <Select value={selectedUrl || undefined} onValueChange={handleUrlChange}>
+                <SelectTrigger id="url-selector" className="w-full">
+                  <SelectValue placeholder="Select a URL" />
+                </SelectTrigger>
+                <SelectContent>
+                  {recentUrls.map((analyzeUrl) => (
+                    <SelectItem key={analyzeUrl} value={analyzeUrl}>
+                      <div className="flex items-center">
+                        <Globe className="h-4 w-4 mr-2 text-primary/70" />
+                        <span className="truncate">{formatUrl(analyzeUrl, 40)}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-shrink-0">
+              <Button
+                variant="default"
+                className="sage-bg-gradient hover:opacity-90 transition-opacity"
+                onClick={() => setLocation("/")}
+              >
+                <BarChart className="h-4 w-4 mr-2" />
+                Analyze New URL
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    
       {/* Overall Score Card */}
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
