@@ -1561,76 +1561,169 @@ class DeepContentAnalyzer {
         });
       }
       
-      // Process main content (middle paragraphs)
-      const mainContentTexts = paragraphTexts.slice(
-        Math.min(2, paragraphTexts.length), 
-        Math.max(2, paragraphTexts.length - 1)
-      );
+      // Process headers for main content sections
+      const headerSections: Array<{ heading: string, content: string, annotations: ContentAnnotation[] }> = [];
       
-      const mainContent: AnnotatedContentSection[] = mainContentTexts.map((text, index) => {
-        const annotations: ContentAnnotation[] = [];
-        
-        // Check paragraph length
-        const wordCount = text.split(' ').length;
-        if (wordCount > 150) {
-          annotations.push({
-            content: text,
-            issue: 'Paragraph too long',
-            suggestion: 'Break this paragraph into smaller, more digestible chunks of 3-5 sentences each.',
-            position: 0,
-            severity: 'medium',
-            type: 'readability'
-          });
+      // Create sections from our grouped paragraphs
+      Object.entries(paragraphsBySection).forEach(([sectionTitle, paragraphsInSection]) => {
+        // Skip if this is part of the introduction
+        if (sectionTitle === 'body' && introductionParagraphs.some(p => 
+          paragraphsInSection.includes(p.content))) {
+          return;
         }
         
-        // Check sentence complexity
-        const avgWordPerSentence = this.estimateAvgWordsPerSentence(text);
-        if (avgWordPerSentence > 25) {
-          annotations.push({
-            content: text,
-            issue: 'Complex sentences',
-            suggestion: 'Simplify your sentences by breaking long ones into shorter statements. Aim for 15-20 words per sentence.',
-            position: 0,
-            severity: 'medium',
-            type: 'readability'
-          });
-        }
+        const sectionContent = paragraphsInSection.join('\n\n');
         
-        // Check for passive voice (simple detection)
-        if (this.hasPassiveVoice(text)) {
-          annotations.push({
-            content: text,
-            issue: 'Passive voice detected',
-            suggestion: 'Convert passive voice to active voice for more engaging and direct content.',
-            position: 0,
-            severity: 'low',
-            type: 'engagement'
-          });
-        }
-        
-        // Check keyword density in paragraph
-        if (this.textContainsKeyword(text, primaryKeyword)) {
-          const keywordDensity = this.calculateKeywordDensity(text, primaryKeyword);
-          if (keywordDensity > 5) {
+        if (sectionContent.length > 0) {
+          const annotations: ContentAnnotation[] = [];
+          
+          // Check section length
+          const wordCount = sectionContent.split(' ').length;
+          if (wordCount > 300) {
             annotations.push({
-              content: text,
-              issue: 'Keyword stuffing',
-              suggestion: `Reduce usage of "${primaryKeyword}" as it appears excessive. Aim for natural inclusion.`,
+              content: sectionContent,
+              issue: 'Section too long',
+              suggestion: 'Consider breaking this section into smaller subsections with additional headings.',
               position: 0,
-              severity: 'high',
+              severity: 'medium',
+              type: 'structure'
+            });
+          }
+          
+          // Check sentence complexity
+          const avgWordPerSentence = this.estimateAvgWordsPerSentence(sectionContent);
+          if (avgWordPerSentence > 25) {
+            annotations.push({
+              content: sectionContent,
+              issue: 'Complex sentences',
+              suggestion: 'Simplify your sentences by breaking long ones into shorter statements. Aim for 15-20 words per sentence.',
+              position: 0,
+              severity: 'medium',
+              type: 'readability'
+            });
+          }
+          
+          // Check for passive voice (simple detection)
+          if (this.hasPassiveVoice(sectionContent)) {
+            annotations.push({
+              content: sectionContent,
+              issue: 'Passive voice detected',
+              suggestion: 'Convert passive voice to active voice for more engaging and direct content.',
+              position: 0,
+              severity: 'low',
+              type: 'engagement'
+            });
+          }
+          
+          // Check keyword density in section
+          if (this.textContainsKeyword(sectionContent, primaryKeyword)) {
+            const keywordDensity = this.calculateKeywordDensity(sectionContent, primaryKeyword);
+            if (keywordDensity > 5) {
+              annotations.push({
+                content: sectionContent,
+                issue: 'Keyword stuffing',
+                suggestion: `Reduce usage of "${primaryKeyword}" as it appears excessive. Aim for natural inclusion.`,
+                position: 0,
+                severity: 'high',
+                type: 'semantics'
+              });
+            }
+          } else if (sectionTitle !== 'body' && sectionTitle.length > 10) {
+            // Check if heading contains the keyword (for actual section headings, not the default 'body')
+            annotations.push({
+              content: sectionTitle,
+              issue: 'Heading missing keyword',
+              suggestion: `Consider including your primary keyword "${primaryKeyword}" in this heading for better SEO.`,
+              position: 0,
+              severity: 'medium',
               type: 'semantics'
             });
           }
+          
+          headerSections.push({
+            heading: sectionTitle === 'body' ? 'Main Content' : sectionTitle,
+            content: sectionContent,
+            annotations: annotations
+          });
         }
-        
-        return {
-          content: text,
-          annotations
-        };
       });
       
-      // Identify conclusion (last paragraph)
-      const conclusionText = paragraphTexts.slice(-1)[0];
+      // Handle CTAs separately
+      const ctaSections: Array<{ heading: string, content: string, annotations: ContentAnnotation[] }> = [];
+      
+      // Group CTAs by type
+      const ctasByType: {[key: string]: string[]} = {};
+      ctaElements.forEach(cta => {
+        if (!ctasByType[cta.type]) {
+          ctasByType[cta.type] = [];
+        }
+        ctasByType[cta.type].push(cta.content);
+      });
+      
+      // Create CTA sections
+      Object.entries(ctasByType).forEach(([ctaType, contents]) => {
+        const ctaContent = contents.join('\n• ');
+        
+        if (ctaContent.length > 0) {
+          const annotations: ContentAnnotation[] = [];
+          
+          // Check if CTAs contain the keyword
+          if (!this.textContainsKeyword(ctaContent, primaryKeyword) && ctaType === 'a') {
+            annotations.push({
+              content: ctaContent,
+              issue: 'CTAs missing keyword',
+              suggestion: `Consider including your primary keyword "${primaryKeyword}" in your call-to-action links.`,
+              position: 0,
+              severity: 'low',
+              type: 'semantics'
+            });
+          }
+          
+          // Check for clear action words
+          const hasActionVerb = ['click', 'subscribe', 'download', 'buy', 'try', 'get', 'join', 'sign up', 'learn', 'contact']
+            .some(verb => ctaContent.toLowerCase().includes(verb));
+            
+          if (!hasActionVerb && ctaContent.length > 10) {
+            annotations.push({
+              content: ctaContent,
+              issue: 'Weak call-to-action',
+              suggestion: 'Use strong action verbs in your CTAs like "Get", "Buy", "Download", or "Subscribe".',
+              position: 0,
+              severity: 'medium',
+              type: 'engagement'
+            });
+          }
+          
+          ctaSections.push({
+            heading: `${ctaType.charAt(0).toUpperCase() + ctaType.slice(1)} CTAs`,
+            content: `• ${ctaContent}`,
+            annotations: annotations
+          });
+        }
+      });
+      
+      // Combine header sections and CTA sections for the main content
+      const mainContent: AnnotatedContentSection[] = [
+        ...headerSections.map(section => ({
+          content: section.content,
+          annotations: section.annotations
+        })),
+        ...ctaSections.map(section => ({
+          content: section.content,
+          annotations: section.annotations
+        }))
+      ];
+      
+      // Identify conclusion (last few paragraphs)
+      const conclusionParagraphs = paragraphs.slice(-Math.min(2, paragraphs.length));
+      // Filter out paragraphs that appear to be CTAs
+      const filteredConclusionParagraphs = conclusionParagraphs.filter(p => {
+        return !ctaElements.some(cta => p.content.includes(cta.content));
+      });
+      
+      const conclusionText = filteredConclusionParagraphs.length > 0 
+        ? filteredConclusionParagraphs.map(p => p.content).join('\n\n')
+        : "No clear conclusion found";
       const conclusionAnnotations: ContentAnnotation[] = [];
       
       // Check if conclusion has a call-to-action

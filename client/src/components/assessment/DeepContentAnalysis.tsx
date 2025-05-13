@@ -204,128 +204,196 @@ export default function DeepContentAnalysis({ url }: DeepContentAnalysisProps) {
             </div>
             
             {/* Introduction Section */}
-            <div className="border rounded-lg p-4 bg-white">
-              <h4 className="text-lg font-medium mb-2 flex items-center">
-                <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                Introduction
-              </h4>
-              <div className="relative mt-2 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
-                <p className="whitespace-pre-line">{data.annotatedContent.introduction.content}</p>
-              </div>
+            <div className="mb-4">
+              <h4 className="text-base font-medium mb-3 pb-2 border-b">Introduction</h4>
               
-              {data.annotatedContent.introduction.annotations.length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  <h5 className="text-sm font-medium">Suggested Improvements:</h5>
-                  {data.annotatedContent.introduction.annotations.map((annotation, index) => (
-                    <div key={index} className="border-l-2 pl-3 py-1 text-sm" 
-                      style={{ 
-                        borderColor: annotation.severity === 'high' ? '#ef4444' : 
-                                    annotation.severity === 'medium' ? '#f97316' : '#84cc16'
-                      }}
-                    >
-                      <div className="flex items-start">
-                        <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
-                          annotation.severity === 'high' ? 'bg-red-500' : 
-                          annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
-                        }`}>
-                          {annotation.severity}
-                        </span>
-                        <p className="font-medium">{annotation.issue}</p>
-                      </div>
-                      <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+              <div className="border rounded-lg p-4 bg-white">
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-base font-medium flex items-center">
+                        <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                        Introduction Section
+                      </h4>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3 text-sm flex items-center text-green-600">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Your introduction looks good! No issues found.
-                </div>
-              )}
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="mt-3 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
+                      <p className="whitespace-pre-line">{data.annotatedContent.introduction.content}</p>
+                    </div>
+                    
+                    {data.annotatedContent.introduction.annotations.length > 0 ? (
+                      <div className="mt-3 space-y-3">
+                        <h5 className="text-sm font-medium">Suggested Improvements:</h5>
+                        {data.annotatedContent.introduction.annotations.map((annotation, index) => (
+                          <div key={index} className="border-l-2 pl-3 py-1 text-sm"
+                            style={{ 
+                              borderColor: annotation.severity === 'high' ? '#ef4444' : 
+                                        annotation.severity === 'medium' ? '#f97316' : '#84cc16'
+                            }}
+                          >
+                            <div className="flex items-start">
+                              <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
+                                annotation.severity === 'high' ? 'bg-red-500' : 
+                                annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
+                              }`}>
+                                {annotation.severity}
+                              </span>
+                              <p className="font-medium">{annotation.issue}</p>
+                            </div>
+                            <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-3 text-sm flex items-center text-green-600">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Your introduction looks good! No issues found.
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
             </div>
             
             {/* Main Content Sections */}
-            {data.annotatedContent.mainContent.map((section, idx) => (
-              <div key={idx} className="border rounded-lg p-4 bg-white">
-                <h4 className="text-base font-medium mb-2 flex items-center">
-                  <AlignJustify className="h-4 w-4 mr-2 text-primary" />
-                  Content Section {idx + 1}
-                </h4>
-                <div className="relative mt-2 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
-                  <p className="whitespace-pre-line">{section.content}</p>
-                </div>
+            <div className="mb-4">
+              <h4 className="text-base font-medium mb-3 pb-2 border-b">Content Sections</h4>
+              
+              {data.annotatedContent.mainContent.map((section, idx) => {
+                // Determine section type based on content
+                let sectionType = 'content';
+                let icon = <AlignJustify className="h-4 w-4 mr-2 text-primary" />;
+                let title = `Section ${idx + 1}`;
                 
-                {section.annotations.length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    <h5 className="text-sm font-medium">Suggested Improvements:</h5>
-                    {section.annotations.map((annotation, index) => (
-                      <div key={index} className="border-l-2 pl-3 py-1 text-sm"
-                        style={{ 
-                          borderColor: annotation.severity === 'high' ? '#ef4444' : 
-                                      annotation.severity === 'medium' ? '#f97316' : '#84cc16'
-                        }}
-                      >
-                        <div className="flex items-start">
-                          <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
-                            annotation.severity === 'high' ? 'bg-red-500' : 
-                            annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
-                          }`}>
-                            {annotation.severity}
-                          </span>
-                          <p className="font-medium">{annotation.issue}</p>
+                // Check if it's a heading section
+                if (section.content.startsWith('# ') || section.content.startsWith('## ')) {
+                  sectionType = 'heading';
+                  icon = <AlignJustify className="h-4 w-4 mr-2 text-primary" />;
+                  title = section.content.split('\n')[0].replace(/^#+ /, '');
+                }
+                
+                // Check if it's a CTA section
+                if (section.content.includes('• ') && 
+                   (section.content.toLowerCase().includes('cta') || 
+                    section.content.toLowerCase().includes('call to action'))) {
+                  sectionType = 'cta';
+                  icon = <MousePointer className="h-4 w-4 mr-2 text-primary" />;
+                  title = 'Call-to-Actions';
+                }
+                
+                return (
+                  <div key={idx} className="border rounded-lg p-4 bg-white mb-3">
+                    <Collapsible>
+                      <CollapsibleTrigger className="w-full">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-base font-medium flex items-center">
+                            {icon}
+                            {title}
+                            {sectionType === 'cta' && 
+                              <Badge variant="outline" className="ml-2 bg-primary/10">CTA</Badge>
+                            }
+                          </h4>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
-                      </div>
-                    ))}
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent>
+                        <div className="mt-3 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
+                          <p className="whitespace-pre-line">{section.content}</p>
+                        </div>
+                        
+                        {section.annotations.length > 0 ? (
+                          <div className="mt-3 space-y-3">
+                            <h5 className="text-sm font-medium">Suggested Improvements:</h5>
+                            {section.annotations.map((annotation, index) => (
+                              <div key={index} className="border-l-2 pl-3 py-1 text-sm"
+                                style={{ 
+                                  borderColor: annotation.severity === 'high' ? '#ef4444' : 
+                                              annotation.severity === 'medium' ? '#f97316' : '#84cc16'
+                                }}
+                              >
+                                <div className="flex items-start">
+                                  <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
+                                    annotation.severity === 'high' ? 'bg-red-500' : 
+                                    annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
+                                  }`}>
+                                    {annotation.severity}
+                                  </span>
+                                  <p className="font-medium">{annotation.issue}</p>
+                                </div>
+                                <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-3 text-sm flex items-center text-green-600">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            This section looks good! No issues found.
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
-                ) : (
-                  <div className="mt-3 text-sm flex items-center text-green-600">
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    This section looks good! No issues found.
-                  </div>
-                )}
-              </div>
-            ))}
+                );
+              })}
+            </div>
             
             {/* Conclusion Section */}
-            <div className="border rounded-lg p-4 bg-white">
-              <h4 className="text-lg font-medium mb-2 flex items-center">
-                <BookOpen className="h-4 w-4 mr-2 text-primary" />
-                Conclusion
-              </h4>
-              <div className="relative mt-2 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
-                <p className="whitespace-pre-line">{data.annotatedContent.conclusion.content}</p>
-              </div>
+            <div className="mb-4">
+              <h4 className="text-base font-medium mb-3 pb-2 border-b">Conclusion</h4>
               
-              {data.annotatedContent.conclusion.annotations.length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  <h5 className="text-sm font-medium">Suggested Improvements:</h5>
-                  {data.annotatedContent.conclusion.annotations.map((annotation, index) => (
-                    <div key={index} className="border-l-2 pl-3 py-1 text-sm"
-                      style={{ 
-                        borderColor: annotation.severity === 'high' ? '#ef4444' : 
-                                    annotation.severity === 'medium' ? '#f97316' : '#84cc16'
-                      }}
-                    >
-                      <div className="flex items-start">
-                        <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
-                          annotation.severity === 'high' ? 'bg-red-500' : 
-                          annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
-                        }`}>
-                          {annotation.severity}
-                        </span>
-                        <p className="font-medium">{annotation.issue}</p>
-                      </div>
-                      <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+              <div className="border rounded-lg p-4 bg-white">
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-base font-medium flex items-center">
+                        <BookOpen className="h-4 w-4 mr-2 text-primary" />
+                        Conclusion Section
+                      </h4>
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-3 text-sm flex items-center text-green-600">
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Your conclusion looks good! No issues found.
-                </div>
-              )}
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="mt-3 mb-2 py-2 px-4 bg-slate-50 rounded-lg">
+                      <p className="whitespace-pre-line">{data.annotatedContent.conclusion.content}</p>
+                    </div>
+                    
+                    {data.annotatedContent.conclusion.annotations.length > 0 ? (
+                      <div className="mt-3 space-y-3">
+                        <h5 className="text-sm font-medium">Suggested Improvements:</h5>
+                        {data.annotatedContent.conclusion.annotations.map((annotation, index) => (
+                          <div key={index} className="border-l-2 pl-3 py-1 text-sm"
+                            style={{ 
+                              borderColor: annotation.severity === 'high' ? '#ef4444' : 
+                                        annotation.severity === 'medium' ? '#f97316' : '#84cc16'
+                            }}
+                          >
+                            <div className="flex items-start">
+                              <span className={`px-2 py-0.5 rounded-full text-xs text-white mr-2 ${
+                                annotation.severity === 'high' ? 'bg-red-500' : 
+                                annotation.severity === 'medium' ? 'bg-orange-500' : 'bg-lime-500'
+                              }`}>
+                                {annotation.severity}
+                              </span>
+                              <p className="font-medium">{annotation.issue}</p>
+                            </div>
+                            <p className="mt-1 text-muted-foreground">{annotation.suggestion}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-3 text-sm flex items-center text-green-600">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Your conclusion looks good! No issues found.
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
             </div>
             
             <div className="rounded-lg p-4 bg-white border border-slate-200 mt-4">
