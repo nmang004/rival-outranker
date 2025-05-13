@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -7,37 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CheckIcon, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatUrl } from "@/lib/formatters";
-import { Loader2, Globe, BarChart2, FileText, Star, AlertTriangle, MapPin } from "lucide-react";
+import { Loader2, Globe, BarChart2, FileText, Star, AlertTriangle, MapPin, Search } from "lucide-react";
 
 interface CompetitorAnalysisProps {
   url: string;
   keyword: string;
 }
 
+import { US_CITIES } from "@/lib/us-cities";
+
 // Default locations for geo-based competitor analysis
 // Organized by country with major cities
 const GEO_DATA = {
-  "United States": [
-    "New York",
-    "Los Angeles",
-    "Chicago", 
-    "Houston",
-    "Phoenix",
-    "Philadelphia",
-    "San Antonio",
-    "San Diego",
-    "Dallas",
-    "San Francisco",
-    "Seattle",
-    "Denver",
-    "Washington DC",
-    "Boston",
-    "Austin",
-    "Miami",
-    "Atlanta",
-    "Las Vegas"
-  ],
+  "United States": US_CITIES,
   "United Kingdom": [
     "London",
     "Manchester",
@@ -200,15 +187,25 @@ const COUNTRIES = Object.keys(GEO_DATA);
 export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisProps) {
   const [country, setCountry] = useState("United States");
   const [city, setCity] = useState("all-cities");
+  const [citySearchTerm, setCitySearchTerm] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<{country: string, city: string} | null>(null);
   const [showDetectedAlert, setShowDetectedAlert] = useState(false);
+  const [openCityPopover, setOpenCityPopover] = useState(false);
 
   // Generate the full location string (country or city + country)
   const fullLocation = city && city !== "all-cities" ? `${city}, ${country}` : country;
 
   // Cities available for the selected country
   const availableCities = GEO_DATA[country as keyof typeof GEO_DATA] || [];
+  
+  // Filtered cities based on search
+  const filteredCities = useMemo(() => {
+    if (!citySearchTerm) return availableCities;
+    return availableCities.filter(cityName => 
+      cityName.toLowerCase().includes(citySearchTerm.toLowerCase())
+    );
+  }, [availableCities, citySearchTerm]);
 
   // Fetch competitor analysis data
   const { data, isLoading, isError, refetch } = useQuery<any>({
@@ -403,23 +400,75 @@ export default function CompetitorAnalysis({ url, keyword }: CompetitorAnalysisP
                 </Select>
               </div>
 
-              <div>
-                <label htmlFor="city" className="text-sm font-medium">
+              <div className="mt-2">
+                <label htmlFor="city-search" className="text-sm font-medium mb-2 block">
                   Select City (Optional):
                 </label>
-                <Select value={city} onValueChange={handleCityChange}>
-                  <SelectTrigger id="city" className="w-full">
-                    <SelectValue placeholder={`All cities in ${country}`} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    <SelectItem value="all-cities">All cities in {country}</SelectItem>
-                    {availableCities.map((cityName) => (
-                      <SelectItem key={cityName} value={cityName}>
-                        {cityName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openCityPopover} onOpenChange={setOpenCityPopover}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCityPopover}
+                      className="w-full justify-between"
+                    >
+                      {city !== "all-cities" ? city : `All cities in ${country}`}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder={`Search cities in ${country}...`} 
+                        value={citySearchTerm}
+                        onValueChange={setCitySearchTerm}
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>No cities found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="all-cities"
+                            onSelect={() => {
+                              handleCityChange("all-cities");
+                              setOpenCityPopover(false);
+                              setCitySearchTerm("");
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <CheckIcon
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                city === "all-cities" ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            All cities in {country}
+                          </CommandItem>
+                          {filteredCities.map((cityName) => (
+                            <CommandItem
+                              key={cityName}
+                              value={cityName}
+                              onSelect={() => {
+                                handleCityChange(cityName);
+                                setOpenCityPopover(false);
+                                setCitySearchTerm("");
+                              }}
+                              className="cursor-pointer"
+                            >
+                              <CheckIcon
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  city === cityName ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {cityName}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               
               <Button
