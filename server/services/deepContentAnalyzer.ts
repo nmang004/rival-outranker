@@ -205,12 +205,18 @@ class DeepContentAnalyzer {
     pageData: CrawlerOutput, 
     primaryKeyword: string
   ): ContentStructureMetrics {
-    // Heading structure analysis
+    // Extract heading structure directly from HTML using Cheerio
+    const h1Texts = $('h1').map((_, el) => $(el).text().trim()).get();
+    const h2Texts = $('h2').map((_, el) => $(el).text().trim()).get();
+    const h3Texts = $('h3').map((_, el) => $(el).text().trim()).get();
+    const h4Texts = $('h4').map((_, el) => $(el).text().trim()).get();
+    
+    // Use our extracted headings or fall back to pageData
     const headings = {
-      h1: pageData.headings.h1,
-      h2: pageData.headings.h2,
-      h3: pageData.headings.h3,
-      h4: pageData.headings.h4,
+      h1: h1Texts.length > 0 ? h1Texts : pageData.headings.h1,
+      h2: h2Texts.length > 0 ? h2Texts : pageData.headings.h2,
+      h3: h3Texts.length > 0 ? h3Texts : pageData.headings.h3,
+      h4: h4Texts.length > 0 ? h4Texts : pageData.headings.h4,
       h5: pageData.headings.h5,
       h6: pageData.headings.h6
     };
@@ -1456,6 +1462,7 @@ class DeepContentAnalyzer {
       const title = pageData.title || 'Untitled Page';
       
       // Extract the content sections (introduction, main content, conclusion)
+      // Using the cheerio instance that was loaded with the raw HTML
       const paragraphs = $('p').toArray();
       const paragraphTexts = paragraphs.map(p => $(p).text().trim()).filter(text => text.length > 0);
       
