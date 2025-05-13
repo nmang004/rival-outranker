@@ -870,9 +870,38 @@ class Analyzer {
       recommendations.push(`Fix ${analysis.internalLinksAnalysis.brokenLinksCount} broken internal link(s)`);
     }
     
+    // Add additional link strategies
+    if (analysis.internalLinksAnalysis.count < 5) {
+      recommendations.push('Create a pillar content strategy by linking to topic clusters from this page');
+    }
+    if (analysis.internalLinksAnalysis.count < 10 && analysis.contentAnalysis.wordCount > 1000) {
+      recommendations.push('For longer content, add more internal links (aim for 1 link per 150-200 words)');
+    }
+    
+    // Content depth and quality recommendations
+    if (analysis.contentAnalysis.wordCount >= 300 && analysis.contentAnalysis.wordCount < 1500) {
+      recommendations.push('Expand content depth with supporting data, examples, and case studies to increase time on page');
+    }
+    if (analysis.contentAnalysis.paragraphCount > 0 && analysis.contentAnalysis.wordCount / analysis.contentAnalysis.paragraphCount > 100) {
+      recommendations.push('Break up long paragraphs into smaller chunks (3-4 sentences max) for better readability');
+    }
+    if (analysis.contentAnalysis.headingStructure.h2Count > 0 && analysis.contentAnalysis.headingStructure.h3Count === 0) {
+      recommendations.push('Add H3 subheadings under H2 sections to create a more detailed content hierarchy');
+    }
+    
+    // User experience recommendations
+    recommendations.push('Consider adding a table of contents for longer articles to improve navigation');
+    recommendations.push('Include FAQ sections with schema markup to target more featured snippets');
+    
     // Page speed recommendations
     if (analysis.pageSpeedAnalysis.overallScore.score < 70) {
       recommendations.push('Improve page loading speed by optimizing images, minifying CSS/JS, and reducing server response time');
+    }
+    if (analysis.pageSpeedAnalysis.lcp > 2500) {
+      recommendations.push('Optimize Largest Contentful Paint (LCP) by prioritizing above-the-fold content loading');
+    }
+    if (analysis.pageSpeedAnalysis.cls > 0.1) {
+      recommendations.push('Reduce layout shifts by specifying image dimensions and using content placeholders');
     }
     
     // E-E-A-T recommendations
@@ -882,9 +911,18 @@ class Analyzer {
     if (!analysis.eatAnalysis.hasExternalCitations) {
       recommendations.push('Include citations to authoritative external sources to improve trustworthiness');
     }
+    if (!analysis.eatAnalysis.hasCredentials) {
+      recommendations.push('Display relevant credentials, certifications, or expertise to strengthen E-E-A-T signals');
+    }
     
-    // Return a maximum of 10 recommendations
-    return recommendations.slice(0, 10);
+    // Additional advanced recommendations
+    recommendations.push('Consider implementing canonical tags if you have similar content across multiple pages');
+    recommendations.push('Add breadcrumb navigation to improve site structure and user experience');
+    recommendations.push('Create unique meta descriptions for each page that include a call-to-action');
+    recommendations.push('Include multimedia content (videos, infographics, etc.) to increase engagement');
+    
+    // Return a maximum of 15 recommendations
+    return recommendations.slice(0, 15);
   }
 }
 

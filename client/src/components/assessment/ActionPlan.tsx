@@ -68,6 +68,18 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       });
     }
     
+    // Get paragraph structure issues
+    if (data?.contentAnalysis?.paragraphCount > 0 && data?.contentAnalysis?.wordCount / data?.contentAnalysis?.paragraphCount > 100) {
+      actionItems.push({
+        id: "paragraph-structure",
+        priority: 4,
+        title: "Improve Text Readability",
+        description: "Break up long paragraphs into smaller chunks of 3-4 sentences maximum to improve readability and user engagement.",
+        current: `Avg paragraph length: ~${Math.round(data?.contentAnalysis?.wordCount / data?.contentAnalysis?.paragraphCount)} words`,
+        suggestion: "Structure content with shorter paragraphs of 40-70 words each for better scanning and readability on all devices."
+      });
+    }
+    
     // Get internal linking issues
     if (data?.internalLinksAnalysis?.count < 3) {
       actionItems.push({
@@ -75,7 +87,18 @@ export default function ActionPlan({ data }: ActionPlanProps) {
         priority: 5,
         title: "Improve Internal Linking",
         description: "Add more relevant internal links to and from this page using descriptive anchor text.",
-        suggestion: "Link to related product categories, information pages, and blog content with keyword-rich anchor text."
+        suggestion: "Link to related product categories, information pages, and blog content with keyword-rich anchor text. Aim for 1 link per 150-200 words."
+      });
+    }
+    
+    // Get pillar content strategy recommendation
+    if (data?.internalLinksAnalysis?.count < 5 && data?.contentAnalysis?.wordCount > 800) {
+      actionItems.push({
+        id: "pillar-content",
+        priority: 6,
+        title: "Create Topic Clusters",
+        description: "Implement a pillar content strategy by linking to related topic clusters from this page.",
+        suggestion: "Identify 5-7 subtopics related to your main topic, create dedicated pages for each, and link them together from this main page."
       });
     }
     
@@ -90,8 +113,58 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       });
     }
     
-    // Return only top 5 action items
-    return actionItems.slice(0, 5);
+    // Add page speed optimization recommendation if needed
+    if (data?.pageSpeedAnalysis?.overallScore.score < 70) {
+      actionItems.push({
+        id: "page-speed",
+        priority: 7,
+        title: "Optimize Page Speed",
+        description: "Improve loading performance to enhance user experience and meet Core Web Vitals requirements.",
+        current: `Current speed score: ${data?.pageSpeedAnalysis?.overallScore.score}/100`,
+        suggestion: "Optimize images, minify CSS/JS, leverage browser caching, and implement lazy loading for below-the-fold content."
+      });
+    }
+    
+    // Add E-E-A-T recommendation
+    if (data?.eatAnalysis?.hasAuthorInfo === false) {
+      actionItems.push({
+        id: "author-info",
+        priority: 7,
+        title: "Strengthen E-E-A-T Signals",
+        description: "Add clear author information with credentials to establish expertise, experience, authoritativeness, and trustworthiness.",
+        suggestion: "Create an author bio section with relevant credentials, experience, and expertise. Link to professional profiles like LinkedIn or industry associations."
+      });
+    }
+    
+    // Add multimedia content recommendation
+    actionItems.push({
+      id: "multimedia",
+      priority: 8,
+      title: "Add Multimedia Content",
+      description: "Enhance engagement by including various content formats like videos, infographics, or interactive elements.",
+      suggestion: "Create a short explainer video, convert key statistics into an infographic, or add interactive elements related to your topic."
+    });
+    
+    // Add FAQ recommendation
+    actionItems.push({
+      id: "faq-section",
+      priority: 9,
+      title: "Include FAQ Section",
+      description: "Add frequently asked questions with schema markup to target featured snippets and provide more value to users.",
+      suggestion: "Research common questions about your topic using 'People Also Ask' from Google, answer them concisely, and implement FAQ schema."
+    });
+    
+    // Add content update recommendation
+    actionItems.push({
+      id: "content-freshness",
+      priority: 10,
+      title: "Maintain Content Freshness",
+      description: "Regularly update your content to maintain relevance and demonstrate that your information is current.",
+      suggestion: "Add a 'Last Updated' date at the top of your content, review and update statistics or data points, and add new sections as industry trends evolve."
+    });
+    
+    // Return up to 8 action items
+    return actionItems.slice(0, 8);
   };
   
   const actionItems = generateActionItems();
