@@ -3,49 +3,51 @@
 @tailwind utilities;
 
 :root {
-      --background: 0 0% 100%;
---foreground: 20 14.3% 4.1%;
---muted: 60 4.8% 95.9%;
---muted-foreground: 25 5.3% 44.7%;
---popover: 0 0% 100%;
---popover-foreground: 20 14.3% 4.1%;
---card: 0 0% 100%;
---card-foreground: 20 14.3% 4.1%;
---border: 20 5.9% 90%;
---input: 20 5.9% 90%;
---primary: 207 90% 54%;
---primary-foreground: 211 100% 99%;
---secondary: 60 4.8% 95.9%;
---secondary-foreground: 24 9.8% 10%;
---accent: 60 4.8% 95.9%;
---accent-foreground: 24 9.8% 10%;
---destructive: 0 84.2% 60.2%;
---destructive-foreground: 60 9.1% 97.8%;
---ring: 20 14.3% 4.1%;
---radius: 0.5rem;
-  }
-  .dark {
-      --background: 240 10% 3.9%;
---foreground: 0 0% 98%;
---muted: 240 3.7% 15.9%;
---muted-foreground: 240 5% 64.9%;
---popover: 240 10% 3.9%;
---popover-foreground: 0 0% 98%;
---card: 240 10% 3.9%;
---card-foreground: 0 0% 98%;
---border: 240 3.7% 15.9%;
---input: 240 3.7% 15.9%;
---primary: 207 90% 54%;
---primary-foreground: 211 100% 99%;
---secondary: 240 3.7% 15.9%;
---secondary-foreground: 0 0% 98%;
---accent: 240 3.7% 15.9%;
---accent-foreground: 0 0% 98%;
---destructive: 0 62.8% 30.6%;
---destructive-foreground: 0 0% 98%;
---ring: 240 4.9% 83.9%;
---radius: 0.5rem;
-  }
+  /* Sage green palette with complementary colors */
+  --background: 0 0% 100%;
+  --foreground: 148 10% 20%;
+  --muted: 150 16% 96%;
+  --muted-foreground: 148 8% 42%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 148 10% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 148 10% 20%;
+  --border: 150 10% 90%;
+  --input: 150 10% 90%;
+  --primary: 150 30% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 60 30% 96%;
+  --secondary-foreground: 148 10% 20%;
+  --accent: 150 30% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 150 30% 45%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 148 30% 6%;
+  --foreground: 150 10% 98%;
+  --muted: 148 20% 15%;
+  --muted-foreground: 150 10% 70%;
+  --popover: 148 30% 6%;
+  --popover-foreground: 150 10% 98%;
+  --card: 148 30% 6%;
+  --card-foreground: 150 10% 98%;
+  --border: 148 20% 20%;
+  --input: 148 20% 20%;
+  --primary: 150 30% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 148 20% 15%;
+  --secondary-foreground: 150 10% 98%;
+  --accent: 150 30% 45%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 150 30% 45%;
+  --radius: 0.5rem;
+}
 
 @layer base {
   * {
@@ -54,5 +56,59 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .gradient-heading {
+    @apply bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent font-bold;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-md hover:border-primary/50;
+  }
+  
+  .sage-border {
+    @apply border-2 border-primary/30;
+  }
+  
+  .sage-bg-gradient {
+    @apply bg-gradient-to-r from-primary to-primary/70;
+  }
+  
+  .score-badge {
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .score-badge-excellent {
+    @apply bg-primary/90 text-white;
+  }
+  
+  .score-badge-good {
+    @apply bg-primary/70 text-white;
+  }
+  
+  .score-badge-needs-work {
+    @apply bg-amber-500 text-white;
+  }
+  
+  .score-badge-poor {
+    @apply bg-red-500 text-white;
+  }
+  
+  .recommendation-card {
+    @apply p-4 rounded-lg bg-white shadow-sm border-l-4 mb-3 transition hover:shadow-md;
+  }
+  
+  .recommendation-card-high {
+    @apply border-l-primary;
+  }
+  
+  .recommendation-card-medium {
+    @apply border-l-amber-500;
+  }
+  
+  .recommendation-card-low {
+    @apply border-l-blue-400;
   }
 }

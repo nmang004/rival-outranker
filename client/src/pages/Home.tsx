@@ -136,31 +136,35 @@ export default function Home() {
   };
 
   return (
-    <div className="px-4 py-6 sm:px-0">
-      <div className="bg-white shadow rounded-lg p-6 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">SEO Best Practices Assessment Tool</h1>
-        <p className="text-gray-600 mb-6">Enter a URL below to analyze the webpage's SEO performance across multiple factors. We'll generate a detailed report with actionable recommendations.</p>
+    <div className="px-6 py-8 sm:px-8 bg-muted/30">
+      <div className="bg-white shadow-md rounded-lg p-8 mb-6 sage-border card-hover">
+        <h1 className="text-3xl gradient-heading mb-3">SEO Best Practices Assessment</h1>
+        <h2 className="text-xl text-muted-foreground mb-6">Comprehensive Website Analysis & Optimization</h2>
         
-        <UrlForm 
-          onSubmit={handleSubmit} 
-          isLoading={analyzeMutation.isPending || isSubmitting}
-          initialUrl={formUrl}
-        />
+        <div className="bg-muted/30 p-6 rounded-lg mb-8">
+          <p className="text-foreground mb-6">Enter any website URL below to receive a detailed analysis of its SEO performance across 10+ critical factors. Our tool provides actionable recommendations to improve search visibility and drive more organic traffic.</p>
+        
+          <UrlForm 
+            onSubmit={handleSubmit} 
+            isLoading={analyzeMutation.isPending || isSubmitting}
+            initialUrl={formUrl}
+          />
+        </div>
         
         {(analyzeMutation.isPending || isSubmitting) && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-md">
+          <div className="mt-6 p-5 bg-muted rounded-lg border border-primary/20">
             <div className="flex items-center">
-              <Loader2 className="h-5 w-5 text-blue-500 animate-spin mr-2" />
+              <Loader2 className="h-6 w-6 text-primary animate-spin mr-3" />
               <div className="w-full">
-                <p className="text-blue-700 font-medium">Analyzing your website...</p>
-                <p className="text-blue-600 text-sm mt-1 mb-2">
-                  We're checking various SEO factors including keywords, meta tags, content quality, 
-                  mobile optimization, and technical performance. Please wait.
+                <p className="text-primary font-medium">Analyzing your website...</p>
+                <p className="text-muted-foreground text-sm mt-1 mb-3">
+                  We're evaluating key SEO factors including keywords, meta tags, content quality, 
+                  mobile optimization, technical performance, and user experience signals.
                 </p>
                 <div className="w-full">
-                  <Progress value={analysisProgress} className="h-2" />
-                  <p className="text-xs text-right mt-1 text-blue-600">
-                    {analysisProgress < 100 ? "Analyzing..." : "Analysis complete!"}
+                  <Progress value={analysisProgress} className="h-2.5 bg-muted sage-bg-gradient" />
+                  <p className="text-xs text-right mt-1 text-muted-foreground">
+                    {analysisProgress < 100 ? `${Math.round(analysisProgress)}% complete` : "Analysis complete!"}
                   </p>
                 </div>
               </div>
@@ -169,11 +173,11 @@ export default function Home() {
         )}
         
         {error && (
-          <div className="mt-4 p-4 bg-red-50 rounded-md">
+          <div className="mt-6 p-5 bg-destructive/10 rounded-lg border border-destructive/20">
             <div className="flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-red-500 mr-2"
+                className="h-5 w-5 text-destructive mr-3"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -185,15 +189,53 @@ export default function Home() {
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
-              <p className="text-red-700">{error}</p>
+              <p className="text-destructive font-medium">{error}</p>
             </div>
           </div>
         )}
         
+        {/* Features Highlight */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="bg-muted/20 p-5 rounded-lg border border-primary/10 card-hover">
+            <div className="text-primary mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21 11-8-8-8 8"/>
+                <path d="M21 16H3"/>
+                <path d="M10 3v18"/>
+              </svg>
+            </div>
+            <h3 className="font-medium mb-2">Comprehensive Analysis</h3>
+            <p className="text-sm text-muted-foreground">Our tool evaluates 10+ SEO factors including keywords, content, technical aspects, and user signals.</p>
+          </div>
+          
+          <div className="bg-muted/20 p-5 rounded-lg border border-primary/10 card-hover">
+            <div className="text-primary mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
+                <line x1="16" y1="8" x2="2" y2="22"/>
+                <line x1="17.5" y1="15" x2="9" y2="15"/>
+              </svg>
+            </div>
+            <h3 className="font-medium mb-2">Actionable Recommendations</h3>
+            <p className="text-sm text-muted-foreground">Get specific, prioritized recommendations to improve your website's search performance.</p>
+          </div>
+          
+          <div className="bg-muted/20 p-5 rounded-lg border border-primary/10 card-hover">
+            <div className="text-primary mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <h3 className="font-medium mb-2">Deep Content Analysis</h3>
+            <p className="text-sm text-muted-foreground">Analyze keyword density, readability scores, content structure, and engagement factors.</p>
+          </div>
+        </div>
+        
         {/* Advanced Options Section */}
-        <div className="border-t border-gray-200 pt-4 mt-4">
+        <div className="border-t border-primary/10 pt-6 mt-8">
           <details className="group">
-            <summary className="flex items-center text-sm font-medium text-primary-600 cursor-pointer">
+            <summary className="flex items-center text-sm font-medium text-primary cursor-pointer">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-4 w-4 mr-2"
@@ -226,39 +268,39 @@ export default function Home() {
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
-                    className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                    className="rounded border-primary/50 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50"
                     defaultChecked
                   />
-                  <span className="ml-2 text-sm text-gray-600">Deep content analysis</span>
+                  <span className="ml-2 text-sm text-foreground">Deep content analysis</span>
                 </label>
               </div>
               <div>
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
-                    className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                    className="rounded border-primary/50 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50"
                     defaultChecked
                   />
-                  <span className="ml-2 text-sm text-gray-600">Include competitor analysis</span>
+                  <span className="ml-2 text-sm text-foreground">Include competitor analysis</span>
                 </label>
               </div>
               <div>
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
-                    className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                    className="rounded border-primary/50 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50"
                     defaultChecked
                   />
-                  <span className="ml-2 text-sm text-gray-600">Generate PDF report</span>
+                  <span className="ml-2 text-sm text-foreground">Generate PDF report</span>
                 </label>
               </div>
               <div>
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
-                    className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                    className="rounded border-primary/50 text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50"
                   />
-                  <span className="ml-2 text-sm text-gray-600">Schedule regular monitoring</span>
+                  <span className="ml-2 text-sm text-foreground">Schedule regular monitoring</span>
                 </label>
               </div>
             </div>
