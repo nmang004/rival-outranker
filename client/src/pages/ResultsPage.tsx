@@ -29,16 +29,19 @@ export default function ResultsPage() {
     }
   }, [url, setLocation]);
   
-  const { data, isLoading, isError, error } = useQuery<SeoAnalysisResult>({
+  const { data: apiResponse, isLoading, isError, error } = useQuery<any>({
     queryKey: [`/api/analysis?url=${encodeURIComponent(url || "")}`],
     enabled: !!url,
     refetchInterval: (data) => {
       // Poll until we get complete data with results
-      return (data && typeof data.overallScore === 'number' && data.results) ? false : 1000;
+      return (data && data.results) ? false : 1000;
     },
     retry: 5,
     retryDelay: 1000,
   });
+  
+  // Extract the actual analysis data from the response
+  const data = apiResponse?.results ?? {};
 
   useEffect(() => {
     if (isError) {
@@ -54,7 +57,7 @@ export default function ResultsPage() {
     return null;
   }
 
-  if (isLoading || !data) {
+  if (isLoading || !apiResponse || !apiResponse.results) {
     return <ResultsPageSkeleton url={url} />;
   }
 
