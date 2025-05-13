@@ -18,55 +18,64 @@ export default function KeywordTab({ data }: KeywordTabProps) {
     );
   }
 
+  const primaryKeyword = data.primaryKeyword || "N/A";
+  
   const keywordElements = [
     { 
       name: "Title Tag", 
       present: data.titlePresent ?? false, 
       analysis: data.titlePresent ? 
         "Primary keyword is present in the title." : 
-        "Primary keyword is missing from the title." 
+        "Primary keyword is missing from the title.",
+      term: primaryKeyword
     },
     { 
       name: "Meta Description", 
       present: data.descriptionPresent ?? false, 
       analysis: data.descriptionPresent ? 
         "Keyword appears in the meta description." : 
-        "Keyword is missing from the meta description." 
+        "Keyword is missing from the meta description.",
+      term: primaryKeyword
     },
     { 
       name: "H1 Heading", 
       present: data.h1Present ?? false, 
       analysis: data.h1Present ? 
         "H1 contains the primary keyword." : 
-        "H1 does not contain the primary keyword." 
+        "H1 does not contain the primary keyword.",
+      term: primaryKeyword
     },
     { 
       name: "H2-H6 Headings", 
       present: data.headingsPresent ?? false, 
       analysis: data.headingsPresent ? 
         "Found in subheadings." : 
-        "Not found in subheadings." 
+        "Not found in subheadings.",
+      term: primaryKeyword
     },
     { 
       name: "First 100 Words", 
       present: data.contentPresent ?? false, 
       analysis: data.contentPresent ? 
         "Keyword appears in the introduction." : 
-        "Keyword missing from the introduction." 
+        "Keyword missing from the introduction.",
+      term: primaryKeyword
     },
     { 
       name: "URL", 
       present: data.urlPresent ?? false, 
       analysis: data.urlPresent ? 
         "URL contains the target keyword." : 
-        "URL does not contain the target keyword." 
+        "URL does not contain the target keyword.",
+      term: primaryKeyword
     },
     { 
       name: "Image Alt Text", 
       present: data.altTextPresent ?? false, 
       analysis: data.altTextPresent ? 
         "Images use the keyword in alt text." : 
-        "Images don't use the keyword in alt text." 
+        "Images don't use the keyword in alt text.",
+      term: primaryKeyword
     }
   ];
 
@@ -171,6 +180,9 @@ export default function KeywordTab({ data }: KeywordTabProps) {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Analysis
                   </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Term Analyzed
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -191,6 +203,11 @@ export default function KeywordTab({ data }: KeywordTabProps) {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {element.analysis}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 font-medium">
+                      <span className="px-2 py-0.5 bg-primary-50 text-primary-700 rounded">
+                        {element.term}
+                      </span>
                     </td>
                   </tr>
                 ))}
