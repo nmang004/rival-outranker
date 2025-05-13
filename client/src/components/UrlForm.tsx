@@ -15,7 +15,7 @@ interface UrlFormProps {
 export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }: UrlFormProps) {
   const [url, setUrl] = useState(initialUrl);
   const [urls, setUrls] = useState<string[]>([]);
-  const [multipleMode, setMultipleMode] = useState(true); // Default to multiple URL mode
+  const [multipleMode, setMultipleMode] = useState(false); // Default to single URL mode
   const [bulkText, setBulkText] = useState("");
   const [dragActive, setDragActive] = useState(false);
   
