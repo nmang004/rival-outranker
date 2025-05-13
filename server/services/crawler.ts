@@ -311,17 +311,60 @@ class Crawler {
         
         // Handle different schema formats
         if (data['@type']) {
-          types = [data['@type']];
-        } else if (data['@graph']) {
-          types = data['@graph']
-            .filter((item: any) => item['@type'])
-            .map((item: any) => item['@type']);
+          types = Array.isArray(data['@type']) ? data['@type'] : [data['@type']];
+        } else if (data['@graph'] && Array.isArray(data['@graph'])) {
+          // Extract types from graph items
+          data['@graph'].forEach((item: any) => {
+            if (item['@type']) {
+              const itemTypes = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
+              types = [...types, ...itemTypes];
+            }
+          });
         }
+        
+        // Check for microdata schema
+        if (types.length === 0) {
+          // Find itemscope elements and get their itemtype
+          $('[itemscope]').each((_, el) => {
+            const itemtype = $(el).attr('itemtype');
+            if (itemtype) {
+              types.push(itemtype.split('/').pop() || itemtype);
+            }
+          });
+        }
+        
+        // Cleanup and de-duplicate types
+        types = Array.from(new Set(types.filter(t => t)));
         
         schema.push({ types, json });
       } catch (error) {
         console.error('Error parsing JSON-LD schema:', error);
         // Continue to the next schema
+      }
+    });
+    
+    // Also check for RDFa schemas
+    $('[property], [typeof]').each((_, el) => {
+      try {
+        const typeValue = $(el).attr('typeof');
+        const property = $(el).attr('property');
+        
+        if (typeValue || property) {
+          const types = typeValue ? [typeValue] : [];
+          if (property && property.includes('schema.org')) {
+            types.push(property.split('/').pop() || property);
+          }
+          
+          if (types.length > 0) {
+            const content = $(el).text().trim();
+            schema.push({ 
+              types, 
+              json: JSON.stringify({ '@type': types[0], content })
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error extracting RDFa schema:', error);
       }
     });
     
