@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Sage green palette with complementary colors */
+  /* Enhanced sage green palette with complementary colors */
   --background: 0 0% 100%;
   --foreground: 148 10% 20%;
   --muted: 150 16% 96%;
@@ -14,15 +14,15 @@
   --card-foreground: 148 10% 20%;
   --border: 150 10% 90%;
   --input: 150 10% 90%;
-  --primary: 150 30% 45%;
+  --primary: 150 35% 45%;
   --primary-foreground: 0 0% 100%;
   --secondary: 60 30% 96%;
   --secondary-foreground: 148 10% 20%;
-  --accent: 150 30% 45%;
+  --accent: 150 35% 45%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 60 9.1% 97.8%;
-  --ring: 150 30% 45%;
+  --ring: 150 35% 45%;
   --radius: 0.5rem;
 }
 
@@ -37,15 +37,15 @@
   --card-foreground: 150 10% 98%;
   --border: 148 20% 20%;
   --input: 148 20% 20%;
-  --primary: 150 30% 45%;
+  --primary: 150 35% 45%;
   --primary-foreground: 0 0% 100%;
   --secondary: 148 20% 15%;
   --secondary-foreground: 150 10% 98%;
-  --accent: 150 30% 45%;
+  --accent: 150 35% 45%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 150 30% 45%;
+  --ring: 150 35% 45%;
   --radius: 0.5rem;
 }
 
@@ -57,47 +57,108 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+  
+  /* Smooth scrolling for the entire site */
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {
+  /* Advanced gradient styles */
   .gradient-heading {
-    @apply bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent font-bold;
+    @apply bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent font-bold;
   }
   
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+  
+  .gradient-border {
+    @apply border border-transparent bg-gradient-to-r from-primary/30 to-primary/10 bg-clip-border;
+  }
+  
+  /* Card animations and effects */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-md hover:border-primary/50;
+    @apply transition-all duration-300 hover:shadow-md hover:border-primary/50 hover:-translate-y-1;
   }
   
+  .card-glow {
+    @apply hover:shadow-lg hover:shadow-primary/10 transition-all duration-300;
+  }
+  
+  .card-scale {
+    @apply transition-transform duration-300 hover:scale-[1.02];
+  }
+  
+  /* Button effects */
+  .button-glow {
+    @apply hover:shadow-lg hover:shadow-primary/20 transition-all duration-300;
+  }
+  
+  .button-scale {
+    @apply transition-transform duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  /* Animation utilities */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  /* Border styles */
   .sage-border {
     @apply border-2 border-primary/30;
   }
   
+  .subtle-border {
+    @apply border border-primary/10 hover:border-primary/30 transition-colors duration-300;
+  }
+  
+  /* Background styles */
   .sage-bg-gradient {
     @apply bg-gradient-to-r from-primary to-primary/70;
   }
   
+  .sage-bg-subtle {
+    @apply bg-gradient-to-r from-primary/5 to-primary/10;
+  }
+  
+  .glass-effect {
+    @apply bg-white/70 backdrop-blur-sm border border-white/20;
+  }
+  
+  /* Score badges */
   .score-badge {
     @apply px-3 py-1 rounded-full text-sm font-medium;
   }
   
   .score-badge-excellent {
-    @apply bg-primary/90 text-white;
+    @apply bg-gradient-to-r from-primary/90 to-primary/80 text-white;
   }
   
   .score-badge-good {
-    @apply bg-primary/70 text-white;
+    @apply bg-gradient-to-r from-primary/80 to-primary/60 text-white;
   }
   
   .score-badge-needs-work {
-    @apply bg-amber-500 text-white;
+    @apply bg-gradient-to-r from-amber-500 to-amber-400 text-white;
   }
   
   .score-badge-poor {
-    @apply bg-red-500 text-white;
+    @apply bg-gradient-to-r from-red-500 to-red-400 text-white;
   }
   
+  /* Recommendation cards */
   .recommendation-card {
-    @apply p-4 rounded-lg bg-white shadow-sm border-l-4 mb-3 transition hover:shadow-md;
+    @apply p-4 rounded-lg bg-white shadow-sm border-l-4 mb-3 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5;
   }
   
   .recommendation-card-high {
@@ -110,5 +171,59 @@
   
   .recommendation-card-low {
     @apply border-l-blue-400;
+  }
+  
+  /* Custom loading dots animation */
+  .loading-dots {
+    animation: loadingDots 1.5s infinite;
+  }
+}
+
+/* Keyframes for animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes loadingDots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75% {
+    content: "...";
+  }
+  100% {
+    content: "";
   }
 }
