@@ -231,7 +231,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     // Request body for Keywords Data API formatted exactly as per DataForSEO docs
     const requestData = {
       "data": {
-        "keyword": keyword,
+        "keywords": [keyword],
         "location_code": location,
         "language_code": "en",
         "include_serp_info": true,
@@ -248,39 +248,57 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     const results = processApiResponse(keywordDataResponse, 'search_volume') || {};
     
     // Extract trend data (if available)
-    const trend = results.monthly_searches?.map((month: any) => month.search_volume) || [];
+    let trend: number[] = [];
+    
+    // Try to find trend data in different possible locations based on API response structure
+    if (results.monthly_searches && Array.isArray(results.monthly_searches)) {
+      trend = results.monthly_searches.map((month: any) => month.search_volume || 0);
+    } else if (results.items && Array.isArray(results.items)) {
+      // Find our keyword in the items array
+      const matchingItem = results.items.find((item: any) => 
+        item.keyword?.toLowerCase() === keyword.toLowerCase()
+      );
+      if (matchingItem?.monthly_searches) {
+        trend = matchingItem.monthly_searches.map((month: any) => month.search_volume || 0);
+      }
+    }
     
     // Gather related keyword data
     const relatedKeywordsResponse = await dataForSeoClient.post(
       'https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live',
       [{
-        "keyword": keyword,
-        "location_code": location,
-        "language_code": "en",
-        "limit": 10
+        "data": {
+          "keyword": keyword,
+          "location_code": location,
+          "language_code": "en",
+          "limit": 10
+        }
       }]
     );
     
-    // Process related keywords
-    const relatedResults = relatedKeywordsResponse.data?.tasks?.[0]?.result?.[0]?.keywords || [];
-    const relatedKeywords = relatedResults.map((item: any) => ({
+    // Process related keywords using our helper
+    const relatedResults = processApiResponse(relatedKeywordsResponse, 'keywords_for_keywords');
+    const relatedKeywords = relatedResults?.keywords?.map((item: any) => ({
       keyword: item.keyword,
       searchVolume: item.search_volume || undefined,
       difficulty: Math.round(item.keyword_difficulty || 0),
       cpc: item.cpc ? `$${parseFloat(item.cpc).toFixed(2)}` : undefined
-    }));
+    })) || [];
 
     // Calculate a difficulty score based on competition data
     let difficultyScore = 0;
     
     try {
-      // First try the separate difficulty endpoint
+      // First try the separate difficulty endpoint - using search volume endpoint as fallback
+      // since keyword_difficulty endpoint is giving 404 errors
       const difficultyResponse = await dataForSeoClient.post(
-        'https://api.dataforseo.com/v3/keywords_data/google/keyword_difficulty/live',
+        'https://api.dataforseo.com/v3/keywords_data/google/search_volume/live',
         [{
-          "keywords": [keyword],
-          "location_code": location,
-          "language_code": "en"
+          "data": {
+            "keywords": [keyword],
+            "location_code": location,
+            "language_code": "en"
+          }
         }]
       );
       
@@ -299,13 +317,26 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       }
     }
     
+    // Extract the result for the specific keyword from the results array
+    let keywordResult = results;
+    
+    // If the result has items array (new API response format), find our keyword
+    if (results?.items && Array.isArray(results.items)) {
+      const matchingItem = results.items.find((item: any) => 
+        item.keyword?.toLowerCase() === keyword.toLowerCase()
+      );
+      if (matchingItem) {
+        keywordResult = matchingItem;
+      }
+    }
+    
     // Construct the result
     return {
       keyword,
-      searchVolume: results.search_volume || 0,
+      searchVolume: keywordResult.search_volume || 0,
       difficulty: difficultyScore,
-      cpc: results.cpc ? `$${parseFloat(results.cpc).toFixed(2)}` : undefined,
-      competition: results.competition || 0,
+      cpc: keywordResult.cpc ? `$${parseFloat(keywordResult.cpc).toFixed(2)}` : undefined,
+      competition: keywordResult.competition || 0,
       trend,
       relatedKeywords
     };
