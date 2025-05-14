@@ -968,7 +968,10 @@ class RivalAuditCrawler {
     
     // Pattern 1: Special case for known location directories
     // Example: /cities-served/*, /service-areas/*, etc.
-    if (pathSegments.length >= 1 && locationDirectories.includes(pathSegments[0])) {
+    if (pathSegments.length >= 1 && (
+      locationDirectories.includes(pathSegments[0]) || 
+      cityPagePatterns.includes(pathSegments[0])
+    )) {
       // If only one more segment deep (e.g., /cities-served/bel-air/)
       if (pathSegments.length <= 2) {
         return true;
