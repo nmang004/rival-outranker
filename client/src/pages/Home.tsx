@@ -23,6 +23,7 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [useDeepContentAnalysis, setUseDeepContentAnalysis] = useState(false);
 
   const analyzeMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -133,6 +134,15 @@ export default function Home() {
     // Validate URL
     try {
       urlFormSchema.parse({ url });
+      
+      // If deep content analysis is selected, redirect to that page
+      if (useDeepContentAnalysis) {
+        // Navigate directly to deep content analysis page
+        setLocation(`/deep-content?url=${encodeURIComponent(url)}`);
+        return;
+      }
+      
+      // Otherwise, use standard analysis
       analyzeMutation.mutate(url);
     } catch (error) {
       setIsSubmitting(false);
@@ -269,6 +279,8 @@ export default function Home() {
                           type="checkbox" 
                           id="deep-content"
                           className="rounded border-gray-300 text-primary focus:ring-primary mt-0.5"
+                          checked={useDeepContentAnalysis}
+                          onChange={e => setUseDeepContentAnalysis(e.target.checked)}
                         />
                         <div className="ml-2">
                           <label htmlFor="deep-content" className="flex items-center cursor-pointer">

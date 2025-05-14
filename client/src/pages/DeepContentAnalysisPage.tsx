@@ -51,14 +51,17 @@ type FormValues = z.infer<typeof deepContentFormSchema>;
 
 export default function DeepContentAnalysisPage() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Get URL from query params if provided
+  const urlFromParams = new URLSearchParams(window.location.search).get('url') || '';
 
   // Initialize form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(deepContentFormSchema),
     defaultValues: {
-      url: '',
+      url: urlFromParams,
       keywords: '',
       includeHeaders: true,
       includeBody: true,
