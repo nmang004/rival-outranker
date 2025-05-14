@@ -3,6 +3,7 @@ import { storage } from '../storage';
 import { z } from 'zod';
 import { insertKeywordSchema, insertKeywordSuggestionSchema } from '@shared/schema';
 import { isAuthenticated } from '../replitAuth';
+import { keywordService } from '../services/keywordService';
 
 export const keywordRouter = Router();
 
@@ -134,6 +135,37 @@ keywordRouter.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Update keyword metrics
+keywordRouter.post('/:id/update-metrics', async (req: Request, res: Response) => {
+  try {
+    const keywordId = parseInt(req.params.id);
+    if (isNaN(keywordId)) {
+      return res.status(400).json({ message: 'Invalid keyword ID' });
+    }
+
+    const keyword = await storage.getKeyword(keywordId);
+    if (!keyword) {
+      return res.status(404).json({ message: 'Keyword not found' });
+    }
+
+    const userId = req.user.claims.sub;
+    if (keyword.userId !== userId) {
+      return res.status(403).json({ message: 'Not authorized to update metrics for this keyword' });
+    }
+
+    const success = await keywordService.updateKeywordMetrics(keywordId);
+    if (success) {
+      const metrics = await storage.getKeywordMetrics(keywordId);
+      res.json(metrics);
+    } else {
+      res.status(500).json({ message: 'Failed to update keyword metrics' });
+    }
+  } catch (error) {
+    console.error('Error updating keyword metrics:', error);
+    res.status(500).json({ message: 'Failed to update keyword metrics', error: String(error) });
+  }
+});
+
 // Get keyword metrics
 keywordRouter.get('/:id/metrics', async (req: Request, res: Response) => {
   try {
@@ -152,9 +184,19 @@ keywordRouter.get('/:id/metrics', async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Not authorized to access this keyword' });
     }
 
-    const metrics = await storage.getKeywordMetrics(keywordId);
+    // Get metrics or create if not exists
+    let metrics = await storage.getKeywordMetrics(keywordId);
+    
     if (!metrics) {
-      return res.status(404).json({ message: 'No metrics found for this keyword' });
+      // Generate metrics if they don't exist yet
+      const success = await keywordService.updateKeywordMetrics(keywordId);
+      if (success) {
+        metrics = await storage.getKeywordMetrics(keywordId);
+      }
+      
+      if (!metrics) {
+        return res.status(404).json({ message: 'Failed to generate metrics for this keyword' });
+      }
     }
 
     res.json(metrics);

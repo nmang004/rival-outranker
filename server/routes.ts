@@ -1612,6 +1612,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (success) {
         // Get the latest ranking
         const latestRanking = await storage.getLatestKeywordRanking(keywordId);
+        
+        // Update metrics after ranking check
+        await keywordService.updateKeywordMetrics(keywordId);
+        
         res.json(latestRanking);
       } else {
         res.status(500).json({ message: 'Failed to check keyword ranking' });
