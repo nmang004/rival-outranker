@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { PageHeader } from '@/components/PageHeader';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Area, 
   AreaChart, 
@@ -69,10 +70,38 @@ export default function KeywordResearch() {
   const [relatedKeywords, setRelatedKeywords] = useState<RelatedKeyword[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [loadingMessage, setLoadingMessage] = useState('Analyzing keyword data...');
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: 'ascending' | 'descending';
   }>({ key: 'relevance', direction: 'descending' });
+  
+  // Fun loading messages that cycle during loading
+  const loadingMessages = [
+    "Analyzing keyword data...",
+    "Calculating search volumes...",
+    "Measuring keyword difficulty...",
+    "Finding related keywords...",
+    "Checking competition metrics...",
+    "Analyzing search trends...",
+    "Calculating SEO potential...",
+    "Discovering ranking opportunities...",
+    "Evaluating content gaps...",
+    "Mapping search intent..."
+  ];
+  
+  // Update the loading message every 2.5 seconds
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    let currentIndex = 0;
+    const intervalId = setInterval(() => {
+      currentIndex = (currentIndex + 1) % loadingMessages.length;
+      setLoadingMessage(loadingMessages[currentIndex]);
+    }, 2500);
+    
+    return () => clearInterval(intervalId);
+  }, [isLoading]);
 
   // Helper function to format numbers with K/M suffixes
   const formatNumber = (num?: number): string => {
@@ -294,17 +323,127 @@ export default function KeywordResearch() {
         </Button>
       </form>
       
-      {isLoading && (
-        <div className="mt-8 space-y-4">
-          <Skeleton className="h-[200px] w-full rounded-xl" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-[100px] rounded-xl" />
-            <Skeleton className="h-[100px] rounded-xl" />
-            <Skeleton className="h-[100px] rounded-xl" />
-          </div>
-          <Skeleton className="h-[300px] w-full rounded-xl" />
-        </div>
-      )}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mt-8 p-8 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 shadow-lg flex flex-col items-center justify-center"
+          >
+            <div className="flex flex-col items-center justify-center">
+              <motion.div
+                className="mb-6 relative"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity,
+                  repeatType: "loop"
+                }}
+              >
+                <SearchIcon size={56} className="text-blue-500" />
+                <motion.div 
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500"
+                  animate={{ 
+                    scale: [1, 1.5, 1],
+                    opacity: [0.7, 1, 0.7]
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity,
+                    repeatType: "loop" 
+                  }}
+                />
+              </motion.div>
+              
+              <motion.h3 
+                className="text-2xl font-bold text-blue-800 mb-2"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                Researching Keywords...
+              </motion.h3>
+              
+              <motion.div 
+                className="text-blue-600 text-center max-w-md mb-6"
+                key={loadingMessage}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.5 }}
+              >
+                <span className="font-medium">{loadingMessage}</span>
+                <br />
+                <span className="text-sm text-blue-500">
+                  Analyzing data for <span className="font-bold">{keyword}</span>
+                </span>
+              </motion.div>
+
+              <div className="w-full max-w-md mb-6">
+                <motion.div 
+                  className="h-2 bg-blue-200 rounded-full overflow-hidden"
+                  initial={{ width: "100%" }}
+                >
+                  <motion.div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                    animate={{ width: ["0%", "100%"] }}
+                    transition={{ 
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </motion.div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 w-full max-w-md">
+                {["Search Volume", "Keyword Difficulty", "Competition"].map((stat, i) => (
+                  <motion.div 
+                    key={stat}
+                    className="bg-white p-3 rounded-lg text-center shadow-sm border border-blue-100"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ 
+                      opacity: 1, 
+                      y: 0,
+                      transition: { delay: i * 0.2 }
+                    }}
+                  >
+                    <motion.div 
+                      className="text-xs text-blue-800 font-medium"
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ 
+                        duration: 1.5, 
+                        repeat: Infinity,
+                        repeatType: "loop",
+                        delay: i * 0.3
+                      }}
+                    >
+                      {stat}
+                    </motion.div>
+                    <motion.div 
+                      className="mt-1 bg-blue-100 h-2 rounded-full overflow-hidden"
+                    >
+                      <motion.div 
+                        className="h-full bg-blue-500 rounded-full"
+                        animate={{ width: ["10%", "90%", "40%", "60%", "20%"] }}
+                        transition={{ 
+                          duration: 3,
+                          repeat: Infinity,
+                          repeatType: "loop",
+                          delay: i * 0.2
+                        }}
+                      />
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {!isLoading && keywordData && (
         <div className="mt-8">
