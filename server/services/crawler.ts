@@ -38,9 +38,9 @@ class Crawler {
         // Return a standardized error output for the analyzer
         return {
           url: normalizedUrl,
+          title: "Error Page",
           statusCode: 0,
           meta: { 
-            title: "Error Page", 
             description: "Could not access page content", 
             ogTags: {}, 
             twitterTags: {} 
@@ -60,9 +60,9 @@ class Crawler {
       if (!response || response.status !== 200 || !response.data) {
         return {
           url: normalizedUrl,
+          title: "Error Page",
           statusCode: response?.status || 0,
           meta: { 
-            title: "Error Page", 
             description: "Could not access page content", 
             ogTags: {}, 
             twitterTags: {} 
@@ -104,11 +104,12 @@ class Crawler {
       console.error('Error crawling page:', error);
       
       // Create a minimal but valid structure for analysis
+      const errorResponse = error as any;
       return {
         url: typeof url === 'string' ? url : 'unknown-url',
-        statusCode: error.response?.status || 0,
+        title: "Error Page",
+        statusCode: errorResponse?.response?.status || 0,
         meta: { 
-          title: "Error Page", 
           description: "Error crawling page", 
           ogTags: {}, 
           twitterTags: {} 
@@ -127,7 +128,7 @@ class Crawler {
         schema: [],
         mobileCompatible: false,
         performance: { loadTime: 0 },
-        error: error.message || 'Unknown error occurred while crawling',
+        error: errorResponse?.message || 'Unknown error occurred while crawling',
         rawHtml: '<html><body>Error crawling page content</body></html>'
       };
     }
