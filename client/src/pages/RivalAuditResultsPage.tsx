@@ -46,6 +46,7 @@ export default function RivalAuditResultsPage() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("summary");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isContinuing, setIsContinuing] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "dashboard">("list");
   
   // Get auditId and URL from URL query params

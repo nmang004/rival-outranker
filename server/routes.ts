@@ -1062,7 +1062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rival Audit routes
   app.post("/api/rival-audit", async (req: Request, res: Response) => {
     try {
-      const { url } = req.body;
+      const { url, continueCrawl } = req.body;
       
       if (!url) {
         return res.status(400).json({ error: "URL is required" });
@@ -1072,21 +1072,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const auditId = Math.floor(Math.random() * 1000) + 1;
       
       // Return the audit ID immediately
-      res.status(202).json({ id: auditId, message: "Audit started", url });
+      res.status(202).json({ 
+        id: auditId, 
+        message: continueCrawl ? "Continuing audit" : "Audit started", 
+        url 
+      });
       
       // Perform the actual audit asynchronously
       setTimeout(async () => {
         try {
-          console.log(`Starting rival audit for ${url} with ID ${auditId}`);
+          if (continueCrawl) {
+            console.log(`Continuing rival audit for ${url} with ID ${auditId}`);
+            // Continue crawling from where it left off
+            const auditResults = await rivalAuditCrawler.continueCrawl(url);
+            // Store the results in our in-memory cache
+            auditCache[auditId] = auditResults;
+            console.log(`Completed continued rival audit for ${url} with ID ${auditId}`);
+          } else {
+            console.log(`Starting new rival audit for ${url} with ID ${auditId}`);
+            // Crawl and analyze the website using our new crawler
+            const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+            // Store the results in our in-memory cache
+            auditCache[auditId] = auditResults;
+            console.log(`Completed rival audit for ${url} with ID ${auditId}`);
+          }
           
-          // Crawl and analyze the website using our new crawler
-          const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
-          
-          // Store the results in our in-memory cache
-          auditCache[auditId] = auditResults;
-          
-          console.log(`Completed rival audit for ${url} with ID ${auditId}`);
-          console.log(`Found ${auditResults.summary.priorityOfiCount} Priority OFIs, ${auditResults.summary.ofiCount} OFIs`);
+          console.log(`Found ${auditCache[auditId].summary.priorityOfiCount} Priority OFIs, ${auditCache[auditId].summary.ofiCount} OFIs`);
           console.log(`Cached audit results for ID ${auditId}`);
           
           // Associate this audit with current user if they're authenticated
