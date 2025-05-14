@@ -3,7 +3,13 @@ import {
   User, InsertUser, UpdateUser, 
   Project, InsertProject, UpdateProject,
   ProjectAnalysis, InsertProjectAnalysis,
-  users, analyses, projects, projectAnalyses 
+  Keyword, InsertKeyword,
+  KeywordMetrics, InsertKeywordMetrics,
+  KeywordRanking, InsertKeywordRanking,
+  CompetitorRanking, InsertCompetitorRanking,
+  KeywordSuggestion, InsertKeywordSuggestion,
+  users, analyses, projects, projectAnalyses,
+  keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, inArray, sql } from "drizzle-orm";
@@ -41,6 +47,37 @@ export interface IStorage {
   addAnalysisToProject(projectAnalysis: InsertProjectAnalysis): Promise<ProjectAnalysis>;
   removeAnalysisFromProject(projectId: number, analysisId: number): Promise<void>;
   getProjectAnalyses(projectId: number): Promise<Analysis[]>;
+  
+  // Keyword operations
+  createKeyword(keyword: InsertKeyword): Promise<Keyword>;
+  getKeyword(id: number): Promise<Keyword | undefined>;
+  getKeywordsByUserId(userId: string): Promise<Keyword[]>;
+  getKeywordsByProjectId(projectId: number): Promise<Keyword[]>;
+  updateKeyword(id: number, keywordData: Partial<InsertKeyword>): Promise<Keyword>;
+  deleteKeyword(id: number): Promise<void>;
+  
+  // Keyword Metrics operations
+  createKeywordMetrics(metrics: InsertKeywordMetrics): Promise<KeywordMetrics>;
+  getKeywordMetrics(keywordId: number): Promise<KeywordMetrics | undefined>;
+  updateKeywordMetrics(keywordId: number, metricsData: Partial<InsertKeywordMetrics>): Promise<KeywordMetrics>;
+  
+  // Keyword Rankings operations
+  createKeywordRanking(ranking: InsertKeywordRanking): Promise<KeywordRanking>;
+  getKeywordRankings(keywordId: number, limit?: number): Promise<KeywordRanking[]>;
+  getLatestKeywordRanking(keywordId: number): Promise<KeywordRanking | undefined>;
+  getRankingHistory(keywordId: number, startDate?: Date, endDate?: Date): Promise<KeywordRanking[]>;
+  
+  // Competitor Rankings operations
+  createCompetitorRanking(ranking: InsertCompetitorRanking): Promise<CompetitorRanking>;
+  getCompetitorRankings(keywordId: number, competitorUrl: string, limit?: number): Promise<CompetitorRanking[]>;
+  getCompetitorRankingsByKeyword(keywordId: number): Promise<CompetitorRanking[]>;
+  getLatestCompetitorRanking(keywordId: number, competitorUrl: string): Promise<CompetitorRanking | undefined>;
+  
+  // Keyword Suggestions operations
+  createKeywordSuggestion(suggestion: InsertKeywordSuggestion): Promise<KeywordSuggestion>;
+  getKeywordSuggestions(userId: string, baseKeyword: string): Promise<KeywordSuggestion[]>;
+  saveKeywordSuggestion(id: number): Promise<KeywordSuggestion>;
+  deleteKeywordSuggestion(id: number): Promise<void>;
 }
 
 // Database storage implementation
