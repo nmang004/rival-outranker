@@ -31,20 +31,20 @@ interface RivalAuditSummaryProps {
 export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
   const { toast } = useToast();
   
-  // Function to handle exporting to Excel
-  const handleExportToExcel = () => {
+  // Function to handle exporting to different formats
+  const handleExport = (format: 'excel' | 'csv') => {
     try {
       toast({
-        title: "Exporting audit data",
-        description: "Your Excel file is being generated and will download shortly.",
+        title: `Exporting audit data as ${format.toUpperCase()}`,
+        description: `Your ${format.toUpperCase()} file is being generated and will download shortly.`,
         duration: 3000
       });
       
-      window.open(`/api/rival-audit/1/export?url=${encodeURIComponent(audit.url)}`, '_blank');
+      window.open(`/api/rival-audit/1/export?url=${encodeURIComponent(audit.url)}&format=${format}`, '_blank');
     } catch (error) {
       toast({
         title: "Export failed",
-        description: "There was an error exporting the audit data. Please try again.",
+        description: `There was an error exporting the audit data to ${format.toUpperCase()}. Please try again.`,
         variant: "destructive",
         duration: 5000
       });
@@ -115,15 +115,26 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
               Summary of findings across all audit categories
             </CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={handleExportToExcel}
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            <span>Export to Excel</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1" 
+              onClick={() => handleExport('excel')}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Excel</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1" 
+              onClick={() => handleExport('csv')}
+            >
+              <Download className="h-4 w-4" />
+              <span>CSV</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

@@ -8,6 +8,7 @@ import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
 import { searchService } from "./services/searchService";
 import { rivalAuditCrawler } from "./services/rivalAuditCrawler";
 import { generateRivalAuditExcel } from "./services/excelExporter";
+import { generateRivalAuditCsv } from "./services/csvExporter";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -1107,15 +1108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const url = req.query.url as string;
+      const format = (req.query.format || 'excel') as string;
       let auditData;
       
       // If we have a URL, try to generate a live audit with the crawler
       if (url) {
         try {
-          console.log(`Generating live audit for Excel export: ${url}`);
+          console.log(`Generating live audit for export (${format}): ${url}`);
           auditData = await rivalAuditCrawler.crawlAndAudit(url);
         } catch (crawlerError) {
-          console.error("Error generating live audit for Excel export:", crawlerError);
+          console.error(`Error generating live audit for ${format} export:`, crawlerError);
           // Fall back to mock data if crawler fails
           auditData = generateMockRivalAudit(url);
         }
@@ -1125,16 +1127,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         auditData = generateMockRivalAudit("https://example.com");
       }
       
+      // Format the URL for the filename
+      const cleanUrl = (url || "example.com").replace(/https?:\/\//i, '').replace(/[^a-z0-9]/gi, '-');
+      const dateStr = new Date().toISOString().split('T')[0];
+      
+      // Handle CSV format
+      if (format.toLowerCase() === 'csv') {
+        // Generate CSV content
+        console.log("Generating CSV file...");
+        const csvContent = generateRivalAuditCsv(auditData);
+        
+        // Set headers for CSV download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=rival-audit-${cleanUrl}-${dateStr}.csv`);
+        
+        console.log("Sending CSV file...");
+        res.send(csvContent);
+        return;
+      }
+      
+      // Default to Excel format
       // Generate Excel file
       console.log("Generating Excel file...");
       const excelBuffer = await generateRivalAuditExcel(auditData);
       
-      // Format the URL for the filename
-      const cleanUrl = (url || "example.com").replace(/https?:\/\//i, '').replace(/[^a-z0-9]/gi, '-');
-      
-      // Set headers
+      // Set headers for Excel download
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=rival-audit-${cleanUrl}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      res.setHeader('Content-Disposition', `attachment; filename=rival-audit-${cleanUrl}-${dateStr}.xlsx`);
       
       console.log("Sending Excel file...");
       
