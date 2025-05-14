@@ -87,7 +87,7 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
                 <Search className="h-3.5 w-3.5 xl:h-4 xl:w-4 mr-1.5 text-blue-500" />
                 <span className="text-xs xl:text-sm">
                   API Queries: <span className="font-medium text-foreground">{data.queryCount}</span>
-                  {data.usingBingSearch && <span className="ml-1 text-green-500 text-xs">(Live data)</span>}
+                  {data.usingRealSearch && <span className="ml-1 text-green-500 text-xs">(Live data)</span>}
                 </span>
               </span>
             )}
@@ -105,9 +105,9 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
         
         <p className="text-sm xl:text-base text-muted-foreground">
           Based on analysis of search rankings and online presence for "{displayKeyword}" in {searchLocation}.
-          {data?.usingBingSearch && (
+          {data?.usingRealSearch && (
             <span className="ml-1 text-xs text-blue-500">
-              Using real-time search data from Bing Search API.
+              Using real-time search data from Google Search API.
             </span>
           )}
         </p>

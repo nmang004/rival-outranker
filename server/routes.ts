@@ -432,9 +432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Log competitor analysis presence
-          if (analysisToReturn.results.competitorAnalysis) {
+          const results = analysisToReturn.results as any; // Type assertion to avoid errors
+          if (results.competitorAnalysis) {
             console.log("Analysis contains competitor data with", 
-              analysisToReturn.results.competitorAnalysis.competitors?.length || 0, 
+              results.competitorAnalysis.competitors?.length || 0, 
               "competitors");
           } else {
             console.log("Analysis does not contain competitor data");
