@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Globe, Search, BarChart2, Loader2, AlertCircle } from 'lucide-react';
+import { ExternalLink, Globe, Search, BarChart2, Loader2, AlertCircle, Tag } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,10 +23,14 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
   // Determine the search keyword - if keyword is provided use it directly
   const searchKeyword = keyword || '';
   
-  const { data, isLoading, error } = useQuery<any>({
+  // Use API endpoint with all parameters for best keyword selection
+  const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(searchLocation)}&keyword=${encodeURIComponent(searchKeyword)}`],
     refetchOnWindowFocus: false
   });
+  
+  // The query's response might include the actual keyword that was used
+  const displayKeyword = data?.keyword || searchKeyword || 'Your industry';
   
   if (isLoading) {
     return (
@@ -70,11 +74,28 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
   }
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Top Competitors in {searchLocation}</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h3 className="text-lg font-semibold">Top Competitors in {searchLocation}</h3>
+          
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Tag className="h-4 w-4 mr-1.5" />
+            <span>Keyword: <span className="font-medium text-foreground">{displayKeyword}</span></span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ml-2 h-7 px-2"
+              onClick={() => refetch()}
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+        
         <p className="text-sm text-muted-foreground">
-          Based on analysis of search rankings and online presence for your industry in {searchLocation}.
+          Based on analysis of search rankings and online presence for "{displayKeyword}" in {searchLocation}.
         </p>
       </div>
       
@@ -95,13 +116,19 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
                   </div>
                   
                   <p className="text-sm text-muted-foreground mb-4 flex items-center">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    <ExternalLink className="h-3 w-3 mr-1 flex-shrink-0" />
+                    <a 
+                      href={competitor.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="hover:underline truncate"
+                      title={competitor.url}
+                    >
                       {competitor.url}
                     </a>
                   </p>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-4">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">SEO Score</p>
                       <div className="flex items-center">
@@ -132,17 +159,35 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
                         <span className="text-sm font-medium">{competitor.keywords || 'N/A'}</span>
                       </div>
                     </div>
+                    
+                    {competitor.contentScore && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Content Score</p>
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium">{competitor.contentScore}/10</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {competitor.loadTime && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Load Time</p>
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium">{competitor.loadTime}s</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
-                <div className="w-full md:w-1/3 bg-muted p-6 border-t md:border-t-0 md:border-l">
+                <div className="w-full md:w-1/3 xl:w-1/4 bg-muted p-6 border-t md:border-t-0 md:border-l">
                   <h5 className="text-sm font-medium mb-2">Key Strengths</h5>
                   <ul className="space-y-1 text-sm">
-                    {competitor.strengths ? (
+                    {competitor.strengths && competitor.strengths.length > 0 ? (
                       competitor.strengths.map((strength: string, idx: number) => (
                         <li key={idx} className="flex items-start">
-                          <span className="rounded-full h-4 w-4 bg-green-100 text-green-600 flex items-center justify-center text-xs mr-2 mt-0.5">+</span>
-                          {strength}
+                          <span className="rounded-full h-4 w-4 bg-green-100 text-green-600 flex items-center justify-center text-xs mr-2 mt-0.5 flex-shrink-0">+</span>
+                          <span className="break-words">{strength}</span>
                         </li>
                       ))
                     ) : (
@@ -181,7 +226,7 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
                 <div className="font-medium">{keyword.term}</div>
                 <div>{keyword.volume}</div>
                 <div>{keyword.competition}</div>
-                <div>{keyword.topCompetitor}</div>
+                <div className="truncate" title={keyword.topCompetitor}>{keyword.topCompetitor}</div>
               </div>
             ))}
           </div>

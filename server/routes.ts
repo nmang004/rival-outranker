@@ -345,46 +345,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Analyzing competitors for URL: ${url}, Location: ${location}`);
       
       try {
-        // Crawl the page first to extract context and keywords
-        const pageData = await crawler.crawlPage(url);
-        
-        // Extract primary keyword by analyzing title and content more intelligently
+        // First priority: Check if there's an existing SEO analysis with a primary keyword
         let primaryKeyword = '';
+        const existingAnalyses = await storage.getAnalysesByUrl(url);
         
-        // If user provided keyword, use that
-        if (keyword) {
-          primaryKeyword = keyword;
-        } 
-        // Otherwise, try to extract from title and combine with location
-        else {
-          const title = pageData.title || '';
-          const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
-          
-          // Try to extract a business category from title or h1
-          const businessTypes = [
-            'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
-            'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
-            'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
-            'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
-            'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy'
-          ];
-          
-          // Look for business types in the title and h1
-          let businessType = '';
-          for (const type of businessTypes) {
-            if (title.toLowerCase().includes(type.toLowerCase()) || 
-                h1Text.toLowerCase().includes(type.toLowerCase())) {
-              businessType = type;
-              break;
+        if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
+          try {
+            // Try to parse the results JSON to extract the primary keyword
+            const results = typeof existingAnalyses[0].results === 'string'
+              ? JSON.parse(existingAnalyses[0].results)
+              : existingAnalyses[0].results;
+              
+            if (results?.keywordAnalysis?.primaryKeyword) {
+              primaryKeyword = results.keywordAnalysis.primaryKeyword;
+              console.log(`Using primary keyword from existing analysis: "${primaryKeyword}"`);
             }
+          } catch (e) {
+            console.error("Error parsing analysis results:", e);
+          }
+        }
+        
+        // Second priority: If user provided keyword directly, use that
+        if (!primaryKeyword && keyword) {
+          primaryKeyword = keyword;
+          console.log(`Using provided keyword parameter: "${primaryKeyword}"`);
+        }
+        
+        // Third priority: Crawl the page to extract keywords
+        if (!primaryKeyword) {
+          console.log("No existing keyword found, crawling page to extract one");
+          const pageData = await crawler.crawlPage(url);
+          
+          // Try to analyze the page content for a better keyword extraction
+          try {
+            const analysisResult = await analyzer.analyzePage(url, pageData);
+            if (analysisResult?.keywordAnalysis?.primaryKeyword) {
+              primaryKeyword = analysisResult.keywordAnalysis.primaryKeyword;
+              console.log(`Extracted primary keyword via analysis: "${primaryKeyword}"`);
+            }
+          } catch (analysisError) {
+            console.error("Error extracting keyword via analysis:", analysisError);
           }
           
-          // Combine business type with location for a targeted keyword
-          if (businessType) {
-            primaryKeyword = `${businessType} in ${location}`;
-          } else {
-            // Fallback to a simple extraction of the first few words from title
-            primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${location}`;
+          // If still no keyword, extract from title and h1
+          if (!primaryKeyword) {
+            const title = pageData.title || '';
+            const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+            
+            // Try to extract a business category from title or h1
+            const businessTypes = [
+              'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
+              'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
+              'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
+              'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
+              'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy',
+              'freight', 'logistics', 'shipping', 'transport', 'forwarding'
+            ];
+            
+            // Look for business types in the title and h1
+            let businessType = '';
+            for (const type of businessTypes) {
+              if (title.toLowerCase().includes(type.toLowerCase()) || 
+                  h1Text.toLowerCase().includes(type.toLowerCase())) {
+                businessType = type;
+                break;
+              }
+            }
+            
+            // Combine business type with location for a targeted keyword
+            if (businessType) {
+              primaryKeyword = `${businessType} in ${location}`;
+            } else {
+              // Fallback to a simple extraction from the content
+              primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${location}`;
+            }
+            
+            console.log(`Using fallback keyword extraction: "${primaryKeyword}"`);
           }
         }
         
@@ -465,7 +501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint for competitor analysis (POST)
   app.post("/api/competitors", async (req: Request, res: Response) => {
     try {
-      const { url, city } = req.body;
+      const { url, city, keyword } = req.body;
       
       if (!url || typeof url !== 'string') {
         return res.status(400).json({ error: "URL parameter is required" });
@@ -484,78 +520,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Perform the actual analysis asynchronously
         (async () => {
           try {
-            // First - Check if we have an existing analysis for this URL
+            // Normalize the URL for consistent matching
             const normalizedUrl = url.toLowerCase().trim()
               .replace(/^https?:\/\//, '')
               .replace(/^www\./, '')
               .replace(/\/$/, '');
             
-            // Try to get existing analyses for this URL which may already have the primary keyword
-            const existingAnalyses = await storage.getAnalysesByUrl(url);
-            
+            // First priority: If user provided specific keyword, use it
             let primaryKeyword = '';
+            if (keyword) {
+              primaryKeyword = keyword;
+              console.log(`Using provided keyword from request: "${primaryKeyword}"`);
+            }
             
-            // If we have existing analyses with a defined keyword, use that
-            if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
-              // Try to parse the results JSON to extract the primary keyword
-              try {
-                const results = typeof existingAnalyses[0].results === 'string' 
-                  ? JSON.parse(existingAnalyses[0].results) 
-                  : existingAnalyses[0].results;
-                
-                if (results && results.keywordAnalysis && results.keywordAnalysis.primaryKeyword) {
-                  primaryKeyword = results.keywordAnalysis.primaryKeyword;
-                  console.log(`Using existing primary keyword from analysis: ${primaryKeyword}`);
-                }
-              } catch (e) {
-                console.error("Error parsing analysis results:", e);
-              }
-            } 
-            
-            // If no existing keyword, crawl and analyze to get one
+            // Second priority: Check for existing analyses with a primary keyword
             if (!primaryKeyword) {
-              // Crawl the page to extract keywords
-              const pageData = await crawler.crawlPage(url);
+              const existingAnalyses = await storage.getAnalysesByUrl(url);
               
-              // Get a proper SEO analysis to extract the most accurate keyword
-              const keywordAnalysisResult = await analyzer.analyzePage(url, pageData);
-              primaryKeyword = keywordAnalysisResult.keywordAnalysis.primaryKeyword;
-              
-              console.log(`Analyzed and extracted primary keyword: ${primaryKeyword}`);
-              
-              // If still no primary keyword, use title-based approach as fallback
-              if (!primaryKeyword) {
-                const title = pageData.title || '';
-                const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
-                
-                // Try to extract a business category from title or h1
-                const businessTypes = [
-                  'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
-                  'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
-                  'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
-                  'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
-                  'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy'
-                ];
-                
-                // Look for business types in the title and h1
-                let businessType = '';
-                for (const type of businessTypes) {
-                  if (title.toLowerCase().includes(type.toLowerCase()) || 
-                      h1Text.toLowerCase().includes(type.toLowerCase())) {
-                    businessType = type;
-                    break;
+              if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
+                try {
+                  const results = typeof existingAnalyses[0].results === 'string' 
+                    ? JSON.parse(existingAnalyses[0].results) 
+                    : existingAnalyses[0].results;
+                  
+                  if (results?.keywordAnalysis?.primaryKeyword) {
+                    primaryKeyword = results.keywordAnalysis.primaryKeyword;
+                    console.log(`Using primary keyword from existing analysis: "${primaryKeyword}"`);
                   }
+                } catch (e) {
+                  console.error("Error parsing analysis results:", e);
+                }
+              }
+            }
+            
+            // Third priority: Crawl and analyze the page for the most accurate keyword
+            if (!primaryKeyword) {
+              console.log("No existing keyword found, crawling and analyzing page...");
+              try {
+                const pageData = await crawler.crawlPage(url);
+                
+                // Get a proper SEO analysis to extract the most accurate keyword
+                const analysisResult = await analyzer.analyzePage(url, pageData);
+                if (analysisResult?.keywordAnalysis?.primaryKeyword) {
+                  primaryKeyword = analysisResult.keywordAnalysis.primaryKeyword;
+                  console.log(`Analyzed and extracted primary keyword: "${primaryKeyword}"`);
                 }
                 
-                // Combine business type with location for a targeted keyword
-                if (businessType) {
-                  primaryKeyword = `${businessType} in ${city}`;
-                } else {
-                  // Fallback to a simple extraction from title
-                  primaryKeyword = title.split(' ').slice(0, 3).join(' ');
+                // If still no primary keyword, use title-based approach as fallback
+                if (!primaryKeyword) {
+                  const title = pageData.title || '';
+                  const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+                  
+                  // Try to extract a business category from title or h1
+                  const businessTypes = [
+                    'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
+                    'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
+                    'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
+                    'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
+                    'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy',
+                    'freight', 'logistics', 'shipping', 'transport', 'forwarding'
+                  ];
+                  
+                  // Look for business types in the title and h1
+                  let businessType = '';
+                  for (const type of businessTypes) {
+                    if (title.toLowerCase().includes(type.toLowerCase()) || 
+                        h1Text.toLowerCase().includes(type.toLowerCase())) {
+                      businessType = type;
+                      break;
+                    }
+                  }
+                  
+                  // Combine business type with location for a targeted keyword
+                  if (businessType) {
+                    primaryKeyword = `${businessType} in ${city}`;
+                  } else {
+                    // Check for keywords in meta description and content
+                    const metaDesc = pageData.meta.description || '';
+                    const bodyContent = pageData.content || '';
+                    
+                    // First try to find industry-related terms in content
+                    const industryTerms = ['logistics', 'shipping', 'transport', 'freight', 'forwarding', 
+                      'delivery', 'cargo', 'import', 'export', 'supply chain', 'distribution'];
+                      
+                    let foundTerm = '';
+                    for (const term of industryTerms) {
+                      if (bodyContent.toLowerCase().includes(term.toLowerCase()) || 
+                          metaDesc.toLowerCase().includes(term.toLowerCase())) {
+                        foundTerm = term;
+                        break;
+                      }
+                    }
+                    
+                    if (foundTerm) {
+                      primaryKeyword = `${foundTerm} in ${city}`;
+                    } else {
+                      // Last resort fallback - use company name from title
+                      primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${city}`;
+                    }
+                  }
+                  
+                  console.log(`Using fallback keyword generation: "${primaryKeyword}"`);
                 }
-                
-                console.log(`Using fallback keyword generation: ${primaryKeyword}`);
+              } catch (crawlError) {
+                console.error("Error crawling page:", crawlError);
+                // Default to a generic keyword if all else fails
+                primaryKeyword = "business in " + city;
               }
             }
             
