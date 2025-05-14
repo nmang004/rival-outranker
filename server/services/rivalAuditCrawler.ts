@@ -86,7 +86,7 @@ class RivalAuditCrawler {
   private maxPages: number = 100; // Increased to 100 pages for comprehensive coverage
   private baseUrl: string = '';
   private baseDomain: string = '';
-  private requestDelay: number = 300; // Use 300ms delay between requests for better speed while still being respectful
+  private requestDelay: number = 200; // Use 200ms delay between requests for faster crawling
   
   // Store crawler state for continued crawls
   private pendingLinks: string[] = [];
@@ -678,16 +678,21 @@ class RivalAuditCrawler {
     const specificServiceTerms = [
       // HVAC specific service terms
       'ac-repair', 'ac-installation', 'ac-replacement', 'ac-maintenance', 'ac-tune-up',
-      'air-conditioning', 'air-conditioner', 'cooling', 'a/c', 'hvac',
+      'air-conditioning', 'air-conditioner', 'cooling', 'a/c', 'hvac', 'ac',
       'furnace', 'heating', 'heat-pump', 'boiler', 'heater', 'thermostat',
       'indoor-air-quality', 'air-purifier', 'air-cleaner', 'air-filtration',
       'duct', 'duct-cleaning', 'ductwork', 'duct-sealing', 'duct-repair',
       'commercial-hvac', 'residential-hvac', 'emergency', '24-hour', 'same-day',
+      'plumbing', 'electrical', 'water-heater', 'water-filtration', 'sump-pump',
+      'generator', 'humidifier', 'dehumidifier', 'mini-split', 'ductless', 
+      'zoning', 'zone-control', 'smart-home', 'thermostat', 'heat-repair',
+      'cooling-repair', 'ac-service', 'heat-service', 'system-repair',
       
       // General service-related terms
-      'repair', 'installation', 'replacement', 'maintenance', 'service', 
-      'tune-up', 'inspection', 'cleaning', 'assessment', 'evaluation',
-      'design', 'upgrade', 'conversion', 'retrofit', 'renovation',
+      'repair', 'repairs', 'installation', 'installations', 'replacement', 'replacements', 
+      'maintenance', 'service', 'services', 'install', 'replaced', 'replacing',
+      'tune-up', 'tuneup', 'tune', 'inspection', 'cleaning', 'assessment', 'evaluation',
+      'design', 'upgrade', 'conversion', 'retrofit', 'renovation', 'fix', 'fixing',
       
       // Common product/solution terms
       'system', 'unit', 'equipment', 'appliance', 'product', 'solution',
@@ -919,6 +924,30 @@ class RivalAuditCrawler {
     const path = new URL(page.url).pathname.toLowerCase();
     const pathSegments = path.split('/').filter(Boolean);
     
+    // Define comprehensive location-specific directories to help identification
+    const locationDirectories = [
+      'service-areas', 'service-area', 'areas-we-serve', 'our-service-areas',
+      'locations', 'areas', 'cities', 'counties', 'neighborhoods', 'communities',
+      'zip-codes', 'where-we-serve', 'coverage', 'service-locations', 'cities-served',
+      'service-regions', 'regions', 'regions-we-serve', 'our-locations'
+    ];
+    
+    // Location indicators that, if found in URL or title, suggest a location page
+    const locationIndicators = [
+      'county', 'city', 'town', 'village', 'borough', 'region', 'area', 'community',
+      'neighborhood', 'district', 'zip', 'postal', 'territory', 'locale', 'metro',
+      'metropolitan', 'township', 'municipality'
+    ];
+    
+    // Common US states abbreviations for detecting state locations
+    const stateAbbreviations = [
+      'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga',
+      'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky', 'la', 'me', 'md',
+      'ma', 'mi', 'mn', 'ms', 'mo', 'mt', 'ne', 'nv', 'nh', 'nj',
+      'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri', 'sc',
+      'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy'
+    ];
+    
     // Define comprehensive service terms for exclusion
     const serviceTerms = [
       'repair', 'service', 'installation', 'install', 'replacement', 'replace',
@@ -926,9 +955,8 @@ class RivalAuditCrawler {
       'ac', 'a/c', 'hvac', 'heat', 'heater', 'furnace', 'boiler', 'duct', 'thermostat'
     ];
     
-    // Define comprehensive location indicators
-    const locationDirectories = [
-      'cities-served', 'service-areas', 'service-area', 'locations', 'areas-we-serve',
+    // Define additional patterns matching specific formats for city pages
+    const cityPagePatterns = [
       'cities', 'counties', 'communities', 'zip-codes', 'territories', 'regions', 'towns'
     ];
     
