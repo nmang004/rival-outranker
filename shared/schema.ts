@@ -474,7 +474,8 @@ export const rivalAuditSchema = z.object({
     priorityOfiCount: z.number(),
     ofiCount: z.number(),
     okCount: z.number(),
-    naCount: z.number()
+    naCount: z.number(),
+    total: z.number().optional()
   })
 });
 

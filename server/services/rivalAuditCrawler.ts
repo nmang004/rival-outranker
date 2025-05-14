@@ -1583,13 +1583,25 @@ class RivalAuditCrawler {
    * This is a simplistic implementation - in production you'd use a more robust algorithm
    */
   private calculateContentSimilarity(text1: string, text2: string): number {
-    const words1 = new Set(text1.toLowerCase().split(/\s+/).filter(w => w.length > 3));
-    const words2 = new Set(text2.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+    const words1Array = text1.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    const words2Array = text2.toLowerCase().split(/\s+/).filter(w => w.length > 3);
     
-    const intersection = new Set([...words1].filter(x => words2.has(x)));
-    const union = new Set([...words1, ...words2]);
+    // Convert to Sets
+    const words1 = new Set(words1Array);
+    const words2 = new Set(words2Array);
     
-    return intersection.size / union.size;
+    // Calculate intersection manually to avoid Set iteration
+    let intersectionCount = 0;
+    words1Array.forEach(word => {
+      if (words2.has(word)) {
+        intersectionCount++;
+      }
+    });
+    
+    // Calculate union size - add sizes and subtract intersection
+    const unionSize = words1.size + words2.size - intersectionCount;
+    
+    return intersectionCount / unionSize;
   }
   
   /**
