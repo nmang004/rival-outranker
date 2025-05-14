@@ -12,7 +12,7 @@ import {
   keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, sql, asc, gte, lte } from "drizzle-orm";
 
 // Interfaces for storage operations
 export interface IStorage {
@@ -451,25 +451,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRankingHistory(keywordId: number, startDate?: Date, endDate?: Date): Promise<KeywordRanking[]> {
-    let query = db
-      .select()
-      .from(keywordRankings)
-      .where(eq(keywordRankings.keywordId, keywordId));
-    
+    // Handle different date filter combinations with separate query constructions
     if (startDate && endDate) {
-      query = query.where(
-        and(
-          sql`${keywordRankings.rankDate} >= ${startDate}`,
-          sql`${keywordRankings.rankDate} <= ${endDate}`
+      return await db
+        .select()
+        .from(keywordRankings)
+        .where(
+          and(
+            eq(keywordRankings.keywordId, keywordId),
+            gte(keywordRankings.rankDate, startDate),
+            lte(keywordRankings.rankDate, endDate)
+          )
         )
-      );
+        .orderBy(asc(keywordRankings.rankDate));
     } else if (startDate) {
-      query = query.where(sql`${keywordRankings.rankDate} >= ${startDate}`);
+      return await db
+        .select()
+        .from(keywordRankings)
+        .where(
+          and(
+            eq(keywordRankings.keywordId, keywordId),
+            gte(keywordRankings.rankDate, startDate)
+          )
+        )
+        .orderBy(asc(keywordRankings.rankDate));
     } else if (endDate) {
-      query = query.where(sql`${keywordRankings.rankDate} <= ${endDate}`);
+      return await db
+        .select()
+        .from(keywordRankings)
+        .where(
+          and(
+            eq(keywordRankings.keywordId, keywordId),
+            lte(keywordRankings.rankDate, endDate)
+          )
+        )
+        .orderBy(asc(keywordRankings.rankDate));
+    } else {
+      return await db
+        .select()
+        .from(keywordRankings)
+        .where(eq(keywordRankings.keywordId, keywordId))
+        .orderBy(asc(keywordRankings.rankDate));
     }
-    
-    return await query.orderBy(keywordRankings.rankDate);
   }
 
   // Competitor Rankings operations
@@ -482,22 +505,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCompetitorRankings(keywordId: number, competitorUrl: string, limit?: number): Promise<CompetitorRanking[]> {
-    let query = db
-      .select()
-      .from(competitorRankings)
-      .where(
-        and(
-          eq(competitorRankings.keywordId, keywordId),
-          eq(competitorRankings.competitorUrl, competitorUrl)
-        )
-      )
-      .orderBy(desc(competitorRankings.rankDate));
-    
     if (limit) {
-      query = query.limit(limit);
+      return await db
+        .select()
+        .from(competitorRankings)
+        .where(
+          and(
+            eq(competitorRankings.keywordId, keywordId),
+            eq(competitorRankings.competitorUrl, competitorUrl)
+          )
+        )
+        .orderBy(desc(competitorRankings.rankDate))
+        .limit(limit);
+    } else {
+      return await db
+        .select()
+        .from(competitorRankings)
+        .where(
+          and(
+            eq(competitorRankings.keywordId, keywordId),
+            eq(competitorRankings.competitorUrl, competitorUrl)
+          )
+        )
+        .orderBy(desc(competitorRankings.rankDate));
     }
-    
-    return await query;
   }
 
   async getCompetitorRankingsByKeyword(keywordId: number): Promise<CompetitorRanking[]> {

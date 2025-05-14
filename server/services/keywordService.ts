@@ -228,7 +228,7 @@ export class KeywordService {
             for (let i = 0; i < words.length - 1; i++) {
               for (let len = 2; len <= 5 && i + len <= words.length; len++) {
                 const phrase = words.slice(i, i + len)
-                  .filter(w => !stopwords.includes(w)) // Remove stopwords
+                  .filter((w: string) => !stopwords.includes(w)) // Remove stopwords
                   .join(' ');
                 
                 // Check if phrase is related to the base keyword
