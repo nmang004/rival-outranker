@@ -163,20 +163,33 @@ export default function CompetitorResultsPage() {
         </CardContent>
       </Card>
       
-      <div className="flex justify-between items-center mt-8">
-        <Button variant="ghost" asChild className="xl:text-base xl:h-10">
-          <Link href="/competitor-analysis">
-            <ArrowLeft className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
-            Back to Competitor Analysis
-          </Link>
-        </Button>
-        
-        <Button asChild className="xl:text-base xl:h-10 xl:px-5">
-          <Link href="/deep-content">
-            Try Deep Content Analysis
-          </Link>
-        </Button>
-      </div>
+      {/* Query usage indicator */}
+      <Card className="mt-8 bg-muted/50">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-center md:text-left text-muted-foreground">
+              <span className="font-medium">Google Custom Search API Usage</span>
+              <div className="text-xs mt-1">
+                Competitor analysis powered by Google Custom Search API.
+                <> Usage stats available in analysis results</>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <Button variant="ghost" asChild className="text-sm">
+                <Link href="/competitor-analysis">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  New Analysis
+                </Link>
+              </Button>
+              <Button asChild className="text-sm">
+                <Link href="/deep-content">
+                  Try Deep Content Analysis
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -553,6 +553,28 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
           <p className="text-muted-foreground xl:text-lg">No keyword gap data available.</p>
         </div>
       )}
+      
+      {/* Add query usage counter at the bottom */}
+      {isRequested && !isLoading && data && (
+        <div className="mt-8 pt-4 border-t">
+          <div className="flex justify-between items-center">
+            <div className="text-xs text-muted-foreground">
+              Powered by Google Custom Search API
+              {data?.queryCount && (
+                <span className="ml-1">• {data.queryCount} {data.queryCount === 1 ? 'query' : 'queries'} used</span>
+              )}
+              {data?.meta?.totalResults > 0 && (
+                <span className="ml-1">• {data.meta.totalResults} results found</span>
+              )}
+            </div>
+            {data?.queryCount && (
+              <div className="text-xs font-medium">
+                Data freshness: {new Date().toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

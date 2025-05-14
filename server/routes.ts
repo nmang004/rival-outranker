@@ -512,211 +512,226 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Analyzing competitors for URL: ${url}, Location: ${location}`);
-      
-      try {
-        // First priority: Check if there's an existing SEO analysis with a primary keyword
-        let primaryKeyword = '';
-        const existingAnalyses = await storage.getAnalysesByUrl(url);
-        
-        if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
-          try {
-            // Try to parse the results JSON to extract the primary keyword
-            const results = typeof existingAnalyses[0].results === 'string'
-              ? JSON.parse(existingAnalyses[0].results)
-              : existingAnalyses[0].results;
-              
-            if (results?.keywordAnalysis?.primaryKeyword) {
-              primaryKeyword = results.keywordAnalysis.primaryKeyword;
-              console.log(`Using primary keyword from existing analysis: "${primaryKeyword}"`);
-            }
-          } catch (e) {
-            console.error("Error parsing analysis results:", e);
-          }
-        }
-        
-        // Second priority: If user provided keyword directly, use that
-        if (!primaryKeyword && keyword) {
-          primaryKeyword = keyword;
-          console.log(`Using provided keyword parameter: "${primaryKeyword}"`);
-        }
-        
-        // Third priority: Crawl the page to extract keywords
-        if (!primaryKeyword) {
-          console.log("No existing keyword found, crawling page to extract one");
-          const pageData = await crawler.crawlPage(url);
+
+      // First check if we already have analysis for this URL
+      const existingAnalyses = await storage.getAnalysesByUrl(url);
+      if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
+        try {
+          // Get the results from the most recent analysis
+          const results = typeof existingAnalyses[0].results === 'string'
+            ? JSON.parse(existingAnalyses[0].results)
+            : existingAnalyses[0].results;
           
-          // Try to analyze the page content for a better keyword extraction
-          try {
-            const analysisResult = await analyzer.analyzePage(url, pageData);
-            if (analysisResult?.keywordAnalysis?.primaryKeyword) {
-              primaryKeyword = analysisResult.keywordAnalysis.primaryKeyword;
-              console.log(`Extracted primary keyword via analysis: "${primaryKeyword}"`);
-            }
-          } catch (analysisError) {
-            console.error("Error extracting keyword via analysis:", analysisError);
-          }
-          
-          // If still no keyword, extract from title and h1
-          if (!primaryKeyword) {
-            const title = pageData.title || '';
-            const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+          // If results already include competitor analysis data, return it
+          if (results?.competitorAnalysis) {
+            const competitorData = results.competitorAnalysis;
             
-            // Try to extract a business category from title or h1
-            const businessTypes = [
-              'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
-              'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
-              'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
-              'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
-              'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy',
-              'freight', 'logistics', 'shipping', 'transport', 'forwarding'
-            ];
-            
-            // Look for business types in the title and h1
-            let businessType = '';
-            for (const type of businessTypes) {
-              if (title.toLowerCase().includes(type.toLowerCase()) || 
-                  h1Text.toLowerCase().includes(type.toLowerCase())) {
-                businessType = type;
-                break;
-              }
-            }
-            
-            // Combine business type with location for a targeted keyword
-            if (businessType) {
-              primaryKeyword = `${businessType} in ${location}`;
-            } else {
-              // Fallback to a simple extraction from the content
-              primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${location}`;
-            }
-            
-            console.log(`Using fallback keyword extraction: "${primaryKeyword}"`);
-          }
-        }
-        
-        // Check if includeCompetitorAnalysis flag is true in the request body
-        const includeCompetitorAnalysis = req.body.includeCompetitorAnalysis === true;
-        
-        // Only run competitor analysis if the flag is true
-        let competitorResults = null;
-        let competitors = [];
-        let competitorAnalysis = null;
-        
-        if (includeCompetitorAnalysis) {
-          try {
-            // First, try to get real competitors from Google Search API
-            let searchResults = [];
-            try {
-              console.log(`Searching for competitors using Google Search API: "${primaryKeyword}, ${location}"`);
-              searchResults = await searchService.searchCompetitors(primaryKeyword, location, { count: 5 });
-              console.log(`Found ${searchResults.length} competitors from Google Search`);
-            } catch (searchError) {
-              console.error("Error using Google Search API:", searchError);
-            }
-            
-            // Fall back to the competitorAnalyzer service if Search API failed or returned no results
-            competitorResults = searchResults.length > 0
-              ? { 
-                  competitors: searchResults.map(result => ({
-                    title: result.name,
-                    url: result.url,
-                    description: result.snippet || "",
-                    strengths: ["Strong online presence", "Good search visibility", "Complete business information"],
-                    weaknesses: ["Content could be improved", "Technical SEO needs enhancement", "Limited social proof"]
-                  })),
-                  timestamp: new Date(),
-                  queryCount: searchService.getQueryCount()
-                }
-              : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
-            
-            // Transform the competitor analysis results into the expected format for the frontend
-            competitors = competitorResults.competitors.map((competitor, index) => {
-              return {
-                name: competitor.title || `Competitor ${index + 1}`,
-                url: competitor.url,
-                score: Math.round(70 + Math.random() * 20), // Generate a score between 70-90
-                domainAuthority: Math.round(40 + Math.random() * 50), // Generate a DA between 40-90
-                backlinks: Math.round(100 + Math.random() * 900), // Generate a backlink count
-                keywords: Math.round(50 + Math.random() * 450), // Generate a keyword count
-                strengths: competitor.strengths.slice(0, 3), // Limit to 3 strengths
-                weaknesses: competitor.weaknesses.slice(0, 3) // Limit to 3 weaknesses
-              };
-            });
-            
-            // Generate keyword gap data based on competitors
-            const keywordGap = [
-              { 
-                term: `${primaryKeyword} services`, 
-                volume: Math.round(800 + Math.random() * 1200), 
-                competition: "Medium", 
-                topCompetitor: competitors[0]?.name || "Unknown" 
-              },
-              { 
-                term: `best ${primaryKeyword}`, 
-                volume: Math.round(500 + Math.random() * 1000), 
-                competition: "High", 
-                topCompetitor: competitors[1]?.name || "Unknown" 
-              },
-              { 
-                term: `${primaryKeyword} near ${location}`, 
-                volume: Math.round(300 + Math.random() * 800), 
-                competition: "Low", 
-                topCompetitor: competitors[2]?.name || "Unknown" 
-              }
-            ];
-            
-            // Clean up the keyword for display (remove location if present at the end)
-            const displayKeyword = primaryKeyword
-              .replace(/\s+in\s+[a-zA-Z\s,]+$/, '') // Remove " in [location]" if it exists
-              .trim();
-            
-            competitorAnalysis = {
-              keyword: displayKeyword, // Include the keyword in the response
-              location: location, // Include the location in the response
-              competitors,
-              keywordGap,
-              marketPosition: `${Math.ceil(Math.random() * 5)}/10`,
-              growthScore: `${Math.ceil(4 + Math.random() * 6)}/10`,
-              domainAuthority: Math.round(35 + Math.random() * 35),
-              localVisibility: Math.round(50 + Math.random() * 40),
-              contentQuality: Math.round(50 + Math.random() * 30),
-              backlinkScore: Math.round(30 + Math.random() * 50),
-              queryCount: searchService.getQueryCount(), // Include the Search API query count
-              usingRealSearch: searchResults?.length > 0, // Flag to indicate whether Search API was used
-              strengths: [
-                "Strong on-page SEO implementation",
-                "Solid technical performance"
-              ],
-              weaknesses: [
-                "Limited backlink profile compared to competitors",
-                "Content depth needs improvement"
-              ],
-              recommendations: [
-                "Focus on building quality backlinks from local businesses",
-                "Create more in-depth content on core topics",
-                "Improve mobile page speed performance"
-              ]
-            };
-          } catch (competitorError) {
-            console.error("Error during competitor analysis:", competitorError);
-            // Create an empty competitor analysis object if analysis fails
-            competitorAnalysis = {
-              keyword: primaryKeyword,
-              location: location,
-              competitors: [],
-              keywordGap: [],
+            // Add query count to the response
+            return res.json({
+              ...competitorData,
               queryCount: searchService.getQueryCount(),
-              usingRealSearch: false,
-              error: "Failed to analyze competitors"
-            };
+              
+              // Add raw competitors list for full SERP display
+              // If it doesn't exist in the stored data, provide an empty array
+              allCompetitorUrls: competitorData.allCompetitorUrls || 
+                competitorData.competitors?.map((c: any) => ({ 
+                  url: c.url, 
+                  name: c.name || new URL(c.url).hostname.replace('www.', '')
+                })) || [],
+              
+              // Add meta information
+              meta: competitorData.meta || {
+                totalResults: competitorData.competitors?.length || 0,
+                analyzedResults: competitorData.competitors?.length || 0,
+                searchQuery: `${competitorData.keyword || ''} ${competitorData.location || location}`
+              }
+            });
           }
+        } catch (e) {
+          console.error("Error parsing existing analysis results:", e);
+          // Continue to generate new analysis if parsing fails
         }
-      } catch (analysisError) {
-        console.error("Error during competitor analysis:", analysisError);
-        return res.status(500).json({ error: "Failed to analyze competitors" });
       }
+      
+      // If we didn't return early, we need to generate competitor analysis
+      
+      // First priority: Check if there's an existing SEO analysis with a primary keyword
+      let primaryKeyword = '';
+      if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
+        try {
+          // Try to parse the results JSON to extract the primary keyword
+          const results = typeof existingAnalyses[0].results === 'string'
+            ? JSON.parse(existingAnalyses[0].results)
+            : existingAnalyses[0].results;
+            
+          if (results?.keywordAnalysis?.primaryKeyword) {
+            primaryKeyword = results.keywordAnalysis.primaryKeyword;
+            console.log(`Using primary keyword from existing analysis: "${primaryKeyword}"`);
+          }
+        } catch (e) {
+          console.error("Error parsing analysis results:", e);
+        }
+      }
+      
+      // Second priority: If user provided keyword directly, use that
+      if (!primaryKeyword && keyword) {
+        primaryKeyword = keyword;
+        console.log(`Using provided keyword parameter: "${primaryKeyword}"`);
+      }
+      
+      // Third priority: Crawl the page to extract keywords
+      if (!primaryKeyword) {
+        console.log("No existing keyword found, crawling page to extract one");
+        const pageData = await crawler.crawlPage(url);
+        
+        // Try to analyze the page content for a better keyword extraction
+        try {
+          const analysisResult = await analyzer.analyzePage(url, pageData);
+          if (analysisResult?.keywordAnalysis?.primaryKeyword) {
+            primaryKeyword = analysisResult.keywordAnalysis.primaryKeyword;
+            console.log(`Extracted primary keyword via analysis: "${primaryKeyword}"`);
+          }
+        } catch (analysisError) {
+          console.error("Error extracting keyword via analysis:", analysisError);
+        }
+        
+        // If still no keyword, extract from title and h1
+        if (!primaryKeyword) {
+          const title = pageData.title || '';
+          const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+          
+          // Try to extract a business category from title or h1
+          const businessTypes = [
+            'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
+            'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
+            'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
+            'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
+            'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy',
+            'freight', 'logistics', 'shipping', 'transport', 'forwarding'
+          ];
+          
+          // Look for business types in the title and h1
+          let businessType = '';
+          for (const type of businessTypes) {
+            if (title.toLowerCase().includes(type.toLowerCase()) || 
+                h1Text.toLowerCase().includes(type.toLowerCase())) {
+              businessType = type;
+              break;
+            }
+          }
+          
+          // Combine business type with location for a targeted keyword
+          if (businessType) {
+            primaryKeyword = `${businessType} in ${location}`;
+          } else {
+            // Fallback to a simple extraction from the content
+            primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${location}`;
+          }
+          
+          console.log(`Using fallback keyword extraction: "${primaryKeyword}"`);
+        }
+      }
+      
+      // Analyze competitors with the keyword and location
+      const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
+      
+      // Transform the competitor analysis results into a format for the frontend
+      const competitors = competitorResults.competitors.map((competitor, index) => {
+        return {
+          name: competitor.title || `Competitor ${index + 1}`,
+          url: competitor.url,
+          score: Math.round(70 + Math.random() * 20), // Generate a score between 70-90
+          domainAuthority: Math.round(40 + Math.random() * 50), // Generate a DA between 40-90
+          backlinks: Math.round(100 + Math.random() * 900), // Generate a backlink count
+          keywords: Math.round(50 + Math.random() * 450), // Generate a keyword count
+          strengths: competitor.strengths.slice(0, 3), // Limit to 3 strengths
+          weaknesses: competitor.weaknesses.slice(0, 3) // Limit to 3 weaknesses
+        };
+      });
+      
+      // Generate keyword gap data based on competitors
+      const keywordGap = [
+        { 
+          term: `${primaryKeyword} services`, 
+          volume: Math.round(800 + Math.random() * 1200), 
+          competition: "Medium", 
+          topCompetitor: competitors[0]?.name || "Unknown" 
+        },
+        { 
+          term: `best ${primaryKeyword}`, 
+          volume: Math.round(500 + Math.random() * 1000), 
+          competition: "High", 
+          topCompetitor: competitors[1]?.name || "Unknown" 
+        },
+        { 
+          term: `${primaryKeyword} near ${location}`, 
+          volume: Math.round(300 + Math.random() * 800), 
+          competition: "Low", 
+          topCompetitor: competitors[2]?.name || "Unknown" 
+        }
+      ];
+      
+      // Clean up the keyword for display (remove location if present at the end)
+      const displayKeyword = primaryKeyword
+        .replace(/\s+in\s+[a-zA-Z\s,]+$/, '') // Remove " in [location]" if it exists
+        .trim();
+      
+      // Create the competitor analysis response
+      const competitorAnalysis = {
+        keyword: displayKeyword, // Include the keyword in the response
+        location: location, // Include the location in the response
+        competitors,
+        allCompetitorUrls: competitorResults.allCompetitorUrls || 
+          competitors.map(c => ({ 
+            url: c.url, 
+            name: new URL(c.url).hostname.replace('www.', '') 
+          })),
+        keywordGap,
+        marketPosition: `${Math.ceil(Math.random() * 5)}/10`,
+        growthScore: `${Math.ceil(4 + Math.random() * 6)}/10`,
+        domainAuthority: Math.round(35 + Math.random() * 35),
+        localVisibility: Math.round(50 + Math.random() * 40),
+        contentQuality: Math.round(50 + Math.random() * 30),
+        backlinkScore: Math.round(30 + Math.random() * 50),
+        queryCount: searchService.getQueryCount(), // Include the Search API query count
+        meta: competitorResults.meta || {
+          totalResults: competitors.length,
+          analyzedResults: competitors.length,
+          searchQuery: `${displayKeyword} ${location}`
+        },
+        strengths: [
+          "Strong on-page SEO implementation",
+          "Solid technical performance"
+        ],
+        weaknesses: [
+          "Limited backlink profile compared to competitors",
+          "Content depth needs improvement"
+        ],
+        recommendations: [
+          "Focus on building quality backlinks from local businesses",
+          "Create more in-depth content on core topics",
+          "Improve mobile page speed performance"
+        ]
+      };
+      
+      // Return the competitor analysis data
+      return res.json(competitorAnalysis);
     } catch (error) {
       console.error("Error performing competitor analysis:", error);
-      res.status(500).json({ error: "Failed to analyze competitors" });
+      return res.status(500).json({ 
+        error: "Failed to analyze competitors",
+        queryCount: searchService.getQueryCount(),
+        keyword: "",
+        location: "",
+        competitors: [],
+        allCompetitorUrls: [],
+        meta: {
+          totalResults: 0,
+          analyzedResults: 0,
+          searchQuery: "",
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
+      });
     }
   });
   
