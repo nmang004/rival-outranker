@@ -1043,7 +1043,7 @@ class RivalAuditCrawler {
       importance: 'High',
       notes: servicePages.length === 0 ? "No dedicated service pages found" : 
              servicePages.length === 1 ? "Only one service page found" :
-             undefined
+             `Found ${servicePages.length} service pages`
     });
     
     if (servicePages.length > 0) {
@@ -1055,15 +1055,9 @@ class RivalAuditCrawler {
         description: "Content should focus on customer needs",
         status: averageServiceWordCount >= 500 ? 'OK' : 'OFI',
         importance: 'High',
-        notes: averageServiceWordCount < 500 ? "Service pages may be too brief" : undefined
-      });
-      
-      // Check for industry jargon
-      items.push({
-        name: "Avoids heavy use of industry jargon?",
-        description: "Content should be understandable to the average user",
-        status: 'OK', // We can't really check this without NLP, default to OK
-        importance: 'Medium'
+        notes: averageServiceWordCount < 500 ? 
+          `Service pages may be too brief (average ${Math.round(averageServiceWordCount)} words)` : 
+          `Good content length (average ${Math.round(averageServiceWordCount)} words)`
       });
       
       // Check for detail level
@@ -1072,56 +1066,159 @@ class RivalAuditCrawler {
         description: "Pages should provide comprehensive information",
         status: averageServiceWordCount >= 800 ? 'OK' : 'OFI',
         importance: 'High',
-        notes: averageServiceWordCount < 800 ? "Service pages may need more detail" : undefined
+        notes: averageServiceWordCount < 800 ? 
+          "Service pages need more detail for comprehensive coverage" : 
+          "Service pages have good level of detail"
+      });
+      
+      // Check for proper headings structure
+      const hasProperHeadings = servicePages.every(page => 
+        page.headings.h1.length === 1 && page.headings.h2.length >= 2
+      );
+      
+      items.push({
+        name: "Proper heading structure?",
+        description: "Each page should have one H1 and multiple H2 headings",
+        status: hasProperHeadings ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: !hasProperHeadings ? 
+          "Some service pages have improper heading structure" :
+          "Good heading structure on service pages"
+      });
+      
+      // Check for schema markup
+      const pagesWithSchema = servicePages.filter(page => page.hasSchema).length;
+      const schemaPercentage = (pagesWithSchema / servicePages.length) * 100;
+      
+      items.push({
+        name: "Service pages have schema markup?",
+        description: "Pages should have structured data for better SEO",
+        status: schemaPercentage >= 50 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: schemaPercentage < 50 ? 
+          `Only ${Math.round(schemaPercentage)}% of service pages have schema markup` : 
+          `${Math.round(schemaPercentage)}% of service pages have schema markup`
       });
       
       // Check for CTAs
-      const hasCTAs = servicePages.some(page => {
+      const pagesWithCTAs = servicePages.filter(page => {
         const pageText = [
           ...page.headings.h1,
           ...page.headings.h2,
-          ...page.headings.h3
+          ...page.headings.h3,
+          page.bodyText
         ].join(' ').toLowerCase();
         
         // Look for common CTA phrases
         const ctaPhrases = ['call', 'contact', 'get a quote', 'free quote', 'book', 'schedule', 'learn more'];
         return ctaPhrases.some(phrase => pageText.includes(phrase));
-      });
+      }).length;
+      
+      const ctaPercentage = (pagesWithCTAs / servicePages.length) * 100;
       
       items.push({
         name: "Strong and clear Call To Action (CTA)?",
         description: "Each page should have a clear next step for users",
-        status: hasCTAs ? 'OK' : 'OFI',
-        importance: 'High'
+        status: ctaPercentage >= 80 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: ctaPercentage < 80 ? 
+          `Only ${Math.round(ctaPercentage)}% of service pages have clear CTAs` : 
+          `${Math.round(ctaPercentage)}% of service pages have clear CTAs`
       });
+      
+      // Check for internal linking
+      const pagesWithInternalLinks = servicePages.filter(page => 
+        page.links.internal.length >= 3
+      ).length;
+      
+      const internalLinkPercentage = (pagesWithInternalLinks / servicePages.length) * 100;
+      
+      items.push({
+        name: "Good internal linking?",
+        description: "Service pages should link to related content",
+        status: internalLinkPercentage >= 70 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: internalLinkPercentage < 70 ? 
+          `Only ${Math.round(internalLinkPercentage)}% of service pages have good internal linking` : 
+          `${Math.round(internalLinkPercentage)}% of service pages have good internal linking`
+      });
+      
+      // Check for image usage
+      const pagesWithImages = servicePages.filter(page => 
+        page.images.total >= 1
+      ).length;
+      
+      const imagesPercentage = (pagesWithImages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Uses images or visual elements?",
+        description: "Service pages should include relevant visuals",
+        status: imagesPercentage >= 80 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: imagesPercentage < 80 ? 
+          `Only ${Math.round(imagesPercentage)}% of service pages use images` : 
+          `Good image usage on service pages`
+      });
+      
+      // Check for descriptive URLs
+      const descriptiveUrlCount = servicePages.filter(page => {
+        const url = page.url.toLowerCase();
+        const title = page.title.toLowerCase();
+        
+        // Get main keywords from title (words with 4+ chars)
+        const titleKeywords = title.split(/\s+/).filter(word => word.length >= 4);
+        
+        // Check if at least one keyword is in the URL
+        return titleKeywords.some(keyword => url.includes(keyword));
+      }).length;
+      
+      const descriptiveUrlPercentage = (descriptiveUrlCount / servicePages.length) * 100;
+      
+      items.push({
+        name: "Service pages have descriptive URLs?",
+        description: "URLs should include service keywords",
+        status: descriptiveUrlPercentage >= 80 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: descriptiveUrlPercentage < 80 ? 
+          `Only ${Math.round(descriptiveUrlPercentage)}% of service pages have descriptive URLs` : 
+          `Good URL structure for service pages`
+      });
+      
+      // Check for mobile-friendliness
+      const mobileFriendlyPages = servicePages.filter(page => page.mobileFriendly).length;
+      const mobileFriendlyPercentage = (mobileFriendlyPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Mobile-friendly service pages?",
+        description: "Pages should be optimized for mobile devices",
+        status: mobileFriendlyPercentage >= 90 ? 'OK' : mobileFriendlyPercentage >= 70 ? 'OFI' : 'Priority OFI',
+        importance: 'High',
+        notes: mobileFriendlyPercentage < 90 ? 
+          `Only ${Math.round(mobileFriendlyPercentage)}% of service pages are mobile-friendly` : 
+          `All service pages are mobile-friendly`
+      });
+      
     } else {
       // If there are no service pages, mark all service-related items as N/A
-      items.push({
-        name: "Service Pages are written for the audience, not the business owner?",
-        description: "Content should focus on customer needs",
-        status: 'N/A',
-        importance: 'High'
-      });
+      const naItems = [
+        "Service Pages are written for the audience, not the business owner?",
+        "Service Pages are sufficiently detailed?",
+        "Proper heading structure?",
+        "Service pages have schema markup?",
+        "Strong and clear Call To Action (CTA)?",
+        "Good internal linking?", 
+        "Uses images or visual elements?",
+        "Service pages have descriptive URLs?",
+        "Mobile-friendly service pages?"
+      ];
       
-      items.push({
-        name: "Avoids heavy use of industry jargon?",
-        description: "Content should be understandable to the average user",
-        status: 'N/A',
-        importance: 'Medium'
-      });
-      
-      items.push({
-        name: "Service Pages are sufficiently detailed?",
-        description: "Pages should provide comprehensive information",
-        status: 'N/A',
-        importance: 'High'
-      });
-      
-      items.push({
-        name: "Strong and clear Call To Action (CTA)?",
-        description: "Each page should have a clear next step for users",
-        status: 'N/A',
-        importance: 'High'
+      naItems.forEach(name => {
+        items.push({
+          name,
+          description: "N/A - No service pages detected",
+          status: 'N/A',
+          importance: 'High'
+        });
       });
     }
     
@@ -1143,7 +1240,10 @@ class RivalAuditCrawler {
       name: "Site uses location pages? (For single location business, this tab is not needed)",
       description: "Multi-location businesses should have dedicated pages",
       status: isMultiLocationBusiness ? 'OK' : 'N/A',
-      importance: 'High'
+      importance: 'High',
+      notes: isMultiLocationBusiness ? 
+        `Found ${locationPages.length} location pages` : 
+        "Site appears to be a single-location business"
     });
     
     if (isMultiLocationBusiness) {
@@ -1154,17 +1254,86 @@ class RivalAuditCrawler {
         name: "Location pages are unique?",
         description: "Each location page should have unique content",
         status: areUnique ? 'OK' : 'OFI',
-        importance: 'High'
+        importance: 'High',
+        notes: !areUnique ? 
+          "Location pages have significant content overlap" : 
+          "Location pages have unique content"
+      });
+      
+      // Check if location pages have local keywords in URL
+      const pagesWithLocalUrls = locationPages.filter(page => {
+        // Extract the likely location name from the URL
+        const urlParts = new URL(page.url).pathname.split('/');
+        const lastUrlPart = urlParts[urlParts.length - 1];
+        
+        // Check if URL contains location indicators
+        return /-(fl|ca|tx|ny|il|pa|oh|ga|nc|mi|nj|va|wa|az|ma|in|tn|mo|md|wi|mn|co|al|sc|la|ky|or|ok|ct|ut|ia|nv|ar|ms|ks|nm|ne|wv|id|hi|me|nh|ri|mt|de|sd|nd|ak|dc|vt|wy)(-|$)/.test(lastUrlPart) ||
+               /-(north|south|east|west|central|downtown|uptown|midtown)(-|$)/.test(lastUrlPart) ||
+               /(city|town|village|heights|springs|beach|falls|valley|hills|park)(-|$)/.test(lastUrlPart);
+      }).length;
+      
+      const localUrlsPercentage = (pagesWithLocalUrls / locationPages.length) * 100;
+      
+      items.push({
+        name: "Location names in URLs?",
+        description: "URLs should include city, region, or neighborhood names",
+        status: localUrlsPercentage >= 80 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: localUrlsPercentage < 80 ? 
+          `Only ${Math.round(localUrlsPercentage)}% of location pages have location names in URLs` : 
+          "Good URL structure with location names"
+      });
+      
+      // Check if the location pages have sufficient content
+      const minLocationContentLength = 500; // Minimum recommended content length
+      const pagesWithGoodContentLength = locationPages.filter(page => page.wordCount >= minLocationContentLength).length;
+      const contentLengthPercentage = (pagesWithGoodContentLength / locationPages.length) * 100;
+      
+      items.push({
+        name: "Sufficient content on location pages?",
+        description: "Pages should have at least 500 words of unique content",
+        status: contentLengthPercentage >= 70 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: contentLengthPercentage < 70 ? 
+          `Only ${Math.round(contentLengthPercentage)}% of location pages have sufficient content length` : 
+          "Good content length on location pages"
       });
       
       // Check if mobile-friendly
-      const allMobileFriendly = locationPages.every(page => page.mobileFriendly);
+      const mobileFriendlyPages = locationPages.filter(page => page.mobileFriendly).length;
+      const mobileFriendlyPercentage = (mobileFriendlyPages / locationPages.length) * 100;
       
       items.push({
         name: "Mobile-first (or at least, mobile-friendly) design?",
         description: "Pages should work well on mobile devices",
-        status: allMobileFriendly ? 'OK' : 'OFI',
-        importance: 'High'
+        status: mobileFriendlyPercentage >= 90 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: mobileFriendlyPercentage < 90 ? 
+          `Only ${Math.round(mobileFriendlyPercentage)}% of location pages are mobile-friendly` : 
+          "All location pages are mobile-friendly"
+      });
+      
+      // Check for local schema markup
+      const pagesWithSchema = locationPages.filter(page => 
+        page.hasSchema && 
+        (page.schemaTypes.some(type => 
+          type.toLowerCase().includes('local') || 
+          type.toLowerCase().includes('geo') || 
+          type.toLowerCase().includes('place') ||
+          type.toLowerCase().includes('business')
+        ))
+      ).length;
+      
+      const schemaPercentage = (pagesWithSchema / locationPages.length) * 100;
+      
+      items.push({
+        name: "Local business schema markup?",
+        description: "Pages should have local business structured data",
+        status: schemaPercentage >= 50 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: schemaPercentage < 50 ? 
+          `Only ${Math.round(schemaPercentage)}% of location pages have local business schema` : 
+          `${Math.round(schemaPercentage)}% of location pages have schema markup`
       });
       
       // We can't check traffic, so this is N/A
@@ -1172,11 +1341,12 @@ class RivalAuditCrawler {
         name: "Are location pages getting traffic?",
         description: "Pages should be attracting visitors",
         status: 'N/A',
-        importance: 'Medium'
+        importance: 'Medium',
+        notes: "Traffic data not available in this audit"
       });
       
       // Check for NAP consistency
-      const allHaveBusinessName = locationPages.every(page => {
+      const pagesWithBusinessName = locationPages.filter(page => {
         const pageContent = [
           page.title,
           page.metaDescription,
@@ -1190,42 +1360,90 @@ class RivalAuditCrawler {
         // Check if any significant part of the business name appears in the location page
         const businessNameWords = potentialBusinessName.toLowerCase().split(/\s+/).filter(word => word.length > 3);
         return businessNameWords.some(word => pageContent.includes(word));
-      });
+      }).length;
+      
+      const pagesWithAddress = locationPages.filter(page => page.hasAddress).length;
+      const pagesWithPhone = locationPages.filter(page => page.hasPhoneNumber).length;
+      
+      const businessNamePercentage = (pagesWithBusinessName / locationPages.length) * 100;
+      const addressPercentage = (pagesWithAddress / locationPages.length) * 100;
+      const phonePercentage = (pagesWithPhone / locationPages.length) * 100;
       
       items.push({
         name: "NAP: Business (N)ame appears in the copy?",
         description: "Name, Address, Phone information should be present",
-        status: allHaveBusinessName ? 'OK' : 'OFI',
-        importance: 'High'
+        status: businessNamePercentage >= 90 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: businessNamePercentage < 90 ?
+          `Only ${Math.round(businessNamePercentage)}% of location pages include business name` :
+          "Business name appears on all location pages"
       });
+      
+      items.push({
+        name: "NAP: (A)ddress appears in the copy?",
+        description: "Each location page should show its address",
+        status: addressPercentage >= 90 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: addressPercentage < 90 ?
+          `Only ${Math.round(addressPercentage)}% of location pages include address information` :
+          "Address information appears on all location pages"
+      });
+      
+      items.push({
+        name: "NAP: (P)hone number appears in the copy?",
+        description: "Each location page should show its phone number",
+        status: phonePercentage >= 90 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: phonePercentage < 90 ?
+          `Only ${Math.round(phonePercentage)}% of location pages include phone number` :
+          "Phone number appears on all location pages"
+      });
+      
+      // Check for maps or directions
+      const pagesWithMaps = locationPages.filter(page => {
+        const hasMapText = page.bodyText.toLowerCase().includes('map') || 
+                         page.bodyText.toLowerCase().includes('direction');
+        const hasMapLinks = page.links.external.some(link => 
+          link.includes('maps.google.com') || 
+          link.includes('maps.apple.com')
+        );
+        return hasMapText || hasMapLinks;
+      }).length;
+      
+      const mapsPercentage = (pagesWithMaps / locationPages.length) * 100;
+      
+      items.push({
+        name: "Maps or directions on location pages?",
+        description: "Pages should include maps or directions",
+        status: mapsPercentage >= 70 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: mapsPercentage < 70 ?
+          `Only ${Math.round(mapsPercentage)}% of location pages include maps or directions` :
+          "Good use of maps and directions"
+      });
+      
     } else {
-      // If not a multi-location business, mark all location-related items as N/A
-      items.push({
-        name: "Location pages are unique?",
-        description: "Each location page should have unique content",
-        status: 'N/A',
-        importance: 'High'
-      });
+      // If there's only one location or no location pages, mark all location-related items as N/A
+      const naItems = [
+        "Location pages are unique?",
+        "Location names in URLs?", 
+        "Sufficient content on location pages?",
+        "Mobile-first (or at least, mobile-friendly) design?",
+        "Local business schema markup?",
+        "Are location pages getting traffic?",
+        "NAP: Business (N)ame appears in the copy?",
+        "NAP: (A)ddress appears in the copy?",
+        "NAP: (P)hone number appears in the copy?",
+        "Maps or directions on location pages?"
+      ];
       
-      items.push({
-        name: "Mobile-first (or at least, mobile-friendly) design?",
-        description: "Pages should work well on mobile devices",
-        status: 'N/A',
-        importance: 'High'
-      });
-      
-      items.push({
-        name: "Are location pages getting traffic?",
-        description: "Pages should be attracting visitors",
-        status: 'N/A',
-        importance: 'Medium'
-      });
-      
-      items.push({
-        name: "NAP: Business (N)ame appears in the copy?",
-        description: "Name, Address, Phone information should be present",
-        status: 'N/A',
-        importance: 'High'
+      naItems.forEach(name => {
+        items.push({
+          name,
+          description: "N/A - Not a multi-location business",
+          status: 'N/A',
+          importance: 'High'
+        });
       });
     }
     
