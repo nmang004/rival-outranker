@@ -566,6 +566,7 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
               {data?.meta?.totalResults > 0 && (
                 <span className="ml-1">• {data.meta.totalResults} results found</span>
               )}
+              <span className="ml-1 text-amber-600">• Limited to max 5 queries per analysis</span>
             </div>
             {data?.queryCount && (
               <div className="text-xs font-medium">

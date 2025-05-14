@@ -89,9 +89,11 @@ class SearchService {
       const allResults: any[] = [];
       
       // Determine how many pages to fetch (Google CSE allows max 10 results per page)
-      // We'll fetch up to 100 results (10 pages) to maximize data extraction
-      const maxResults = Math.min(options.count || 20, 100);
-      const maxPages = Math.ceil(maxResults / 10);
+      // We'll limit to 5 queries per competitor analysis as per user request
+      const maxResults = Math.min(options.count || 20, 50); // 50 results max
+      const maxPages = Math.min(Math.ceil(maxResults / 10), 5); // 5 queries max
+      
+      console.log(`API usage limited to max ${maxPages} queries per competitor analysis`);
       
       // Make requests for each page of results
       for (let page = 0; page < maxPages; page++) {
