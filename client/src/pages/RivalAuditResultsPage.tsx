@@ -41,6 +41,7 @@ import RivalAuditSection from "../components/rival/RivalAuditSection";
 import RivalAuditSummary from "../components/rival/RivalAuditSummary";
 import RivalAuditDashboard from "../components/rival/RivalAuditDashboard";
 import RivalAuditRecommendations from "../components/rival/RivalAuditRecommendations";
+import RivalAuditLoadingScreen from "../components/rival/RivalAuditLoadingScreen";
 
 export default function RivalAuditResultsPage() {
   const { toast } = useToast();
@@ -108,6 +109,45 @@ export default function RivalAuditResultsPage() {
       });
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  // Function to continue crawling beyond the page limit  
+  const handleContinueAudit = async () => {
+    if (!websiteUrl || !auditId) {
+      toast({
+        title: "Cannot continue audit",
+        description: "Missing website URL or audit ID",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsContinuing(true);
+    try {
+      toast({
+        title: "Continuing website crawl",
+        description: "Resuming audit to analyze more pages. This may take a minute...",
+      });
+      
+      // Continue crawl with the continue parameter
+      await fetch(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&continue=true`);
+      
+      // Refetch the data
+      await refetch();
+      
+      toast({
+        title: "Audit continued",
+        description: "Successfully crawled more pages and updated the audit results",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to continue crawl",
+        description: "Could not continue the audit. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsContinuing(false);
     }
   };
 

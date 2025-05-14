@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { MagnifyingGlassIcon, LineChartIcon, DocumentSearchIcon, LinkIcon, TagIcon, CodeBracketIcon } from '@heroicons/react/24/outline';
+import { Search, LineChart, FileSearch, Link, Tag, Code } from 'lucide-react';
 
 // Import any additional required components
 
@@ -88,37 +88,37 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
           
           <div className="mt-8 space-y-1">
             <LoadingStep 
-              icon={<MagnifyingGlassIcon className="h-5 w-5" />} 
+              icon={<Search className="h-5 w-5" />} 
               label="Crawling website pages" 
               isActive={activeStep === 0} 
               isComplete={activeStep > 0}
             />
             <LoadingStep 
-              icon={<DocumentSearchIcon className="h-5 w-5" />} 
+              icon={<FileSearch className="h-5 w-5" />} 
               label="Analyzing on-page elements" 
               isActive={activeStep === 1} 
               isComplete={activeStep > 1}
             />
             <LoadingStep 
-              icon={<LinkIcon className="h-5 w-5" />} 
+              icon={<Link className="h-5 w-5" />} 
               label="Checking site structure & navigation" 
               isActive={activeStep === 2} 
               isComplete={activeStep > 2}
             />
             <LoadingStep 
-              icon={<TagIcon className="h-5 w-5" />} 
+              icon={<Tag className="h-5 w-5" />} 
               label="Evaluating service & location pages" 
               isActive={activeStep === 3} 
               isComplete={activeStep > 3}
             />
             <LoadingStep 
-              icon={<CodeBracketIcon className="h-5 w-5" />} 
+              icon={<Code className="h-5 w-5" />} 
               label="Detecting technical issues" 
               isActive={activeStep === 4} 
               isComplete={activeStep > 4}
             />
             <LoadingStep 
-              icon={<LineChartIcon className="h-5 w-5" />} 
+              icon={<LineChart className="h-5 w-5" />} 
               label="Generating final report" 
               isActive={activeStep === 5} 
               isComplete={activeStep > 5}
