@@ -13,42 +13,129 @@ class Analyzer {
     try {
       console.log(`Analyzing page: ${url}`);
       
-      // Extract primary keyword
-      const primaryKeyword = await keywordAnalyzer.extractPrimaryKeyword(pageData);
+      // Validate page data
+      if (!pageData || !pageData.html) {
+        console.error("Invalid page data for analysis");
+        return this.createErrorAnalysisResult(url, "Failed to retrieve page content");
+      }
       
-      // Analyze keywords
-      const keywordAnalysis = await keywordAnalyzer.analyze(pageData, primaryKeyword);
+      // Default values for all analyses in case they fail
+      let primaryKeyword = "";
+      let keywordAnalysis;
+      let metaTagsAnalysis;
+      let contentAnalysis;
+      let enhancedContentAnalysis;
+      let technicalAnalysis;
+      let internalLinksAnalysis;
+      let imageAnalysis;
+      let schemaMarkupAnalysis;
+      let mobileAnalysis;
+      let pageSpeedAnalysis;
+      let userEngagementAnalysis;
+      let eatAnalysis;
       
-      // Analyze meta tags
-      const metaTagsAnalysis = this.analyzeMetaTags(pageData, primaryKeyword);
+      // Try to extract primary keyword with error handling
+      try {
+        primaryKeyword = await keywordAnalyzer.extractPrimaryKeyword(pageData);
+      } catch (error) {
+        console.error("Error extracting primary keyword:", error);
+        primaryKeyword = this.extractKeywordFromUrl(url);
+      }
       
-      // Analyze content with enhanced content optimization analyzer
-      const contentAnalysis = this.analyzeContent(pageData);
-      const enhancedContentAnalysis = contentOptimizationAnalyzer.analyzeContent(pageData, primaryKeyword);
+      // Perform each analysis step with individual error handling
+      try {
+        keywordAnalysis = await keywordAnalyzer.analyze(pageData, primaryKeyword);
+      } catch (error) {
+        console.error("Error analyzing keywords:", error);
+        keywordAnalysis = this.createDefaultKeywordAnalysis(primaryKeyword);
+      }
       
-      // Analyze technical SEO aspects
-      const technicalAnalysis = await technicalSeoAnalyzer.analyzeTechnicalSeo(pageData);
+      try {
+        metaTagsAnalysis = this.analyzeMetaTags(pageData, primaryKeyword);
+      } catch (error) {
+        console.error("Error analyzing meta tags:", error);
+        metaTagsAnalysis = this.createDefaultMetaTagsAnalysis();
+      }
       
-      // Analyze internal links
-      const internalLinksAnalysis = this.analyzeInternalLinks(pageData);
+      try {
+        contentAnalysis = this.analyzeContent(pageData);
+      } catch (error) {
+        console.error("Error analyzing content:", error);
+        contentAnalysis = this.createDefaultContentAnalysis();
+      }
       
-      // Analyze images
-      const imageAnalysis = this.analyzeImages(pageData);
+      try {
+        enhancedContentAnalysis = contentOptimizationAnalyzer.analyzeContent(pageData, primaryKeyword);
+      } catch (error) {
+        console.error("Error in enhanced content analysis:", error);
+        enhancedContentAnalysis = { 
+          score: 50, 
+          assessment: "Needs Work", 
+          issues: ["Content analysis could not be completed"], 
+          recommendations: ["Try analyzing the page again"] 
+        };
+      }
       
-      // Analyze schema markup
-      const schemaMarkupAnalysis = this.analyzeSchemaMarkup(pageData);
+      try {
+        technicalAnalysis = await technicalSeoAnalyzer.analyzeTechnicalSeo(pageData);
+      } catch (error) {
+        console.error("Error in technical SEO analysis:", error);
+        technicalAnalysis = { 
+          score: 50, 
+          assessment: "Needs Work", 
+          issues: ["Technical analysis could not be completed"], 
+          recommendations: ["Try analyzing the page again"] 
+        };
+      }
       
-      // Analyze mobile-friendliness
-      const mobileAnalysis = this.analyzeMobileFriendliness(pageData);
+      try {
+        internalLinksAnalysis = this.analyzeInternalLinks(pageData);
+      } catch (error) {
+        console.error("Error analyzing internal links:", error);
+        internalLinksAnalysis = this.createDefaultInternalLinksAnalysis();
+      }
       
-      // Analyze page speed
-      const pageSpeedAnalysis = await pageSpeed.analyze(url, pageData);
+      try {
+        imageAnalysis = this.analyzeImages(pageData);
+      } catch (error) {
+        console.error("Error analyzing images:", error);
+        imageAnalysis = this.createDefaultImageAnalysis();
+      }
       
-      // Analyze user engagement signals
-      const userEngagementAnalysis = this.analyzeUserEngagement(pageData);
+      try {
+        schemaMarkupAnalysis = this.analyzeSchemaMarkup(pageData);
+      } catch (error) {
+        console.error("Error analyzing schema markup:", error);
+        schemaMarkupAnalysis = this.createDefaultSchemaMarkupAnalysis();
+      }
       
-      // Analyze E-E-A-T factors
-      const eatAnalysis = this.analyzeEAT(pageData);
+      try {
+        mobileAnalysis = this.analyzeMobileFriendliness(pageData);
+      } catch (error) {
+        console.error("Error analyzing mobile friendliness:", error);
+        mobileAnalysis = this.createDefaultMobileAnalysis();
+      }
+      
+      try {
+        pageSpeedAnalysis = await pageSpeed.analyze(url, pageData);
+      } catch (error) {
+        console.error("Error analyzing page speed:", error);
+        pageSpeedAnalysis = this.createDefaultPageSpeedAnalysis();
+      }
+      
+      try {
+        userEngagementAnalysis = this.analyzeUserEngagement(pageData);
+      } catch (error) {
+        console.error("Error analyzing user engagement:", error);
+        userEngagementAnalysis = this.createDefaultUserEngagementAnalysis();
+      }
+      
+      try {
+        eatAnalysis = this.analyzeEAT(pageData);
+      } catch (error) {
+        console.error("Error analyzing E-E-A-T factors:", error);
+        eatAnalysis = this.createDefaultEATAnalysis();
+      }
       
       // Add enhanced content analysis score and technical analysis score with null checks
       let contentScore: SeoScore = {
@@ -1083,6 +1170,159 @@ class Analyzer {
     
     // Return a maximum of 15 recommendations
     return recommendations.slice(0, 15);
+  }
+}
+
+  /**
+   * Create default analysis objects for error handling
+   */
+  createErrorAnalysisResult(url: string, errorMessage: string): SeoAnalysisResult {
+    return {
+      url,
+      timestamp: new Date().toISOString(),
+      overallScore: { score: 50, category: 'needs-work' },
+      strengths: [],
+      weaknesses: [errorMessage || "Analysis could not be completed. Please try again."],
+      keywordAnalysis: this.createDefaultKeywordAnalysis(""),
+      metaTagsAnalysis: this.createDefaultMetaTagsAnalysis(),
+      contentAnalysis: this.createDefaultContentAnalysis(),
+      internalLinksAnalysis: this.createDefaultInternalLinksAnalysis(),
+      imageAnalysis: this.createDefaultImageAnalysis(),
+      schemaMarkupAnalysis: this.createDefaultSchemaMarkupAnalysis(),
+      mobileAnalysis: this.createDefaultMobileAnalysis(),
+      pageSpeedAnalysis: this.createDefaultPageSpeedAnalysis(),
+      userEngagementAnalysis: this.createDefaultUserEngagementAnalysis(),
+      eatAnalysis: this.createDefaultEATAnalysis(),
+      technicalSeoAnalysis: {
+        securityIssues: { score: 50, hasHttps: true, hasMixedContent: false, hasSecurityHeaders: false },
+        indexability: { score: 50, hasRobotsTxt: false, hasNoindexTag: false, hasCanonicalTag: true },
+        mobileFriendliness: { score: 50, isMobileFriendly: true, hasViewport: true, hasResponsiveDesign: true },
+        structuredData: { score: 50, hasStructuredData: false, hasSchema: false, hasMicrodata: false },
+        canonicalIssues: { score: 50, hasCanonical: true, hasMultipleCanonicals: false, hasCanonicalLoop: false },
+        performance: { score: 50, loadTime: 3.0, resourceCount: 50, resourceSize: 2000 },
+        serverConfig: { score: 50, statusCode: 200, hasGzip: true, hasHttp2: false }
+      },
+      enhancedContentAnalysis: {
+        headingStructure: { score: 50, hasH1: true, hasProperHierarchy: true, avgWordCount: 5 },
+        keywordUsage: { score: 50, density: 1.5, inTitle: true, inHeadings: true, inFirstParagraph: true },
+        readability: { score: 50, fleschKincaid: 60, avgSentenceLength: 15, avgParagraphLength: 2 },
+        contentQuality: { score: 50, hasOriginalContent: true, hasThinContent: false },
+        contentStructure: { score: 50, hasBulletLists: true, hasNumberedLists: true, hasSections: true },
+        contentIssues: ["Analysis could not be completed"],
+        contentRecommendations: ["Retry analysis with a valid URL"]
+      }
+    };
+  }
+
+  createDefaultKeywordAnalysis(primaryKeyword: string) {
+    return {
+      primaryKeyword: primaryKeyword || "",
+      density: 0,
+      relatedKeywords: [],
+      titlePresent: false,
+      descriptionPresent: false,
+      h1Present: false,
+      headingsPresent: false,
+      urlPresent: false,
+      contentPresent: false,
+      altTextPresent: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultMetaTagsAnalysis() {
+    return {
+      title: "",
+      titleLength: 0,
+      titleContainsKeyword: false,
+      description: "",
+      descriptionLength: 0,
+      descriptionContainsKeyword: false,
+      hasOpenGraph: false,
+      hasTwitterCards: false,
+      hasMeta: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultContentAnalysis() {
+    return {
+      wordCount: 0,
+      paragraphCount: 0,
+      avgWordsPerParagraph: 0,
+      headingCount: 0,
+      h1Count: 0,
+      h2Count: 0,
+      h3Count: 0,
+      keywordDensity: 0,
+      readabilityScore: 50,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultInternalLinksAnalysis() {
+    return {
+      count: 0,
+      uniqueCount: 0,
+      hasProperAnchors: false,
+      brokenLinksCount: 0,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultImageAnalysis() {
+    return {
+      count: 0,
+      altCount: 0,
+      altPercentage: 0,
+      sizeOptimized: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultSchemaMarkupAnalysis() {
+    return {
+      hasSchemaMarkup: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultMobileAnalysis() {
+    return {
+      isMobileFriendly: false,
+      hasViewport: false,
+      hasResponsiveDesign: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultPageSpeedAnalysis() {
+    return {
+      score: 50,
+      fid: 100,
+      lcp: 2500,
+      cls: 0.1,
+      ttfb: 500,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultUserEngagementAnalysis() {
+    return {
+      estimatedReadTime: 5,
+      potentialBounceRate: 50,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+
+  createDefaultEATAnalysis() {
+    return {
+      hasAuthorInfo: false,
+      hasExpertise: false,
+      hasAuthority: false,
+      hasTrustworthiness: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
   }
 }
 

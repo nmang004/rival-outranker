@@ -18,6 +18,7 @@ export interface SeoActionItem {
 export interface CrawlerOutput {
   url: string;
   title?: string;
+  html: string;  // Full HTML content of the page
   meta: {
     description?: string;
     robots?: string;

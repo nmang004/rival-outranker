@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { crawler } from "./services/crawler";
-import { analyzer } from "./services/analyzer";
+import { analyzer } from "./services/analyzer_fixed";
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
 import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
