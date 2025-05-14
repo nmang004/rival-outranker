@@ -4,6 +4,7 @@ import { ProfileForm } from "@/components/auth/ProfileForm";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import { 
   UserCircle2, 
   KeyRound, 
@@ -19,6 +20,7 @@ import { Link, useLocation } from "wouter";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ProfilePage(props: { params?: { tab?: string } }) {
   const { isAuthenticated, user, isLoadingUser } = useAuth();
@@ -281,27 +283,144 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
   );
 }
 
-// Placeholder components for Analyses and Projects
+// User's Analyses List Component
 function UserAnalysesList() {
+  const { data: analyses, isLoading } = useQuery<any[]>({
+    queryKey: ['/api/user/analyses'],
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!analyses || analyses.length === 0) {
+    return (
+      <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-muted">
+        <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+          <BarChart3 className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-medium mb-2">No analyses yet</h3>
+        <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+          You don't have any saved analyses yet. Run an SEO analysis to get detailed insights for your website.
+        </p>
+        <Button asChild>
+          <Link href="/" className="flex items-center">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Analyze New URL
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center py-12">
-      <p className="text-muted-foreground mb-4">
-        You don't have any saved analyses yet. Analyze a URL to get started.
-      </p>
-      <Button asChild>
-        <Link href="/">Analyze New URL</Link>
-      </Button>
+    <div className="space-y-5">
+      <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* This would be populated with actual analyses */}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-muted/30 p-4 rounded-lg border border-muted hover:border-primary/30 hover:shadow-md transition-all">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                  <span className="text-xs font-medium text-muted-foreground">Completed</span>
+                </div>
+                <div className="text-xs text-muted-foreground">May {i + 10}, 2025</div>
+              </div>
+              <h3 className="font-medium mb-1 truncate">example-website-{i}.com</h3>
+              <div className="flex items-center text-sm text-muted-foreground mb-3">
+                <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+                <span>Overall Score: {65 + i * 5}%</span>
+              </div>
+              <div className="mt-4 pt-3 border-t border-muted flex justify-between">
+                <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
+                  <Link href={`/results?url=example-website-${i}.com`}>
+                    <ChevronRight className="h-3.5 w-3.5 mr-1" />
+                    View Results
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" className="w-full">
+          View All Analyses
+        </Button>
+      </div>
     </div>
   );
 }
 
+// User's Projects List Component
 function UserProjectsList() {
+  const { data: projects, isLoading } = useQuery<any[]>({
+    queryKey: ['/api/user/projects'],
+    retry: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!projects || projects.length === 0) {
+    return (
+      <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-muted">
+        <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+          <ListChecks className="h-6 w-6 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-medium mb-2">No projects yet</h3>
+        <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+          Projects help you organize multiple analyses for easier tracking and comparison.
+        </p>
+        <Button variant="outline">
+          <ListChecks className="mr-2 h-4 w-4" />
+          Create Project
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center py-12">
-      <p className="text-muted-foreground mb-4">
-        You don't have any projects yet. Create a project to organize your analyses.
-      </p>
-      <Button variant="outline">Create Project</Button>
+    <div className="space-y-5">
+      <div className="grid gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* This would be populated with actual projects */}
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-muted/30 p-4 rounded-lg border border-muted hover:border-primary/30 hover:shadow-md transition-all">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="font-medium">Project {i}</h3>
+                <Badge variant="outline" className="text-xs">
+                  {i === 1 ? '3 analyses' : '2 analyses'}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                {i === 1 
+                  ? 'Tracking SEO progress for example.com and related sites' 
+                  : 'Competitive analysis for business sector'
+                }
+              </p>
+              <div className="mt-4 pt-3 border-t border-muted flex justify-between">
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
+                  Last updated: May {i + 5}, 2025
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 px-2">
+                  <ChevronRight className="h-3.5 w-3.5 mr-1" />
+                  View
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
