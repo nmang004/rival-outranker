@@ -575,7 +575,7 @@ export default function RivalRankTrackerResultsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analysis.keywords.sort((a: any, b: any) => {
+                  {analysisData.keywords.sort((a: any, b: any) => {
                     // Sort by position (unranked at the bottom)
                     const posA = a.currentRanking?.position || 101;
                     const posB = b.currentRanking?.position || 101;
@@ -643,12 +643,12 @@ export default function RivalRankTrackerResultsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {analysis.competitors && analysis.competitors.length > 0 ? (
+              {analysisData.competitors && analysisData.competitors.length > 0 ? (
                 <div className="space-y-8">
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsBarChart
-                        data={analysis.keywords.map((k: any) => {
+                        data={analysisData.keywords.map((k: any) => {
                           const data: any = {
                             keyword: k.text,
                             "Your Website": k.currentRanking?.position 
@@ -656,7 +656,7 @@ export default function RivalRankTrackerResultsPage() {
                               : 0,
                           };
                           
-                          analysis.competitors.forEach((c: any) => {
+                          analysisData.competitors.forEach((c: any) => {
                             const ranking = k.competitorRankings?.find(
                               (r: any) => r.competitorUrl === c.url
                             );
@@ -689,7 +689,7 @@ export default function RivalRankTrackerResultsPage() {
                           dataKey="Your Website" 
                           fill="#4f46e5" 
                         />
-                        {analysis.competitors.map((competitor: any, index: number) => (
+                        {analysisData.competitors.map((competitor: any, index: number) => (
                           <Bar 
                             key={competitor.url}
                             dataKey={competitor.url}
@@ -714,17 +714,17 @@ export default function RivalRankTrackerResultsPage() {
                       <TableBody>
                         <TableRow>
                           <TableCell className="font-medium">
-                            {analysis.website}
+                            {analysisData.website}
                             <Badge variant="outline" className="ml-2">Your Website</Badge>
                           </TableCell>
                           <TableCell>
-                            {analysis.avgPosition ? `#${analysis.avgPosition.toFixed(1)}` : "N/A"}
+                            {analysisData.avgPosition ? `#${analysisData.avgPosition.toFixed(1)}` : "N/A"}
                           </TableCell>
                           <TableCell>
-                            {topRankedKeywords} of {analysis.keywords.length}
+                            {topRankedKeywords} of {analysisData.keywords.length}
                           </TableCell>
                           <TableCell>
-                            {analysis.keywords.filter((k: any) => k.currentRanking?.position).length} of {analysis.keywords.length}
+                            {analysisData.keywords.filter((k: any) => k.currentRanking?.position).length} of {analysisData.keywords.length}
                           </TableCell>
                         </TableRow>
                         
