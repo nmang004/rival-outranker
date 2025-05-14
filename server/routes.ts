@@ -10,16 +10,60 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Utility function for URL normalization
+  const normalizeUrl = (inputUrl: string) => {
+    // Convert URL to lowercase
+    let normalizedUrl = inputUrl.toLowerCase();
+    
+    // If there's no protocol, add https://
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = 'https://' + normalizedUrl;
+    }
+    
+    // Attempt to create URL object to handle other normalizations
+    try {
+      const urlObj = new URL(normalizedUrl);
+      
+      // Remove trailing slash from pathname if it exists (except for root path)
+      if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
+        urlObj.pathname = urlObj.pathname.slice(0, -1);
+      }
+      
+      return urlObj.toString();
+    } catch {
+      // If URL parsing fails, return the original with basic normalization
+      return normalizedUrl;
+    }
+  };
+
   // API endpoint to analyze a URL
   app.post("/api/analyze", async (req: Request, res: Response) => {
     try {
       // Validate the URL
-      const { url } = urlFormSchema.parse(req.body);
+      const { url: rawUrl } = urlFormSchema.parse(req.body);
+      
+      // Normalize the URL to ensure consistency
+      const url = normalizeUrl(rawUrl);
       
       // Show the analysis is in progress
       res.status(202).json({ message: "Analysis started", url });
       
       try {
+        // First check if we already have an analysis for this URL
+        const existingAnalyses = await storage.getAnalysesByUrl(url);
+        if (existingAnalyses.length > 0) {
+          const latestAnalysis = existingAnalyses[0];
+          // If analysis is recent (less than 1 hour), just use it
+          const analysisTime = new Date(latestAnalysis.timestamp).getTime();
+          const currentTime = new Date().getTime();
+          const timeDiff = currentTime - analysisTime;
+          
+          if (timeDiff < 3600000) { // 1 hour in milliseconds
+            console.log("Using recent analysis for:", url);
+            return;
+          }
+        }
+        
         // Crawl the webpage
         console.log("Crawling page:", url);
         const pageData = await crawler.crawlPage(url);
@@ -30,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Store the analysis result
         const analysisData = {
-          url: analysisResult.url,
+          url: url, // Use the normalized URL
           overallScore: analysisResult.overallScore.score,
           results: analysisResult
         };
@@ -94,16 +138,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint to get analysis results by URL
   app.get("/api/analysis", async (req: Request, res: Response) => {
     try {
-      const url = req.query.url as string;
+      const rawUrl = req.query.url as string;
       
-      if (!url) {
+      if (!rawUrl) {
         // If no URL is provided, return the latest analyses
         const latestAnalyses = await storage.getLatestAnalyses(10);
         return res.json(latestAnalyses);
       }
       
+      // Normalize the URL for better matching
+      const normalizedUrl = normalizeUrl(rawUrl);
+      
       // Get analyses for the specific URL
-      const analyses = await storage.getAnalysesByUrl(url);
+      let analyses = await storage.getAnalysesByUrl(normalizedUrl);
+      
+      // If no results with normalized URL, try the original
+      if (analyses.length === 0 && normalizedUrl !== rawUrl) {
+        analyses = await storage.getAnalysesByUrl(rawUrl);
+      }
+      
+      // If still no results, try with domain match
+      if (analyses.length === 0) {
+        try {
+          // Get all analyses and find one with matching domain
+          const allAnalyses = await storage.getLatestAnalyses(20); // Check recent analyses
+          const urlDomain = new URL(normalizedUrl).hostname.replace('www.', '');
+          
+          const domainMatch = allAnalyses.find(analysis => {
+            try {
+              const analysisDomain = new URL(analysis.url).hostname.replace('www.', '');
+              return analysisDomain === urlDomain;
+            } catch {
+              return false;
+            }
+          });
+          
+          if (domainMatch) {
+            analyses = [domainMatch];
+          }
+        } catch (err) {
+          console.error("Error trying domain matching:", err);
+        }
+      }
       
       if (analyses.length === 0) {
         return res.status(404).json({ message: "No analysis found for this URL" });

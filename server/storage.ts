@@ -47,11 +47,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAnalysesByUrl(url: string): Promise<Analysis[]> {
-    return await db
-      .select()
-      .from(analyses)
-      .where(eq(analyses.url, url))
-      .orderBy(desc(analyses.timestamp));
+    try {
+      // Attempt to normalize URL for better matching
+      let normalizedUrl = url.toLowerCase();
+      
+      // Try to get exact match first
+      const exactResults = await db
+        .select()
+        .from(analyses)
+        .where(eq(analyses.url, url))
+        .orderBy(desc(analyses.timestamp));
+      
+      if (exactResults.length > 0) {
+        return exactResults;
+      }
+      
+      // If no exact match, try with normalized URL
+      const normalizedResults = await db
+        .select()
+        .from(analyses)
+        .where(eq(analyses.url, normalizedUrl))
+        .orderBy(desc(analyses.timestamp));
+      
+      return normalizedResults;
+    } catch (error) {
+      console.error("Error getting analyses by URL:", error);
+      return [];
+    }
   }
 
   async getLatestAnalyses(limit: number): Promise<Analysis[]> {

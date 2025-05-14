@@ -53,13 +53,42 @@ export default function Home() {
 
   const pollForResults = async (url: string) => {
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds
+    const maxAttempts = 15; // 15 seconds total polling time
     const minWaitTime = 5; // Minimum wait time in seconds to show analysis progress
     const startTime = Date.now();
     
+    // For URL normalization purposes - sometimes trailing slashes or missing protocols can cause mismatches
+    const normalizeUrl = (inputUrl: string) => {
+      // Convert URL to lowercase
+      let normalizedUrl = inputUrl.toLowerCase();
+      
+      // If there's no protocol, add https://
+      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        normalizedUrl = 'https://' + normalizedUrl;
+      }
+      
+      // Attempt to create URL object to handle other normalizations
+      try {
+        const urlObj = new URL(normalizedUrl);
+        
+        // Remove trailing slash from pathname if it exists (except for root path)
+        if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
+          urlObj.pathname = urlObj.pathname.slice(0, -1);
+        }
+        
+        return urlObj.toString();
+      } catch {
+        // If URL parsing fails, return the original with basic normalization
+        return normalizedUrl;
+      }
+    };
+    
+    const normalizedUrl = normalizeUrl(url);
+    
     const checkResults = async () => {
       try {
-        const response = await fetch(`/api/analysis?url=${encodeURIComponent(url)}`);
+        // Try both normalized and original URL in our requests
+        const response = await fetch(`/api/analysis?url=${encodeURIComponent(normalizedUrl)}`);
         
         if (response.ok) {
           const result = await response.json();
@@ -81,6 +110,51 @@ export default function Home() {
           }
         }
         
+        // If the normalized URL failed, try the original as fallback
+        if (normalizedUrl !== url) {
+          const fallbackResponse = await fetch(`/api/analysis?url=${encodeURIComponent(url)}`);
+          if (fallbackResponse.ok) {
+            const fallbackResult = await fallbackResponse.json();
+            if (fallbackResult && typeof fallbackResult.overallScore === 'number' && fallbackResult.results) {
+              const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+              if (elapsedSeconds < minWaitTime) {
+                return false;
+              }
+              setLocation(`/results?url=${encodeURIComponent(url)}`);
+              return true;
+            }
+          }
+        }
+        
+        // If we've made enough attempts, but a result might exist (just not at the expected URL),
+        // check the latest analyses as a fallback
+        if (attempts >= 10) {
+          const latestResponse = await fetch('/api/analyses');
+          if (latestResponse.ok) {
+            const analyses = await latestResponse.json();
+            // Check if any recent analyses match our URL or normalized URL
+            const matchingAnalysis = analyses.find((analysis: any) => {
+              const analysisUrl = analysis.url.toLowerCase();
+              const targetUrl = url.toLowerCase();
+              return (
+                analysisUrl === targetUrl || 
+                analysisUrl === normalizedUrl.toLowerCase() ||
+                // Also check for partial matches (domain only)
+                (new URL(analysisUrl)).hostname === (new URL(targetUrl)).hostname
+              );
+            });
+            
+            if (matchingAnalysis) {
+              const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+              if (elapsedSeconds < minWaitTime) {
+                return false;
+              }
+              setLocation(`/results?url=${encodeURIComponent(matchingAnalysis.url)}`);
+              return true;
+            }
+          }
+        }
+        
         return false;
       } catch (error) {
         console.error("Error checking results:", error);
@@ -98,6 +172,11 @@ export default function Home() {
       const newProgress = Math.min(90, progressPerAttempt * attempts);
       setAnalysisProgress(newProgress);
       
+      // Add artificial delay to first few attempts to allow server to process
+      if (attempts <= 3) {
+        await new Promise(resolve => setTimeout(resolve, 1000));  
+      }
+      
       const hasResults = await checkResults();
       
       if (hasResults) {
@@ -109,7 +188,15 @@ export default function Home() {
       if (attempts < maxAttempts) {
         setTimeout(poll, 1000); // Poll every second
       } else {
-        // If max attempts reached, show error state instead of redirecting
+        // If max attempts reached but we're near the end of polling,
+        // just redirect to results anyway and let the results page handle any missing data
+        if (attempts >= maxAttempts - 2) {
+          setAnalysisProgress(100);
+          setLocation(`/results?url=${encodeURIComponent(url)}`);
+          return;
+        }
+        
+        // Otherwise show error state
         setError("Analysis timed out. Please try again.");
         setIsSubmitting(false);
         setAnalysisProgress(0);
