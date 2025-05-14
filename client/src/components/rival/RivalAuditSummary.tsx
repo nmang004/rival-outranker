@@ -115,24 +115,24 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
               Summary of findings across all audit categories
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-1" 
+              className="flex items-center gap-1 text-xs sm:text-sm" 
               onClick={() => handleExport('excel')}
             >
-              <FileSpreadsheet className="h-4 w-4" />
-              <span>Excel</span>
+              <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Excel</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-1" 
+              className="flex items-center gap-1 text-xs sm:text-sm" 
               onClick={() => handleExport('csv')}
             >
-              <Download className="h-4 w-4" />
-              <span>CSV</span>
+              <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">CSV</span>
             </Button>
           </div>
         </CardHeader>
@@ -153,44 +153,44 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
               />
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-              <div className="flex items-center gap-2 bg-destructive/10 p-2 rounded-md">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-                <span className="text-sm font-medium">{audit.summary.priorityOfiCount} Priority Issues</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4 mt-4">
+              <div className="flex items-center gap-1 sm:gap-2 bg-destructive/10 p-2 rounded-md">
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+                <span className="text-xs sm:text-sm font-medium">{audit.summary.priorityOfiCount} Priority</span>
               </div>
-              <div className="flex items-center gap-2 bg-yellow-500/10 p-2 rounded-md">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                <span className="text-sm font-medium">{audit.summary.ofiCount} Opportunities</span>
+              <div className="flex items-center gap-1 sm:gap-2 bg-yellow-500/10 p-2 rounded-md">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
+                <span className="text-xs sm:text-sm font-medium">{audit.summary.ofiCount} OFI</span>
               </div>
-              <div className="flex items-center gap-2 bg-green-500/10 p-2 rounded-md">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-sm font-medium">{audit.summary.okCount} Completed</span>
+              <div className="flex items-center gap-1 sm:gap-2 bg-green-500/10 p-2 rounded-md">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                <span className="text-xs sm:text-sm font-medium">{audit.summary.okCount} OK</span>
               </div>
-              <div className="flex items-center gap-2 bg-gray-500/10 p-2 rounded-md text-gray-600">
-                <span className="text-sm font-medium">{audit.summary.naCount} Not Applicable</span>
+              <div className="flex items-center gap-1 sm:gap-2 bg-gray-500/10 p-2 rounded-md text-gray-600">
+                <span className="text-xs sm:text-sm font-medium">{audit.summary.naCount} N/A</span>
               </div>
-              <div className="flex items-center gap-2 bg-blue-500/10 p-2 rounded-md text-blue-600">
-                <span className="text-sm font-medium">{audit.summary.total || onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total} Total Items</span>
+              <div className="flex items-center gap-1 sm:gap-2 bg-blue-500/10 p-2 rounded-md text-blue-600 col-span-2 sm:col-span-1">
+                <span className="text-xs sm:text-sm font-medium">{audit.summary.total || onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total} Total</span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
         {/* On-Page */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-lg flex items-center gap-1 sm:gap-2">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <span>On-Page SEO</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="space-y-2">
               <div className="flex justify-between mb-1">
-                <div className="text-sm font-medium">Completion Status</div>
-                <div className="text-sm font-medium">
+                <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                <div className="text-xs sm:text-sm font-medium">
                   {Math.round(getCategoryProgress(onPageTotals))}%
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
                   "bg-red-500/20"
                 }`}
               />
-              <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px] sm:text-xs mt-2">
                 <div className="text-center">
                   <div className="text-destructive font-medium">{onPageTotals.priorityOfi}</div>
                   <div className="text-muted-foreground">Priority</div>

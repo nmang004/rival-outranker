@@ -17,6 +17,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { 
   AlertCircle, 
+  AlertTriangle,
+  CheckCircle,
+  CircleHelp,
   FileDown, 
   ChevronLeft, 
   BarChart3,
@@ -180,79 +183,93 @@ export default function RivalAuditResultsPage() {
   return (
     <div className="container mx-auto py-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold gradient-heading mb-2">Rival SEO Audit</h1>
-            <p className="text-muted-foreground">
-              Comprehensive SEO audit for <span className="font-medium">{audit.url}</span>
+        <div className="flex flex-col mb-6">
+          <div className="mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold gradient-heading mb-2">Rival SEO Audit</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
+              Comprehensive SEO audit for <span className="font-medium break-all">{audit.url}</span>
             </p>
             {audit.summary.total && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Analyzed {audit.summary.total} SEO factors across all categories
               </p>
             )}
           </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
-            <Button variant="outline" onClick={goBack}>
-              <ChevronLeft className="mr-2 h-4 w-4" /> Back
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={goBack} className="text-xs sm:text-sm">
+              <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Back
             </Button>
             {websiteUrl && (
               <Button 
-                variant="outline" 
+                variant="outline"
+                size="sm"
                 onClick={handleRefreshAudit}
                 disabled={isRefreshing}
+                className="text-xs sm:text-sm"
               >
-                <svg className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 {isRefreshing ? 'Refreshing...' : 'Refresh Audit'}
               </Button>
             )}
-            <Button onClick={handleExportToExcel}>
-              <FileDown className="mr-2 h-4 w-4" /> Export to Excel
+            <Button size="sm" onClick={handleExportToExcel} className="text-xs sm:text-sm">
+              <FileDown className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Export to Excel
             </Button>
           </div>
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-red-500/10 border border-red-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Priority Issues</CardTitle>
+            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mr-1 sm:mr-2" />
+                Priority Issues
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{audit.summary.priorityOfiCount}</div>
-              <p className="text-xs text-muted-foreground">Critical findings requiring action</p>
+            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
+              <div className="text-xl sm:text-2xl font-bold">{audit.summary.priorityOfiCount}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Critical findings requiring action</p>
             </CardContent>
           </Card>
           
           <Card className="bg-yellow-500/10 border border-yellow-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Opportunities</CardTitle>
+            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 mr-1 sm:mr-2" />
+                Opportunities
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{audit.summary.ofiCount}</div>
-              <p className="text-xs text-muted-foreground">Areas for improvement</p>
+            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
+              <div className="text-xl sm:text-2xl font-bold">{audit.summary.ofiCount}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Areas for improvement</p>
             </CardContent>
           </Card>
           
           <Card className="bg-green-500/10 border border-green-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mr-1 sm:mr-2" />
+                Completed
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{audit.summary.okCount}</div>
-              <p className="text-xs text-muted-foreground">No issues found</p>
+            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
+              <div className="text-xl sm:text-2xl font-bold">{audit.summary.okCount}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">No issues found</p>
             </CardContent>
           </Card>
           
           <Card className="bg-gray-500/10 border border-gray-500/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Not Applicable</CardTitle>
+            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
+              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
+                <CircleHelp className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 mr-1 sm:mr-2" />
+                Not Applicable
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{audit.summary.naCount}</div>
-              <p className="text-xs text-muted-foreground">Items not relevant</p>
+            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
+              <div className="text-xl sm:text-2xl font-bold">{audit.summary.naCount}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Items not relevant</p>
             </CardContent>
           </Card>
         </div>
