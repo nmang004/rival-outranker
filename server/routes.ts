@@ -1662,6 +1662,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rival Rank Tracker endpoints
+  app.post("/api/rival-rank-tracker", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.user as any;
+      const { keywords, website, competitors = [] } = req.body;
+      
+      if (!keywords || !keywords.length) {
+        return res.status(400).json({ error: "Keywords are required" });
+      }
+      
+      if (!website) {
+        return res.status(400).json({ error: "Website URL is required" });
+      }
+      
+      // Create an analysis record
+      const analysisId = Math.floor(Math.random() * 10000000);
+      
+      // Processing will be happening asynchronously, but we'll return a response immediately
+      res.json({ 
+        id: analysisId,
+        status: "processing",
+        website,
+        keywords: keywords.map((k: string) => ({ text: k })),
+        competitors: competitors.map((c: string) => ({ url: c })),
+      });
+      
+      // In a real implementation, you would:
+      // 1. Create analysis record in database
+      // 2. Start a background job to check rankings for each keyword
+      // 3. Update the analysis record as results come in
+      
+      // For demo purposes, we'll simulate asynchronous processing in the background
+      setTimeout(async () => {
+        try {
+          console.log("Processing rank tracker analysis", analysisId);
+          // In a real implementation, this would be handled by a background job
+          
+          // Process each keyword to get rankings and metrics
+          const processedKeywords = await Promise.all(
+            keywords.map(async (keywordText: string) => {
+              // Generate ranking data
+              const position = Math.floor(Math.random() * 40) + 1;
+              
+              // Generate competitor rankings
+              const competitorRankings = competitors.map((competitorUrl: string) => {
+                const competitorPosition = Math.floor(Math.random() * 100) + 1;
+                return {
+                  competitorUrl,
+                  position: competitorPosition,
+                  url: `https://example.com/page-${competitorPosition}`,
+                  date: new Date()
+                };
+              });
+              
+              // Generate keyword metrics
+              const volume = Math.floor(Math.random() * 50000) + 100;
+              const difficulty = Math.floor(Math.random() * 100);
+              const cpc = (Math.random() * 5).toFixed(2);
+              
+              // Generate trend data (12 months)
+              const trendBase = volume * 0.8;
+              const trend = Array.from({ length: 12 }, () => {
+                const variation = Math.random() * 0.4 - 0.2; // -20% to +20%
+                return Math.floor(trendBase * (1 + variation));
+              });
+              
+              // Generate related keywords
+              const relatedKeywords = Array.from({ length: 5 }, (_, i) => ({
+                keyword: `${keywordText} ${['best', 'top', 'cheap', 'online', 'free'][i % 5]}`,
+                volume: Math.floor(volume * Math.random() * 0.8),
+                difficulty: Math.floor(Math.random() * 100),
+              }));
+              
+              return {
+                id: Math.floor(Math.random() * 10000000),
+                text: keywordText,
+                currentRanking: {
+                  position,
+                  url: `https://example.com/page-${Math.floor(Math.random() * 20) + 1}`,
+                  date: new Date()
+                },
+                competitorRankings,
+                metrics: {
+                  volume,
+                  difficulty,
+                  cpc,
+                  trend,
+                  relatedKeywords
+                }
+              };
+            })
+          );
+          
+          // Calculate average position
+          let rankedKeywordsCount = 0;
+          let totalPositions = 0;
+          
+          processedKeywords.forEach(k => {
+            if (k.currentRanking?.position) {
+              totalPositions += k.currentRanking.position;
+              rankedKeywordsCount++;
+            }
+          });
+          
+          const avgPosition = rankedKeywordsCount 
+            ? totalPositions / rankedKeywordsCount 
+            : null;
+          
+          // In a real implementation, you would save the final result to the database
+          console.log("Completed processing for analysis", analysisId);
+          
+          // For now, we'll just keep the result in memory (in a real app, this would be stored in a database)
+          global.rivalRankTrackerResults = global.rivalRankTrackerResults || {};
+          global.rivalRankTrackerResults[analysisId] = {
+            id: analysisId,
+            status: "completed",
+            website,
+            keywords: processedKeywords,
+            competitors: competitors.map((url: string) => ({ url })),
+            avgPosition,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          
+        } catch (error) {
+          console.error("Error processing rank tracker analysis:", error);
+          // In a real implementation, you would update the analysis record with error status
+        }
+      }, 5000); // Simulate 5 second processing time
+      
+    } catch (error) {
+      console.error("Error creating rank tracker analysis:", error);
+      return res.status(500).json({ error: "Failed to create analysis" });
+    }
+  });
+  
+  app.get("/api/rival-rank-tracker/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        return res.status(400).json({ error: "Analysis ID is required" });
+      }
+      
+      // In a real implementation, you would fetch from the database
+      const analysis = global.rivalRankTrackerResults && global.rivalRankTrackerResults[id];
+      
+      if (!analysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+      
+      return res.json(analysis);
+    } catch (error) {
+      console.error("Error fetching rank tracker analysis:", error);
+      return res.status(500).json({ error: "Failed to fetch analysis" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
@@ -14,17 +15,19 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   actions,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div className="flex items-center">
-        {icon && <div className="text-primary">{icon}</div>}
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+      <div className="flex items-center gap-3">
+        {icon && 
+          <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            {icon}
+          </div>
+        }
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{title}</h1>
-          {description && (
-            <p className="text-gray-500 dark:text-gray-400 mt-1">{description}</p>
-          )}
+          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+          {description && <p className="text-muted-foreground mt-1">{description}</p>}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex-shrink-0 mt-4 md:mt-0">{actions}</div>}
     </div>
   );
 };
