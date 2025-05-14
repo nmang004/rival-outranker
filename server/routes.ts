@@ -1709,46 +1709,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keywordData.relatedKeywords = [];
       }
       
-      // Store the keyword data for future use
+      // Store the keyword data for future use if user is authenticated
       try {
-        // Get user ID if authenticated, otherwise use 'guest'
-        const userId = req.user?.claims?.sub || 'guest';
-        
-        // Check if the keyword already exists
-        const existingKeywords = await storage.getKeywordsByKeywordText(keyword);
-        
-        let keywordId;
-        if (existingKeywords.length > 0) {
-          keywordId = existingKeywords[0].id;
+        // Only store data if the user is authenticated
+        if (req.isAuthenticated() && req.user?.claims?.sub) {
+          const userId = req.user.claims.sub;
+          console.log(`Authenticated user, storing keyword data for "${keyword}" with user ID ${userId}`);
+          
+          // Check if the keyword already exists
+          const existingKeywords = await storage.getKeywordsByKeywordText(keyword);
+          
+          let keywordId;
+          if (existingKeywords.length > 0) {
+            keywordId = existingKeywords[0].id;
+            console.log(`Using existing keyword with ID ${keywordId}`);
+          } else {
+            // Create a new keyword entry
+            const newKeyword = await storage.createKeyword({
+              userId,
+              keyword,
+              targetUrl: '',
+              isActive: true
+            });
+            keywordId = newKeyword.id;
+            console.log(`Created new keyword with ID ${keywordId}`);
+          }
+          
+          // Store the keyword metrics
+          const metricsData = {
+            keywordId,
+            searchVolume: keywordData.searchVolume || 0,
+            keywordDifficulty: keywordData.difficulty || 0,
+            cpc: keywordData.cpc ? parseFloat(keywordData.cpc.replace('$', '')) : 0,
+            competition: keywordData.competition || 0,
+            trendsData: { trend: keywordData.trend || [] },
+            relatedKeywords: { keywords: keywordData.relatedKeywords || [] }
+          };
+          
+          // Update or create metrics
+          const existingMetrics = await storage.getKeywordMetrics(keywordId);
+          
+          if (existingMetrics) {
+            await storage.updateKeywordMetrics(keywordId, metricsData);
+          } else {
+            await storage.createKeywordMetrics(metricsData);
+          }
         } else {
-          // Create a new keyword entry
-          const newKeyword = await storage.createKeyword({
-            userId,
-            keyword,
-            targetUrl: '',
-            isActive: true
-          });
-          keywordId = newKeyword.id;
-        }
-        
-        // Store the keyword metrics
-        const metricsData = {
-          keywordId,
-          searchVolume: keywordData.searchVolume || 0,
-          keywordDifficulty: keywordData.difficulty || 0,
-          cpc: keywordData.cpc ? parseFloat(keywordData.cpc.replace('$', '')) : 0,
-          competition: keywordData.competition || 0,
-          trendsData: { trend: keywordData.trend || [] },
-          relatedKeywords: { keywords: keywordData.relatedKeywords || [] }
-        };
-        
-        // Update or create metrics
-        const existingMetrics = await storage.getKeywordMetrics(keywordId);
-        
-        if (existingMetrics) {
-          await storage.updateKeywordMetrics(keywordId, metricsData);
-        } else {
-          await storage.createKeywordMetrics(metricsData);
+          console.log('User not authenticated, skipping keyword data storage');
         }
         
         console.log(`Stored keyword metrics for "${keyword}"`);
