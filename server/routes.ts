@@ -1639,18 +1639,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DataForSEO API endpoint to get keyword data
   app.post("/api/keyword-research", async (req: Request, res: Response) => {
     try {
-      const { keyword, location } = req.body;
+      const { keyword, location, forceRefresh } = req.body;
       if (!keyword) {
         return res.status(400).json({ message: 'Keyword is required' });
       }
       
-      console.log(`Keyword research requested for: "${keyword}"`);
+      console.log(`Keyword research requested for: "${keyword}" ${forceRefresh ? '(forced refresh)' : ''}`);
       
       // Default to US location if not specified (2840 is US in DataForSEO)
       const locationCode = location || 2840;
       
-      // Get keyword data from DataForSEO
-      const keywordData = await getKeywordData(keyword, locationCode);
+      let keywordData;
+      
+      if (!forceRefresh) {
+        // Check if we have existing recent data for this keyword
+        try {
+          // Try to find the keyword in our database
+          // Look for existing cached keywords within the last 30 days
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          
+          // Get user ID if authenticated, otherwise use 'guest'
+          const userId = req.user?.claims?.sub || 'guest';
+          
+          // Check if we have existing keyword metrics
+          const existingKeywords = await storage.getKeywordsByKeywordText(keyword);
+          
+          if (existingKeywords.length > 0) {
+            const keywordId = existingKeywords[0].id;
+            
+            // Get metrics for this keyword
+            const keywordMetrics = await storage.getKeywordMetrics(keywordId);
+            
+            if (keywordMetrics && new Date(keywordMetrics.lastUpdated) > thirtyDaysAgo) {
+              console.log(`Using cached keyword data for "${keyword}" from ${keywordMetrics.lastUpdated}`);
+              
+              // Format the data to match the expected structure
+              keywordData = {
+                keyword: keyword,
+                searchVolume: keywordMetrics.searchVolume || 0,
+                difficulty: keywordMetrics.keywordDifficulty || 0,
+                cpc: keywordMetrics.cpc ? `$${keywordMetrics.cpc.toFixed(2)}` : '$0.00',
+                competition: keywordMetrics.competition || 0,
+                trend: keywordMetrics.trendsData?.trend || [],
+                relatedKeywords: keywordMetrics.relatedKeywords?.keywords || [],
+                lastUpdated: keywordMetrics.lastUpdated
+              };
+              
+              return res.json(keywordData);
+            }
+          }
+        } catch (dbError) {
+          // If there's an error with the database, log it but continue with API call
+          console.error('Error checking for existing keyword data:', dbError);
+        }
+      }
+      
+      // Get fresh keyword data from DataForSEO
+      keywordData = await getKeywordData(keyword, locationCode);
+      
+      // Store the keyword data for future use
+      try {
+        // Get user ID if authenticated, otherwise use 'guest'
+        const userId = req.user?.claims?.sub || 'guest';
+        
+        // Check if the keyword already exists
+        const existingKeywords = await storage.getKeywordsByKeywordText(keyword);
+        
+        let keywordId;
+        if (existingKeywords.length > 0) {
+          keywordId = existingKeywords[0].id;
+        } else {
+          // Create a new keyword entry
+          const newKeyword = await storage.createKeyword({
+            userId,
+            keyword,
+            targetUrl: '',
+            isActive: true
+          });
+          keywordId = newKeyword.id;
+        }
+        
+        // Store the keyword metrics
+        const metricsData = {
+          keywordId,
+          searchVolume: keywordData.searchVolume || 0,
+          keywordDifficulty: keywordData.difficulty || 0,
+          cpc: keywordData.cpc ? parseFloat(keywordData.cpc.replace('$', '')) : 0,
+          competition: keywordData.competition || 0,
+          trendsData: { trend: keywordData.trend || [] },
+          relatedKeywords: { keywords: keywordData.relatedKeywords || [] }
+        };
+        
+        // Update or create metrics
+        const existingMetrics = await storage.getKeywordMetrics(keywordId);
+        
+        if (existingMetrics) {
+          await storage.updateKeywordMetrics(keywordId, metricsData);
+        } else {
+          await storage.createKeywordMetrics(metricsData);
+        }
+        
+        console.log(`Stored keyword metrics for "${keyword}"`);
+        
+        // Add lastUpdated date to the response
+        keywordData.lastUpdated = new Date();
+      } catch (storageError) {
+        // If there's an error with storage, log it but continue
+        console.error('Error storing keyword data:', storageError);
+      }
       
       res.json(keywordData);
     } catch (error) {

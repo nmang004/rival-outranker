@@ -53,6 +53,7 @@ export interface IStorage {
   getKeyword(id: number): Promise<Keyword | undefined>;
   getKeywordsByUserId(userId: string): Promise<Keyword[]>;
   getKeywordsByProjectId(projectId: number): Promise<Keyword[]>;
+  getKeywordsByKeywordText(keyword: string): Promise<Keyword[]>;
   updateKeyword(id: number, keywordData: Partial<InsertKeyword>): Promise<Keyword>;
   deleteKeyword(id: number): Promise<void>;
   
