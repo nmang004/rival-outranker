@@ -86,12 +86,18 @@ export default function ContentTab({
   const generateImageRecommendations = () => {
     const recommendations = [];
     
-    if (imageData.withoutAltCount > 0) {
+    // Check if property exists before using it
+    if (imageData.withoutAltCount && imageData.withoutAltCount > 0) {
       recommendations.push(`Add alt text to ${imageData.withoutAltCount} image(s) for better accessibility and SEO.`);
+    } else if (imageData.count && imageData.altCount !== undefined && (imageData.count - imageData.altCount) > 0) {
+      recommendations.push(`Add alt text to ${imageData.count - imageData.altCount} image(s) for better accessibility and SEO.`);
     }
     
-    if (imageData.unoptimizedCount > 0) {
+    // Check if property exists before using it
+    if (imageData.unoptimizedCount && imageData.unoptimizedCount > 0) {
       recommendations.push(`Optimize ${imageData.unoptimizedCount} image(s) to improve page load speed.`);
+    } else if (imageData.sizeOptimized === false && imageData.count > 0) {
+      recommendations.push(`Optimize your images to improve page load speed.`);
     }
     
     return recommendations;
@@ -298,29 +304,36 @@ export default function ContentTab({
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">With Alt Text</span>
-              <span className="font-medium text-success-500">{imageData.withAltCount}</span>
+              <span className="font-medium text-success-500">
+                {imageData.withAltCount !== undefined ? imageData.withAltCount : 
+                (imageData.altCount !== undefined ? imageData.altCount : 0)}
+              </span>
             </div>
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Without Alt Text</span>
               <span className={`font-medium ${
-                imageData.withoutAltCount === 0 ? "text-success-500" : "text-danger-500"
+                (imageData.withoutAltCount === 0 || 
+                 (imageData.count && imageData.altCount !== undefined && 
+                  imageData.count - imageData.altCount === 0)) 
+                  ? "text-success-500" : "text-danger-500"
               }`}>
-                {imageData.withoutAltCount}
+                {imageData.withoutAltCount !== undefined ? imageData.withoutAltCount : 
+                 (imageData.count && imageData.altCount !== undefined ? 
+                  imageData.count - imageData.altCount : 0)}
               </span>
             </div>
             
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Optimized Images</span>
-              <span className="font-medium text-success-500">{imageData.optimizedCount}</span>
-            </div>
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Unoptimized Images</span>
-              <span className={`font-medium ${
-                imageData.unoptimizedCount === 0 ? "text-success-500" : "text-danger-500"
-              }`}>
-                {imageData.unoptimizedCount}
+              <span className="text-gray-500">Image Optimization</span>
+              <span className="font-medium">
+                {imageData.optimizedCount !== undefined ? 
+                  `${imageData.optimizedCount} optimized` : 
+                  (imageData.sizeOptimized ? 
+                    <span className="text-success-500">Optimized</span> : 
+                    <span className="text-danger-500">Not Optimized</span>
+                  )
+                }
               </span>
             </div>
           </div>
