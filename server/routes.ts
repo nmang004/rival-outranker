@@ -10,12 +10,19 @@ import { rivalAuditCrawler } from "./services/rivalAuditCrawler";
 import { generateRivalAuditExcel } from "./services/excelExporter";
 import { generateRivalAuditCsv } from "./services/csvExporter";
 import { urlFormSchema, insertAnalysisSchema, RivalAudit } from "@shared/schema";
+import { z } from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
+
+// Define a schema for the update keyword request
+const updateKeywordSchema = z.object({
+  keyword: z.string().min(1, "Keyword is required"),
+  url: z.string().url("Valid URL is required")
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware
@@ -488,6 +495,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error retrieving analysis:", error);
       res.status(500).json({ error: "Failed to retrieve analysis" });
+    }
+  });
+  
+  // Endpoint to update primary keyword and re-run analysis
+  app.post("/api/analysis/:id/update-keyword", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid analysis ID" });
+      }
+      
+      // Validate request body
+      const validationResult = updateKeywordSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request data", 
+          details: validationResult.error.format() 
+        });
+      }
+      
+      const { keyword, url } = validationResult.data;
+      
+      // Get the existing analysis
+      const existingAnalysis = await storage.getAnalysis(id);
+      if (!existingAnalysis) {
+        return res.status(404).json({ error: "Analysis not found" });
+      }
+      
+      console.log(`Updating primary keyword for analysis ${id} to "${keyword}"`);
+      
+      // Run the analyzer with the new primary keyword
+      const results = await analyzer.analyze(url, { 
+        forcedPrimaryKeyword: keyword 
+      });
+      
+      // Update the analysis with new results
+      const updatedAnalysis = await storage.updateAnalysisResults(id, results);
+      
+      return res.json({
+        success: true,
+        message: "Primary keyword updated and analysis refreshed",
+        analysis: updatedAnalysis
+      });
+    } catch (error) {
+      console.error("Error updating primary keyword:", error);
+      return res.status(500).json({ 
+        error: "Failed to update primary keyword", 
+        message: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
