@@ -1,89 +1,127 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronRight, FileText, Search, BookOpen, Lightbulb, CheckCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { queryClient, apiRequest } from '@/lib/queryClient';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { FileSearch, Info, Sparkles, Check, ArrowRight, Zap } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { urlFormSchema } from '@shared/schema';
+import { useToast } from '@/hooks/use-toast';
 
-const formSchema = z.object({
-  url: z.string().url({ message: 'Please enter a valid URL including https://' }),
+// Extend the URL form schema for deep content analysis
+const deepContentFormSchema = urlFormSchema.extend({
   keywords: z.string().optional(),
   includeHeaders: z.boolean().default(true),
   includeBody: z.boolean().default(true),
   includeCTA: z.boolean().default(true),
-  includeImpressions: z.boolean().default(true)
+  includeImpressions: z.boolean().default(true),
 });
 
+type FormValues = z.infer<typeof deepContentFormSchema>;
+
 export default function DeepContentAnalysisPage() {
-  const [, navigate] = useLocation();
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const [loading, setLoading] = useState<boolean>(false);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  // Initialize form with default values
+  const form = useForm<FormValues>({
+    resolver: zodResolver(deepContentFormSchema),
     defaultValues: {
       url: '',
       keywords: '',
       includeHeaders: true,
       includeBody: true,
       includeCTA: true,
-      includeImpressions: true
+      includeImpressions: true,
     },
   });
-  
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      // Submit the form data
-      await apiRequest('/api/deep-content', {
+
+  // Handle form submission
+  const mutation = useMutation({
+    mutationFn: async (values: FormValues) => {
+      return apiRequest('/api/deep-content', {
         method: 'POST',
         data: values,
       });
-      
-      // Prepare URL parameters
-      const params = new URLSearchParams();
-      params.append('url', values.url);
-      if (values.keywords) params.append('keywords', values.keywords);
-      params.append('includeHeaders', values.includeHeaders.toString());
-      params.append('includeBody', values.includeBody.toString());
-      params.append('includeCTA', values.includeCTA.toString());
-      params.append('includeImpressions', values.includeImpressions.toString());
-      
+    },
+    onSuccess: (data, variables) => {
       // Navigate to results page with parameters
-      navigate(`/deep-content-results?${params.toString()}`);
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      form.setError('root', { 
-        type: 'manual',
-        message: 'Failed to analyze content. Please try again.' 
+      const { url, keywords, includeHeaders, includeBody, includeCTA, includeImpressions } = variables;
+      const params = new URLSearchParams();
+      params.set('url', url);
+      if (keywords) params.set('keywords', keywords);
+      params.set('includeHeaders', includeHeaders.toString());
+      params.set('includeBody', includeBody.toString());
+      params.set('includeCTA', includeCTA.toString());
+      params.set('includeImpressions', includeImpressions.toString());
+      
+      setLocation(`/deep-content-results?${params.toString()}`);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Analysis Failed',
+        description: 'There was an error analyzing the URL. Please try again.',
+        variant: 'destructive',
       });
-    }
+      setLoading(false);
+    },
+  });
+
+  function onSubmit(values: FormValues) {
+    setLoading(true);
+    mutation.mutate(values);
   }
-  
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="text-center mb-8">
+    <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight gradient-heading">
           Deep Content Analysis
         </h1>
-        <p className="mt-4 text-muted-foreground text-lg">
-          Analyze your content in depth and receive actionable recommendations to improve engagement and SEO impact
+        <p className="text-lg text-muted-foreground mt-2">
+          Get comprehensive insights into your content structure, readability, and engagement
         </p>
       </div>
-      
-      <Card className="mb-8">
+
+      <Card className="border-2 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <FileText className="mr-2 h-5 w-5 text-primary" />
-            Content Analysis Tool
+            <FileSearch className="mr-2 h-5 w-5 text-primary" />
+            Enter URL for Content Analysis
           </CardTitle>
           <CardDescription>
-            Enter your website URL and target keywords to get a deep analysis of your content
+            Our AI will analyze content structure, readability, semantic relevance, and provide detailed annotations
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -96,226 +134,188 @@ export default function DeepContentAnalysisPage() {
                   <FormItem>
                     <FormLabel>Website URL</FormLabel>
                     <FormControl>
-                      <div className="flex items-center space-x-2">
-                        <div className="relative flex-grow">
-                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                          <Input
-                            placeholder="https://example.com/blog/article-title"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </div>
+                      <Input
+                        placeholder="https://example.com/blog-post"
+                        {...field}
+                        className="font-mono"
+                      />
                     </FormControl>
                     <FormDescription>
-                      Enter the full URL of the specific page you want to analyze
+                      Enter the full URL of the page you want to analyze
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="keywords"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Target Keywords (Optional)</FormLabel>
+                    <FormLabel className="flex items-center">
+                      Target Keywords
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 ml-2 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-sm">
+                            <p>Adding target keywords helps analyze how well your content is optimized for these terms. Leave blank to auto-detect from content.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Enter your target keywords separated by commas"
-                        className="resize-none"
+                        placeholder="e.g., content marketing, SEO best practices"
                         {...field}
+                        className="resize-none"
                       />
                     </FormControl>
                     <FormDescription>
-                      Adding keywords helps us analyze how well your content is optimized for them
+                      Optional: Enter your target keywords separated by commas
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium">Content Sections to Analyze</h3>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3">Analysis Options</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="includeHeaders"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Headers & Titles</FormLabel>
-                          <FormDescription>
-                            Analyze headings, titles, and subtitles
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="includeBody"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Body Content</FormLabel>
-                          <FormDescription>
-                            Analyze main paragraphs and content blocks
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="includeCTA"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Call-to-Actions</FormLabel>
-                          <FormDescription>
-                            Analyze CTAs and conversion points
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="includeImpressions"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>First Impressions</FormLabel>
-                          <FormDescription>
-                            Analyze reader's first impression factors
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="flex items-start space-x-2">
+                    <FormField
+                      control={form.control}
+                      name="includeHeaders"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              id="includeHeaders"
+                            />
+                          </FormControl>
+                          <Label htmlFor="includeHeaders" className="font-normal cursor-pointer">
+                            Headers Analysis
+                          </Label>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <FormField
+                      control={form.control}
+                      name="includeBody"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              id="includeBody"
+                            />
+                          </FormControl>
+                          <Label htmlFor="includeBody" className="font-normal cursor-pointer">
+                            Body Content Analysis
+                          </Label>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <FormField
+                      control={form.control}
+                      name="includeCTA"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              id="includeCTA"
+                            />
+                          </FormControl>
+                          <Label htmlFor="includeCTA" className="font-normal cursor-pointer">
+                            Call-to-Action Analysis
+                          </Label>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex items-start space-x-2">
+                    <FormField
+                      control={form.control}
+                      name="includeImpressions"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              id="includeImpressions"
+                            />
+                          </FormControl>
+                          <Label htmlFor="includeImpressions" className="font-normal cursor-pointer">
+                            First Impression Analysis
+                          </Label>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  className="w-full md:w-auto" 
-                  disabled={form.formState.isSubmitting}
-                >
-                  {form.formState.isSubmitting ? (
-                    <>Analyzing<span className="loading-dots">...</span></>
-                  ) : (
-                    <>
-                      Analyze Content
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </div>
-              
-              {form.formState.errors.root && (
-                <div className="p-3 text-sm text-white bg-destructive rounded-md">
-                  {form.formState.errors.root.message}
-                </div>
-              )}
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing Content...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Analyze Content Structure
+                  </>
+                )}
+              </Button>
             </form>
           </Form>
         </CardContent>
+        <Separator />
+        <CardFooter className="flex flex-col space-y-4 pt-6">
+          <div className="text-sm text-muted-foreground">
+            <h3 className="font-medium text-foreground mb-2">What to expect from Deep Content Analysis:</h3>
+            <ul className="space-y-1">
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-green-500 mt-0.5" />
+                <span>Detailed content structure evaluation with actionable recommendations</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-green-500 mt-0.5" />
+                <span>Readability metrics with suggestions for improving clarity and comprehension</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-green-500 mt-0.5" />
+                <span>Semantic relevance assessment to ensure content aligns with target topics</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="mr-2 h-4 w-4 text-green-500 mt-0.5" />
+                <span>Specific annotations highlighting issues and opportunities in your content</span>
+              </li>
+            </ul>
+          </div>
+        </CardFooter>
       </Card>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center">
-              <BookOpen className="mr-2 h-4 w-4 text-primary" />
-              Comprehensive Analysis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Our deep content analyzer evaluates your content's structure, readability, keyword usage, and engagement factors.
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center">
-              <Lightbulb className="mr-2 h-4 w-4 text-primary" />
-              Actionable Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Get specific recommendations for improving each section of your content with clear, implementable suggestions.
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center">
-              <CheckCircle className="mr-2 h-4 w-4 text-primary" />
-              Section-by-Section Review
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Receive targeted feedback for headers, body content, and CTAs separately to focus your optimization efforts.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="bg-muted p-6 rounded-lg">
-        <h3 className="text-lg font-medium mb-3">Why Deep Content Analysis Matters</h3>
-        <p className="text-muted-foreground mb-4">
-          While basic SEO tools focus on technical factors, our deep content analysis evaluates what truly matters to both readers and search engines:
-        </p>
-        <ul className="space-y-2">
-          <li className="flex items-start">
-            <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
-            <span className="text-sm">Content quality that keeps readers engaged and reduces bounce rates</span>
-          </li>
-          <li className="flex items-start">
-            <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
-            <span className="text-sm">Semantic richness that helps search engines understand your topic depth</span>
-          </li>
-          <li className="flex items-start">
-            <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
-            <span className="text-sm">Psychological triggers that improve conversion rates and user actions</span>
-          </li>
-        </ul>
-      </div>
     </div>
   );
 }

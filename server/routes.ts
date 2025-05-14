@@ -381,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const primaryKeyword = keywordAnalysisResult.keywordAnalysis.primaryKeyword;
         
         // Perform deep content analysis
-        const deepAnalysisResult = await deepContentAnalyzer.analyzeContent(pageData, primaryKeyword);
+        const deepAnalysisResult = await deepContentAnalyzer.analyzeContent(url, pageData, primaryKeyword);
         
         return res.json(deepAnalysisResult);
       } catch (analysisError) {
@@ -397,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint for deep content analysis (POST)
   app.post("/api/deep-content", async (req: Request, res: Response) => {
     try {
-      const { url } = req.body;
+      const { url, keywords } = req.body;
       
       if (!url || typeof url !== 'string') {
         return res.status(400).json({ error: "URL parameter is required" });
@@ -411,12 +411,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Performing deep content analysis for URL: ${url}`);
         const pageData = await crawler.crawlPage(url);
         
-        // Extract primary keyword first
-        const keywordAnalysisResult = await analyzer.analyzePage(url, pageData);
-        const primaryKeyword = keywordAnalysisResult.keywordAnalysis.primaryKeyword;
+        // Extract primary keyword first (prefer provided keywords if available)
+        let primaryKeyword = keywords;
+        if (!primaryKeyword) {
+          const keywordAnalysisResult = await analyzer.analyzePage(url, pageData);
+          primaryKeyword = keywordAnalysisResult.keywordAnalysis.primaryKeyword;
+        }
         
         // Perform deep content analysis
-        await deepContentAnalyzer.analyzeContent(pageData, primaryKeyword);
+        await deepContentAnalyzer.analyzeContent(url, pageData, primaryKeyword);
         
         console.log("Deep content analysis completed for:", url);
       } catch (analysisError) {
