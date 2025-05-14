@@ -385,7 +385,7 @@ export default function RivalRankTrackerResultsPage() {
             <CardTitle className="text-sm font-medium">Keywords Tracked</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analysis.keywords.length}</div>
+            <div className="text-2xl font-bold">{analysisData.keywords.length}</div>
             <p className="text-sm text-muted-foreground">
               {topRankedKeywords} in top 10 positions
             </p>
@@ -856,7 +856,7 @@ export default function RivalRankTrackerResultsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {analysis.keywords
+                        {analysisData.keywords
                           .filter((k: any) => k.metrics?.volume)
                           .sort((a: any, b: any) => 
                             (b.metrics?.volume || 0) - (a.metrics?.volume || 0)
