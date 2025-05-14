@@ -19,6 +19,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [formUrl, setFormUrl] = useState("");
+  const [targetKeyword, setTargetKeyword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);

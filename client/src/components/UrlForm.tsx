@@ -7,13 +7,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 
 interface UrlFormProps {
-  onSubmit: (url: string) => void;
+  onSubmit: (url: string, targetKeyword?: string) => void;
   isLoading?: boolean;
   initialUrl?: string;
+  initialKeyword?: string;
 }
 
-export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }: UrlFormProps) {
+export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "", initialKeyword = "" }: UrlFormProps) {
   const [url, setUrl] = useState(initialUrl);
+  const [targetKeyword, setTargetKeyword] = useState(initialKeyword);
   const [urls, setUrls] = useState<string[]>([]);
   const [multipleMode, setMultipleMode] = useState(false); // Default to single URL mode
   const [bulkText, setBulkText] = useState("");
@@ -52,7 +54,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
       // Remove the first URL from the list
       setUrls(urls.slice(1));
       
-      onSubmit(urlToSubmit);
+      onSubmit(urlToSubmit, targetKeyword.trim() || undefined);
     } else {
       // Check if the input contains commas (multiple URLs)
       if (url.includes(',')) {
@@ -69,7 +71,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
           // Clear the input field
           setUrl('');
           
-          onSubmit(urlToSubmit);
+          onSubmit(urlToSubmit, targetKeyword.trim() || undefined);
           return;
         }
       }
@@ -77,7 +79,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
       // Handle single URL case
       if (url.trim()) {
         const urlToSubmit = normalizeUrl(url);
-        onSubmit(urlToSubmit);
+        onSubmit(urlToSubmit, targetKeyword.trim() || undefined);
       }
     }
   };
@@ -218,6 +220,30 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "" }
                   >
                     Analyze multiple URLs
                   </motion.button>
+                </div>
+                
+                {/* Target Keyword Field */}
+                <div className="mt-4">
+                  <label htmlFor="targetKeyword" className="flex items-center text-sm font-medium text-foreground mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" 
+                      className="mr-2 h-4 w-4 text-primary" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                        d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                    </svg>
+                    Target Keyword (Optional)
+                  </label>
+                  <Input 
+                    type="text"
+                    id="targetKeyword"
+                    className="py-2 focus:ring-primary focus:border-primary/70 border-primary/20 text-foreground bg-white shadow-sm"
+                    placeholder="Enter primary keyword to focus on"
+                    value={targetKeyword}
+                    onChange={(e) => setTargetKeyword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 ml-1">
+                    Adding a target keyword will pre-populate the keyword field in the analysis
+                  </p>
                 </div>
               </div>
               <div className="flex items-end">

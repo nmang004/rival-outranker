@@ -209,13 +209,13 @@ export default function KeywordTab({ data, analysisId, url }: KeywordTabProps) {
         {/* Primary Keyword Section */}
         <div className="sm:col-span-6">
           <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center mb-2">
               <h5 className="text-sm font-medium text-gray-700">Detected Primary Keyword</h5>
               {!isEditing && (
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className="h-7 px-2 text-xs"
+                  className="h-7 px-2 text-xs ml-2 border-gray-300 hover:bg-gray-100 hover:text-gray-900"
                   onClick={handleEditClick}
                 >
                   <Edit className="h-3 w-3 mr-1" />
