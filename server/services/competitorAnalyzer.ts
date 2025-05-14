@@ -95,14 +95,30 @@ class CompetitorAnalyzer {
    */
   private async findPotentialCompetitors(keyword: string, location: string = 'United States'): Promise<string[]> {
     try {
-      // Approach 1: Try to find related sites using a search engine
+      console.log(`Finding potential competitors for keyword: ${keyword} in ${location}`);
+      
+      // Import bingSearchService here to avoid circular dependencies
+      const { bingSearchService } = await import('./bingSearchService');
+      
+      // Try to get real search results from Bing API
+      const searchResults = await bingSearchService.searchCompetitors(keyword, location);
+      
+      if (searchResults && searchResults.length > 0) {
+        console.log(`Found ${searchResults.length} competitors via Bing search API`);
+        // Extract just the URLs
+        return searchResults.map(result => result.url);
+      }
+      
+      // If Bing API search fails, try our manual search method
+      console.log("Bing API search failed, trying manual search...");
       const competitors = await this.findCompetitorsViaBingSearch(keyword, location);
       if (competitors.length > 0) {
+        console.log(`Found ${competitors.length} competitors via manual search`);
         return competitors;
       }
       
-      // Approach 2: If search approach fails, generate a list of common domains
-      // that might be competitors in various industries
+      // If all search methods fail, use fallback method
+      console.log("All search methods failed, using fallback competitor domains");
       return this.getCommonCompetitorDomains(keyword, location);
     } catch (error) {
       console.error('Error finding potential competitors:', error);
