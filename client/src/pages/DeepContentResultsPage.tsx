@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -27,7 +28,7 @@ export default function DeepContentResultsPage() {
   const [includeBody, setIncludeBody] = useState<boolean>(true);
   const [includeCTA, setIncludeCTA] = useState<boolean>(true);
   const [includeImpressions, setIncludeImpressions] = useState<boolean>(true);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isPdfLoading, setIsPdfLoading] = useState<boolean>(false);
   
   // Parse URL parameters
   useEffect(() => {
@@ -48,10 +49,10 @@ export default function DeepContentResultsPage() {
   }, [location]);
   
   const handleExportPDF = () => {
-    setIsLoading(true);
+    setIsPdfLoading(true);
     // Simulating PDF export
     setTimeout(() => {
-      setIsLoading(false);
+      setIsPdfLoading(false);
       alert('PDF Export feature will be implemented in a future update.');
     }, 1500);
   };
@@ -71,111 +72,46 @@ export default function DeepContentResultsPage() {
     window.print();
   };
   
-  // Sample data for demonstration
-  const contentAnalysis = {
+  // Set up API query
+  const { data: contentAnalysis, isLoading: isDataLoading, error } = useQuery<any>({
+    queryKey: [`/api/deep-content?url=${encodeURIComponent(url)}`],
+    refetchOnWindowFocus: false,
+    enabled: !!url,
+    retry: 1,
+  });
+  
+  // Fallback data in case API call fails
+  const defaultData = {
     url: url,
-    keywords: keywords.split(',').map(k => k.trim()).filter(k => k.length > 0),
-    overallScore: 78,
-    sections: {
-      headers: {
-        score: 65,
-        strengths: [
-          "Good use of H1 and H2 tags for hierarchy",
-          "Title includes primary keyword"
-        ],
-        weaknesses: [
-          "Some headers exceed recommended length",
-          "Keyword variation could be improved",
-          "Missing emotional triggers in headlines"
-        ],
-        recommendations: [
-          "Keep headers under 60 characters for better readability",
-          "Include more question-based headlines to increase engagement",
-          "Add power words to create emotional connection"
-        ]
-      },
-      body: {
-        score: 82,
-        strengths: [
-          "Good paragraph length and structure",
-          "Appropriate keyword density",
-          "Effective use of bullet points and lists"
-        ],
-        weaknesses: [
-          "Some sentences are too complex",
-          "Passive voice used too frequently",
-          "Content could benefit from more examples"
-        ],
-        recommendations: [
-          "Break down complex sentences for better readability",
-          "Convert passive voice to active voice where possible",
-          "Add real-world examples to illustrate key points",
-          "Use more transitional phrases between paragraphs"
-        ]
-      },
-      cta: {
-        score: 74,
-        strengths: [
-          "Clear and visible call-to-action buttons",
-          "Action-oriented language in CTAs"
-        ],
-        weaknesses: [
-          "Limited use of urgency triggers",
-          "CTAs could be more benefit-focused",
-          "Some CTAs lack specific direction"
-        ],
-        recommendations: [
-          "Add time-limited offers to create urgency",
-          "Focus on the specific benefits users will get",
-          "Make CTAs more specific about the next action"
-        ]
-      },
-      impressions: {
-        score: 85,
-        strengths: [
-          "Strong opening paragraph that hooks the reader",
-          "Clear value proposition established early",
-          "Good use of visual elements to break up text"
-        ],
-        weaknesses: [
-          "Introduction could be more concise",
-          "First paragraph does not contain primary keyword",
-          "Opening does not address the user problem directly"
-        ],
-        recommendations: [
-          "Include primary keyword in the first 100 words",
-          "Start with a question or statistic to immediately engage",
-          "Directly address the user problem in the opening"
-        ]
-      }
+    keywords: keywords ? keywords.split(',').map(k => k.trim()).filter(k => k.length > 0) : [],
+    overallScore: { score: 0, category: 'needs-work' as const },
+    structure: {
+      headingStructure: { score: 0, category: 'needs-work' as const },
+      paragraphStructure: { score: 0, category: 'needs-work' as const },
+      contentDistribution: { score: 0, category: 'needs-work' as const }
     },
-    readabilityMetrics: {
-      fleschKincaidScore: 56,
-      avgSentenceLength: 14.3,
-      avgWordLength: 4.8,
-      passiveVoicePercentage: 18,
-      complexWordsPercentage: 12
+    readability: {
+      fleschReadingEase: { score: 0, category: 'needs-work' as const },
+      sentenceComplexity: { score: 0, category: 'needs-work' as const },
+      wordChoice: { score: 0, category: 'needs-work' as const }
     },
-    contentAnnotations: [
-      {
-        type: 'header',
-        content: "How to Improve Your Website's SEO Rankings",
-        issues: ["Missing power words", "Could be more specific"],
-        suggestions: "Try \"7 Proven Strategies to Boost Your Website's SEO Rankings in 2023\""
-      },
-      {
-        type: 'body',
-        content: "Search engine optimization is important for websites that want to rank well in search results...",
-        issues: ["Passive voice", "Generic information"],
-        suggestions: "Revise to: \"Effective search engine optimization boosts your website's visibility in search results and drives targeted traffic to your business.\""
-      },
-      {
-        type: 'cta',
-        content: "Click here to learn more about our services.",
-        issues: ["Generic CTA", "Lacks specificity"],
-        suggestions: "Revise to: \"Get Your Free SEO Audit Report Today – Discover Hidden Opportunities in 24 Hours!\""
-      }
-    ]
+    semanticRelevance: {
+      topicCoverage: { score: 0, category: 'needs-work' as const },
+      keywordContext: { score: 0, category: 'needs-work' as const },
+      entityAnalysis: { score: 0, category: 'needs-work' as const }
+    },
+    engagement: {
+      contentFormats: { score: 0, category: 'needs-work' as const },
+      interactiveElements: { score: 0, category: 'needs-work' as const },
+      callsToAction: { score: 0, category: 'needs-work' as const }
+    },
+    recommendations: ["Analyzing content..."],
+    annotatedContent: {
+      title: url,
+      introduction: { content: "Loading content...", annotations: [] },
+      mainContent: [{ content: "Please wait while we analyze your content...", annotations: [] }],
+      conclusion: { content: "Analysis in progress...", annotations: [] }
+    }
   };
   
   if (!url) {
