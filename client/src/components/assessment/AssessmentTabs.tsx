@@ -260,7 +260,10 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
         
         <TabsContent value="deep-content" className="p-0 mt-0">
           <div className="p-4 sm:p-6">
-            <DeepContentAnalysis url={data.url} />
+            <DeepContentAnalysis 
+              url={data.url} 
+              isRequested={data.deepContentAnalysis !== undefined} 
+            />
           </div>
         </TabsContent>
       </Tabs>
