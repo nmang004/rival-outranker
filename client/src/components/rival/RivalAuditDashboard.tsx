@@ -238,9 +238,8 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
                         paddingAngle={2}
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) => 
-                          percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''
-                        }
+                        // External pie label removed - use legend instead
+                        label={false}
                         labelLine={false}
                       >
                         {statusDistributionData.map((entry, index) => (
@@ -258,13 +257,22 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
                             (audit.summary.priorityOfiCount + audit.summary.ofiCount + audit.summary.okCount + audit.summary.naCount);
                           return [`${value} items (${((Number(value)/total) * 100).toFixed(1)}%)`, name];
                         }}
-                        contentStyle={{ backgroundColor: 'white', borderRadius: '4px', padding: '8px' }}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          borderRadius: '8px', 
+                          padding: '10px',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                        }}
                       />
                       <Legend 
-                        layout="horizontal" 
-                        verticalAlign="bottom" 
-                        align="center"
-                        formatter={(value) => <span className="text-xs font-medium">{value}</span>}
+                        layout="vertical" 
+                        verticalAlign="middle" 
+                        align="right"
+                        iconSize={12}
+                        iconType="circle"
+                        formatter={(value) => <span className="text-sm font-medium">{value}</span>}
+                        wrapperStyle={{ paddingLeft: 20 }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
