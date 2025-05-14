@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, Share2, Printer, RefreshCw, Globe, ChevronLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { exportCompetitorToPDF } from '@/lib/competitorPdfExport';
+import { useQuery } from '@tanstack/react-query';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -30,13 +33,44 @@ export default function CompetitorResultsPage() {
     if (cityParam) setCity(cityParam);
   }, [location]);
   
-  const handleExportPDF = () => {
-    setIsLoading(true);
-    // Simulating PDF export
-    setTimeout(() => {
+  // Setup the Toast hook
+  const { toast } = useToast();
+  
+  // Get the competitor analysis data
+  const { data: competitorData } = useQuery({
+    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`],
+    enabled: !!url && !!city,
+  });
+  
+  const handleExportPDF = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (!competitorData) {
+        throw new Error('No competitor data available for export');
+      }
+      
+      // Export the PDF
+      await exportCompetitorToPDF(competitorData, url, city);
+      
+      // Show success toast
+      toast({
+        title: "PDF Exported Successfully",
+        description: "Your competitor analysis has been exported as a PDF.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      
+      // Show error toast
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting the PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      alert('PDF Export feature will be implemented in a future update.');
-    }, 1500);
+    }
   };
   
   const handleShare = () => {
