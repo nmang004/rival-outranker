@@ -10,6 +10,53 @@ if (!API_LOGIN || !API_PASSWORD) {
 }
 
 /**
+ * Helper function to process DataForSEO API responses consistently
+ * @param apiResponse The raw axios response from DataForSEO
+ * @param endpointName Name of the endpoint for logging purposes
+ * @returns The processed result data or null if there was an error
+ */
+function processApiResponse(apiResponse: any, endpointName: string): any {
+  if (!apiResponse || !apiResponse.data) {
+    console.error(`Empty response from ${endpointName} endpoint`);
+    return null;
+  }
+  
+  // Check status code
+  if (apiResponse.data.status_code !== 20000) {
+    console.error(`Error from ${endpointName} endpoint:`, 
+      apiResponse.data.status_code, 
+      apiResponse.data.status_message
+    );
+    return null;
+  }
+  
+  // Check tasks array
+  if (!apiResponse.data.tasks || apiResponse.data.tasks.length === 0) {
+    console.error(`No tasks in response from ${endpointName} endpoint`);
+    return null;
+  }
+  
+  // Check for errors in task status
+  const task = apiResponse.data.tasks[0];
+  if (task.status_code !== 20000) {
+    console.error(`Task error in ${endpointName} endpoint:`, 
+      task.status_code, 
+      task.status_message
+    );
+    return null;
+  }
+  
+  // Check for results
+  if (!task.result || task.result.length === 0) {
+    console.error(`No results in task from ${endpointName} endpoint`);
+    return null;
+  }
+  
+  // Return first result by default
+  return task.result[0];
+}
+
+/**
  * Generates a list of fallback keyword suggestions when the API isn't available
  * @param baseKeyword The original keyword to generate suggestions for
  * @returns Array of related keywords with simulated metrics
@@ -197,17 +244,8 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       [requestData]
     );
     
-    // Log response for debugging
-    console.log('DataForSEO API response status code:', keywordDataResponse.data?.status_code);
-    console.log('DataForSEO API response status message:', keywordDataResponse.data?.status_message);
-    
-    if (keywordDataResponse.data?.status_code !== 20000) {
-      console.error('DataForSEO API error:', keywordDataResponse.data);
-      throw new Error(`DataForSEO API returned error: ${keywordDataResponse.data?.status_message}`);
-    }
-    
-    // Process the response
-    const results = keywordDataResponse.data?.tasks?.[0]?.result?.[0] || {};
+    // Process the response with our helper
+    const results = processApiResponse(keywordDataResponse, 'search_volume') || {};
     
     // Extract trend data (if available)
     const trend = results.monthly_searches?.map((month: any) => month.search_volume) || [];
@@ -431,10 +469,12 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         const suggestionsResponse = await dataForSeoClient.post(
           'https://api.dataforseo.com/v3/keywords_data/google/keyword_suggestions/live',
           [{
-            "keyword": keyword,
-            "location_code": location,
-            "language_code": "en",
-            "limit": 15
+            "data": {
+              "keyword": keyword,
+              "location_code": location,
+              "language_code": "en",
+              "limit": 15
+            }
           }]
         );
         
