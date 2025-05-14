@@ -117,17 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Run competitor analysis if requested
-        const includeCompetitorAnalysis = req.body.includeCompetitorAnalysis === true;
-        if (includeCompetitorAnalysis) {
-          try {
-            // Competitor analysis will be processed later in the code
-            // This is a placeholder to ensure the flag is passed down
-            console.log("Competitor analysis will be included in results");
-          } catch (competitorError) {
-            console.error("Error flagging competitor analysis:", competitorError);
-          }
-        }
+        // Competitor analysis will be processed after the main analysis
+        // This includes checking for the includeCompetitorAnalysis flag in the request body
         
         // Process the analysis result, fixing any NaN or invalid values
         // Sanitize the entire analysis result to ensure no NaN values
@@ -146,8 +137,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sanitizedResult.overallScore = { score: 50, category: 'needs-work' };
         }
         
-        // The competitor analysis is added to sanitizedResult later in the code
-        // after the competitor analysis is performed, if requested
+        // Add competitor analysis to the sanitizedResult if it was performed
+        if (competitorAnalysis) {
+          sanitizedResult.competitorAnalysis = competitorAnalysis;
+        }
         
         // Store sanitized result
         const analysisData = {
@@ -444,6 +437,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Using fallback keyword extraction: "${primaryKeyword}"`);
           }
         }
+        
+        // Check if includeCompetitorAnalysis flag is true in the request body
+        const includeCompetitorAnalysis = req.body.includeCompetitorAnalysis === true;
         
         // Only run competitor analysis if the flag is true
         let competitorResults = null;
