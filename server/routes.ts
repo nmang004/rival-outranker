@@ -685,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keyword: displayKeyword, // Include the keyword in the response
         location: location, // Include the location in the response
         competitors,
-        allCompetitorUrls: competitors.map(c => ({ 
+        allCompetitorUrls: competitors.map((c: any) => ({ 
           url: c.url, 
           name: new URL(c.url).hostname.replace('www.', '') 
         })),
