@@ -59,9 +59,11 @@ export default function CompetitorAnalysisPage() {
     },
   });
   
-  const cityOptions = US_CITIES.map(city => ({
+  // Create city options with a unique id for each city to prevent duplicate key warnings
+  const cityOptions = US_CITIES.map((city, index) => ({
     value: `${city.city}, ${city.state}`,
-    label: `${city.city}, ${city.state}`
+    label: `${city.city}, ${city.state}`,
+    id: `${city.city}-${city.state}-${index}` // Add unique id for key
   }));
   
   async function onSubmit(values: z.infer<typeof formSchema>) {

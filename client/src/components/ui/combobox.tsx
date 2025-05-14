@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 
 interface ComboboxProps {
-  options: { value: string; label: string }[]
+  options: { value: string; label: string; id?: string }[]
   value: string
   onChange: (value: string) => void
   placeholder?: string
@@ -35,9 +35,22 @@ export function Combobox({
   
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return options;
-    return options.filter(option => 
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    
+    const normalizedSearchTerm = searchTerm.toLowerCase().trim();
+    
+    // More comprehensive search that handles partial matches better
+    return options.filter(option => {
+      const normalizedLabel = option.label.toLowerCase();
+      
+      // Check if the search term is in the label
+      if (normalizedLabel.includes(normalizedSearchTerm)) {
+        return true;
+      }
+      
+      // Check if individual words in the search term match
+      const searchWords = normalizedSearchTerm.split(/\s+/);
+      return searchWords.every(word => normalizedLabel.includes(word));
+    });
   }, [searchTerm, options]);
 
   return (
@@ -68,38 +81,57 @@ export function Combobox({
           </CommandEmpty>
           
           {filteredOptions.length > 0 && (
-            <CommandGroup heading="Options" className="max-h-[300px] overflow-auto">
-              {filteredOptions.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue);
-                    setOpen(false);
-                    setSearchTerm("");
-                  }}
-                  className="cursor-pointer transition-colors hover:bg-muted/60"
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2">
-                      <Check
-                        className={cn(
-                          "h-4 w-4",
-                          value === option.value ? "opacity-100 text-primary" : "opacity-0"
-                        )}
-                      />
-                      <span>{option.label}</span>
-                    </div>
-                    
-                    {option.value.includes(",") && (
-                      <Badge variant="outline" className="text-xs py-0 px-1.5 bg-primary/5">
-                        {option.value.split(",")[1]?.trim()}
-                      </Badge>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <div className="max-h-[300px] overflow-auto">
+              {/* Group cities by state */}
+              {(() => {
+                // Group options by state
+                const stateGroups = filteredOptions.reduce((groups, option) => {
+                  // Extract state from the option value
+                  const state = option.value.includes(",") 
+                    ? option.value.split(",")[1]?.trim() 
+                    : "Other";
+                  
+                  if (!groups[state]) {
+                    groups[state] = [];
+                  }
+                  
+                  groups[state].push(option);
+                  return groups;
+                }, {} as Record<string, typeof filteredOptions>);
+                
+                // Convert groups to array and sort by state name
+                return Object.entries(stateGroups)
+                  .sort(([stateA], [stateB]) => stateA.localeCompare(stateB))
+                  .map(([state, options]) => (
+                    <CommandGroup key={state} heading={state} className="mb-2">
+                      {options.map((option) => (
+                        <CommandItem
+                          key={option.id || `${option.value}-${Math.random()}`}
+                          value={option.value}
+                          onSelect={(currentValue) => {
+                            onChange(currentValue);
+                            setOpen(false);
+                            setSearchTerm("");
+                          }}
+                          className="cursor-pointer transition-colors hover:bg-muted/60"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <Check
+                                className={cn(
+                                  "h-4 w-4",
+                                  value === option.value ? "opacity-100 text-primary" : "opacity-0"
+                                )}
+                              />
+                              <span>{option.value.split(",")[0]}</span>
+                            </div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  ));
+              })()}
+            </div>
           )}
         </Command>
       </PopoverContent>
