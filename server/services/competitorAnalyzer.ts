@@ -97,21 +97,21 @@ class CompetitorAnalyzer {
     try {
       console.log(`Finding potential competitors for keyword: ${keyword} in ${location}`);
       
-      // Import bingSearchService here to avoid circular dependencies
-      const { bingSearchService } = await import('./bingSearchService');
+      // Import searchService here to avoid circular dependencies
+      const { searchService } = await import('./searchService');
       
-      // Try to get real search results from Bing API
-      const searchResults = await bingSearchService.searchCompetitors(keyword, location);
+      // Try to get real search results from Google Custom Search
+      const searchResults = await searchService.searchCompetitors(keyword, location);
       
       if (searchResults && searchResults.length > 0) {
-        console.log(`Found ${searchResults.length} competitors via Bing search API`);
+        console.log(`Found ${searchResults.length} competitors via Google Custom Search API`);
         // Extract just the URLs
         return searchResults.map(result => result.url);
       }
       
-      // If Bing API search fails, try our manual search method
-      console.log("Bing API search failed, trying manual search...");
-      const competitors = await this.findCompetitorsViaBingSearch(keyword, location);
+      // If Google Custom Search API fails, try our manual search method
+      console.log("Google Custom Search API failed, trying manual search...");
+      const competitors = await this.findCompetitorsViaManualSearch(keyword, location);
       if (competitors.length > 0) {
         console.log(`Found ${competitors.length} competitors via manual search`);
         return competitors;
@@ -127,12 +127,12 @@ class CompetitorAnalyzer {
   }
   
   /**
-   * Find competitors via intelligent keyword/location selection
+   * Find competitors via intelligent industry detection and location targeting
    * @param keyword - The primary keyword for competitor analysis
    * @param location - The location string (e.g., "United States", "New York, NY")
    * @returns Array of competitor URLs
    */
-  private async findCompetitorsViaBingSearch(keyword: string, location: string): Promise<string[]> {
+  private async findCompetitorsViaManualSearch(keyword: string, location: string): Promise<string[]> {
     try {
       console.log(`Finding competitors for keyword: ${keyword} in ${location}`);
       

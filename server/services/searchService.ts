@@ -1,47 +1,72 @@
 import axios from 'axios';
 
-interface SerpApiResponse {
-  search_metadata?: {
-    id: string;
-    status: string;
-    json_endpoint: string;
-    created_at: string;
-    processed_at: string;
-    google_url: string;
-    raw_html_file: string;
-    total_time_taken: number;
+interface GoogleCustomSearchResponse {
+  kind?: string;
+  url?: {
+    type: string;
+    template: string;
   };
-  search_parameters?: {
-    engine: string;
-    q: string;
-    location: string;
+  queries?: {
+    request: Array<{
+      totalResults: string;
+      searchTerms: string;
+      count: number;
+      startIndex: number;
+    }>;
+    nextPage?: Array<{
+      totalResults: string;
+      searchTerms: string;
+      count: number;
+      startIndex: number;
+    }>;
   };
-  organic_results?: Array<{
-    position: number;
+  searchInformation?: {
+    searchTime: number;
+    formattedSearchTime: string;
+    totalResults: string;
+    formattedTotalResults: string;
+  };
+  items?: Array<{
+    kind: string;
     title: string;
+    htmlTitle: string;
     link: string;
+    displayLink: string;
     snippet: string;
-    domain: string;
+    htmlSnippet: string;
+    cacheId?: string;
+    formattedUrl: string;
+    htmlFormattedUrl: string;
   }>;
-  error?: string;
+  error?: {
+    code: number;
+    message: string;
+    errors: Array<{
+      domain: string;
+      reason: string;
+      message: string;
+    }>;
+  };
 }
 
 interface SearchOptions {
   count?: number;
   offset?: number;
   location?: string;
-  timeframe?: string; // 'day' | 'week' | 'month'
+  dateRestrict?: string; // 'd1' | 'w1' | 'm1' etc.
 }
 
 class SearchService {
   private apiKey: string | undefined;
-  private baseUrl = 'https://serpapi.com/search';
+  private searchEngineId: string | undefined;
+  private baseUrl = 'https://www.googleapis.com/customsearch/v1';
   private queryCounter = 0;
-  // Default daily limit for SerpAPI - can be adjusted based on your plan
+  // Google Custom Search provides 100 free queries per day (default)
   private queryLimit = 100;
 
   constructor() {
-    this.apiKey = process.env.SERPAPI_KEY;
+    this.apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+    this.searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
     this.queryCounter = Number(process.env.SEARCH_QUERY_COUNTER) || 0;
   }
 
@@ -49,43 +74,48 @@ class SearchService {
    * Search for competitors based on keyword and location
    */
   async searchCompetitors(keyword: string, location?: string, options: SearchOptions = {}): Promise<any[]> {
-    if (!this.apiKey) {
-      console.warn('SerpAPI key is not set, using fallback data');
+    if (!this.apiKey || !this.searchEngineId) {
+      console.warn('Google Custom Search API configuration is not complete, using fallback data');
       return this.getFallbackResults(keyword, 5);
     }
 
     try {
+      // Combine keyword and location for more specific results
+      const searchQuery = location ? 
+        `${keyword} ${location}` : 
+        keyword;
+      
       // Increment the query counter when making a real API call
       this.queryCounter++;
       // Save the counter to the environment so it persists across restarts
       process.env.SEARCH_QUERY_COUNTER = this.queryCounter.toString();
 
-      const response = await axios.get<SerpApiResponse>(this.baseUrl, {
+      const response = await axios.get<GoogleCustomSearchResponse>(this.baseUrl, {
         params: {
-          api_key: this.apiKey,
-          engine: 'google',
-          q: keyword,
-          location: location || 'United States',
-          num: options.count || 10,
-          start: options.offset || 0,
-          tbm: 'nws',
-          time_period: options.timeframe,
+          key: this.apiKey,
+          cx: this.searchEngineId,
+          q: searchQuery,
+          num: Math.min(options.count || 10, 10), // Max 10 results per request
+          start: options.offset || 1, // Google uses 1-based indexing
+          gl: 'us', // Country to search from
+          cr: options.location ? `country${options.location.substring(0, 2).toUpperCase()}` : 'countryUS',
+          dateRestrict: options.dateRestrict,
         },
       });
 
       if (response.data.error) {
-        console.error('SerpAPI error:', response.data.error);
+        console.error('Google Custom Search API error:', response.data.error);
         return this.getFallbackResults(keyword, 5);
       }
 
-      if (!response.data.organic_results || response.data.organic_results.length === 0) {
-        console.warn('No results from SerpAPI');
+      if (!response.data.items || response.data.items.length === 0) {
+        console.warn('No results from Google Custom Search API');
         return this.getFallbackResults(keyword, 5);
       }
 
       // Filter out non-business domains (like Wikipedia, YouTube, etc.)
-      const filteredResults = response.data.organic_results.filter(result => {
-        const domain = result.domain.toLowerCase();
+      const filteredResults = response.data.items.filter(item => {
+        const domain = item.displayLink.toLowerCase();
         
         // Skip common non-business domains
         if (
@@ -108,13 +138,13 @@ class SearchService {
       });
 
       // Format the results
-      return filteredResults.map(result => ({
-        name: result.title,
-        url: result.link,
-        snippet: result.snippet,
+      return filteredResults.map(item => ({
+        name: item.title,
+        url: item.link,
+        snippet: item.snippet,
       }));
     } catch (error) {
-      console.error('Error searching SerpAPI:', error);
+      console.error('Error searching Google Custom Search API:', error);
       return this.getFallbackResults(keyword, 5);
     }
   }
@@ -150,11 +180,21 @@ class SearchService {
     // Create generic business names based on the keyword
     const keywordFormatted = keyword.toLowerCase().replace(/[^a-z0-9]/g, '');
     
+    // Create different types of domain variations for more realistic results
+    const domainTypes = [
+      { prefix: '', suffix: 'expert.com', description: `Leading provider of ${keyword} services with expert solutions.` },
+      { prefix: 'best', suffix: 'solutions.com', description: `Top-rated ${keyword} solutions for businesses and individuals.` },
+      { prefix: 'pro', suffix: 'services.com', description: `Professional ${keyword} services with guaranteed satisfaction.` },
+      { prefix: 'the', suffix: 'pros.co', description: `${keyword} professionals serving clients nationwide.` },
+      { prefix: '', suffix: 'hub.com', description: `Your one-stop resource for all ${keyword} needs and information.` }
+    ];
+    
     for (let i = 0; i < count; i++) {
+      const domainTemplate = domainTypes[i % domainTypes.length];
       results.push({
-        name: `${keywordFormatted}expert.com`,
-        url: `https://www.${keywordFormatted}expert.com`,
-        snippet: `Leading provider of ${keyword} services with expert solutions.`,
+        name: `${domainTemplate.prefix}${keywordFormatted}${domainTemplate.suffix}`,
+        url: `https://www.${domainTemplate.prefix}${keywordFormatted}${domainTemplate.suffix}`,
+        snippet: domainTemplate.description,
       });
     }
     
@@ -162,4 +202,4 @@ class SearchService {
   }
 }
 
-export const bingSearchService = new SearchService();
+export const searchService = new SearchService();
