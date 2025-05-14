@@ -55,21 +55,49 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   // The query's response might include the actual keyword that was used
   const displayKeyword = data?.keyword || searchKeyword || 'Your industry';
   
-  // If competitor analysis wasn't requested, show a message
+  // If competitor analysis wasn't requested, show a summary with option to run
   if (!isRequested) {
     return (
-      <Card className="p-8">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <Globe className="h-12 w-12 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-medium">Competitor Analysis Not Requested</h3>
-          <p className="text-muted-foreground">
-            You didn't select competitor analysis when submitting this URL for analysis. 
-            Please run a new analysis with the competitor analysis option checked to see data here.
-          </p>
+      <div className="space-y-6">
+        <p className="text-base text-muted-foreground">
+          Competitor Analysis identifies your top competitors based on search rankings 
+          and helps you understand their strengths. This analysis evaluates:
+        </p>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FeatureCard 
+            title="Competitor Discovery" 
+            description="Find who you're actually competing against in search results for your primary keywords"
+            icon={<Globe className="h-4 w-4 text-primary" />}
+          />
+          
+          <FeatureCard 
+            title="SEO Analysis" 
+            description="See competitors' SEO scores, domain authority, and backlink profiles"
+            icon={<BarChart2 className="h-4 w-4 text-primary" />}
+          />
+          
+          <FeatureCard 
+            title="Keyword Gap Analysis" 
+            description="Discover keywords your competitors are ranking for that you might be missing"
+            icon={<Search className="h-4 w-4 text-primary" />}
+          />
+          
+          <FeatureCard 
+            title="Competitive Intelligence" 
+            description="Learn from competitors' strengths and weaknesses to improve your strategy"
+            icon={<ExternalLink className="h-4 w-4 text-primary" />}
+          />
         </div>
-      </Card>
+        
+        <button 
+          onClick={() => refetch()}
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md flex items-center justify-center"
+        >
+          <Globe className="mr-2 h-5 w-5" />
+          Start Competitor Analysis
+        </button>
+      </div>
     );
   }
   
