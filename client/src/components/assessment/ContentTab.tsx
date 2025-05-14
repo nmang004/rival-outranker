@@ -253,18 +253,18 @@ export default function ContentTab({
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Total Internal Links</span>
-              <span className="font-medium text-gray-700">{internalLinksData.count}</span>
+              <span className="font-medium text-gray-700">{internalLinksData?.count || 0}</span>
             </div>
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Unique Links</span>
-              <span className="font-medium text-gray-700">{internalLinksData.uniqueCount}</span>
+              <span className="font-medium text-gray-700">{internalLinksData?.uniqueCount || 0}</span>
             </div>
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Proper Anchor Text</span>
               <span className="font-medium">
-                {internalLinksData.hasProperAnchors ? (
+                {internalLinksData?.hasProperAnchors ? (
                   <span className="text-success-500 flex items-center">
                     <CheckCircle className="h-4 w-4 mr-1" />
                     Yes
@@ -281,9 +281,9 @@ export default function ContentTab({
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Broken Links</span>
               <span className={`font-medium ${
-                internalLinksData.brokenLinksCount === 0 ? "text-success-500" : "text-danger-500"
+                internalLinksData?.brokenLinksCount === 0 ? "text-success-500" : "text-danger-500"
               }`}>
-                {internalLinksData.brokenLinksCount}
+                {internalLinksData?.brokenLinksCount || 0}
               </span>
             </div>
           </div>
@@ -333,11 +333,11 @@ export default function ContentTab({
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Image Optimization</span>
               <span className="font-medium">
-                {imageData.optimizedCount !== undefined ? 
+                {imageData?.optimizedCount !== undefined ? 
                   `${imageData.optimizedCount} optimized` : 
-                  (imageData.sizeOptimized ? 
+                  (imageData?.sizeOptimized ? 
                     <span className="text-success-500">Optimized</span> : 
-                    <span className="text-danger-500">Not Optimized</span>
+                    <span className="text-gray-500">Unknown</span>
                   )
                 }
               </span>
