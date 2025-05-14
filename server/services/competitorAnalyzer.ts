@@ -241,8 +241,11 @@ class CompetitorAnalyzer {
           'https://www.freightos.com'
         ];
         
+        // Add country-specific competitors based on location
+        const detectedCountryCode = this.getCountryCode(location);
+        
         // US-specific competitors
-        if (countryCode === 'US') {
+        if (detectedCountryCode === 'US') {
           competitors.push('https://www.chrobinson.com');
           competitors.push('https://www.upsfreight.com');
           competitors.push('https://ltl.xpo.com');
