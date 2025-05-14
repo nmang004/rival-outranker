@@ -138,7 +138,8 @@ class CompetitorAnalyzer {
         'salon': ['salon', 'hair', 'beauty', 'barber', 'stylist', 'spa'],
         'fitness': ['fitness', 'gym', 'workout', 'trainer', 'exercise'],
         'realestate': ['real estate', 'realtor', 'property', 'homes', 'housing'],
-        'auto': ['auto', 'car', 'mechanic', 'repair', 'service', 'dealership']
+        'auto': ['auto', 'car', 'mechanic', 'repair', 'service', 'dealership'],
+        'freight': ['freight', 'freight forwarding', 'shipping', 'logistics', 'cargo', 'transport', 'transportation', 'carrier', 'shipment', 'forwarding', 'customs broker']
       };
       
       let identifiedType = '';
@@ -223,6 +224,29 @@ class CompetitorAnalyzer {
         if (identifiedType === 'dental') {
           competitors.push('https://www.aspen.dental');
           competitors.push('https://www.deltadentalins.com');
+        }
+      }
+      // Freight forwarding and logistics
+      else if (identifiedType === 'freight') {
+        competitors = [
+          'https://www.fedex.com',
+          'https://www.dhl.com',
+          'https://www.maersk.com',
+          'https://www.flexport.com',
+          'https://www.dbschenker.com',
+          'https://www.kuehne-nagel.com',
+          'https://www.expeditors.com',
+          'https://www.dsv.com',
+          'https://www.freightquote.com',
+          'https://www.freightos.com'
+        ];
+        
+        // US-specific competitors
+        if (countryCode === 'US') {
+          competitors.push('https://www.chrobinson.com');
+          competitors.push('https://www.upsfreight.com');
+          competitors.push('https://ltl.xpo.com');
+          competitors.push('https://www.hubgroup.com');
         }
       }
       // Default local business sites with review/directory focus
