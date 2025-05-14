@@ -305,87 +305,98 @@ export default function RivalAuditResultsPage() {
         </div>
 
         {/* Tabs for different audit sections */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="overflow-x-auto pb-1">
-            <TabsList className="flex mb-6 w-max sm:w-full sm:grid sm:grid-cols-7">
-              <TabsTrigger value="summary" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Summary</span>
-              </TabsTrigger>
-              <TabsTrigger value="onPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                <FileText className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">On-Page</span>
-              </TabsTrigger>
-              <TabsTrigger value="structure" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                <ClipboardCheck className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Structure</span>
-              </TabsTrigger>
-              <TabsTrigger value="contactPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                <Phone className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Contact</span>
-              </TabsTrigger>
-              <TabsTrigger value="servicePages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                <Briefcase className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Services</span>
-              </TabsTrigger>
-              <TabsTrigger value="locationPages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                <MapPin className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Locations</span>
-              </TabsTrigger>
-              <TabsTrigger value="serviceAreaPages" className="flex items-center whitespace-nowrap px-3 sm:px-0" disabled={!audit.serviceAreaPages}>
-                <Globe className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Areas</span>
-              </TabsTrigger>
-            </TabsList>
+        {viewMode === "dashboard" ? (
+          <div className="mb-6">
+            <RivalAuditDashboard audit={audit} />
           </div>
-          
-          <TabsContent value="summary" className="mt-0">
-            <RivalAuditSummary audit={audit} />
-          </TabsContent>
-          
-          <TabsContent value="onPage" className="mt-0">
-            <RivalAuditSection 
-              title="On-Page SEO Audit" 
-              description="Analysis of user experience, content quality, readability, and calls to action"
-              items={audit.onPage.items}
-            />
-          </TabsContent>
-          
-          <TabsContent value="structure" className="mt-0">
-            <RivalAuditSection 
-              title="Structure & Navigation Audit" 
-              description="Analysis of URL structure, site navigation, page titles, headings, and meta descriptions"
-              items={audit.structureNavigation.items}
-            />
-          </TabsContent>
-          
-          <TabsContent value="contactPage" className="mt-0">
-            <RivalAuditSection 
-              title="Contact Page Audit" 
-              description="Analysis of contact information, forms, phone numbers, maps, and business details"
-              items={audit.contactPage.items}
-            />
-          </TabsContent>
-          
-          <TabsContent value="servicePages" className="mt-0">
-            <RivalAuditSection 
-              title="Service Pages Audit" 
-              description="Analysis of service descriptions, clarity, calls to action, and structure"
-              items={audit.servicePages.items}
-            />
-          </TabsContent>
-          
-          <TabsContent value="locationPages" className="mt-0">
-            <RivalAuditSection 
-              title="Location Pages Audit" 
-              description="Analysis of local SEO, address information, maps, and geographic relevance"
-              items={audit.locationPages.items}
-            />
-          </TabsContent>
-          
-          {audit.serviceAreaPages && (
-            <TabsContent value="serviceAreaPages" className="mt-0">
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+            <div className="overflow-x-auto pb-1">
+              <TabsList className="flex mb-6 w-max sm:w-full sm:grid sm:grid-cols-7">
+                <TabsTrigger value="summary" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                  <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Summary</span>
+                </TabsTrigger>
+                <TabsTrigger value="onPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                  <FileText className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">On-Page</span>
+                </TabsTrigger>
+                <TabsTrigger value="structure" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                  <ClipboardCheck className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Structure</span>
+                </TabsTrigger>
+                <TabsTrigger value="contactPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                  <Phone className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Contact</span>
+                </TabsTrigger>
+                <TabsTrigger value="servicePages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                  <Briefcase className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Services</span>
+                </TabsTrigger>
+                <TabsTrigger value="locationPages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                  <MapPin className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Locations</span>
+                </TabsTrigger>
+                <TabsTrigger value="serviceAreaPages" className="flex items-center whitespace-nowrap px-3 sm:px-0" disabled={!audit.serviceAreaPages}>
+                  <Globe className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Areas</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="summary" className="mt-0">
+              <RivalAuditSummary audit={audit} />
+            </TabsContent>
+            
+            <TabsContent value="onPage" className="mt-0">
               <RivalAuditSection 
-                title="Service Area Pages Audit" 
-                description="Analysis of geographic targeting, city pages, and local information"
-                items={audit.serviceAreaPages.items}
+                title="On-Page SEO Audit" 
+                description="Analysis of user experience, content quality, readability, and calls to action"
+                items={audit.onPage.items}
               />
             </TabsContent>
-          )}
-        </Tabs>
+            
+            <TabsContent value="structure" className="mt-0">
+              <RivalAuditSection 
+                title="Structure & Navigation Audit" 
+                description="Analysis of URL structure, site navigation, page titles, headings, and meta descriptions"
+                items={audit.structureNavigation.items}
+              />
+            </TabsContent>
+            
+            <TabsContent value="contactPage" className="mt-0">
+              <RivalAuditSection 
+                title="Contact Page Audit" 
+                description="Analysis of contact information, forms, phone numbers, maps, and business details"
+                items={audit.contactPage.items}
+              />
+            </TabsContent>
+            
+            <TabsContent value="servicePages" className="mt-0">
+              <RivalAuditSection 
+                title="Service Pages Audit" 
+                description="Analysis of service descriptions, clarity, calls to action, and structure"
+                items={audit.servicePages.items}
+              />
+            </TabsContent>
+            
+            <TabsContent value="locationPages" className="mt-0">
+              <RivalAuditSection 
+                title="Location Pages Audit" 
+                description="Analysis of local SEO, address information, maps, and geographic relevance"
+                items={audit.locationPages.items}
+              />
+            </TabsContent>
+            
+            {audit.serviceAreaPages && (
+              <TabsContent value="serviceAreaPages" className="mt-0">
+                <RivalAuditSection 
+                  title="Service Area Pages Audit" 
+                  description="Analysis of geographic targeting, city pages, and local information"
+                  items={audit.serviceAreaPages.items}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
+        )}
+        
+        {/* Recommendations Section - always shown at bottom */}
+        <div className="mt-12">
+          <RivalAuditRecommendations audit={audit} />
+        </div>
       </div>
     </div>
   );
