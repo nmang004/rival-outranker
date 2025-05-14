@@ -67,6 +67,13 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   const [locationSearchTerm, setLocationSearchTerm] = useState('');
   const [runningAnalysis, setRunningAnalysis] = useState(false);
   
+  // Update selectedLocation if city prop changes
+  useEffect(() => {
+    if (city) {
+      setSelectedLocation(city);
+    }
+  }, [city]);
+  
   // Filter US cities based on search term
   const filteredCities = locationSearchTerm
     ? US_CITIES

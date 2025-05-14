@@ -251,7 +251,8 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
               <CompetitorAnalysis 
                 url={data.url} 
                 keyword={data.keywordAnalysis.primaryKeyword}
-                isRequested={data.competitorAnalysis !== null && data.competitorAnalysis !== undefined} 
+                isRequested={false} 
+                city="United States" // Set default city to ensure form works properly
               />
             )}
           </div>
