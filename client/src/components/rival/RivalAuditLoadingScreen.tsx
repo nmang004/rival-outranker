@@ -29,11 +29,11 @@ const LoadingStep = ({
 }) => {
   return (
     <div className={`flex items-center gap-3 py-3 pl-2 rounded-md transition-all ${
-      isActive ? 'bg-blue-50 dark:bg-blue-950/30' : 
+      isActive ? 'bg-green-50 dark:bg-green-950/30' : 
       isComplete ? 'opacity-70' : 'opacity-40'
     }`}>
       <div className={`p-2 rounded-full ${
-        isActive ? 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-300 animate-pulse' : 
+        isActive ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300 animate-pulse' : 
         isComplete ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300' : 
         'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
       }`}>
@@ -74,7 +74,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
   return (
     <div className="space-y-6 max-w-3xl mx-auto animate-fadeIn">
       <div className="text-center mb-8 space-y-2">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
           Running Comprehensive SEO Audit
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
@@ -82,7 +82,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
         </p>
       </div>
       
-      <Card className="border border-blue-100 dark:border-blue-900">
+      <Card className="border border-green-100 dark:border-green-900">
         <CardContent className="pt-6">
           <div className="flex justify-between mb-2">
             <span className="text-sm font-medium">Audit Progress</span>
@@ -90,7 +90,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
           </div>
           <Progress 
             value={progress} 
-            className="h-2.5 bg-blue-100 dark:bg-blue-900"
+            className="h-2.5 bg-green-100 dark:bg-green-900"
           />
           
           <div className="mt-8 space-y-1">
@@ -142,9 +142,9 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
       
       <div className="animate-bounce-slow flex justify-center p-6">
         <div className="flex space-x-2 opacity-70">
-          <div className="w-2 h-2 rounded-full bg-primary animate-bounce-delay-0"></div>
-          <div className="w-2 h-2 rounded-full bg-primary animate-bounce-delay-300"></div>
-          <div className="w-2 h-2 rounded-full bg-primary animate-bounce-delay-600"></div>
+          <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce-delay-0"></div>
+          <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce-delay-300"></div>
+          <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce-delay-600"></div>
         </div>
       </div>
     </div>

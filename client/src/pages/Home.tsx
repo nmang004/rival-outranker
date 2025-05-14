@@ -104,8 +104,9 @@ export default function Home() {
     }, 300);
   };
 
-  const handleSubmit = async (url: string) => {
+  const handleSubmit = async (url: string, keyword?: string) => {
     setFormUrl(url);
+    if (keyword) setTargetKeyword(keyword);
     setError(null);
     setIsSubmitting(true);
     setAnalysisProgress(0); // Reset progress bar
@@ -122,6 +123,7 @@ export default function Home() {
       // Include the deep content analysis and competitor analysis options with the standard analysis request
       const requestData = { 
         url,
+        targetKeyword: keyword || targetKeyword || undefined,
         runDeepContentAnalysis: useDeepContentAnalysis,
         includeCompetitorAnalysis: includeCompetitorAnalysis
       };
@@ -218,6 +220,7 @@ export default function Home() {
             onSubmit={handleSubmit} 
             isLoading={analyzeMutation.isPending || isSubmitting}
             initialUrl={formUrl}
+            initialKeyword={targetKeyword}
           />
           
           {/* Advanced Analysis Options */}
