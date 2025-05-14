@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Download, Share2, Printer, RefreshCw, FileText, ChevronLeft } from 'lucide-react';
+import { exportDeepContentToPDF } from '@/lib/deepContentPdfExport';
+import { useToast } from '@/hooks/use-toast';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -48,13 +50,37 @@ export default function DeepContentResultsPage() {
     if (includeImpressionsParam) setIncludeImpressions(includeImpressionsParam === 'true');
   }, [location]);
   
-  const handleExportPDF = () => {
-    setIsPdfLoading(true);
-    // Simulating PDF export
-    setTimeout(() => {
+  // Add toast hook
+  const { toast } = useToast();
+
+  const handleExportPDF = async () => {
+    try {
+      setIsPdfLoading(true);
+      
+      if (!contentAnalysis) {
+        throw new Error('No analysis data available for export');
+      }
+      
+      // Export the PDF using the deep content PDF export functionality
+      await exportDeepContentToPDF(contentAnalysis, url, keywords);
+      
+      // Show success toast
+      toast({
+        title: "PDF Exported Successfully",
+        description: "Your deep content analysis has been exported as a PDF.",
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      
+      // Show error toast
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting the PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsPdfLoading(false);
-      alert('PDF Export feature will be implemented in a future update.');
-    }, 1500);
+    }
   };
   
   const handleShare = () => {
