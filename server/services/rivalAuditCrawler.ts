@@ -763,6 +763,44 @@ class RivalAuditCrawler {
       return true;
     }
     
+    // Pattern 6: Check for service-related keywords in page title and h1
+    // Create regex to match any of the specific service terms in title or h1
+    const serviceRegexTerms = specificServiceTerms
+      .filter(term => term.length > 3)
+      .map(term => term.replace(/-/g, '[ -]?')); // Allow spaces or hyphens
+    
+    const serviceRegex = new RegExp(`\\b(${serviceRegexTerms.join('|')})\\b`, 'i');
+    
+    if (serviceRegex.test(title) || 
+        (page.h1s.length > 0 && page.h1s.some(h1 => serviceRegex.test(h1.toLowerCase()))) ||
+        title.includes('service') || title.includes('repair') || 
+        title.match(/\b(installation|replacement|maintenance)\b/i) ||
+        page.h1s.some(h1 => h1.toLowerCase().includes('service') || h1.toLowerCase().includes('repair'))) {
+      return true;
+    }
+    
+    // Pattern 7: Check if page content is heavily focused on services
+    // Look for multiple service terms and service-related phrases in the content
+    const serviceTermCount = specificServiceTerms.filter(term => 
+      page.bodyText.toLowerCase().includes(term)
+    ).length;
+    
+    const serviceContentIndicators = [
+      'schedule service', 'book service', 'request service', 'service call',
+      'free estimate', 'free consultation', 'service plan', 'service agreement',
+      'repair options', 'installation options', 'emergency service', '24/7 service',
+      'same-day service', 'professional service', 'licensed technician', 'certified technician',
+      'service area', 'service fee', 'diagnostic fee', 'flat rate', 'service hours'
+    ];
+    
+    const hasServiceContentIndicators = serviceContentIndicators.some(phrase => 
+      page.bodyText.toLowerCase().includes(phrase)
+    );
+    
+    if (serviceTermCount >= 3 && hasServiceContentIndicators) {
+      return true;
+    }
+    
     return false;
   }
   
@@ -770,17 +808,31 @@ class RivalAuditCrawler {
    * Helper method to check if a string contains location indicators
    */
   private containsLocationIndicator(text: string): boolean {
-    const locationIndicators = [
+    const stateAbbreviations = [
+      'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 
+      'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 
+      'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 
+      'VA', 'WA', 'WV', 'WI', 'WY'
+    ];
+
+    const locationDirectories = [
       'cities-served', 'service-areas', 'service-area', 'locations', 'areas-we-serve',
-      'areas', 'cities', 'counties', 'communities', 'neighborhoods', 'regions',
+      'areas', 'cities', 'counties', 'communities', 'neighborhoods', 'regions', 'zip-codes'
+    ];
+    
+    const locationIndicators = [
+      ...locationDirectories,
+      'county', 'township', 'city', 'town', 'village', 'borough', 'district',
       /\b(in|near|serving|around|throughout) [a-z\s]+\b/i,
-      /\b[a-z]+-[a-z]{2}\b/i,  // city-state pattern
-      /\b\d{5}\b/ // zip code
+      /\b[a-z]+-[a-z]{2}\b/i,   // city-state pattern like miami-fl
+      new RegExp(`\\b[a-z]+ (${stateAbbreviations.join('|')})\\b`, 'i'),  // city STATE pattern
+      /\b\d{5}(-\d{4})?\b/,     // zip code with optional +4
+      /\b(north|south|east|west|northeast|northwest|southeast|southwest) [a-z\s]+\b/i  // directional areas
     ];
     
     return locationIndicators.some(indicator => 
       typeof indicator === 'string' 
-        ? text.includes(indicator) 
+        ? text.toLowerCase().includes(indicator.toLowerCase()) 
         : indicator.test(text)
     );
   }
