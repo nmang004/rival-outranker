@@ -635,18 +635,38 @@ class Analyzer {
       eat: 0.9
     };
     
+    // Filter out any scores that are NaN, null, or undefined
+    const validScores = scores.filter(score => 
+      score && score.score !== undefined && score.score !== null && !isNaN(score.score)
+    );
+    
+    // If no valid scores, return a default score
+    if (validScores.length === 0) {
+      return { score: 50, category: 'needs-work' };
+    }
+    
     const weightArr = Object.values(weights);
     const totalWeight = weightArr.reduce((sum, weight) => sum + weight, 0);
     
     let weightedScore = 0;
-    scores.forEach((score, index) => {
-      weightedScore += score.score * weightArr[index];
+    // Only use as many weights as we have scores
+    const usableWeights = weightArr.slice(0, validScores.length);
+    
+    validScores.forEach((score, index) => {
+      // Use the corresponding weight or default to 1.0 if we don't have a weight
+      const weight = index < usableWeights.length ? usableWeights[index] : 1.0;
+      weightedScore += score.score * weight;
     });
     
-    const finalScore = Math.round(weightedScore / totalWeight);
-    const category = this.getScoreCategory(finalScore);
+    // Calculate weighted average and ensure it's not NaN
+    const weightTotal = usableWeights.reduce((sum, weight) => sum + weight, 0);
+    const finalScore = weightTotal > 0 ? Math.round(weightedScore / weightTotal) : 50;
     
-    return { score: finalScore, category };
+    // Ensure the final score is within 0-100 range and not NaN
+    const validFinalScore = isNaN(finalScore) ? 50 : Math.max(0, Math.min(100, finalScore));
+    const category = this.getScoreCategory(validFinalScore);
+    
+    return { score: validFinalScore, category };
   }
 
   /**

@@ -111,11 +111,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Store the analysis result
+        // Store the analysis result, ensuring no NaN values are saved
+        const score = analysisResult.overallScore.score;
         const analysisData = {
           url: url, // Use the normalized URL
-          overallScore: analysisResult.overallScore.score,
-          results: analysisResult
+          overallScore: isNaN(score) ? 50 : score, // Use default score if NaN
+          results: {
+            ...analysisResult,
+            overallScore: {
+              ...analysisResult.overallScore,
+              score: isNaN(score) ? 50 : score, // Also fix NaN in results
+            }
+          }
         };
         
         // Validate and save to storage
