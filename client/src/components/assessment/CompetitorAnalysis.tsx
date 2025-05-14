@@ -48,11 +48,11 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   // Determine the search keyword - if keyword is provided use it directly
   const searchKeyword = keyword || '';
   
-  // Use API endpoint with all parameters for best keyword selection
+  // API for competitor data - we don't auto-fetch it initially
   const { data, isLoading, error, refetch } = useQuery<any>({
-    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(searchLocation)}&keyword=${encodeURIComponent(searchKeyword)}`],
+    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}`],
     refetchOnWindowFocus: false,
-    enabled: isRequested // Only run the query if competitor analysis was requested
+    enabled: false // Never automatically run this query
   });
   
   // The query's response might include the actual keyword that was used

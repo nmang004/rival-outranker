@@ -134,13 +134,9 @@ export default function Home() {
               return false; // Keep polling until minimum time elapsed
             }
             
-            // Minimum wait time elapsed, redirect to the appropriate results page
-            if (isDeepContentAnalysis && result.results.deepContentAnalysis) {
-              console.log('Redirecting to deep content results');
-              setLocation(`/deep-content-results?url=${encodeURIComponent(url)}`);
-            } else {
-              setLocation(`/results?url=${encodeURIComponent(url)}`);
-            }
+            // Always redirect to the main results page - never to deep content results
+            console.log('Redirecting to main results page');
+            setLocation(`/results?url=${encodeURIComponent(url)}`);
             return true;
           }
         }
@@ -156,12 +152,8 @@ export default function Home() {
                 return false;
               }
               
-              // Handle deep content analysis redirect if needed
-              if (isDeepContentAnalysis && fallbackResult.results.deepContentAnalysis) {
-                setLocation(`/deep-content-results?url=${encodeURIComponent(url)}`);
-              } else {
-                setLocation(`/results?url=${encodeURIComponent(url)}`);
-              }
+              // Always redirect to main results page
+              setLocation(`/results?url=${encodeURIComponent(url)}`);
               return true;
             }
           }
