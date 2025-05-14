@@ -1249,13 +1249,16 @@ class Analyzer {
     return {
       wordCount: 0,
       paragraphCount: 0,
-      avgWordsPerParagraph: 0,
-      headingCount: 0,
-      h1Count: 0,
-      h2Count: 0,
-      h3Count: 0,
-      keywordDensity: 0,
+      headingStructure: {
+        h1Count: 0,
+        h2Count: 0,
+        h3Count: 0,
+        h4Count: 0,
+        h5Count: 0,
+        h6Count: 0
+      },
       readabilityScore: 50,
+      hasMultimedia: false,
       overallScore: { score: 50, category: 'needs-work' }
     };
   }
