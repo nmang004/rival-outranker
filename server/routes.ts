@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location) as any;
             
             // Transform the competitor analysis results into the expected format for the frontend
-            competitors = competitorResults.competitors.map((competitor, index) => {
+            competitors = competitorResults.competitors.map((competitor: any, index: number) => {
               return {
                 name: competitor.title || `Competitor ${index + 1}`,
                 url: competitor.url,

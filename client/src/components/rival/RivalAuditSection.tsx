@@ -108,8 +108,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
       (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = !statusFilter || item.status === statusFilter;
-    const matchesImportance = !importanceFilter || item.importance === importanceFilter;
+    const matchesStatus = !statusFilter || statusFilter === "all-statuses" || item.status === statusFilter;
+    const matchesImportance = !importanceFilter || importanceFilter === "all-importance" || item.importance === importanceFilter;
     
     return matchesSearch && matchesStatus && matchesImportance;
   });
