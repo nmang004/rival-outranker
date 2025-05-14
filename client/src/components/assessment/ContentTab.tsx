@@ -113,11 +113,11 @@ export default function ContentTab({
         <div className="flex items-center justify-between">
           <h4 className="text-base font-medium text-gray-900">Content Analysis</h4>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            contentData.overallScore.score >= 70 ? 'bg-blue-100 text-blue-800' : 
-            contentData.overallScore.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+            contentData?.overallScore?.score >= 70 ? 'bg-blue-100 text-blue-800' : 
+            contentData?.overallScore?.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
             'bg-red-100 text-red-800'
           }`}>
-            Score: {contentData.overallScore.score}/100
+            Score: {contentData?.overallScore?.score || 50}/100
           </span>
         </div>
         <p className="mt-1 text-sm text-gray-500">Analysis of content quality, structure, and internal linking.</p>

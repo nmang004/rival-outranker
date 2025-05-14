@@ -85,7 +85,7 @@ export default function ResultsPage() {
   // Extract the actual analysis data from the response
   const data = apiResponse && 'results' in apiResponse ? apiResponse.results : {};
   
-  // Create default arrays if missing to avoid rendering issues
+  // Create default empty arrays if missing to avoid rendering issues
   if (!data.strengths) data.strengths = [];
   if (!data.weaknesses) data.weaknesses = [];
   
@@ -100,6 +100,49 @@ export default function ResultsPage() {
       score: 50,
       category: 'needs-work',
       improvements: ["Analysis could not be completed. Please check the URL and try again."]
+    };
+  }
+  
+  // Ensure that all required analysis objects are at least defined with defaults
+  if (!data.pageSpeedAnalysis) {
+    data.pageSpeedAnalysis = {
+      score: 50,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+  
+  if (!data.mobileAnalysis) {
+    data.mobileAnalysis = {
+      isMobileFriendly: false,
+      viewportSet: false,
+      textSizeAppropriate: false,
+      tapTargetsAppropriate: false,
+      overallScore: { score: 50, category: 'needs-work' }
+    };
+  }
+  
+  if (!data.enhancedContentAnalysis) {
+    data.enhancedContentAnalysis = {
+      headingStructure: {
+        hasH1: false,
+        score: 50,
+        avgWordCount: 0,
+        hasProperHierarchy: false
+      },
+      contentIssues: ["No content analysis available"],
+      contentRecommendations: ["Try analyzing the page again"]
+    };
+  }
+  
+  // Make sure headingStructure is available in contentAnalysis
+  if (data.contentAnalysis && !data.contentAnalysis.headingStructure) {
+    data.contentAnalysis.headingStructure = {
+      h1Count: data.contentAnalysis.h1Count || 0,
+      h2Count: data.contentAnalysis.h2Count || 0,
+      h3Count: data.contentAnalysis.h3Count || 0,
+      h4Count: 0,
+      h5Count: 0,
+      h6Count: 0
     };
   }
 

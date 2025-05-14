@@ -14,11 +14,11 @@ export default function KeyMetrics({
   // Set consistent default values for all metrics when data is missing
   // Use 50 as the default score for all metrics (matches analyzer's default "needs work" score)
   const DEFAULT_SCORE = 50;
-  const pageSpeedScore = pageSpeed?.score ?? DEFAULT_SCORE;
-  const mobileScore = mobileFriendliness?.overallScore?.score ?? DEFAULT_SCORE;
-  const keywordScore = keywordOptimization?.overallScore?.score ?? DEFAULT_SCORE;
-  // Default to true for visual consistency
-  const isMobileFriendly = true;
+  
+  // Safely extract scores with multiple fallback checks
+  const pageSpeedScore = pageSpeed?.overallScore?.score || pageSpeed?.score || DEFAULT_SCORE;
+  const mobileScore = mobileFriendliness?.overallScore?.score || DEFAULT_SCORE;
+  const keywordScore = keywordOptimization?.overallScore?.score || DEFAULT_SCORE;
 
   return (
     <div className="col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
