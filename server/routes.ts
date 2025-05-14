@@ -134,6 +134,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sanitizedResult.overallScore = { score: 50, category: 'needs-work' };
         }
         
+        // Include competitor analysis in the result if the flag was set
+        if (includeCompetitorAnalysis && competitorAnalysis) {
+          sanitizedResult.competitorAnalysis = competitorAnalysis;
+        }
+        
         // Store sanitized result
         const analysisData = {
           url: url, // Use the normalized URL
@@ -430,101 +435,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // First, try to get real competitors from Bing Search
-        let bingResults = [];
-        try {
-          console.log(`Searching for competitors using Bing Search API: "${primaryKeyword}, ${location}"`);
-          bingResults = await searchService.searchCompetitors(primaryKeyword, location, { count: 5 });
-          console.log(`Found ${bingResults.length} competitors from Bing Search`);
-        } catch (bingError) {
-          console.error("Error using Bing Search API:", bingError);
-        }
+        // Only run competitor analysis if the flag is true
+        let competitorResults = null;
+        let competitors = [];
+        let competitorAnalysis = null;
         
-        // Fall back to the competitorAnalyzer service if Bing Search failed or returned no results
-        const competitorResults = bingResults.length > 0
-          ? { 
-              competitors: bingResults.map(result => ({
-                title: result.name,
-                url: result.url,
-                description: result.snippet || "",
-                strengths: ["Strong online presence", "Good search visibility", "Complete business information"],
-                weaknesses: ["Content could be improved", "Technical SEO needs enhancement", "Limited social proof"]
-              })),
-              timestamp: new Date(),
-              queryCount: searchService.getQueryCount()
+        if (includeCompetitorAnalysis) {
+          try {
+            // First, try to get real competitors from Google Search API
+            let searchResults = [];
+            try {
+              console.log(`Searching for competitors using Google Search API: "${primaryKeyword}, ${location}"`);
+              searchResults = await searchService.searchCompetitors(primaryKeyword, location, { count: 5 });
+              console.log(`Found ${searchResults.length} competitors from Google Search`);
+            } catch (searchError) {
+              console.error("Error using Google Search API:", searchError);
             }
-          : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
-        
-        // Transform the competitor analysis results into the expected format for the frontend
-        const competitors = competitorResults.competitors.map((competitor, index) => {
-          return {
-            name: competitor.title || `Competitor ${index + 1}`,
-            url: competitor.url,
-            score: Math.round(70 + Math.random() * 20), // Generate a score between 70-90
-            domainAuthority: Math.round(40 + Math.random() * 50), // Generate a DA between 40-90
-            backlinks: Math.round(100 + Math.random() * 900), // Generate a backlink count
-            keywords: Math.round(50 + Math.random() * 450), // Generate a keyword count
-            strengths: competitor.strengths.slice(0, 3), // Limit to 3 strengths
-            weaknesses: competitor.weaknesses.slice(0, 3) // Limit to 3 weaknesses
-          };
-        });
-        
-        // Generate keyword gap data based on competitors
-        const keywordGap = [
-          { 
-            term: `${primaryKeyword} services`, 
-            volume: Math.round(800 + Math.random() * 1200), 
-            competition: "Medium", 
-            topCompetitor: competitors[0]?.name || "Unknown" 
-          },
-          { 
-            term: `best ${primaryKeyword}`, 
-            volume: Math.round(500 + Math.random() * 1000), 
-            competition: "High", 
-            topCompetitor: competitors[1]?.name || "Unknown" 
-          },
-          { 
-            term: `${primaryKeyword} near ${location}`, 
-            volume: Math.round(300 + Math.random() * 800), 
-            competition: "Low", 
-            topCompetitor: competitors[2]?.name || "Unknown" 
+            
+            // Fall back to the competitorAnalyzer service if Search API failed or returned no results
+            competitorResults = searchResults.length > 0
+              ? { 
+                  competitors: searchResults.map(result => ({
+                    title: result.name,
+                    url: result.url,
+                    description: result.snippet || "",
+                    strengths: ["Strong online presence", "Good search visibility", "Complete business information"],
+                    weaknesses: ["Content could be improved", "Technical SEO needs enhancement", "Limited social proof"]
+                  })),
+                  timestamp: new Date(),
+                  queryCount: searchService.getQueryCount()
+                }
+              : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
+            
+            // Transform the competitor analysis results into the expected format for the frontend
+            competitors = competitorResults.competitors.map((competitor, index) => {
+              return {
+                name: competitor.title || `Competitor ${index + 1}`,
+                url: competitor.url,
+                score: Math.round(70 + Math.random() * 20), // Generate a score between 70-90
+                domainAuthority: Math.round(40 + Math.random() * 50), // Generate a DA between 40-90
+                backlinks: Math.round(100 + Math.random() * 900), // Generate a backlink count
+                keywords: Math.round(50 + Math.random() * 450), // Generate a keyword count
+                strengths: competitor.strengths.slice(0, 3), // Limit to 3 strengths
+                weaknesses: competitor.weaknesses.slice(0, 3) // Limit to 3 weaknesses
+              };
+            });
+            
+            // Generate keyword gap data based on competitors
+            const keywordGap = [
+              { 
+                term: `${primaryKeyword} services`, 
+                volume: Math.round(800 + Math.random() * 1200), 
+                competition: "Medium", 
+                topCompetitor: competitors[0]?.name || "Unknown" 
+              },
+              { 
+                term: `best ${primaryKeyword}`, 
+                volume: Math.round(500 + Math.random() * 1000), 
+                competition: "High", 
+                topCompetitor: competitors[1]?.name || "Unknown" 
+              },
+              { 
+                term: `${primaryKeyword} near ${location}`, 
+                volume: Math.round(300 + Math.random() * 800), 
+                competition: "Low", 
+                topCompetitor: competitors[2]?.name || "Unknown" 
+              }
+            ];
+            
+            // Clean up the keyword for display (remove location if present at the end)
+            const displayKeyword = primaryKeyword
+              .replace(/\s+in\s+[a-zA-Z\s,]+$/, '') // Remove " in [location]" if it exists
+              .trim();
+            
+            competitorAnalysis = {
+              keyword: displayKeyword, // Include the keyword in the response
+              location: location, // Include the location in the response
+              competitors,
+              keywordGap,
+              marketPosition: `${Math.ceil(Math.random() * 5)}/10`,
+              growthScore: `${Math.ceil(4 + Math.random() * 6)}/10`,
+              domainAuthority: Math.round(35 + Math.random() * 35),
+              localVisibility: Math.round(50 + Math.random() * 40),
+              contentQuality: Math.round(50 + Math.random() * 30),
+              backlinkScore: Math.round(30 + Math.random() * 50),
+              queryCount: searchService.getQueryCount(), // Include the Search API query count
+              usingRealSearch: searchResults?.length > 0, // Flag to indicate whether Search API was used
+              strengths: [
+                "Strong on-page SEO implementation",
+                "Solid technical performance"
+              ],
+              weaknesses: [
+                "Limited backlink profile compared to competitors",
+                "Content depth needs improvement"
+              ],
+              recommendations: [
+                "Focus on building quality backlinks from local businesses",
+                "Create more in-depth content on core topics",
+                "Improve mobile page speed performance"
+              ]
+            };
+          } catch (competitorError) {
+            console.error("Error during competitor analysis:", competitorError);
+            // Create an empty competitor analysis object if analysis fails
+            competitorAnalysis = {
+              keyword: primaryKeyword,
+              location: location,
+              competitors: [],
+              keywordGap: [],
+              queryCount: searchService.getQueryCount(),
+              usingRealSearch: false,
+              error: "Failed to analyze competitors"
+            };
           }
-        ];
-        
-        // Clean up the keyword for display (remove location if present at the end)
-        const displayKeyword = primaryKeyword
-          .replace(/\s+in\s+[a-zA-Z\s,]+$/, '') // Remove " in [location]" if it exists
-          .trim();
-        
-        const competitorAnalysis = {
-          keyword: displayKeyword, // Include the keyword in the response
-          location: location, // Include the location in the response
-          competitors,
-          keywordGap,
-          marketPosition: `${Math.ceil(Math.random() * 5)}/10`,
-          growthScore: `${Math.ceil(4 + Math.random() * 6)}/10`,
-          domainAuthority: Math.round(35 + Math.random() * 35),
-          localVisibility: Math.round(50 + Math.random() * 40),
-          contentQuality: Math.round(50 + Math.random() * 30),
-          backlinkScore: Math.round(30 + Math.random() * 50),
-          queryCount: searchService.getQueryCount(), // Include the Search API query count
-          usingBingSearch: bingResults.length > 0, // Flag to indicate whether Bing Search was used
-          strengths: [
-            "Strong on-page SEO implementation",
-            "Solid technical performance"
-          ],
-          weaknesses: [
-            "Limited backlink profile compared to competitors",
-            "Content depth needs improvement"
-          ],
-          recommendations: [
-            "Focus on building quality backlinks from local businesses",
-            "Create more in-depth content on core topics",
-            "Improve mobile page speed performance"
-          ]
-        };
-        
-        return res.json(competitorAnalysis);
+        }
       } catch (analysisError) {
         console.error("Error during competitor analysis:", analysisError);
         return res.status(500).json({ error: "Failed to analyze competitors" });
