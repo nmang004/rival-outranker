@@ -2692,13 +2692,19 @@ class RivalAuditCrawler {
       const naItems = [
         "Service Pages are written for the audience, not the business owner?",
         "Service Pages are sufficiently detailed?",
-        "Proper heading structure?",
-        "Service pages have schema markup?",
+        "Long Service Pages start with a summary?",
+        "Pages are well structured with <h2> subsections?",
+        "Keyword rich (without stuffing) including synonyms and other related terms?",
+        "Describes location/service area for that service?",
         "Strong and clear Call To Action (CTA)?",
-        "Good internal linking?", 
-        "Uses images or visual elements?",
-        "Service pages have descriptive URLs?",
-        "Mobile-friendly service pages?"
+        "Includes \"Our Process\" type content?",
+        "Includes an FAQ?",
+        "Includes FAQ schema?",
+        "Leverages reviews/testimonials? (Specific to that service?)",
+        "Media-rich? (video, before/after photos)",
+        "Includes or links to bios of people at the business providing that service?",
+        "Links to case studies?",
+        "Links to other Service Pages and/or spin-off pages?"
       ];
       
       naItems.forEach(name => {
