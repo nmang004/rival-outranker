@@ -28,7 +28,7 @@ export default function Home() {
   const [includeCompetitorAnalysis, setIncludeCompetitorAnalysis] = useState(false);
 
   const analyzeMutation = useMutation({
-    mutationFn: async (data: { url: string, runDeepContentAnalysis?: boolean, includeCompetitorAnalysis?: boolean }) => {
+    mutationFn: async (data: { url: string, targetKeyword?: string, runDeepContentAnalysis?: boolean, includeCompetitorAnalysis?: boolean }) => {
       // First check if the URL is our own API endpoint or Replit domain
       if (data.url.includes('/api/') || data.url.includes('replit.dev') || data.url.includes('replit.app')) {
         throw new Error('Cannot analyze our own API endpoints or Replit domains');
@@ -37,6 +37,7 @@ export default function Home() {
       const response = await apiRequest<{
         message: string;
         url: string;
+        targetKeyword?: string;
         runDeepContentAnalysis?: boolean;
       }>('/api/analyze', {
         method: 'POST',
