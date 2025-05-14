@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (runDeepContentAnalysis) {
           try {
             console.log("Performing deep content analysis for:", url);
-            const { deepContentAnalyzer } = require('./services/deepContentAnalyzer');
+            // Use the already imported deepContentAnalyzer
             const deepContentResult = await deepContentAnalyzer.analyzeContent(url, pageData);
             
             // Store deep content results in the analysis
