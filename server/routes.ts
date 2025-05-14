@@ -411,8 +411,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "No analysis found for this URL and no fallback available" });
       }
       
+      // Log the analysis data for debugging
+      const analysisToReturn = analyses[0];
+      console.log("Analysis found, contains results:", !!analysisToReturn.results);
+      
+      // Check if we have results in the proper format
+      if (analysisToReturn.results) {
+        try {
+          // Ensure results is an object if it's a string
+          if (typeof analysisToReturn.results === 'string') {
+            try {
+              analysisToReturn.results = JSON.parse(analysisToReturn.results);
+              console.log("Parsed results string into object");
+            } catch (parseError) {
+              console.error("Failed to parse results string:", parseError);
+            }
+          }
+          
+          // Log competitor analysis presence
+          if (analysisToReturn.results.competitorAnalysis) {
+            console.log("Analysis contains competitor data with", 
+              analysisToReturn.results.competitorAnalysis.competitors?.length || 0, 
+              "competitors");
+          } else {
+            console.log("Analysis does not contain competitor data");
+          }
+        } catch (resultCheckError) {
+          console.error("Error checking results format:", resultCheckError);
+        }
+      } else {
+        console.log("Analysis results property is missing or null");
+      }
+      
       // Return the most recent analysis
-      return res.json(analyses[0]);
+      return res.json(analysisToReturn);
     } catch (error) {
       console.error("Error retrieving analysis:", error);
       // Last resort fallback - if anything fails, try to get the latest analysis
