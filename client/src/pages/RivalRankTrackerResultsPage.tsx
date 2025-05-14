@@ -38,7 +38,7 @@ import {
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/PageHeader";
+import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginButton } from "@/components/auth/LoginButton";
 
