@@ -112,6 +112,9 @@ class CompetitorAnalyzer {
   
   /**
    * Find competitors via intelligent keyword/location selection
+   * @param keyword - The primary keyword for competitor analysis
+   * @param location - The location string (e.g., "United States", "New York, NY")
+   * @returns Array of competitor URLs
    */
   private async findCompetitorsViaBingSearch(keyword: string, location: string): Promise<string[]> {
     try {
@@ -123,23 +126,71 @@ class CompetitorAnalyzer {
       // Extract location names for more targeted competitors
       const locationWords = location.split(/[,\s]+/).filter(word => word.length > 1);
       
-      // Extract business type
+      // Comprehensive map of business types with related keywords
+      // This ensures we can correctly categorize any given keyword
       const businessTypes = {
-        'hvac': ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace'],
-        'plumbing': ['plumbing', 'plumber', 'pipe', 'water heater', 'leak'],
-        'electrical': ['electrician', 'electrical', 'wiring', 'lighting', 'power'],
-        'roofing': ['roofing', 'roofer', 'roof', 'shingles', 'gutter'],
-        'landscaping': ['landscaping', 'lawn', 'garden', 'yard', 'mowing'],
-        'cleaning': ['cleaning', 'cleaner', 'maid', 'janitorial', 'housekeeping'],
-        'restaurant': ['restaurant', 'dining', 'eatery', 'food', 'cafe', 'bistro'],
-        'dental': ['dental', 'dentist', 'teeth', 'orthodontist', 'smile'],
-        'medical': ['medical', 'doctor', 'physician', 'clinic', 'healthcare', 'wellness'],
-        'legal': ['legal', 'attorney', 'lawyer', 'law firm', 'legal service'],
-        'salon': ['salon', 'hair', 'beauty', 'barber', 'stylist', 'spa'],
-        'fitness': ['fitness', 'gym', 'workout', 'trainer', 'exercise'],
-        'realestate': ['real estate', 'realtor', 'property', 'homes', 'housing'],
-        'auto': ['auto', 'car', 'mechanic', 'repair', 'service', 'dealership'],
-        'freight': ['freight', 'freight forwarding', 'shipping', 'logistics', 'cargo', 'transport', 'transportation', 'carrier', 'shipment', 'forwarding', 'customs broker']
+        // Home Services
+        'hvac': ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace', 'ac', 'heat pump', 'thermostat'],
+        'plumbing': ['plumbing', 'plumber', 'pipe', 'water heater', 'leak', 'drain', 'toilet', 'faucet', 'sink'],
+        'electrical': ['electrician', 'electrical', 'wiring', 'lighting', 'power', 'circuit', 'breaker', 'outlet', 'panel'],
+        'roofing': ['roofing', 'roofer', 'roof', 'shingles', 'gutter', 'tile roof', 'roof repair', 'metal roof'],
+        'landscaping': ['landscaping', 'lawn', 'garden', 'yard', 'mowing', 'lawn care', 'irrigation', 'gardener'],
+        'cleaning': ['cleaning', 'cleaner', 'maid', 'janitorial', 'housekeeping', 'carpet cleaning', 'window cleaning', 'maid service'],
+        'painting': ['painting', 'painter', 'interior paint', 'exterior paint', 'house painting', 'commercial painting'],
+        
+        // Food and Hospitality
+        'restaurant': ['restaurant', 'dining', 'eatery', 'food', 'cafe', 'bistro', 'catering', 'takeout', 'delivery'],
+        'bakery': ['bakery', 'baked goods', 'cakes', 'pastries', 'bread', 'desserts'],
+        'coffee': ['coffee', 'café', 'coffee shop', 'espresso', 'latte', 'barista'],
+        'bar': ['bar', 'pub', 'brewery', 'cocktails', 'beer', 'wine bar', 'drinks', 'nightlife'],
+        'hotel': ['hotel', 'motel', 'lodging', 'accommodation', 'inn', 'resort', 'bed and breakfast'],
+        
+        // Health and Wellness
+        'dental': ['dental', 'dentist', 'teeth', 'orthodontist', 'smile', 'tooth', 'oral health', 'dental hygiene'],
+        'medical': ['medical', 'doctor', 'physician', 'clinic', 'healthcare', 'wellness', 'hospital', 'health center'],
+        'optometry': ['optometry', 'eye doctor', 'glasses', 'contacts', 'vision', 'optician', 'optometrist', 'eye exam'],
+        'pharmacy': ['pharmacy', 'drug store', 'prescription', 'medication', 'medicines', 'chemist'],
+        'therapy': ['therapy', 'therapist', 'counseling', 'mental health', 'psychiatrist', 'psychologist'],
+        'spa': ['spa', 'massage', 'facial', 'wellness', 'relaxation', 'beauty treatment'],
+        'fitness': ['fitness', 'gym', 'workout', 'trainer', 'exercise', 'fitness center', 'personal training', 'yoga'],
+        
+        // Professional Services
+        'legal': ['legal', 'attorney', 'lawyer', 'law firm', 'legal service', 'counsel', 'litigation', 'estate planning'],
+        'accounting': ['accounting', 'accountant', 'tax', 'bookkeeping', 'cpa', 'financial planning', 'tax preparation'],
+        'insurance': ['insurance', 'insurance agent', 'coverage', 'policy', 'auto insurance', 'home insurance', 'life insurance'],
+        'finance': ['finance', 'financial', 'bank', 'banking', 'loan', 'mortgage', 'credit union', 'wealth management'],
+        'consulting': ['consulting', 'consultant', 'business consulting', 'management consulting', 'strategic planning'],
+        
+        // Personal Services
+        'salon': ['salon', 'hair', 'beauty', 'barber', 'stylist', 'spa', 'haircut', 'coloring', 'styling'],
+        'barbershop': ['barbershop', 'barber', 'haircut', 'grooming', 'men\'s haircut', 'shave'],
+        'nail salon': ['nail salon', 'manicure', 'pedicure', 'nails', 'nail art', 'nail care'],
+        'tailor': ['tailor', 'alterations', 'clothing repair', 'custom clothing', 'suit', 'dress'],
+        
+        // Real Estate and Automotive
+        'realestate': ['real estate', 'realtor', 'property', 'homes', 'housing', 'home buying', 'home selling', 'house', 'condo'],
+        'auto': ['auto', 'car', 'mechanic', 'repair', 'service', 'dealership', 'auto body', 'transmission', 'oil change'],
+        
+        // Retail
+        'clothing': ['clothing', 'fashion', 'apparel', 'boutique', 'wear', 'clothes', 'outfits', 'wardrobe'],
+        'jewelry': ['jewelry', 'jeweler', 'accessories', 'rings', 'necklaces', 'watches', 'diamonds', 'gems'],
+        'furniture': ['furniture', 'home decor', 'furnishings', 'interior design', 'sofa', 'bedroom', 'tables', 'chairs'],
+        'electronics': ['electronics', 'computer', 'laptop', 'mobile phone', 'tv', 'gadgets', 'tech', 'appliances'],
+        'grocery': ['grocery', 'supermarket', 'food store', 'market', 'organic', 'produce', 'fresh food'],
+        
+        // Education and Childcare
+        'education': ['education', 'school', 'tutor', 'tutoring', 'learning', 'academic', 'classes', 'teaching'],
+        'childcare': ['childcare', 'daycare', 'preschool', 'babysitting', 'after school', 'child care center'],
+        
+        // Logistics and Shipping
+        'freight': ['freight', 'freight forwarding', 'shipping', 'logistics', 'cargo', 'transport', 'transportation', 'carrier', 'shipment', 'forwarding', 'customs broker', 'import', 'export', 'international shipping'],
+        'moving': ['moving', 'movers', 'relocation', 'moving company', 'storage', 'packing', 'moving service'],
+        'courier': ['courier', 'delivery', 'package', 'parcel', 'express delivery', 'mail service'],
+        
+        // Tech and Marketing
+        'tech': ['tech', 'technology', 'software', 'it', 'app', 'computer service', 'web design', 'digital'],
+        'marketing': ['marketing', 'advertising', 'digital marketing', 'seo', 'social media', 'ppc', 'branding'],
+        'webdesign': ['web design', 'website', 'web development', 'web designer', 'ux', 'ui']
       };
       
       let identifiedType = '';
@@ -407,7 +458,10 @@ class CompetitorAnalyzer {
   }
 
   /**
-   * Get a list of common competitor domains as fallback
+   * Get industry-specific competitor domains to ensure relevant results for any keyword
+   * @param keyword - The primary keyword to find competitors for
+   * @param location - The location string (e.g. "United States", "New York, NY")
+   * @returns Array of relevant competitor URLs for the specified industry
    */
   private getCommonCompetitorDomains(keyword: string, location: string): string[] {
     // Determine industry based on keyword to provide relevant competitors
@@ -424,8 +478,113 @@ class CompetitorAnalyzer {
     // For certain countries, use the local version of sites
     const shouldUseLocalDomains = ['GB', 'CA', 'AU', 'DE', 'FR', 'JP', 'ES', 'IT', 'BR', 'MX', 'IN'].includes(countryCode);
     
+    // Comprehensive list of keywords to identify the correct industry
+    // This approach ensures we aren't missing any important business types
+    
+    // First, try to identify the business type from the comprehensive keyword map
+    const businessTypes = {
+      // Home Services
+      'hvac': ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace', 'ac', 'heat pump', 'thermostat'],
+      'plumbing': ['plumbing', 'plumber', 'pipe', 'water heater', 'leak', 'drain', 'toilet', 'faucet', 'sink'],
+      'electrical': ['electrician', 'electrical', 'wiring', 'lighting', 'power', 'circuit', 'breaker', 'outlet', 'panel'],
+      'roofing': ['roofing', 'roofer', 'roof', 'shingles', 'gutter', 'tile roof', 'roof repair', 'metal roof'],
+      'landscaping': ['landscaping', 'lawn', 'garden', 'yard', 'mowing', 'lawn care', 'irrigation', 'gardener'],
+      'cleaning': ['cleaning', 'cleaner', 'maid', 'janitorial', 'housekeeping', 'carpet cleaning', 'window cleaning', 'maid service'],
+      'painting': ['painting', 'painter', 'interior paint', 'exterior paint', 'house painting', 'commercial painting'],
+      
+      // Food and Hospitality
+      'restaurant': ['restaurant', 'dining', 'eatery', 'food', 'cafe', 'bistro', 'catering', 'takeout', 'delivery'],
+      'bakery': ['bakery', 'baked goods', 'cakes', 'pastries', 'bread', 'desserts'],
+      'coffee': ['coffee', 'café', 'coffee shop', 'espresso', 'latte', 'barista'],
+      'bar': ['bar', 'pub', 'brewery', 'cocktails', 'beer', 'wine bar', 'drinks', 'nightlife'],
+      'hotel': ['hotel', 'motel', 'lodging', 'accommodation', 'inn', 'resort', 'bed and breakfast'],
+      
+      // Health and Wellness
+      'dental': ['dental', 'dentist', 'teeth', 'orthodontist', 'smile', 'tooth', 'oral health', 'dental hygiene'],
+      'medical': ['medical', 'doctor', 'physician', 'clinic', 'healthcare', 'wellness', 'hospital', 'health center'],
+      'optometry': ['optometry', 'eye doctor', 'glasses', 'contacts', 'vision', 'optician', 'optometrist', 'eye exam'],
+      'pharmacy': ['pharmacy', 'drug store', 'prescription', 'medication', 'medicines', 'chemist'],
+      'therapy': ['therapy', 'therapist', 'counseling', 'mental health', 'psychiatrist', 'psychologist'],
+      'spa': ['spa', 'massage', 'facial', 'wellness', 'relaxation', 'beauty treatment'],
+      'fitness': ['fitness', 'gym', 'workout', 'trainer', 'exercise', 'fitness center', 'personal training', 'yoga'],
+      
+      // Professional Services
+      'legal': ['legal', 'attorney', 'lawyer', 'law firm', 'legal service', 'counsel', 'litigation', 'estate planning'],
+      'accounting': ['accounting', 'accountant', 'tax', 'bookkeeping', 'cpa', 'financial planning', 'tax preparation'],
+      'insurance': ['insurance', 'insurance agent', 'coverage', 'policy', 'auto insurance', 'home insurance', 'life insurance'],
+      'finance': ['finance', 'financial', 'bank', 'banking', 'loan', 'mortgage', 'credit union', 'wealth management'],
+      'consulting': ['consulting', 'consultant', 'business consulting', 'management consulting', 'strategic planning'],
+      
+      // Personal Services
+      'salon': ['salon', 'hair', 'beauty', 'barber', 'stylist', 'spa', 'haircut', 'coloring', 'styling'],
+      'barbershop': ['barbershop', 'barber', 'haircut', 'grooming', 'men\'s haircut', 'shave'],
+      'nail salon': ['nail salon', 'manicure', 'pedicure', 'nails', 'nail art', 'nail care'],
+      'tailor': ['tailor', 'alterations', 'clothing repair', 'custom clothing', 'suit', 'dress'],
+      
+      // Real Estate and Automotive
+      'realestate': ['real estate', 'realtor', 'property', 'homes', 'housing', 'home buying', 'home selling', 'house', 'condo'],
+      'auto': ['auto', 'car', 'mechanic', 'repair', 'service', 'dealership', 'auto body', 'transmission', 'oil change'],
+      
+      // Retail
+      'clothing': ['clothing', 'fashion', 'apparel', 'boutique', 'wear', 'clothes', 'outfits', 'wardrobe'],
+      'jewelry': ['jewelry', 'jeweler', 'accessories', 'rings', 'necklaces', 'watches', 'diamonds', 'gems'],
+      'furniture': ['furniture', 'home decor', 'furnishings', 'interior design', 'sofa', 'bedroom', 'tables', 'chairs'],
+      'electronics': ['electronics', 'computer', 'laptop', 'mobile phone', 'tv', 'gadgets', 'tech', 'appliances'],
+      'grocery': ['grocery', 'supermarket', 'food store', 'market', 'organic', 'produce', 'fresh food'],
+      
+      // Education and Childcare
+      'education': ['education', 'school', 'tutor', 'tutoring', 'learning', 'academic', 'classes', 'teaching'],
+      'childcare': ['childcare', 'daycare', 'preschool', 'babysitting', 'after school', 'child care center'],
+      
+      // Logistics and Shipping
+      'freight': ['freight', 'freight forwarding', 'shipping', 'logistics', 'cargo', 'transport', 'transportation', 'carrier', 'shipment', 'forwarding', 'customs broker', 'import', 'export', 'international shipping'],
+      'moving': ['moving', 'movers', 'relocation', 'moving company', 'storage', 'packing', 'moving service'],
+      'courier': ['courier', 'delivery', 'package', 'parcel', 'express delivery', 'mail service'],
+      
+      // Tech and Marketing
+      'tech': ['tech', 'technology', 'software', 'it', 'app', 'computer service', 'web design', 'digital'],
+      'marketing': ['marketing', 'advertising', 'digital marketing', 'seo', 'social media', 'ppc', 'branding'],
+      'webdesign': ['web design', 'website', 'web development', 'web designer', 'ux', 'ui'],
+      
+      // Shopping and E-commerce
+      'ecommerce': ['shop', 'product', 'buy', 'store', 'retail', 'price', 'purchase', 'shopping', 'e-commerce', 'online store'],
+      
+      // Travel and Tourism
+      'travel': ['travel', 'vacation', 'hotel', 'flight', 'booking', 'tourism', 'destination', 'trip', 'tour', 'resort']
+    };
+    
+    let identifiedType = '';
+    
+    // Identify business type from keyword
+    for (const [type, typeKeywords] of Object.entries(businessTypes)) {
+      if (typeKeywords.some(key => lowercaseKeyword.includes(key))) {
+        identifiedType = type;
+        break;
+      }
+    }
+    
+    console.log(`Identified business type: ${identifiedType || 'None'} for keyword: ${keyword}`);
+    
+    // Return industry-specific competitors based on the identified type
+    
+    // Freight Forwarding and Logistics
+    if (identifiedType === 'freight' || this.containsAny(lowercaseKeyword, ['freight', 'shipping', 'logistics', 'cargo', 'transport'])) {
+      return [
+        'https://www.fedex.com',
+        'https://www.dhl.com',
+        'https://www.maersk.com',
+        'https://www.flexport.com',
+        'https://www.dbschenker.com',
+        'https://www.kuehne-nagel.com',
+        'https://www.expeditors.com',
+        'https://www.dsv.com',
+        'https://www.freightquote.com',
+        'https://www.chrobinson.com'
+      ];
+    }
+    
     // E-commerce domains
-    if (this.containsAny(lowercaseKeyword, ['shop', 'product', 'buy', 'store', 'retail', 'price'])) {
+    if (identifiedType === 'ecommerce' || this.containsAny(lowercaseKeyword, ['shop', 'product', 'buy', 'store', 'retail', 'price'])) {
       if (shouldUseLocalDomains) {
         return [
           `https://www.amazon${countryTLD}`,
@@ -448,7 +607,7 @@ class CompetitorAnalyzer {
     }
     
     // Tech domains - generally less localized
-    if (this.containsAny(lowercaseKeyword, ['tech', 'software', 'app', 'digital', 'code', 'program'])) {
+    if (identifiedType === 'tech' || this.containsAny(lowercaseKeyword, ['tech', 'software', 'app', 'digital', 'code', 'program'])) {
       return [
         'https://www.techcrunch.com',
         'https://www.wired.com',
@@ -472,7 +631,7 @@ class CompetitorAnalyzer {
     }
     
     // HVAC, Plumbing and other home services
-    if (this.containsAny(lowercaseKeyword, ['hvac', 'heating', 'air conditioning', 'cooling', 'furnace', 'plumbing', 'plumber', 'pipe', 'electrical', 'electrician', 'roofing', 'roofer', 'contractor', 'repair'])) {
+    if (['hvac', 'plumbing', 'electrical', 'roofing', 'landscaping', 'cleaning', 'painting'].includes(identifiedType)) {
       const homeServiceSites = [
         'https://www.homeadvisor.com',
         'https://www.angi.com', 
@@ -482,19 +641,19 @@ class CompetitorAnalyzer {
       ];
       
       // Industry-specific sites
-      if (lowercaseKeyword.includes('hvac') || lowercaseKeyword.includes('heating') || lowercaseKeyword.includes('air conditioning')) {
+      if (identifiedType === 'hvac') {
         homeServiceSites.push('https://www.carrier.com');
         homeServiceSites.push('https://www.trane.com');
         homeServiceSites.push('https://www.lennox.com');
         homeServiceSites.push('https://www.aireserv.com');
-      } else if (lowercaseKeyword.includes('plumbing') || lowercaseKeyword.includes('plumber')) {
+      } else if (identifiedType === 'plumbing') {
         homeServiceSites.push('https://www.mrrooter.com');
         homeServiceSites.push('https://www.benjaminfranklinplumbing.com');
         homeServiceSites.push('https://www.rotorooter.com');
-      } else if (lowercaseKeyword.includes('electrical') || lowercaseKeyword.includes('electrician')) {
+      } else if (identifiedType === 'electrical') {
         homeServiceSites.push('https://www.mrelectric.com');
         homeServiceSites.push('https://www.mistersparky.com');
-      } else if (lowercaseKeyword.includes('roofing') || lowercaseKeyword.includes('roofer')) {
+      } else if (identifiedType === 'roofing') {
         homeServiceSites.push('https://www.owenscorning.com');
         homeServiceSites.push('https://www.gaf.com');
       }
@@ -516,7 +675,7 @@ class CompetitorAnalyzer {
     }
     
     // Travel domains
-    if (this.containsAny(lowercaseKeyword, ['travel', 'vacation', 'hotel', 'flight', 'booking', 'tourism'])) {
+    if (identifiedType === 'travel' || identifiedType === 'hotel' || this.containsAny(lowercaseKeyword, ['travel', 'vacation', 'hotel', 'flight', 'booking', 'tourism'])) {
       if (shouldUseLocalDomains) {
         return [
           `https://www.booking${countryTLD}`,
@@ -538,8 +697,8 @@ class CompetitorAnalyzer {
       }
     }
     
-    // Health domains
-    if (this.containsAny(lowercaseKeyword, ['health', 'medical', 'doctor', 'wellness', 'fitness', 'diet'])) {
+    // Health and wellness domains
+    if (['medical', 'dental', 'optometry', 'pharmacy', 'therapy', 'spa', 'fitness'].includes(identifiedType)) {
       if (shouldUseLocalDomains) {
         return [
           this.getLocalHealthSite(countryCode),
@@ -561,7 +720,32 @@ class CompetitorAnalyzer {
       }
     }
     
+    // Professional services
+    if (['legal', 'accounting', 'insurance', 'finance', 'consulting'].includes(identifiedType)) {
+      return [
+        'https://www.legalzoom.com',
+        'https://www.findlaw.com',
+        'https://www.upwork.com',
+        'https://www.indeed.com',
+        'https://www.intuit.com',
+        'https://www.linkedin.com'
+      ];
+    }
+    
+    // Food and restaurant domains
+    if (['restaurant', 'bakery', 'coffee', 'bar'].includes(identifiedType)) {
+      return [
+        'https://www.yelp.com',
+        'https://www.tripadvisor.com',
+        'https://www.opentable.com',
+        'https://www.grubhub.com',
+        'https://www.doordash.com',
+        'https://www.ubereats.com'
+      ];
+    }
+    
     // Default: general high-traffic sites
+    console.log(`Using default competitors for keyword: ${keyword} (no specific industry identified)`);
     if (shouldUseLocalDomains) {
       return [
         'https://www.wikipedia.org',
