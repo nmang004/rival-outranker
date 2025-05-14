@@ -31,10 +31,12 @@ import {
 
 interface DeepContentAnalysisProps {
   url: string;
+  isRequested?: boolean; // Flag to indicate if deep analysis was requested during URL submission
 }
 
-export default function DeepContentAnalysis({ url }: DeepContentAnalysisProps) {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+export default function DeepContentAnalysis({ url, isRequested = false }: DeepContentAnalysisProps) {
+  // If isRequested is true, automatically start analysis
+  const [isAnalyzing, setIsAnalyzing] = useState(isRequested);
   
   const { data, isLoading, error } = useQuery<any>({
     queryKey: [`/api/deep-content?url=${encodeURIComponent(url)}`],

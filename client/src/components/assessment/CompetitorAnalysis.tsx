@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -55,6 +57,57 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   // The query's response might include the actual keyword that was used
   const displayKeyword = data?.keyword || searchKeyword || 'Your industry';
   
+  // State for location selection modal
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(city || "United States");
+  const [runningAnalysis, setRunningAnalysis] = useState(false);
+  
+  // Popular US cities for quick selection
+  const popularLocations = [
+    "United States", 
+    "New York", 
+    "Los Angeles", 
+    "Chicago", 
+    "Houston", 
+    "Phoenix", 
+    "Philadelphia",
+    "San Antonio",
+    "San Diego",
+    "Dallas"
+  ];
+  
+  // Function to start competitor analysis
+  const startCompetitorAnalysis = () => {
+    setShowLocationModal(true);
+  };
+  
+  // Function to run the analysis with selected location
+  const runAnalysisWithLocation = () => {
+    setShowLocationModal(false);
+    setRunningAnalysis(true);
+    
+    // Create a new URL with the location parameter
+    const analysisUrl = new URL(`/api/competitors`, window.location.origin);
+    analysisUrl.searchParams.append('url', url);
+    analysisUrl.searchParams.append('city', selectedLocation);
+    if (searchKeyword) {
+      analysisUrl.searchParams.append('keyword', searchKeyword);
+    }
+    
+    // Make a direct fetch request to get competitors with location
+    fetch(analysisUrl.toString())
+      .then(response => response.json())
+      .then(data => {
+        // Manually update the data in the current query
+        queryClient.setQueryData([`/api/competitors?url=${encodeURIComponent(url)}`], data);
+        setRunningAnalysis(false);
+      })
+      .catch(error => {
+        console.error("Error fetching competitor data:", error);
+        setRunningAnalysis(false);
+      });
+  };
+  
   // If competitor analysis wasn't requested, show a summary with option to run
   if (!isRequested) {
     return (
@@ -91,12 +144,87 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
         </div>
         
         <button 
-          onClick={() => refetch()}
+          onClick={startCompetitorAnalysis}
+          disabled={runningAnalysis}
           className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md flex items-center justify-center"
         >
-          <Globe className="mr-2 h-5 w-5" />
-          Start Competitor Analysis
+          {runningAnalysis ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Running Competitor Analysis...
+            </>
+          ) : (
+            <>
+              <Globe className="mr-2 h-5 w-5" />
+              Start Competitor Analysis
+            </>
+          )}
         </button>
+        
+        {/* Location selection modal */}
+        {showLocationModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
+              <h3 className="text-lg font-medium">Select Location for Competitor Analysis</h3>
+              <p className="text-sm text-muted-foreground">
+                To find the most relevant competitors, please select a location. This helps identify businesses competing in your target area.
+              </p>
+              
+              <div className="space-y-2">
+                <label htmlFor="location" className="text-sm font-medium">
+                  Location
+                </label>
+                <input
+                  id="location"
+                  type="text"
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter a city, state, or country"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Popular locations
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {popularLocations.map((location) => (
+                    <button
+                      key={location}
+                      type="button"
+                      onClick={() => setSelectedLocation(location)}
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        selectedLocation === location
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {location}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowLocationModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={runAnalysisWithLocation}
+                  className="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90"
+                >
+                  Start Analysis
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
