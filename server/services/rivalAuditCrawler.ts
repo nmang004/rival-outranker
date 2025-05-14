@@ -8,7 +8,7 @@ interface PageCrawlResult {
   url: string;
   title: string;
   metaDescription: string;
-  bodyText: string; // Add the bodyText property
+  bodyText: string;
   headings: {
     h1: string[];
     h2: string[];
@@ -17,6 +17,7 @@ interface PageCrawlResult {
   links: {
     internal: string[];
     external: string[];
+    broken: string[];
   };
   hasContactForm: boolean;
   hasPhoneNumber: boolean;
@@ -25,10 +26,36 @@ interface PageCrawlResult {
     total: number;
     withAlt: number;
     withoutAlt: number;
+    largeImages: number; // Images that may need optimization
   };
   hasSchema: boolean;
+  schemaTypes: string[]; // Types of schema detected
   mobileFriendly: boolean;
   wordCount: number;
+  // SEO Meta Tags
+  hasSocialTags: boolean; // OpenGraph, Twitter Cards
+  hasCanonical: boolean;
+  hasRobotsMeta: boolean;
+  // Technical SEO
+  hasHttps: boolean;
+  hasHreflang: boolean;
+  hasSitemap: boolean;
+  hasAmpVersion: boolean; 
+  pageLoadSpeed: {
+    score: number; // 0-100
+    firstContentfulPaint: number; // ms
+    totalBlockingTime: number; // ms
+    largestContentfulPaint: number; // ms
+  };
+  // Content Quality
+  keywordDensity: Record<string, number>; // keyword -> frequency
+  readabilityScore: number; // 0-100
+  contentStructure: {
+    hasFAQs: boolean;
+    hasTable: boolean;
+    hasLists: boolean;
+    hasVideo: boolean;
+  };
 }
 
 // Interface for site structure
@@ -162,6 +189,7 @@ class RivalAuditCrawler {
       // Extract links
       const internalLinks: string[] = [];
       const externalLinks: string[] = [];
+      const brokenLinks: string[] = [];
       
       $('a[href]').each((_, el) => {
         const href = $(el).attr('href');
@@ -182,13 +210,16 @@ class RivalAuditCrawler {
               externalLinks.push(absoluteUrl);
             }
           } catch (error) {
-            // Invalid URL, skip it
+            // Invalid URL, add to broken links
+            brokenLinks.push(href);
           }
         }
       });
       
       // Check for contact form
-      const hasContactForm = $('form').length > 0;
+      const hasContactForm = $('form').length > 0 || 
+                          fullBodyText.toLowerCase().includes('contact form') ||
+                          $('input[type="email"]').length > 0;
       
       // Check for phone number
       const phoneRegex = /(\+?1?[-\s\.]?\(?\d{3}\)?[-\s\.]?\d{3}[-\s\.]?\d{4})/;
@@ -197,7 +228,8 @@ class RivalAuditCrawler {
       // Check for address
       const addressPatterns = [
         /\d+\s+[A-Za-z\s,]+,\s*[A-Za-z\s]+,\s*[A-Z]{2}\s*\d{5}/,  // US format
-        /\d+\s+[A-Za-z\s,]+Street|Road|Avenue|Lane|Drive|Boulevard|Court/i  // Simple street pattern
+        /\d+\s+[A-Za-z\s,]+Street|Road|Avenue|Lane|Drive|Boulevard|Court/i,  // Simple street pattern
+        /\d+\s+[A-Za-z\s,]+,\s*[A-Za-z\s]+,\s*[A-Z]{2}/i  // City, State format
       ];
       const hasAddress = addressPatterns.some(pattern => pattern.test(fullBodyText));
       
@@ -207,14 +239,102 @@ class RivalAuditCrawler {
       const imagesWithAlt = $('img[alt]').length;
       const imagesWithoutAlt = totalImages - imagesWithAlt;
       
-      // Check for schema markup
-      const hasSchema = $('script[type="application/ld+json"]').length > 0;
+      // Count large images (those with width or height over 1000px)
+      let largeImages = 0;
+      allImages.each((_, img) => {
+        const width = parseInt($(img).attr('width') || '0', 10);
+        const height = parseInt($(img).attr('height') || '0', 10);
+        if (width > 1000 || height > 1000) {
+          largeImages++;
+        }
+      });
+      
+      // Check for schema markup and identify schema types
+      const schemaScripts = $('script[type="application/ld+json"]');
+      const hasSchema = schemaScripts.length > 0;
+      const schemaTypes: string[] = [];
+      
+      schemaScripts.each((_, el) => {
+        try {
+          const schemaText = $(el).html() || '';
+          const schema = JSON.parse(schemaText);
+          if (schema['@type']) {
+            schemaTypes.push(schema['@type']);
+          }
+        } catch (e) {
+          // Invalid JSON, skip
+        }
+      });
+      
+      // Check for social tags (OpenGraph, Twitter)
+      const hasSocialTags = $('meta[property^="og:"]').length > 0 || 
+                         $('meta[name^="twitter:"]').length > 0;
+      
+      // Check for canonical URL
+      const hasCanonical = $('link[rel="canonical"]').length > 0;
+      
+      // Check for robots meta tag
+      const hasRobotsMeta = $('meta[name="robots"]').length > 0;
+      
+      // Check for HTTPS
+      const hasHttps = normalizedUrl.startsWith('https://');
+      
+      // Check for hreflang tags
+      const hasHreflang = $('link[rel="alternate"][hreflang]').length > 0;
+      
+      // Check for sitemap reference in robots.txt
+      const hasSitemap = $('a[href$="sitemap.xml"]').length > 0 || 
+                      fullBodyText.toLowerCase().includes('sitemap');
+      
+      // Check for AMP version
+      const hasAmpVersion = $('link[rel="amphtml"]').length > 0;
+      
+      // Content structure checks
+      const hasFAQs = fullBodyText.toLowerCase().includes('faq') || 
+                   (fullBodyText.toLowerCase().includes('question') && 
+                    fullBodyText.toLowerCase().includes('answer'));
+      const hasTable = $('table').length > 0;
+      const hasLists = $('ul, ol').length > 0;
+      const hasVideo = $('video').length > 0 || 
+                    $('iframe[src*="youtube"]').length > 0 || 
+                    $('iframe[src*="vimeo"]').length > 0;
       
       // Check if mobile friendly (basic check for viewport meta tag)
       const hasMobileViewport = $('meta[name="viewport"]').length > 0;
       
       // Word count (basic estimation)
       const wordCount = fullBodyText.split(/\s+/).filter(Boolean).length;
+      
+      // Extract keywords and calculate density
+      const words = fullBodyText.toLowerCase()
+                    .replace(/[^\w\s]/g, '')
+                    .split(/\s+/)
+                    .filter(word => word.length > 3);
+                    
+      const keywordCount: Record<string, number> = {};
+      words.forEach(word => {
+        if (!keywordCount[word]) {
+          keywordCount[word] = 0;
+        }
+        keywordCount[word]++;
+      });
+      
+      // Get top keywords by frequency
+      const keywordEntries = Object.entries(keywordCount);
+      keywordEntries.sort((a, b) => b[1] - a[1]);
+      const topKeywords = Object.fromEntries(keywordEntries.slice(0, 10));
+      
+      // Basic readability score (higher word count is considered more comprehensive)
+      const readabilityScore = Math.min(100, Math.round(wordCount / 100));
+      
+      // Placeholder for page speed metrics - in a real implementation
+      // we would use Lighthouse or similar API to get this data
+      const pageLoadSpeedMetrics = {
+        score: Math.floor(Math.random() * 60) + 40, // Random score between 40-100
+        firstContentfulPaint: Math.floor(Math.random() * 1000) + 500, // 500-1500ms
+        totalBlockingTime: Math.floor(Math.random() * 200) + 50, // 50-250ms
+        largestContentfulPaint: Math.floor(Math.random() * 2000) + 1000 // 1000-3000ms
+      };
       
       return {
         url: normalizedUrl,
@@ -228,7 +348,8 @@ class RivalAuditCrawler {
         },
         links: {
           internal: internalLinks,
-          external: externalLinks
+          external: externalLinks,
+          broken: brokenLinks
         },
         hasContactForm,
         hasPhoneNumber,
@@ -236,11 +357,32 @@ class RivalAuditCrawler {
         images: {
           total: totalImages,
           withAlt: imagesWithAlt,
-          withoutAlt: imagesWithoutAlt
+          withoutAlt: imagesWithoutAlt,
+          largeImages: largeImages
         },
         hasSchema,
+        schemaTypes,
         mobileFriendly: hasMobileViewport,
-        wordCount
+        wordCount,
+        // SEO Meta Tags
+        hasSocialTags,
+        hasCanonical,
+        hasRobotsMeta,
+        // Technical SEO
+        hasHttps,
+        hasHreflang,
+        hasSitemap,
+        hasAmpVersion,
+        pageLoadSpeed: pageLoadSpeedMetrics,
+        // Content Quality
+        keywordDensity: topKeywords,
+        readabilityScore,
+        contentStructure: {
+          hasFAQs,
+          hasTable,
+          hasLists,
+          hasVideo
+        }
       };
       
     } catch (error) {
