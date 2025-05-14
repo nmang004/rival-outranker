@@ -130,9 +130,7 @@ export default function ContentTab({
               </div>
               <Progress 
                 value={Math.min(contentData.wordCount / 15, 100)} 
-                className="h-2"
-                indicatorClassName={contentData.wordCount >= 600 ? "bg-green-500" : 
-                                   contentData.wordCount >= 300 ? "bg-blue-500" : "bg-yellow-500"}
+                className="h-2 bg-blue-500"
               />
               <div className="flex justify-between text-xs text-gray-400 mt-1">
                 <span>0</span>
@@ -151,12 +149,7 @@ export default function ContentTab({
               </div>
               <Progress 
                 value={contentData.readabilityScore} 
-                className="h-2"
-                indicatorClassName={
-                  contentData.readabilityScore >= 70 ? "bg-green-500" : 
-                  contentData.readabilityScore >= 60 ? "bg-blue-500" : 
-                  contentData.readabilityScore >= 50 ? "bg-yellow-500" : "bg-red-500"
-                }
+                className="h-2 bg-blue-500"
               />
             </div>
             
@@ -185,43 +178,49 @@ export default function ContentTab({
         <div className="bg-gray-50 rounded-lg p-4">
           <h5 className="text-sm font-medium text-gray-700 mb-3">Heading Structure</h5>
           
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">H1 Headings</span>
-              <span className={`font-medium ${
-                contentData.headingStructure.h1Count === 1 ? "text-success-500" : 
-                contentData.headingStructure.h1Count === 0 ? "text-danger-500" : "text-warning-500"
-              }`}>
-                {contentData.headingStructure.h1Count}
-                {contentData.headingStructure.h1Count === 1 ? " (Optimal)" : 
-                 contentData.headingStructure.h1Count === 0 ? " (Missing)" : " (Too many)"}
-              </span>
-            </div>
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">H2 Headings</span>
-              <span className="font-medium text-gray-700">{contentData.headingStructure.h2Count}</span>
-            </div>
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">H3 Headings</span>
-              <span className="font-medium text-gray-700">{contentData.headingStructure.h3Count}</span>
-            </div>
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">H4-H6 Headings</span>
-              <span className="font-medium text-gray-700">
-                {contentData.headingStructure.h4Count + 
-                 contentData.headingStructure.h5Count + 
-                 contentData.headingStructure.h6Count}
-              </span>
-            </div>
-            
-            <div className="pt-2 mt-2 border-t border-gray-200">
+          {contentData.headingStructure ? (
+            <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Paragraph Count</span>
-                <span className="font-medium text-gray-700">{contentData.paragraphCount}</span>
+                <span className="text-gray-500">H1 Headings</span>
+                <span className={`font-medium ${
+                  contentData.headingStructure.h1Count === 1 ? "text-success-500" : 
+                  contentData.headingStructure.h1Count === 0 ? "text-danger-500" : "text-warning-500"
+                }`}>
+                  {contentData.headingStructure.h1Count}
+                  {contentData.headingStructure.h1Count === 1 ? " (Optimal)" : 
+                   contentData.headingStructure.h1Count === 0 ? " (Missing)" : " (Too many)"}
+                </span>
               </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">H2 Headings</span>
+                <span className="font-medium text-gray-700">{contentData.headingStructure.h2Count}</span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">H3 Headings</span>
+                <span className="font-medium text-gray-700">{contentData.headingStructure.h3Count}</span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">H4-H6 Headings</span>
+                <span className="font-medium text-gray-700">
+                  {contentData.headingStructure.h4Count + 
+                   contentData.headingStructure.h5Count + 
+                   contentData.headingStructure.h6Count}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="py-2 text-sm text-gray-500">
+              Heading structure data unavailable
+            </div>
+          )}
+          
+          <div className="pt-2 mt-2 border-t border-gray-200">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Paragraph Count</span>
+              <span className="font-medium text-gray-700">{contentData.paragraphCount}</span>
             </div>
           </div>
         </div>
@@ -330,23 +329,7 @@ export default function ContentTab({
       
       {/* Recommendations */}
       <div className="mt-8 bg-primary-50 rounded-lg p-4 border border-primary-100">
-        <h5 className="font-medium text-primary-800 flex items-center text-sm">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 text-primary-500 mr-2"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="16"></line>
-            <line x1="8" y1="12" x2="16" y2="12"></line>
-          </svg>
-          Recommendations
-        </h5>
+        <h5 className="font-medium text-primary-800 text-sm mb-2">Recommendations</h5>
         
         {contentRecommendations.length > 0 && (
           <div className="mt-2">
@@ -354,19 +337,7 @@ export default function ContentTab({
             <ul className="text-sm text-gray-600 space-y-2">
               {contentRecommendations.map((recommendation, index) => (
                 <li key={index} className="flex items-start">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 text-primary-500 mt-0.5 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
+                  <span className="text-primary-500 mr-2">•</span>
                   <span>{recommendation}</span>
                 </li>
               ))}
@@ -376,23 +347,11 @@ export default function ContentTab({
         
         {linkRecommendations.length > 0 && (
           <div className="mt-3">
-            <h6 className="text-xs font-medium text-gray-700 mb-1">Internal Linking</h6>
+            <h6 className="text-xs font-medium text-gray-700 mb-1">Link Improvements</h6>
             <ul className="text-sm text-gray-600 space-y-2">
               {linkRecommendations.map((recommendation, index) => (
                 <li key={index} className="flex items-start">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 text-primary-500 mt-0.5 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
+                  <span className="text-primary-500 mr-2">•</span>
                   <span>{recommendation}</span>
                 </li>
               ))}
@@ -402,23 +361,11 @@ export default function ContentTab({
         
         {imageRecommendations.length > 0 && (
           <div className="mt-3">
-            <h6 className="text-xs font-medium text-gray-700 mb-1">Image Optimization</h6>
+            <h6 className="text-xs font-medium text-gray-700 mb-1">Image Improvements</h6>
             <ul className="text-sm text-gray-600 space-y-2">
               {imageRecommendations.map((recommendation, index) => (
                 <li key={index} className="flex items-start">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 text-primary-500 mt-0.5 mr-2"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
+                  <span className="text-primary-500 mr-2">•</span>
                   <span>{recommendation}</span>
                 </li>
               ))}
@@ -429,21 +376,8 @@ export default function ContentTab({
         {contentRecommendations.length === 0 && 
          linkRecommendations.length === 0 && 
          imageRecommendations.length === 0 && (
-          <div className="mt-2 text-sm text-gray-600">
-            <p className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-success-500 mr-2"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-              </svg>
+          <div className="py-2">
+            <p className="text-sm text-success-600 flex items-center">
               Your content structure and organization look great! Continue maintaining these best practices.
             </p>
           </div>
