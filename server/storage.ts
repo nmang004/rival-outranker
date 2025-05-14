@@ -46,7 +46,7 @@ export interface IStorage {
 // Database storage implementation
 export class DatabaseStorage implements IStorage {
   // User operations
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const results = await db.select().from(users).where(eq(users.id, id));
     return results[0];
   }
@@ -66,7 +66,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
   
-  async updateUser(id: number, userData: UpdateUser): Promise<User> {
+  async updateUser(id: string, userData: UpdateUser): Promise<User> {
     const result = await db
       .update(users)
       .set({
@@ -78,7 +78,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
   
-  async updateLastLogin(id: number): Promise<User> {
+  async updateLastLogin(id: string): Promise<User> {
     const result = await db
       .update(users)
       .set({
@@ -90,7 +90,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
   
-  async verifyEmail(id: number): Promise<User> {
+  async verifyEmail(id: string): Promise<User> {
     const result = await db
       .update(users)
       .set({
@@ -105,6 +105,36 @@ export class DatabaseStorage implements IStorage {
   async getUserCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`count(*)` }).from(users);
     return result[0].count;
+  }
+  
+  async upsertUser(userData: { 
+    id: string, 
+    email?: string | null, 
+    firstName?: string | null, 
+    lastName?: string | null, 
+    profileImageUrl?: string | null 
+  }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Analysis operations
@@ -163,7 +193,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(analyses.timestamp));
   }
   
-  async getAnalysesByUserId(userId: number): Promise<Analysis[]> {
+  async getAnalysesByUserId(userId: string): Promise<Analysis[]> {
     return await db
       .select()
       .from(analyses)
@@ -182,7 +212,7 @@ export class DatabaseStorage implements IStorage {
     return results[0];
   }
   
-  async getProjectsByUserId(userId: number): Promise<Project[]> {
+  async getProjectsByUserId(userId: string): Promise<Project[]> {
     return await db
       .select()
       .from(projects)
