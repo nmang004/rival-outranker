@@ -9,6 +9,10 @@ interface PageCrawlResult {
   title: string;
   metaDescription: string;
   bodyText: string;
+  rawHtml: string; // The raw HTML of the page
+  h1s: string[]; // Direct access to h1 elements
+  h2s: string[]; // Direct access to h2 elements
+  h3s: string[]; // Direct access to h3 elements
   headings: {
     h1: string[];
     h2: string[];
@@ -78,9 +82,14 @@ interface SiteStructure {
  */
 class RivalAuditCrawler {
   private visited: Set<string> = new Set();
-  private maxPages: number = 25;
+  private maxPages: number = 50; // Increased from 25 to 50
   private baseUrl: string = '';
   private baseDomain: string = '';
+  
+  // Store crawler state for continued crawls
+  private pendingLinks: string[] = [];
+  private siteStructure: SiteStructure | null = null;
+  private isContinuation: boolean = false;
   
   /**
    * Crawl a website and perform a rival audit
@@ -113,6 +122,12 @@ class RivalAuditCrawler {
         hasSitemapXml: false
       };
       
+      // Store all discovered links to later prioritize and categorize them
+      const discoveredLinks: string[] = [];
+      
+      // Add all homepage links to discovered links
+      discoveredLinks.push(...homepage.links.internal);
+      
       // Check for sitemap.xml and sitemap_index.xml
       try {
         // Try sitemap.xml first
@@ -133,10 +148,10 @@ class RivalAuditCrawler {
           const $ = load(sitemapResponse.data);
           const sitemapLinks = $('loc').map((_, el) => $(el).text().trim()).get();
           
-          // Add sitemap links to internal links for crawling
+          // Add sitemap links to discovered links
           for (const link of sitemapLinks) {
             if (link.includes(this.baseDomain)) {
-              homepage.links.internal.push(link);
+              discoveredLinks.push(link);
             }
           }
         }
@@ -174,10 +189,10 @@ class RivalAuditCrawler {
                   const $ = load(firstSitemapResponse.data);
                   const pageLinks = $('loc').map((_, el) => $(el).text().trim()).get();
                   
-                  // Add sitemap links to internal links for crawling
+                  // Add sitemap links to discovered links
                   for (const link of pageLinks) {
                     if (link.includes(this.baseDomain)) {
-                      homepage.links.internal.push(link);
+                      discoveredLinks.push(link);
                     }
                   }
                 }
@@ -191,11 +206,47 @@ class RivalAuditCrawler {
         }
       }
       
-      // Get internal links from the homepage
-      const internalLinks = Array.from(new Set(homepage.links.internal)).slice(0, this.maxPages);
+      // Check main navigation for service links
+      try {
+        const $ = load(homepage.rawHtml);
+        
+        // Look for main navigation elements and service links
+        const navElements = $('nav, .nav, .navbar, .navigation, .menu, .header-menu, header ul, #primary-menu, #menu-main-menu')
+          .find('a[href]')
+          .map((_, el) => $(el).attr('href'))
+          .get()
+          .filter(Boolean);
+        
+        for (let href of navElements) {
+          try {
+            if (href.startsWith('/') || href.startsWith('./')) {
+              href = new URL(href, this.baseUrl).toString();
+            } else if (!href.startsWith('http')) {
+              href = new URL(href, this.baseUrl).toString();
+            }
+            
+            if (href.includes(this.baseDomain) && !href.includes('#')) {
+              discoveredLinks.push(href);
+            }
+          } catch (e) {
+            // Skip invalid URLs
+          }
+        }
+      } catch (error) {
+        console.log(`Error parsing navigation: ${error}`);
+      }
       
-      // Crawl internal pages
-      for (const link of internalLinks) {
+      // Deduplicate links
+      const uniqueLinks = Array.from(new Set(discoveredLinks));
+      
+      // Prioritize service links first
+      const prioritizedLinks = this.prioritizeLinks(uniqueLinks);
+      
+      // Ensure we don't exceed max pages
+      const linksToVisit = prioritizedLinks.slice(0, this.maxPages);
+      
+      // Crawl the prioritized pages
+      for (const link of linksToVisit) {
         if (this.visited.size >= this.maxPages) {
           console.log(`Reached max page limit (${this.maxPages}), stopping crawl`);
           break;
@@ -233,6 +284,57 @@ class RivalAuditCrawler {
   }
   
   /**
+   * Prioritizes links for crawling, giving higher priority to service and location pages
+   */
+  private prioritizeLinks(links: string[]): string[] {
+    // Define patterns to match for service pages and location pages
+    const servicePagePatterns = [
+      /(\/|-)service(s)?(\/|$)/i,
+      /(\/|-)ac(-|\/)/i,
+      /(\/|-)heat(ing)?(-|\/)/i,
+      /(\/|-)cool(ing)?(-|\/)/i,
+      /(\/|-)hvac(-|\/)/i,
+      /(\/|-)air(-|\/)/i,
+      /(\/|-)(repair|installation|maintenance)(-|\/)/i,
+      /(\/|-)product(s)?(-|\/)/i,
+      /(\/|-)furnace(-|\/)/i,
+      /(\/|-)boiler(-|\/)/i,
+      /(\/|-)thermostat(-|\/)/i,
+      /(\/|-)duct(-|\/)/i
+    ];
+    
+    const locationPagePatterns = [
+      /(\/|-)location(s)?(-|\/)/i,
+      /(\/|-)service-area(s)?(-|\/)/i,
+      /(\/|-)cities-served(-|\/)/i,
+      /(\/|-)areas-we-serve(-|\/)/i,
+      /(\/|-)serving(-|\/)/i,
+      /(\/|-)coverage(-|\/)/i
+    ];
+    
+    // Separate links into categories
+    const serviceLinks: string[] = [];
+    const locationLinks: string[] = [];
+    const otherLinks: string[] = [];
+    
+    for (const link of links) {
+      const isServiceLink = servicePagePatterns.some(pattern => pattern.test(link));
+      const isLocationLink = locationPagePatterns.some(pattern => pattern.test(link));
+      
+      if (isServiceLink) {
+        serviceLinks.push(link);
+      } else if (isLocationLink) {
+        locationLinks.push(link);
+      } else {
+        otherLinks.push(link);
+      }
+    }
+    
+    // Return prioritized links (services first, then locations, then others)
+    return [...serviceLinks, ...locationLinks, ...otherLinks];
+  }
+  
+  /**
    * Crawl a single page
    * 
    * @param url Page URL to crawl
@@ -261,8 +363,11 @@ class RivalAuditCrawler {
         maxRedirects: 5
       });
       
+      // Store the raw HTML
+      const rawHtml = response.data;
+      
       // Load the HTML
-      const $ = load(response.data);
+      const $ = load(rawHtml);
       
       // Extract page data
       const title = $('title').text().trim();
@@ -447,6 +552,10 @@ class RivalAuditCrawler {
         title,
         metaDescription,
         bodyText: fullBodyText,
+        rawHtml,
+        h1s,
+        h2s,
+        h3s,
         headings: {
           h1: h1s,
           h2: h2s,
