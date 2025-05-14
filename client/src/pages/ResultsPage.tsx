@@ -27,13 +27,15 @@ export default function ResultsPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Extract URL and tab from search params
+  // Extract URL, tab, and targetKeyword from search params
   const params = new URLSearchParams(search);
   const url = params.get("url");
   const initialTab = params.get("tab") || "keyword";
+  const targetKeyword = params.get("targetKeyword");
   
-  // State for selected URL
+  // State for selected URL and target keyword
   const [selectedUrl, setSelectedUrl] = useState<string | null>(url);
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(targetKeyword);
   
   // For recent analyses dropdown
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
@@ -72,9 +74,13 @@ export default function ResultsPage() {
     results?: any; // We'll keep this as any for now since it's a complex structure
   }
   
-  // Fetch the analysis for the selected URL
+  // Fetch the analysis for the selected URL with target keyword if provided
   const { data: apiResponse, isLoading, isError, error } = useQuery<ApiResponse>({
-    queryKey: [`/api/analysis?url=${encodeURIComponent(selectedUrl || "")}`],
+    queryKey: [
+      `/api/analysis?url=${encodeURIComponent(selectedUrl || "")}${
+        selectedKeyword ? `&targetKeyword=${encodeURIComponent(selectedKeyword)}` : ''
+      }`
+    ],
     enabled: !!selectedUrl,
     refetchInterval: (data) => {
       // Poll until we get complete data with results
@@ -175,6 +181,12 @@ export default function ResultsPage() {
     // Update the browser URL without full navigation
     const newParams = new URLSearchParams();
     newParams.set("url", newUrl);
+    
+    // Preserve the target keyword if it exists
+    if (selectedKeyword) {
+      newParams.set("targetKeyword", selectedKeyword);
+    }
+    
     window.history.replaceState({}, "", `${window.location.pathname}?${newParams.toString()}`);
   };
 
