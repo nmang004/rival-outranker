@@ -409,6 +409,75 @@ export const competitorUrlSchema = z.object({
   name: z.string()
 });
 
+// Schemas for Rival Audit
+
+// Issue status enumeration
+export const auditStatusSchema = z.enum([
+  'Priority OFI',  // Critical finding, corrective action strongly recommended
+  'OFI',           // Opportunity for improvement
+  'OK',            // No issues found / Complete
+  'N/A'            // Not applicable
+]);
+
+// SEO importance enumeration
+export const seoImportanceSchema = z.enum([
+  'High',
+  'Medium',
+  'Low'
+]);
+
+// Generic audit item schema
+export const auditItemSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  status: auditStatusSchema,
+  importance: seoImportanceSchema,
+  notes: z.string().optional()
+});
+
+// Schemas for specific audit sections
+export const onPageAuditSchema = z.object({
+  items: z.array(auditItemSchema)
+});
+
+export const structureNavigationAuditSchema = z.object({
+  items: z.array(auditItemSchema)
+});
+
+export const contactPageAuditSchema = z.object({
+  items: z.array(auditItemSchema)
+});
+
+export const servicePagesAuditSchema = z.object({
+  items: z.array(auditItemSchema)
+});
+
+export const locationPagesAuditSchema = z.object({
+  items: z.array(auditItemSchema)
+});
+
+export const serviceAreaPagesAuditSchema = z.object({
+  items: z.array(auditItemSchema)
+});
+
+// Complete audit schema
+export const rivalAuditSchema = z.object({
+  url: z.string(),
+  timestamp: z.date().optional().default(() => new Date()),
+  onPage: onPageAuditSchema,
+  structureNavigation: structureNavigationAuditSchema,
+  contactPage: contactPageAuditSchema,
+  servicePages: servicePagesAuditSchema,
+  locationPages: locationPagesAuditSchema,
+  serviceAreaPages: serviceAreaPagesAuditSchema.optional(),
+  summary: z.object({
+    priorityOfiCount: z.number(),
+    ofiCount: z.number(),
+    okCount: z.number(),
+    naCount: z.number()
+  })
+});
+
 // Meta information about the competitor search
 export const competitorMetaSchema = z.object({
   totalResults: z.number(),
@@ -463,3 +532,15 @@ export type Competitor = z.infer<typeof competitorSchema>;
 export type CompetitorUrl = z.infer<typeof competitorUrlSchema>;
 export type CompetitorMeta = z.infer<typeof competitorMetaSchema>;
 export type CompetitorAnalysisResult = z.infer<typeof competitorAnalysisResultSchema>;
+
+// Rival Audit Types
+export type AuditStatus = z.infer<typeof auditStatusSchema>;
+export type SeoImportance = z.infer<typeof seoImportanceSchema>;
+export type AuditItem = z.infer<typeof auditItemSchema>;
+export type OnPageAudit = z.infer<typeof onPageAuditSchema>;
+export type StructureNavigationAudit = z.infer<typeof structureNavigationAuditSchema>;
+export type ContactPageAudit = z.infer<typeof contactPageAuditSchema>;
+export type ServicePagesAudit = z.infer<typeof servicePagesAuditSchema>;
+export type LocationPagesAudit = z.infer<typeof locationPagesAuditSchema>;
+export type ServiceAreaPagesAudit = z.infer<typeof serviceAreaPagesAuditSchema>;
+export type RivalAudit = z.infer<typeof rivalAuditSchema>;

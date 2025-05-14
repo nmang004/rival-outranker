@@ -8,7 +8,8 @@ import {
   History, 
   Menu, 
   X,
-  LineChart
+  LineChart,
+  ClipboardCheck
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -65,6 +66,11 @@ export default function NavBar() {
                   <Users className="h-4 w-4 mr-1" /> Competitors
                 </div>
               </Link>
+              <Link href="/rival-audit">
+                <div className={linkClass("/rival-audit")}>
+                  <ClipboardCheck className="h-4 w-4 mr-1" /> Rival Audit
+                </div>
+              </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-1" /> History
@@ -113,6 +119,13 @@ export default function NavBar() {
             <div className={mobileLinkClass("/competitor-analysis")}>
               <div className="flex items-center">
                 <Users className="h-4 w-4 mr-2" /> Competitor Analysis
+              </div>
+            </div>
+          </Link>
+          <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
+            <div className={mobileLinkClass("/rival-audit")}>
+              <div className="flex items-center">
+                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
               </div>
             </div>
           </Link>
