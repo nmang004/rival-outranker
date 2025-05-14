@@ -172,6 +172,8 @@ export default function KeywordResearch() {
     
     try {
       // Get keyword data from API with optional force refresh flag
+      // This endpoint will now provide both main keyword metrics AND related keywords
+      // to avoid making multiple API calls
       const keywordResponse = await apiRequest('/api/keyword-research', {
         method: 'POST',
         data: { 
@@ -182,13 +184,10 @@ export default function KeywordResearch() {
       
       setKeywordData(keywordResponse);
       
-      // Get related keywords from API
-      const relatedResponse = await apiRequest('/api/keyword-suggestions', {
-        method: 'POST',
-        data: { keyword: keyword.trim() }
-      });
-      
-      setRelatedKeywords(relatedResponse || []);
+      // Related keywords are now included in the main response
+      if (keywordResponse && keywordResponse.relatedKeywords) {
+        setRelatedKeywords(keywordResponse.relatedKeywords);
+      }
       setActiveTab('overview');
     } catch (error) {
       console.error("Error fetching keyword data:", error);
