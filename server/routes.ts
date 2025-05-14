@@ -1334,13 +1334,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { name: "<city>,<state> + <relevant keyword> in <img alt>?", description: "Image alt text should include localization", status: getStatus(41), importance: getImportance(41) }
     ];
     
-    // Structure & Navigation audit items
+    // Structure & Navigation audit items based on the provided CSV
     const structureItems = [
-      { name: "Human-readable? Simple? Informative?", description: "URLs should be user-friendly", status: getStatus(7), importance: getImportance(7) },
-      { name: "Localized?", description: "URLs should include location information where relevant", status: getStatus(8), importance: getImportance(8) },
-      { name: "Keyword-rich?", description: "URLs should contain relevant keywords", status: getStatus(9), importance: getImportance(9) },
-      { name: "Do the urls include categories or services found on their GBP page?", description: "URLs should align with Google Business Profile categories", status: getStatus(10), importance: getImportance(10) },
-      { name: "Navigation labels aligned with page <title>?", description: "Navigation labels should match page titles", status: getStatus(11), importance: getImportance(11) }
+      // URLs section
+      { name: "Human-readable? Simple? Informative?", description: "URLs should be easy to read and understand", status: getStatus(42), importance: "High" },
+      { name: "Localized?", description: "URLs should include location information where relevant", status: getStatus(43), importance: "Medium" },
+      { name: "Keyword-rich?", description: "URLs should contain relevant keywords", status: getStatus(44), importance: "High" },
+      { name: "Do the urls include categories or services found on their GBP page?", description: "URLs should align with Google Business Profile categories", status: getStatus(45), importance: "Medium" },
+      { name: "Free of stop words? (i.e. small \"connective\" words such as \"and\", \"or\", etc.)", description: "URLs should avoid small connective words", status: getStatus(46), importance: "Medium" },
+      { name: "No nonsense URLs?", description: "URLs should be clean and purposeful", status: getStatus(47), importance: "High" },
+      
+      // Top Navigation section
+      { name: "Logical?", description: "Navigation structure should be logical and intuitive", status: getStatus(48), importance: "High" },
+      { name: "Uses readable text? (No images)", description: "Navigation should use text rather than images", status: getStatus(49), importance: "Medium" },
+      { name: "Shallow click depth for important pages?", description: "Important pages should be accessible within 2-3 clicks", status: getStatus(50), importance: "Medium" },
+      { name: "Are the primary products/services linked from the top navigation?", description: "Main services should be accessible from top navigation", status: getStatus(51), importance: "High" },
+      { name: "Are Location Pages (i.e. physical locations) linked from the top navigation?", description: "Location pages should be accessible from top navigation", status: getStatus(52), importance: "High" },
+      { name: "Are City Pages (i.e. service area pages) linked from the top navigation?", description: "Service area pages should be accessible from top navigation", status: getStatus(53), importance: "Medium" },
+      { name: "Navigation labels aligned with page <title>?", description: "Navigation labels should match page titles", status: getStatus(54), importance: "High" },
+      { name: "Navigation labels aligned with page <h1>?", description: "Navigation labels should match page headings", status: getStatus(55), importance: "High" },
+      { name: "Navigation labels aligned with URLs?", description: "Navigation labels should align with URL structure", status: getStatus(56), importance: "High" },
+      { name: "Do the top navigation items contain keywords?", description: "Navigation items should include relevant keywords", status: getStatus(57), importance: "High" },
+      
+      // Page Titles - technical section
+      { name: "Localized? (i.e. <city>, <state>, or neighbourhoods in every <title>)", description: "Titles should include location information", status: getStatus(58), importance: "High" },
+      { name: "Contains GBP primary category on homepage?", description: "Homepage title should include Google Business Profile category", status: getStatus(59), importance: "High" },
+      { name: "Contains other GBP categories on other pages?", description: "Other pages should include relevant GBP categories", status: getStatus(60), importance: "Medium" },
+      { name: "Keyword-rich? (Without keyword stuffing)", description: "Titles should include keywords naturally", status: getStatus(61), importance: "High" },
+      { name: "Good length? (Aiming for 50 - 60 characters may be outdated.)", description: "Titles should have appropriate length", status: getStatus(62), importance: "Medium" },
+      
+      // Page Titles - human factors section
+      { name: "Noticeable?", description: "Titles should stand out and be attention-grabbing", status: getStatus(63), importance: "Medium" },
+      { name: "Is each one different?", description: "Each page should have a unique title", status: getStatus(64), importance: "High" },
+      { name: "Is the page title relevant for the page's purpose?", description: "Titles should accurately represent page content", status: getStatus(65), importance: "High" },
+      { name: "Primary Keyword near beginning of title?", description: "Main keyword should appear early in title", status: getStatus(66), importance: "Medium" },
+      { name: "Do they mention the business name or branding in each Page Title?", description: "Titles should include business name", status: getStatus(67), importance: "Low" },
+      
+      // H1 section
+      { name: "Localized? (i.e. includes city, state?)", description: "H1 headings should include location information", status: getStatus(68), importance: "Medium" },
+      { name: "Keyword-rich?", description: "H1 headings should include relevant keywords", status: getStatus(69), importance: "High" },
+      { name: "Does the <h1> match the page's purpose? Primary Keyword for the page?", description: "H1 should reflect page content and primary keyword", status: getStatus(70), importance: "High" },
+      
+      // H2 section
+      { name: "Localized? (i.e. includes city, state?)", description: "H2 headings should include location information where relevant", status: getStatus(71), importance: "Low" },
+      { name: "Keyword-rich?", description: "H2 headings should include relevant keywords", status: getStatus(72), importance: "Medium" },
+      { name: "Are the <h2>'s used to lay out content sections of the page", description: "H2s should structure the page content logically", status: getStatus(73), importance: "Medium" },
+      
+      // Meta description section
+      { name: "Does the Meta Description describe the page's purpose? Includes primary keyword?", description: "Meta descriptions should summarize content and include primary keyword", status: getStatus(74), importance: "High" },
+      { name: "< 160 characters? Does every page have a meta description?", description: "Meta descriptions should be concise and present on every page", status: getStatus(75), importance: "High" },
+      { name: "Contains phone number CTA (at least on homepage)?", description: "Homepage meta description should include phone number call-to-action", status: getStatus(76), importance: "Low" },
+      
+      // Body section
+      { name: "Localized? (i.e. includes city, state?)", description: "Body content should include location information", status: getStatus(77), importance: "High" },
+      { name: "Keyword-rich?", description: "Body content should include relevant keywords", status: getStatus(78), importance: "High" },
+      { name: "GBP primary category appears in copy on the page linked from the GBP(s).", description: "Content should include Google Business Profile primary category", status: getStatus(79), importance: "High" },
+      { name: "Other GBP categories appear in copy of website?", description: "Content should include other Google Business Profile categories", status: getStatus(80), importance: "Medium" }
     ];
     
     // Contact Page audit items
