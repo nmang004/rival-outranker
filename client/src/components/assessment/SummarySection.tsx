@@ -9,13 +9,21 @@ export default function SummarySection({
 }: SummarySectionProps) {
   // Generate a summary message based on strengths and weaknesses
   const getSummaryMessage = () => {
-    const strengthCount = strengths.length;
-    const weaknessCount = weaknesses.length;
+    const strengthCount = strengths?.length || 0;
+    const weaknessCount = weaknesses?.length || 0;
+    
+    // Check if there's a data retrieval error
+    if (weaknessCount === 1 && weaknesses && weaknesses[0] && 
+        (weaknesses[0].includes("Failed to retrieve") || weaknesses[0].includes("could not be completed"))) {
+      return "We encountered an issue retrieving or analyzing the page content. This may happen due to access restrictions, invalid URLs, or connectivity issues. Please try again or analyze a different URL.";
+    }
     
     if (strengthCount > weaknessCount) {
       return "Your page has several positive aspects but there are still some areas that need improvement. Addressing these issues could further enhance your rankings.";
     } else if (weaknessCount > strengthCount) {
       return "Your page has several areas that need improvement. Addressing these issues could significantly improve your rankings for targeted keywords.";
+    } else if (strengthCount === 0 && weaknessCount === 0) {
+      return "No specific strengths or issues were detected. This may be due to limited access to analyze the page content fully.";
     } else {
       return "Your page has an equal number of strengths and weaknesses. Focus on the recommended improvements to enhance your SEO performance.";
     }

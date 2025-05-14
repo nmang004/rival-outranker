@@ -84,6 +84,15 @@ export default function ResultsPage() {
   
   // Extract the actual analysis data from the response
   const data = apiResponse && 'results' in apiResponse ? apiResponse.results : {};
+  
+  // Create default arrays if missing to avoid rendering issues
+  if (!data.strengths) data.strengths = [];
+  if (!data.weaknesses) data.weaknesses = [];
+  
+  // If there's a retrieval error but no weaknesses, add one
+  if (data.weaknesses?.length === 0 && (!data.url || !data.overallScore)) {
+    data.weaknesses = ["Analysis could not be completed. Please try again."];
+  }
 
   useEffect(() => {
     if (isError) {
@@ -108,8 +117,31 @@ export default function ResultsPage() {
     return null;
   }
 
+  // Show loading state if data is not yet available or is being fetched
   if (isLoading || !apiResponse || !apiResponse.results) {
     return <ResultsPageSkeleton url={selectedUrl} />;
+  }
+  
+  // If the analysis failed to retrieve content or was incomplete, show a custom error message
+  const hasError = data.weaknesses?.length === 1 && 
+                   (data.weaknesses[0].includes("Failed to retrieve") || 
+                    data.weaknesses[0].includes("could not be completed"));
+                    
+  // For empty datasets, ensure we have the minimal needed for rendering key components
+  if (data.weaknesses?.length > 0 && !data.keywordAnalysis) {
+    data.keywordAnalysis = {
+      primaryKeyword: "",
+      density: 0,
+      relatedKeywords: [],
+      titlePresent: false,
+      descriptionPresent: false,
+      h1Present: false,
+      headingsPresent: false,
+      urlPresent: false,
+      contentPresent: false,
+      altTextPresent: false,
+      overallScore: { score: 0, category: 'poor' as const }
+    };
   }
 
   const handleExportPDF = () => {
