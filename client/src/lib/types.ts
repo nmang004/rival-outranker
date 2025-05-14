@@ -64,6 +64,26 @@ export interface CrawlerOutput {
     resourceCount?: number;
     resourceSize?: number;
   };
+  security?: {
+    hasHttps: boolean;
+    hasMixedContent: boolean;
+    hasSecurityHeaders: boolean;
+  };
+  accessibility?: {
+    hasAccessibleElements: boolean;
+    missingAltText: number;
+    hasAriaAttributes: boolean;
+    hasProperHeadingStructure: boolean;
+  };
+  seoIssues?: {
+    noindex: boolean;
+    brokenLinks: number;
+    missingAltText: number;
+    duplicateMetaTags: boolean;
+    thinContent: boolean;
+    missingHeadings: boolean;
+    robots: string | null;
+  };
   mobileCompatible: boolean;
   statusCode: number;
   error?: string;
