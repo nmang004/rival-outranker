@@ -57,7 +57,7 @@ export default function CompetitorResultsPage() {
       toast({
         title: "PDF Exported Successfully",
         description: "Your competitor analysis has been exported as a PDF.",
-        variant: "success",
+        variant: "default",
       });
     } catch (error) {
       console.error('Error exporting PDF:', error);

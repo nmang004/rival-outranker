@@ -25,17 +25,8 @@ function Router() {
             <Route path="/results" component={ResultsPage} />
             <Route path="/history" component={History} />
             <Route path="/deep-content" component={DeepContentAnalysisPage} />
-            {/* Redirecting all deep-content-results to main results page */}
-            <Route path="/deep-content-results">
-              {(params) => {
-                const url = new URLSearchParams(window.location.search).get('url');
-                if (url) {
-                  window.location.href = `/results?url=${encodeURIComponent(url)}`;
-                  return <div>Redirecting...</div>;
-                }
-                return <ResultsPage />;
-              }}
-            </Route>
+            {/* Route for deep content analysis results */}
+            <Route path="/deep-content-results" component={DeepContentResultsPage} />
             <Route path="/competitor-analysis" component={CompetitorAnalysisPage} />
             <Route path="/competitor-results" component={CompetitorResultsPage} />
             <Route path="/profile" component={ProfilePage} />

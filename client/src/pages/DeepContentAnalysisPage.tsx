@@ -81,6 +81,9 @@ export default function DeepContentAnalysisPage() {
     onSuccess: (data, variables) => {
       // Navigate to results page with parameters
       const { url, keywords, includeHeaders, includeBody, includeCTA, includeImpressions } = variables;
+      
+      // Redirect to deep content results page with all parameters
+      // This ensures the deep content analysis results are displayed properly
       const params = new URLSearchParams();
       params.set('url', url);
       if (keywords) params.set('keywords', keywords);
@@ -89,9 +92,7 @@ export default function DeepContentAnalysisPage() {
       params.set('includeCTA', includeCTA.toString());
       params.set('includeImpressions', includeImpressions.toString());
       
-      // Redirect to main results page with the URL parameter only
-      // All other options will be stored in the analysis itself
-      setLocation(`/results?url=${encodeURIComponent(url)}`);
+      setLocation(`/deep-content-results?${params.toString()}`);
     },
     onError: (error) => {
       toast({

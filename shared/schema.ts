@@ -431,7 +431,15 @@ export const competitorAnalysisResultSchema = z.object({
   }),
   // New fields for advanced competitor analysis with pagination
   allCompetitorUrls: z.array(competitorUrlSchema),
-  meta: competitorMetaSchema
+  meta: competitorMetaSchema,
+  queryCount: z.number().optional(),
+  usingRealSearch: z.boolean().optional(),
+  keywordGap: z.array(z.object({
+    term: z.string(),
+    volume: z.number().optional(),
+    competition: z.string().optional(),
+    topCompetitor: z.string().optional()
+  })).optional()
 });
 
 export type SeoScore = z.infer<typeof seoScoreSchema>;
