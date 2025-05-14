@@ -92,30 +92,47 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   };
   
   // Function to run the analysis with selected location
-  const runAnalysisWithLocation = () => {
+  const runAnalysisWithLocation = async () => {
     setShowLocationModal(false);
     setRunningAnalysis(true);
     
-    // Create a new URL with the location parameter
-    const analysisUrl = new URL(`/api/competitors`, window.location.origin);
-    analysisUrl.searchParams.append('url', url);
-    analysisUrl.searchParams.append('city', selectedLocation);
-    if (searchKeyword) {
-      analysisUrl.searchParams.append('keyword', searchKeyword);
-    }
-    
-    // Make a direct fetch request to get competitors with location
-    fetch(analysisUrl.toString())
-      .then(response => response.json())
-      .then(data => {
-        // Manually update the data in the current query
-        queryClient.setQueryData([`/api/competitors?url=${encodeURIComponent(url)}`], data);
-        setRunningAnalysis(false);
-      })
-      .catch(error => {
-        console.error("Error fetching competitor data:", error);
-        setRunningAnalysis(false);
+    try {
+      // Create POST request body with all the data
+      const requestBody = {
+        url: url,
+        location: selectedLocation,
+        keyword: searchKeyword || ''
+      };
+      
+      // Use POST endpoint for competitor analysis to ensure data is processed correctly
+      const response = await fetch('/api/competitors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
       });
+      
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Wait a moment for the server to process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // After POST completes, trigger a refetch of the GET query
+      refetch();
+      
+      // Set running analysis to false after refetch completes
+      setTimeout(() => {
+        setRunningAnalysis(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Error fetching competitor data:", error);
+      setRunningAnalysis(false);
+    }
   };
   
   // If competitor analysis wasn't requested, show a summary with option to run

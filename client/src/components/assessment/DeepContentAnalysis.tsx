@@ -40,9 +40,15 @@ export default function DeepContentAnalysis({ url, isRequested = false }: DeepCo
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // On component mount, set isAnalyzing if it was requested
+  // But wrapped in a setTimeout to ensure it happens after render
   useEffect(() => {
+    // Only start analysis if explicitly requested
     if (isRequested) {
-      setIsAnalyzing(true);
+      const timer = setTimeout(() => {
+        setIsAnalyzing(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
   }, [isRequested]);
   

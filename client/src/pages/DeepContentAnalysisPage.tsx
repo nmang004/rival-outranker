@@ -89,7 +89,9 @@ export default function DeepContentAnalysisPage() {
       params.set('includeCTA', includeCTA.toString());
       params.set('includeImpressions', includeImpressions.toString());
       
-      setLocation(`/deep-content-results?${params.toString()}`);
+      // Redirect to main results page with the URL parameter only
+      // All other options will be stored in the analysis itself
+      setLocation(`/results?url=${encodeURIComponent(url)}`);
     },
     onError: (error) => {
       toast({
