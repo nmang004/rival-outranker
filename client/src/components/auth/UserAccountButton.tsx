@@ -48,27 +48,33 @@ export function UserAccountButton() {
     );
   }
 
+  // Type-safe access to user properties
+  const typedUser = user as any;
+  
   // Determine user display name
   const getDisplayName = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName} ${user.lastName}`;
+    if (typedUser?.firstName && typedUser?.lastName) {
+      return `${typedUser.firstName} ${typedUser.lastName}`;
     }
-    if (user?.firstName) {
-      return user.firstName;
+    if (typedUser?.firstName) {
+      return typedUser.firstName;
     }
-    return user?.username || "User";
+    if (typedUser?.email) {
+      return typedUser.email.split('@')[0];
+    }
+    return "User";
   };
 
   // Get avatar initials
   const getInitials = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    if (typedUser?.firstName && typedUser?.lastName) {
+      return `${typedUser.firstName.charAt(0)}${typedUser.lastName.charAt(0)}`.toUpperCase();
     }
-    if (user?.firstName) {
-      return user.firstName.charAt(0).toUpperCase();
+    if (typedUser?.firstName) {
+      return typedUser.firstName.charAt(0).toUpperCase();
     }
-    if (user?.username) {
-      return user.username.charAt(0).toUpperCase();
+    if (typedUser?.email) {
+      return typedUser.email.charAt(0).toUpperCase();
     }
     return "U";
   };
@@ -78,7 +84,7 @@ export function UserAccountButton() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.profileImage || ""} alt={user?.username || "User"} />
+            <AvatarImage src={typedUser?.profileImageUrl || ""} alt={getDisplayName()} />
             <AvatarFallback className="bg-primary/5 text-primary">{getInitials()}</AvatarFallback>
           </Avatar>
         </Button>
@@ -88,7 +94,7 @@ export function UserAccountButton() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{getDisplayName()}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.username}
+              {typedUser?.email || "User"}
             </p>
           </div>
         </DropdownMenuLabel>

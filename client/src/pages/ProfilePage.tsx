@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ProfilePage(props: { params?: { tab?: string } }) {
-  const { isAuthenticated, user, isLoadingUser } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState(props.params?.tab || "profile");
   const [location, setLocation] = useLocation();
   
@@ -33,7 +33,7 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
     setLocation(`/profile/${tab}`, { replace: true });
   };
 
-  if (isLoadingUser) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] py-10">
         <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
