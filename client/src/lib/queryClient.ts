@@ -7,13 +7,13 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
+export async function apiRequest<T = any>(
   url: string,
   options?: {
     method?: string;
     data?: unknown;
   }
-): Promise<Response> {
+): Promise<T> {
   const method = options?.method || 'GET';
   const data = options?.data;
   
@@ -25,7 +25,19 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // For requests like POST that might return no content
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return {} as T;
+  }
+  
+  // Parse JSON response body
+  try {
+    return await res.json() as T;
+  } catch (error) {
+    // If JSON parsing fails, return the response object
+    return res as unknown as T;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

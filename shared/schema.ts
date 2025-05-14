@@ -145,6 +145,36 @@ export const eatAnalysisSchema = z.object({
   overallScore: seoScoreSchema,
 });
 
+export const contentAnnotationSchema = z.object({
+  content: z.string(),
+  issue: z.string(),
+  suggestion: z.string(),
+  position: z.number(),
+  severity: z.enum(['high', 'medium', 'low']),
+  type: z.enum(['structure', 'readability', 'semantics', 'engagement'])
+});
+
+export const contentSectionSchema = z.object({
+  title: z.string().optional(),
+  content: z.string(),
+  annotations: z.array(contentAnnotationSchema).optional(),
+});
+
+export const deepContentAnalysisSchema = z.object({
+  url: z.string(),
+  timestamp: z.date().optional(),
+  title: z.string(),
+  wordCount: z.number(),
+  readabilityScore: z.number(),
+  contentSections: z.array(contentSectionSchema),
+  keyPhrases: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  strengthsCount: z.number(),
+  weaknessesCount: z.number(),
+  score: z.number(),
+  category: z.enum(['excellent', 'good', 'needs-work', 'poor'])
+});
+
 export const seoAnalysisResultSchema = z.object({
   url: z.string(),
   timestamp: z.date().optional(),
@@ -162,6 +192,7 @@ export const seoAnalysisResultSchema = z.object({
   strengths: z.array(z.string()),
   weaknesses: z.array(z.string()),
   recommendations: z.array(z.string()),
+  deepContentAnalysis: deepContentAnalysisSchema.optional(),
 });
 
 // Competitor Analysis Types

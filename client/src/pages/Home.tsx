@@ -32,7 +32,11 @@ export default function Home() {
         throw new Error('Cannot analyze our own API endpoints or Replit domains');
       }
       
-      const response = await apiRequest('/api/analyze', {
+      const response = await apiRequest<{
+        message: string;
+        url: string;
+        runDeepContentAnalysis?: boolean;
+      }>('/api/analyze', {
         method: 'POST',
         data: data
       });
@@ -42,7 +46,9 @@ export default function Home() {
       let successMessage = "Analysis started";
       let description = "We've started analyzing your website. You'll be redirected to results soon.";
       
-      if (data.runDeepContentAnalysis) {
+      const isDeepContentAnalysis = !!data.runDeepContentAnalysis;
+      
+      if (isDeepContentAnalysis) {
         successMessage = "Deep content analysis started";
         description = "We've started a comprehensive content analysis. You'll be redirected to results soon.";
       }
@@ -53,7 +59,7 @@ export default function Home() {
       });
       
       // Poll for results in the background, passing the deep content flag
-      pollForResults(data.url, data.runDeepContentAnalysis);
+      pollForResults(data.url, !!data.runDeepContentAnalysis);
     },
     onError: (error: any) => {
       const errorMessage = error.message || "There was an error analyzing the URL. Please try again.";

@@ -39,28 +39,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint to analyze a URL
   app.post("/api/analyze", async (req: Request, res: Response) => {
     try {
+      // Extract URL and deep content analysis flag
+      const { url: rawUrl, runDeepContentAnalysis = false } = req.body;
+      
       // Validate the URL
-      const { url: rawUrl } = urlFormSchema.parse(req.body);
+      urlFormSchema.parse({ url: rawUrl });
       
       // Normalize the URL to ensure consistency
       const url = normalizeUrl(rawUrl);
       
       // Show the analysis is in progress
-      res.status(202).json({ message: "Analysis started", url });
+      res.status(202).json({ 
+        message: runDeepContentAnalysis ? "Deep content analysis started" : "Analysis started", 
+        url,
+        runDeepContentAnalysis 
+      });
       
       try {
-        // First check if we already have an analysis for this URL
-        const existingAnalyses = await storage.getAnalysesByUrl(url);
-        if (existingAnalyses.length > 0) {
-          const latestAnalysis = existingAnalyses[0];
-          // If analysis is recent (less than 1 hour), just use it
-          const analysisTime = new Date(latestAnalysis.timestamp).getTime();
-          const currentTime = new Date().getTime();
-          const timeDiff = currentTime - analysisTime;
-          
-          if (timeDiff < 3600000) { // 1 hour in milliseconds
-            console.log("Using recent analysis for:", url);
-            return;
+        // Check for existing analysis unless deep content analysis is specifically requested
+        if (!runDeepContentAnalysis) {
+          const existingAnalyses = await storage.getAnalysesByUrl(url);
+          if (existingAnalyses.length > 0) {
+            const latestAnalysis = existingAnalyses[0];
+            // If analysis is recent (less than 1 hour), just use it
+            const analysisTime = new Date(latestAnalysis.timestamp).getTime();
+            const currentTime = new Date().getTime();
+            const timeDiff = currentTime - analysisTime;
+            
+            if (timeDiff < 3600000) { // 1 hour in milliseconds
+              console.log("Using recent analysis for:", url);
+              return;
+            }
           }
         }
         
@@ -68,9 +77,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Crawling page:", url);
         const pageData = await crawler.crawlPage(url);
         
-        // Analyze the page data
+        // Perform standard SEO analysis
         console.log("Analyzing page:", url);
         const analysisResult = await analyzer.analyzePage(url, pageData);
+        
+        // If deep content analysis is requested, perform that as well
+        if (runDeepContentAnalysis) {
+          try {
+            console.log("Performing deep content analysis for:", url);
+            const { deepContentAnalyzer } = require('./services/deepContentAnalyzer');
+            const deepContentResult = await deepContentAnalyzer.analyzeContent(url, pageData);
+            
+            // Store deep content results in the analysis
+            analysisResult.deepContentAnalysis = deepContentResult;
+          } catch (deepContentError) {
+            console.error("Error during deep content analysis:", deepContentError);
+          }
+        }
         
         // Store the analysis result
         const analysisData = {
