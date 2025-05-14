@@ -168,8 +168,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Crawl the page first to extract context and keywords
         const pageData = await crawler.crawlPage(url);
         
-        // Extract primary keyword from title
-        const primaryKeyword = keyword || pageData.title?.split(' ').slice(0, 3).join(' ') || '';
+        // Extract primary keyword by analyzing title and content more intelligently
+        let primaryKeyword = '';
+        
+        // If user provided keyword, use that
+        if (keyword) {
+          primaryKeyword = keyword;
+        } 
+        // Otherwise, try to extract from title and combine with location
+        else {
+          const title = pageData.title || '';
+          const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+          
+          // Try to extract a business category from title or h1
+          const businessTypes = [
+            'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
+            'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
+            'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
+            'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
+            'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy'
+          ];
+          
+          // Look for business types in the title and h1
+          let businessType = '';
+          for (const type of businessTypes) {
+            if (title.toLowerCase().includes(type.toLowerCase()) || 
+                h1Text.toLowerCase().includes(type.toLowerCase())) {
+              businessType = type;
+              break;
+            }
+          }
+          
+          // Combine business type with location for a targeted keyword
+          if (businessType) {
+            primaryKeyword = `${businessType} in ${location}`;
+          } else {
+            // Fallback to a simple extraction of the first few words from title
+            primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${location}`;
+          }
+        }
         
         // Analyze competitors using the competitorAnalyzer service
         const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
@@ -270,8 +307,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Crawl the page to extract keywords
             const pageData = await crawler.crawlPage(url);
             
-            // Extract primary keyword from title
-            const primaryKeyword = pageData.title?.split(' ').slice(0, 3).join(' ') || '';
+            // Extract primary keyword by analyzing title and content more intelligently
+            let primaryKeyword = '';
+            
+            // Extract from title and combine with location
+            const title = pageData.title || '';
+            const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+            
+            // Try to extract a business category from title or h1
+            const businessTypes = [
+              'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
+              'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
+              'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
+              'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
+              'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy'
+            ];
+            
+            // Look for business types in the title and h1
+            let businessType = '';
+            for (const type of businessTypes) {
+              if (title.toLowerCase().includes(type.toLowerCase()) || 
+                  h1Text.toLowerCase().includes(type.toLowerCase())) {
+                businessType = type;
+                break;
+              }
+            }
+            
+            // Combine business type with location for a targeted keyword
+            if (businessType) {
+              primaryKeyword = `${businessType} in ${city}`;
+            } else {
+              // Fallback to a simple extraction of the first few words from title
+              primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${city}`;
+            }
             
             // Analyze competitors
             await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, city);

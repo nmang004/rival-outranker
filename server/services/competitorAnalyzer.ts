@@ -111,123 +111,183 @@ class CompetitorAnalyzer {
   }
   
   /**
-   * Find competitors via search or local testing approach
+   * Find competitors via intelligent keyword/location selection
    */
   private async findCompetitorsViaBingSearch(keyword: string, location: string): Promise<string[]> {
     try {
       console.log(`Finding competitors for keyword: ${keyword} in ${location}`);
       
-      // Use a more reliable approach for local testing
-      // Instead of actual scraping which can be blocked or rate-limited,
-      // provide a consistent set of competitors for testing purposes
-
-      // Common high-quality websites in various industries
-      const commonSites = [
-        'https://www.nytimes.com',
-        'https://www.theguardian.com',
-        'https://www.bbc.com',
-        'https://www.wsj.com',
-        'https://www.economist.com',
-        'https://www.cnn.com',
-        'https://www.techcrunch.com',
-        'https://www.wired.com',
-        'https://www.fastcompany.com',
-      ];
-      
-      // E-commerce sites
-      const ecommerceSites = [
-        'https://www.amazon.com',
-        'https://www.etsy.com',
-        'https://www.walmart.com',
-        'https://www.target.com',
-        'https://www.bestbuy.com',
-      ];
-      
-      // Tech company sites
-      const techSites = [
-        'https://www.apple.com',
-        'https://www.microsoft.com',
-        'https://www.google.com',
-        'https://www.facebook.com',
-        'https://www.netflix.com',
-      ];
-      
-      // Education sites
-      const educationSites = [
-        'https://www.harvard.edu',
-        'https://www.stanford.edu',
-        'https://www.mit.edu',
-        'https://www.berkeley.edu',
-        'https://www.yale.edu',
-      ];
-      
-      // Health & wellness sites
-      const healthSites = [
-        'https://www.mayoclinic.org',
-        'https://www.webmd.com',
-        'https://www.nih.gov',
-        'https://www.healthline.com',
-        'https://www.cdc.gov',
-      ];
-      
-      // Travel sites
-      const travelSites = [
-        'https://www.expedia.com',
-        'https://www.booking.com',
-        'https://www.airbnb.com',
-        'https://www.tripadvisor.com',
-        'https://www.kayak.com',
-      ];
-      
-      // Real estate sites
-      const realEstateSites = [
-        'https://www.zillow.com',
-        'https://www.realtor.com',
-        'https://www.redfin.com',
-        'https://www.trulia.com',
-        'https://www.homes.com',
-      ];
-      
-      // Business & finance sites
-      const businessSites = [
-        'https://www.bloomberg.com',
-        'https://www.forbes.com',
-        'https://www.businessinsider.com',
-        'https://www.cnbc.com',
-        'https://www.ft.com',
-      ];
-      
-      let selectedSites: string[] = [];
-      
-      // Select sites based on keyword
+      // Parse the keyword to understand what kind of business and location it refers to
       const lowercaseKeyword = keyword.toLowerCase();
       
-      if (this.containsAny(lowercaseKeyword, ['shop', 'buy', 'store', 'product', 'price'])) {
-        selectedSites = ecommerceSites;
-      } else if (this.containsAny(lowercaseKeyword, ['tech', 'software', 'app', 'digital', 'computer'])) {
-        selectedSites = techSites;
-      } else if (this.containsAny(lowercaseKeyword, ['edu', 'learn', 'course', 'school', 'university', 'college'])) {
-        selectedSites = educationSites;
-      } else if (this.containsAny(lowercaseKeyword, ['health', 'wellness', 'fit', 'medical', 'doctor', 'hospital'])) {
-        selectedSites = healthSites;
-      } else if (this.containsAny(lowercaseKeyword, ['travel', 'vacation', 'hotel', 'flight', 'destination'])) {
-        selectedSites = travelSites;
-      } else if (this.containsAny(lowercaseKeyword, ['home', 'house', 'property', 'real estate', 'apartment'])) {
-        selectedSites = realEstateSites;
-      } else if (this.containsAny(lowercaseKeyword, ['business', 'finance', 'money', 'invest', 'stock'])) {
-        selectedSites = businessSites;
-      } else {
-        // Default to common sites for any other category
-        selectedSites = commonSites;
+      // Extract location names for more targeted competitors
+      const locationWords = location.split(/[,\s]+/).filter(word => word.length > 1);
+      
+      // Extract business type
+      const businessTypes = {
+        'hvac': ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace'],
+        'plumbing': ['plumbing', 'plumber', 'pipe', 'water heater', 'leak'],
+        'electrical': ['electrician', 'electrical', 'wiring', 'lighting', 'power'],
+        'roofing': ['roofing', 'roofer', 'roof', 'shingles', 'gutter'],
+        'landscaping': ['landscaping', 'lawn', 'garden', 'yard', 'mowing'],
+        'cleaning': ['cleaning', 'cleaner', 'maid', 'janitorial', 'housekeeping'],
+        'restaurant': ['restaurant', 'dining', 'eatery', 'food', 'cafe', 'bistro'],
+        'dental': ['dental', 'dentist', 'teeth', 'orthodontist', 'smile'],
+        'medical': ['medical', 'doctor', 'physician', 'clinic', 'healthcare', 'wellness'],
+        'legal': ['legal', 'attorney', 'lawyer', 'law firm', 'legal service'],
+        'salon': ['salon', 'hair', 'beauty', 'barber', 'stylist', 'spa'],
+        'fitness': ['fitness', 'gym', 'workout', 'trainer', 'exercise'],
+        'realestate': ['real estate', 'realtor', 'property', 'homes', 'housing'],
+        'auto': ['auto', 'car', 'mechanic', 'repair', 'service', 'dealership']
+      };
+      
+      let identifiedType = '';
+      let identifiedCity = '';
+      let identifiedState = '';
+      
+      // Identify business type from keyword
+      for (const [type, keywords] of Object.entries(businessTypes)) {
+        if (keywords.some(key => lowercaseKeyword.includes(key))) {
+          identifiedType = type;
+          break;
+        }
       }
       
-      // Shuffle and take the top ones to create variety
-      const shuffled = [...selectedSites].sort(() => 0.5 - Math.random());
+      // Extract city and state from location
+      const locationParts = location.split(',').map(part => part.trim());
+      if (locationParts.length > 0) {
+        identifiedCity = locationParts[0];
+        if (locationParts.length > 1) {
+          identifiedState = locationParts[1];
+        }
+      }
+      
+      // Generate competition sites based on business type and location
+      let competitors: string[] = [];
+      
+      // Home services (HVAC, plumbing, electrical, etc.)
+      if (['hvac', 'plumbing', 'electrical', 'roofing', 'landscaping', 'cleaning'].includes(identifiedType)) {
+        competitors = [
+          // National home service sites
+          'https://www.homeadvisor.com',
+          'https://www.angi.com',
+          'https://www.thumbtack.com',
+          'https://www.yelp.com',
+          // Major service companies with local branches
+          'https://www.servicemasterclean.com',
+          'https://www.mrhandyman.com',
+          'https://www.mrrooter.com',
+          'https://www.aireserv.com',
+          'https://www.trugreen.com'
+        ];
+        
+        // Add specialized sites based on business type
+        if (identifiedType === 'hvac') {
+          competitors.push('https://www.carrier.com');
+          competitors.push('https://www.trane.com');
+          competitors.push('https://www.lennox.com');
+        } else if (identifiedType === 'plumbing') {
+          competitors.push('https://www.benjaminfranklinplumbing.com');
+          competitors.push('https://www.rotorooter.com');
+        } else if (identifiedType === 'electrical') {
+          competitors.push('https://www.mrelectric.com');
+          competitors.push('https://www.misterSparky.com');
+        } else if (identifiedType === 'roofing') {
+          competitors.push('https://www.owenscorning.com');
+          competitors.push('https://www.gaf.com');
+        }
+      }
+      // Restaurants
+      else if (identifiedType === 'restaurant') {
+        competitors = [
+          'https://www.yelp.com',
+          'https://www.tripadvisor.com',
+          'https://www.opentable.com',
+          'https://www.grubhub.com',
+          'https://www.doordash.com',
+          'https://www.ubereats.com',
+          'https://www.zomato.com'
+        ];
+      }
+      // Medical services
+      else if (['dental', 'medical'].includes(identifiedType)) {
+        competitors = [
+          'https://www.zocdoc.com',
+          'https://www.healthgrades.com',
+          'https://www.vitals.com',
+          'https://www.webmd.com',
+          'https://www.mayoclinic.org',
+          'https://www.ratemds.com'
+        ];
+        
+        if (identifiedType === 'dental') {
+          competitors.push('https://www.aspen.dental');
+          competitors.push('https://www.deltadentalins.com');
+        }
+      }
+      // Default local business sites with review/directory focus
+      else {
+        competitors = [
+          'https://www.yelp.com',
+          'https://www.yellowpages.com',
+          'https://www.bbb.org',
+          'https://www.superpages.com',
+          'https://www.manta.com',
+          'https://www.tripadvisor.com',
+          'https://www.google.com/maps',
+          'https://www.facebook.com/business'
+        ];
+      }
+      
+      // Add local chamber of commerce and local newspaper sites if we have state info
+      if (identifiedState) {
+        const stateAbbrev = this.getStateAbbreviation(identifiedState);
+        if (stateAbbrev) {
+          competitors.push(`https://www.${identifiedCity.toLowerCase().replace(/\s+/g, '')}.${stateAbbrev.toLowerCase()}.gov`);
+          competitors.push(`https://www.${identifiedCity.toLowerCase().replace(/\s+/g, '')}chamber.com`);
+        }
+      }
+      
+      // Make URLs unique and take random selection
+      const uniqueCompetitors = [...new Set(competitors)];
+      const shuffled = uniqueCompetitors.sort(() => 0.5 - Math.random());
       return shuffled.slice(0, this.MAX_COMPETITORS);
     } catch (error) {
       console.error('Error finding competitors:', error);
       return this.getCommonCompetitorDomains(keyword, location);
     }
+  }
+  
+  /**
+   * Get state abbreviation from state name
+   */
+  private getStateAbbreviation(stateName: string): string | undefined {
+    const stateMap: Record<string, string> = {
+      'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+      'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+      'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+      'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+      'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+      'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+      'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+      'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+      'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+      'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+      'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+      'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+      'wisconsin': 'WI', 'wyoming': 'WY',
+      'al': 'AL', 'ak': 'AK', 'az': 'AZ', 'ar': 'AR', 'ca': 'CA', 'co': 'CO',
+      'ct': 'CT', 'de': 'DE', 'fl': 'FL', 'ga': 'GA', 'hi': 'HI', 'id': 'ID',
+      'il': 'IL', 'in': 'IN', 'ia': 'IA', 'ks': 'KS', 'ky': 'KY', 'la': 'LA',
+      'me': 'ME', 'md': 'MD', 'ma': 'MA', 'mi': 'MI', 'mn': 'MN', 'ms': 'MS',
+      'mo': 'MO', 'mt': 'MT', 'ne': 'NE', 'nv': 'NV', 'nh': 'NH', 'nj': 'NJ',
+      'nm': 'NM', 'ny': 'NY', 'nc': 'NC', 'nd': 'ND', 'oh': 'OH', 'ok': 'OK',
+      'or': 'OR', 'pa': 'PA', 'ri': 'RI', 'sc': 'SC', 'sd': 'SD', 'tn': 'TN',
+      'tx': 'TX', 'ut': 'UT', 'vt': 'VT', 'va': 'VA', 'wa': 'WA', 'wv': 'WV',
+      'wi': 'WI', 'wy': 'WY'
+    };
+    
+    return stateMap[stateName.toLowerCase()];
   }
   
   /**
@@ -321,6 +381,12 @@ class CompetitorAnalyzer {
     const countryCode = this.getCountryCode(location);
     const countryTLD = this.getTldForCountry(countryCode);
     
+    // Parse location to get city and state
+    const locationParts = location.split(',').map(part => part.trim());
+    const city = locationParts[0];
+    const state = locationParts.length > 1 ? locationParts[1] : '';
+    const stateAbbrev = state ? this.getStateAbbreviation(state) : '';
+    
     // For certain countries, use the local version of sites
     const shouldUseLocalDomains = ['GB', 'CA', 'AU', 'DE', 'FR', 'JP', 'ES', 'IT', 'BR', 'MX', 'IN'].includes(countryCode);
     
@@ -369,6 +435,50 @@ class CompetitorAnalyzer {
         this.getLocalNewsSource(countryCode, 3),
         'https://www.medium.com'
       ];
+    }
+    
+    // HVAC, Plumbing and other home services
+    if (this.containsAny(lowercaseKeyword, ['hvac', 'heating', 'air conditioning', 'cooling', 'furnace', 'plumbing', 'plumber', 'pipe', 'electrical', 'electrician', 'roofing', 'roofer', 'contractor', 'repair'])) {
+      const homeServiceSites = [
+        'https://www.homeadvisor.com',
+        'https://www.angi.com', 
+        'https://www.thumbtack.com',
+        'https://www.yelp.com',
+        'https://www.bbb.org'
+      ];
+      
+      // Industry-specific sites
+      if (lowercaseKeyword.includes('hvac') || lowercaseKeyword.includes('heating') || lowercaseKeyword.includes('air conditioning')) {
+        homeServiceSites.push('https://www.carrier.com');
+        homeServiceSites.push('https://www.trane.com');
+        homeServiceSites.push('https://www.lennox.com');
+        homeServiceSites.push('https://www.aireserv.com');
+      } else if (lowercaseKeyword.includes('plumbing') || lowercaseKeyword.includes('plumber')) {
+        homeServiceSites.push('https://www.mrrooter.com');
+        homeServiceSites.push('https://www.benjaminfranklinplumbing.com');
+        homeServiceSites.push('https://www.rotorooter.com');
+      } else if (lowercaseKeyword.includes('electrical') || lowercaseKeyword.includes('electrician')) {
+        homeServiceSites.push('https://www.mrelectric.com');
+        homeServiceSites.push('https://www.mistersparky.com');
+      } else if (lowercaseKeyword.includes('roofing') || lowercaseKeyword.includes('roofer')) {
+        homeServiceSites.push('https://www.owenscorning.com');
+        homeServiceSites.push('https://www.gaf.com');
+      }
+      
+      // Add local directories if we have city/state info
+      if (city && stateAbbrev) {
+        // Sanitize city name for URL
+        const sanitizedCity = city.toLowerCase().replace(/\s+/g, '');
+        
+        // Add local service directory links
+        homeServiceSites.push(`https://www.yelp.com/search?find_desc=${encodeURIComponent(keyword)}&find_loc=${encodeURIComponent(city)}%2C+${stateAbbrev}`);
+        homeServiceSites.push(`https://www.yellowpages.com/search?search_terms=${encodeURIComponent(keyword)}&geo_location_terms=${encodeURIComponent(city)}%2C+${stateAbbrev}`);
+        
+        // Chamber of commerce 
+        homeServiceSites.push(`https://www.${sanitizedCity}chamber.com`);
+      }
+      
+      return homeServiceSites.slice(0, this.MAX_COMPETITORS);
     }
     
     // Travel domains
