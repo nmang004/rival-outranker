@@ -11,6 +11,8 @@ import {
   X,
   LineChart
 } from "lucide-react";
+import { UserAccountButton } from "@/components/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function NavBar() {
   const [location] = useLocation();
@@ -80,18 +82,7 @@ export default function NavBar() {
               <Bell className="h-5 w-5" />
             </Button>
             <div className="ml-3 relative">
-              <div>
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  className="max-w-xs flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50"
-                >
-                  <span className="sr-only">Open user menu</span>
-                  <div className="h-8 w-8 rounded-full sage-bg-gradient flex items-center justify-center text-white font-medium shadow-sm">
-                    <span>SA</span>
-                  </div>
-                </Button>
-              </div>
+              <UserAccountButton />
             </div>
           </div>
           <div className="-mr-2 flex items-center sm:hidden">
@@ -141,20 +132,15 @@ export default function NavBar() {
           </Link>
         </div>
         <div className="pt-4 pb-3 border-t border-primary/10 bg-white">
-          <div className="flex items-center px-4">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-full sage-bg-gradient flex items-center justify-center text-white font-medium shadow-sm">
-                <span>SA</span>
-              </div>
+          <div className="flex flex-col items-center px-4">
+            {/* Mobile User Account Info */}
+            <div className="flex w-full items-center pb-4">
+              <UserAccountButton />
+              <button className="ml-auto flex-shrink-0 p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 transition-colors">
+                <span className="sr-only">View notifications</span>
+                <Bell className="h-5 w-5" />
+              </button>
             </div>
-            <div className="ml-3">
-              <div className="text-base font-medium text-foreground">SEO Analyst</div>
-              <div className="text-sm font-medium text-muted-foreground">analyst@example.com</div>
-            </div>
-            <button className="ml-auto flex-shrink-0 p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 transition-colors">
-              <span className="sr-only">View notifications</span>
-              <Bell className="h-5 w-5" />
-            </button>
           </div>
         </div>
       </div>

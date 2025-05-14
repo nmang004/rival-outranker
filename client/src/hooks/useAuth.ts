@@ -7,16 +7,16 @@ export type User = {
   id: number;
   username: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  profileImage?: string;
-  company?: string;
-  jobTitle?: string;
-  bio?: string;
-  websiteUrl?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImage?: string | null;
+  company?: string | null;
+  jobTitle?: string | null;
+  bio?: string | null;
+  websiteUrl?: string | null;
   createdAt: string;
   updatedAt: string;
-  lastLoginAt?: string;
+  lastLoginAt?: string | null;
   isEmailVerified: boolean;
 };
 
@@ -65,17 +65,15 @@ export function useAuth() {
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchOnReconnect: true,
-    onError: () => {
-      // Clear any error as we don't want to show error notifications for auth checks
-      setAuthError(null);
-    }
   });
   
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
-      const response = await apiRequest('/api/auth/register', 'POST', credentials);
-      return response;
+      return apiRequest('/api/auth/register', {
+        method: 'POST',
+        data: credentials
+      });
     },
     onSuccess: () => {
       setAuthError(null);
@@ -98,8 +96,10 @@ export function useAuth() {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await apiRequest('/api/auth/login', 'POST', credentials);
-      return response;
+      return apiRequest('/api/auth/login', {
+        method: 'POST',
+        data: credentials
+      });
     },
     onSuccess: () => {
       setAuthError(null);
@@ -122,8 +122,9 @@ export function useAuth() {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/auth/logout', 'POST');
-      return response;
+      return apiRequest('/api/auth/logout', {
+        method: 'POST'
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
@@ -138,8 +139,10 @@ export function useAuth() {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: UpdateProfileData) => {
-      const response = await apiRequest('/api/user/profile', 'PUT', profileData);
-      return response;
+      return apiRequest('/api/user/profile', {
+        method: 'PUT',
+        data: profileData
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
@@ -161,8 +164,10 @@ export function useAuth() {
   // Change password mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (passwordData: ChangePasswordData) => {
-      const response = await apiRequest('/api/user/change-password', 'PUT', passwordData);
-      return response;
+      return apiRequest('/api/user/change-password', {
+        method: 'PUT',
+        data: passwordData
+      });
     },
     onSuccess: () => {
       toast({
