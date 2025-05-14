@@ -529,23 +529,129 @@ class RivalAuditCrawler {
   
   /**
    * Determine if a page is a service page
+   * Service pages describe specific services offered, such as:
+   * 1. /services/ac-repair/
+   * 2. /heating-services/furnace-installation/
+   * 3. /products/air-conditioners/
+   * 4. /hvac-services/maintenance/
+   * 5. /emergency-ac-repair/
+   * 6. /duct-cleaning/
    */
   private isServicePage(page: PageCrawlResult): boolean {
-    const serviceTerms = ['service', 'product', 'solution', 'offering', 'feature'];
     const url = page.url.toLowerCase();
     const title = page.title.toLowerCase();
+    const path = new URL(page.url).pathname.toLowerCase();
+    const pathSegments = path.split('/').filter(Boolean);
     
-    // Check URL for service terms
-    if (serviceTerms.some(term => url.includes(term))) {
+    // Define comprehensive service directory and term lists for accurate detection
+    const serviceDirectories = [
+      'services', 'service', 'products', 'solutions', 'offerings', 
+      'capabilities', 'what-we-do', 'what-we-offer'
+    ];
+    
+    const specificServiceTerms = [
+      // HVAC specific service terms
+      'ac-repair', 'ac-installation', 'ac-replacement', 'ac-maintenance', 'ac-tune-up',
+      'air-conditioning', 'air-conditioner', 'cooling', 'a/c', 'hvac',
+      'furnace', 'heating', 'heat-pump', 'boiler', 'heater', 'thermostat',
+      'indoor-air-quality', 'air-purifier', 'air-cleaner', 'air-filtration',
+      'duct', 'duct-cleaning', 'ductwork', 'duct-sealing', 'duct-repair',
+      'commercial-hvac', 'residential-hvac', 'emergency', '24-hour', 'same-day',
+      
+      // General service-related terms
+      'repair', 'installation', 'replacement', 'maintenance', 'service', 
+      'tune-up', 'inspection', 'cleaning', 'assessment', 'evaluation',
+      'design', 'upgrade', 'conversion', 'retrofit', 'renovation',
+      
+      // Common product/solution terms
+      'system', 'unit', 'equipment', 'appliance', 'product', 'solution',
+      'mini-split', 'central-air', 'zoned', 'multi-zone', 'smart', 'wifi'
+    ];
+    
+    // Pattern 1: Direct service directory structure
+    // Example: /services/*, /products/*, etc.
+    if (pathSegments.length >= 1 && serviceDirectories.includes(pathSegments[0])) {
+      // If it's in a service directory but doesn't contain location indicators,
+      // it's likely a service page
+      if (!this.containsLocationIndicator(path)) {
+        return true;
+      }
+    }
+    
+    // Pattern 2: Specific service in URL that's not in a location-based path
+    // Example: /ac-repair/, /furnace-installation/, etc.
+    if (pathSegments.length >= 1 && 
+        !this.containsLocationIndicator(path) &&
+        specificServiceTerms.some(term => path.includes(term))) {
+      
+      // Additional check: if this is a deep path but not in a cities-served or locations directory
+      if (!path.includes('cities-served') && 
+          !path.includes('service-area') && 
+          !path.includes('locations')) {
+        return true;
+      }
+    }
+    
+    // Pattern 3: Check for service-oriented titles that aren't location-specific
+    const serviceTitlePatterns = [
+      /\b(hvac|ac|air conditioning|heating|cooling|furnace|boiler) (repair|service|installation|replacement|maintenance)\b/i,
+      /\b(repair|install|replace|service|maintain) your (hvac|ac|furnace|heat pump|system|unit)\b/i,
+      /\b(professional|expert|reliable|trusted|affordable|emergency) (hvac|ac|heating|cooling) (service|repair|installation)\b/i,
+      /\b(24\/7|24-hour|same-day|emergency) (service|repair|assistance|help)\b/i,
+      /\b(free|complimentary) (estimate|consultation|quote|assessment|evaluation|inspection)\b/i
+    ];
+    
+    if (serviceTitlePatterns.some(pattern => pattern.test(title)) && 
+        !this.containsLocationIndicator(title)) {
       return true;
     }
     
-    // Check title for service terms
-    if (serviceTerms.some(term => title.includes(term))) {
+    // Pattern 4: Menu/navigation-based detection (if this page appears to be a main service category)
+    // Look for common main navigation patterns in page structure
+    if (page.h1s.some(h1 => /\b(our|hvac)?\s*(services|products|solutions)\b/i.test(h1)) ||
+        page.h2s.some(h2 => /\b(service|product) (offerings|options|types|categories)\b/i.test(h2))) {
+      
+      // Check if page has service-oriented list structure (common for service category pages)
+      const $ = load(page.rawHtml);
+      const serviceLinks = $('a[href*="service"], a[href*="repair"], a[href*="install"], a[href*="maintenance"]').length;
+      
+      if (serviceLinks >= 3) { // If page links to multiple service pages
+        return true;
+      }
+    }
+    
+    // Pattern 5: Check for service-specific content patterns
+    // Pages that describe benefits, processes, or FAQs about services
+    if ((title.includes('how') || title.includes('why') || title.includes('when') || title.includes('what')) && 
+        specificServiceTerms.some(term => 
+          title.includes(term) || 
+          page.h1s.some(h1 => h1.toLowerCase().includes(term)) ||
+          page.h2s.some(h2 => h2.toLowerCase().includes(term))
+        ) && 
+        !this.containsLocationIndicator(title)) {
       return true;
     }
     
     return false;
+  }
+  
+  /**
+   * Helper method to check if a string contains location indicators
+   */
+  private containsLocationIndicator(text: string): boolean {
+    const locationIndicators = [
+      'cities-served', 'service-areas', 'service-area', 'locations', 'areas-we-serve',
+      'areas', 'cities', 'counties', 'communities', 'neighborhoods', 'regions',
+      /\b(in|near|serving|around|throughout) [a-z\s]+\b/i,
+      /\b[a-z]+-[a-z]{2}\b/i,  // city-state pattern
+      /\b\d{5}\b/ // zip code
+    ];
+    
+    return locationIndicators.some(indicator => 
+      typeof indicator === 'string' 
+        ? text.includes(indicator) 
+        : indicator.test(text)
+    );
   }
   
   /**
