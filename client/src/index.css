@@ -212,6 +212,10 @@
     animation: fadeIn 0.5s ease-in;
   }
   
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
   /* Border styles */
   .sage-border {
     @apply border-2 border-primary/30;
