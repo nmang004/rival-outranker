@@ -12,9 +12,10 @@ import {
 
 export default function BingApiUsage() {
   const { data, isLoading, error } = useQuery<{
-    count: number;
-    limit: number;
-    remaining: number;
+    queryCount: number;
+    count?: number;
+    limit?: number;
+    remaining?: number;
   }>({
     queryKey: ['/api/bing-query-count'],
     refetchOnWindowFocus: false,
@@ -22,13 +23,16 @@ export default function BingApiUsage() {
   });
   
   // Calculate usage percentage
-  const usagePercentage = data ? Math.min(100, Math.round((data.count / data.limit) * 100)) : 0;
+  const count = data?.count || data?.queryCount || 0;
+  const limit = data?.limit || 1000; // Default limit if not provided
+  const remaining = data?.remaining || (limit - count);
+  const usagePercentage = Math.min(100, Math.round((count / limit) * 100));
   
   // Determine progress color based on usage
   const getProgressColor = () => {
-    if (usagePercentage > 90) return 'bg-red-500';
-    if (usagePercentage > 70) return 'bg-amber-500';
-    return 'bg-green-500';
+    if (usagePercentage > 90) return 'bg-red-500 dark:bg-red-400';
+    if (usagePercentage > 70) return 'bg-amber-500 dark:bg-amber-400';
+    return 'bg-green-500 dark:bg-green-400';
   };
   
   if (isLoading) {
@@ -71,19 +75,18 @@ export default function BingApiUsage() {
       <CardContent>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
-            <span>{data.count} / {data.limit} queries used</span>
+            <span>{count} / {limit} queries used</span>
             <span className={
               usagePercentage > 90 ? 'text-red-500 font-medium' : 
               usagePercentage > 70 ? 'text-amber-500' : 
               'text-green-500'
             }>
-              {data.remaining} remaining
+              {remaining} remaining
             </span>
           </div>
           <Progress 
             value={usagePercentage} 
-            className="h-1.5 w-full" 
-            indicatorClassName={getProgressColor()} 
+            className={`h-1.5 w-full ${getProgressColor()}`}
           />
         </div>
       </CardContent>
