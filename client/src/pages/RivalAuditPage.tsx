@@ -55,11 +55,11 @@ export default function RivalAuditPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold gradient-heading mb-4">Rival SEO Audit</h1>
-          <p className="text-muted-foreground mb-6">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold gradient-heading mb-3 sm:mb-4">Rival SEO Audit</h1>
+          <p className="text-muted-foreground text-sm sm:text-base mb-4 sm:mb-6">
             Perform a comprehensive SEO audit for client websites and generate a detailed report with actionable recommendations.
           </p>
         </div>
@@ -81,13 +81,17 @@ export default function RivalAuditPage() {
                     <FormItem>
                       <FormLabel>Website URL</FormLabel>
                       <FormControl>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Input
                             placeholder="https://example.com"
                             {...field}
                             className="flex-1"
                           />
-                          <Button type="submit" disabled={isSubmitting}>
+                          <Button 
+                            type="submit" 
+                            disabled={isSubmitting}
+                            className="w-full sm:w-auto"
+                          >
                             {isSubmitting ? "Starting..." : "Start Audit"}
                           </Button>
                         </div>
