@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { authenticate } from '../middleware/auth';
-import { updateUserSchema } from '@shared/schema';
+import { updateUserSchema, users } from '@shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import bcrypt from 'bcryptjs';
+import { db } from '../db';
+import { eq } from 'drizzle-orm';
 
 export const userRouter = Router();
 
@@ -90,8 +92,14 @@ userRouter.put('/change-password', async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     
-    // Update password
-    await storage.updateUser(userId, { password: hashedPassword });
+    // Update password - need to use the raw DB update since password is excluded from updateUser schema
+    await db
+      .update(users)
+      .set({
+        password: hashedPassword,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
     
     return res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {

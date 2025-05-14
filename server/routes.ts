@@ -8,8 +8,24 @@ import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { authRouter } from "./routes/auth";
+import { userRouter } from "./routes/user";
+import { optionalAuth } from "./middleware/auth";
+import cookieParser from "cookie-parser";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Use cookie parser middleware
+  app.use(cookieParser());
+  
+  // Apply optional authentication middleware to all routes
+  app.use(optionalAuth);
+  
+  // Register authentication routes
+  app.use('/api/auth', authRouter);
+  
+  // Register user routes
+  app.use('/api/user', userRouter);
+  
   // Utility function for URL normalization
   const normalizeUrl = (inputUrl: string) => {
     // Convert URL to lowercase
