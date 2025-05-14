@@ -265,37 +265,16 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     
     console.log('DataForSEO search_volume request payload:', JSON.stringify(requestData, null, 2));
     
-    // Using standard endpoints instead of live to reduce costs
-    const taskPostResponse = await dataForSeoClient.post(
-      '/keywords_data/google_ads/search_volume/task_post',
+    // Use the live endpoint again to ensure compatibility
+    const keywordDataResponse = await dataForSeoClient.post(
+      '/keywords_data/google_ads/search_volume/live',
       requestData
     );
     
-    console.log('DataForSEO task_post response:', JSON.stringify(taskPostResponse.data, null, 2));
-    
-    // Validate the task creation response
-    if (!taskPostResponse.data || taskPostResponse.data.status_code !== 20000) {
-      throw new Error(`Failed to create task: ${JSON.stringify(taskPostResponse.data)}`);
-    }
-    
-    // Get the task ID
-    const taskId = taskPostResponse.data?.tasks?.[0]?.id;
-    if (!taskId) {
-      throw new Error('No task ID returned from DataForSEO');
-    }
-    
-    // Wait a bit for the task to complete
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    // Fetch the results using the task_get endpoint
-    const resultsResponse = await dataForSeoClient.get(
-      `/keywords_data/google_ads/search_volume/task_get/${taskId}`
-    );
-    
-    console.log('DataForSEO task_get response:', JSON.stringify(resultsResponse.data, null, 2));
+    console.log('DataForSEO live response:', JSON.stringify(keywordDataResponse.data, null, 2));
     
     // Direct access to response data structure
-    const data = resultsResponse.data;
+    const data = keywordDataResponse.data;
     
     if (!data || data.status_code !== 20000 || !data.tasks || data.tasks.length === 0) {
       throw new Error(`Invalid API response: ${JSON.stringify(data)}`);
@@ -303,21 +282,8 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     
     const task = data.tasks[0];
     
-    if (task.status_code !== 20000) {
-      if (task.status_code === 20100) {
-        // Task is in progress, we need to wait
-        console.log(`Task ${taskId} is still in progress, waiting longer...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        // Try fetching again
-        return getKeywordData(keyword, location);
-      } else {
-        throw new Error(`Task error: ${task.status_message || 'Unknown error'}`);
-      }
-    }
-    
-    if (!task.result || task.result.length === 0) {
-      throw new Error('No results returned from DataForSEO');
+    if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
+      throw new Error(`Task error: ${task.status_message || 'No results'}`);
     }
     
     // Extract the keyword data from the result
