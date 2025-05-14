@@ -48,6 +48,7 @@ interface KeywordData {
   competition?: number;
   trend?: number[];
   relatedKeywords?: RelatedKeyword[];
+  lastUpdated?: Date;
 }
 
 interface RelatedKeyword {
@@ -152,19 +153,29 @@ export default function KeywordResearch() {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, forceRefresh = false) => {
     e.preventDefault();
-    if (!keyword.trim()) return;
+    if (!keyword.trim()) {
+      toast({
+        title: "Keyword required",
+        description: "Please enter a keyword to research",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsLoading(true);
     setKeywordData(null);
     setRelatedKeywords([]);
     
     try {
-      // Get keyword data from API
+      // Get keyword data from API with optional force refresh flag
       const keywordResponse = await apiRequest('/api/keyword-research', {
         method: 'POST',
-        data: { keyword: keyword.trim() }
+        data: { 
+          keyword: keyword.trim(),
+          forceRefresh
+        }
       });
       
       setKeywordData(keywordResponse);
@@ -179,8 +190,23 @@ export default function KeywordResearch() {
       setActiveTab('overview');
     } catch (error) {
       console.error("Error fetching keyword data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch keyword data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Function to refresh keyword data
+  const handleRefresh = (e: React.MouseEvent) => {
+    if (keywordData?.keyword) {
+      // Set the input field to the current keyword
+      setKeyword(keywordData.keyword);
+      // Force refresh data from API
+      handleSubmit(e as unknown as React.FormEvent, true);
     }
   };
 

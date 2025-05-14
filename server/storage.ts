@@ -367,6 +367,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(keywords.projectId, projectId))
       .orderBy(desc(keywords.createdAt));
   }
+  
+  async getKeywordsByKeywordText(keyword: string): Promise<Keyword[]> {
+    return await db
+      .select()
+      .from(keywords)
+      .where(eq(keywords.keyword, keyword))
+      .orderBy(desc(keywords.createdAt));
+  }
 
   async updateKeyword(id: number, keywordData: Partial<InsertKeyword>): Promise<Keyword> {
     const [result] = await db
