@@ -78,40 +78,46 @@ export default function History() {
           <CardTitle>Analysis History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 rounded-lg overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     URL
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                     Date
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Score
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.map((analysis) => (
-                  <tr key={analysis.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="truncate max-w-xs">{analysis.url}</div>
+                  <tr key={analysis.id} className="hover:bg-gray-50">
+                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-900">
+                      <div className="truncate max-w-[150px] sm:max-w-xs">
+                        {analysis.url}
+                        <div className="text-xs text-gray-500 mt-1 sm:hidden">
+                          {formatDate(analysis.timestamp)}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
                       {formatDate(analysis.timestamp)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <ScoreIndicator score={analysis.overallScore} />
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Button
+                        size="sm"
                         variant="ghost"
                         className="text-primary-600 hover:text-primary-900"
                         onClick={() => handleViewAnalysis(analysis.url)}
@@ -162,20 +168,20 @@ function HistorySkeleton() {
         <CardTitle>Analysis History</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-gray-200 rounded-lg overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   URL
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                   Date
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Score
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -183,16 +189,19 @@ function HistorySkeleton() {
             <tbody className="bg-white divide-y divide-gray-200">
               {[1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Skeleton className="h-4 w-64" />
+                  <td className="px-4 sm:px-6 py-4">
+                    <Skeleton className="h-4 w-[150px] sm:w-64" />
+                    <div className="sm:hidden mt-1">
+                      <Skeleton className="h-3 w-20" />
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                     <Skeleton className="h-4 w-24" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <Skeleton className="h-4 w-16" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right">
                     <Skeleton className="h-8 w-16 ml-auto" />
                   </td>
                 </tr>

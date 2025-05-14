@@ -26,26 +26,34 @@ export default function Home() {
   const [useDeepContentAnalysis, setUseDeepContentAnalysis] = useState(false);
 
   const analyzeMutation = useMutation({
-    mutationFn: async (url: string) => {
+    mutationFn: async (data: { url: string, runDeepContentAnalysis?: boolean }) => {
       // First check if the URL is our own API endpoint or Replit domain
-      if (url.includes('/api/') || url.includes('replit.dev') || url.includes('replit.app')) {
+      if (data.url.includes('/api/') || data.url.includes('replit.dev') || data.url.includes('replit.app')) {
         throw new Error('Cannot analyze our own API endpoints or Replit domains');
       }
       
       const response = await apiRequest('/api/analyze', {
         method: 'POST',
-        data: { url }
+        data: data
       });
       return response;
     },
     onSuccess: (data) => {
+      let successMessage = "Analysis started";
+      let description = "We've started analyzing your website. You'll be redirected to results soon.";
+      
+      if (data.runDeepContentAnalysis) {
+        successMessage = "Deep content analysis started";
+        description = "We've started a comprehensive content analysis. You'll be redirected to results soon.";
+      }
+      
       toast({
-        title: "Analysis started",
-        description: "We've started analyzing your website. You'll be redirected to results soon.",
+        title: successMessage,
+        description: description,
       });
       
-      // Poll for results in the background
-      pollForResults(data.url);
+      // Poll for results in the background, passing the deep content flag
+      pollForResults(data.url, data.runDeepContentAnalysis);
     },
     onError: (error: any) => {
       const errorMessage = error.message || "There was an error analyzing the URL. Please try again.";
@@ -66,7 +74,7 @@ export default function Home() {
     }
   });
 
-  const pollForResults = async (url: string) => {
+  const pollForResults = async (url: string, isDeepContentAnalysis: boolean = false) => {
     let attempts = 0;
     const maxAttempts = 15; // 15 seconds total polling time
     const minWaitTime = 5; // Minimum wait time in seconds to show analysis progress
@@ -242,15 +250,14 @@ export default function Home() {
         throw new Error('Cannot analyze our own API endpoints or Replit domains');
       }
       
-      // If deep content analysis is selected, redirect to that page
-      if (useDeepContentAnalysis) {
-        // Navigate directly to deep content analysis page
-        setLocation(`/deep-content?url=${encodeURIComponent(url)}`);
-        return;
-      }
+      // Include the deep content analysis option with the standard analysis request
+      const requestData = { 
+        url,
+        runDeepContentAnalysis: useDeepContentAnalysis
+      };
       
-      // Otherwise, use standard analysis
-      analyzeMutation.mutate(url);
+      // Use standard analysis with the deep content flag
+      analyzeMutation.mutate(requestData);
     } catch (error) {
       setIsSubmitting(false);
       setAnalysisProgress(0);
