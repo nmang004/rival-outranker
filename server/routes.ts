@@ -9,7 +9,7 @@ import { searchService } from "./services/searchService";
 import { rivalAuditCrawler } from "./services/rivalAuditCrawler";
 import { generateRivalAuditExcel } from "./services/excelExporter";
 import { generateRivalAuditCsv } from "./services/csvExporter";
-import { urlFormSchema, insertAnalysisSchema, RivalAudit } from "@shared/schema";
+import { urlFormSchema, insertAnalysisSchema, RivalAudit, updateKeywordSchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -17,12 +17,6 @@ import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
-
-// Define a schema for the update keyword request
-const updateKeywordSchema = z.object({
-  keyword: z.string().min(1, "Keyword is required"),
-  url: z.string().url("Valid URL is required")
-});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware

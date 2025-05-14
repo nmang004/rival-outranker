@@ -112,6 +112,11 @@ export const urlFormSchema = z.object({
   includeCompetitorAnalysis: z.boolean().optional().default(false),
 });
 
+export const updateKeywordSchema = z.object({
+  keyword: z.string().min(1, "Keyword is required"),
+  url: z.string().url("Valid URL is required")
+});
+
 export type SeoScoreCategory = 'excellent' | 'good' | 'needs-work' | 'poor';
 
 // SEO assessment schemas
