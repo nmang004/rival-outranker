@@ -425,8 +425,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Analyze competitors using the competitorAnalyzer service
-        const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
+        // First, try to get real competitors from Bing Search
+        let bingResults = [];
+        try {
+          console.log(`Searching for competitors using Bing Search API: "${primaryKeyword}, ${location}"`);
+          bingResults = await bingSearchService.searchCompetitors(primaryKeyword, location, { count: 5 });
+          console.log(`Found ${bingResults.length} competitors from Bing Search`);
+        } catch (bingError) {
+          console.error("Error using Bing Search API:", bingError);
+        }
+        
+        // Fall back to the competitorAnalyzer service if Bing Search failed or returned no results
+        const competitorResults = bingResults.length > 0
+          ? { 
+              competitors: bingResults.map(result => ({
+                title: result.name,
+                url: result.url,
+                description: result.snippet || "",
+                strengths: ["Strong online presence", "Good search visibility", "Complete business information"],
+                weaknesses: ["Content could be improved", "Technical SEO needs enhancement", "Limited social proof"]
+              })),
+              timestamp: new Date(),
+              queryCount: bingSearchService.getQueryCount()
+            }
+          : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
         
         // Transform the competitor analysis results into the expected format for the frontend
         const competitors = competitorResults.competitors.map((competitor, index) => {
@@ -480,6 +502,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           localVisibility: Math.round(50 + Math.random() * 40),
           contentQuality: Math.round(50 + Math.random() * 30),
           backlinkScore: Math.round(30 + Math.random() * 50),
+          queryCount: bingSearchService.getQueryCount(), // Include the Bing Search API query count
+          usingBingSearch: bingResults.length > 0, // Flag to indicate whether Bing Search was used
           strengths: [
             "Strong on-page SEO implementation",
             "Solid technical performance"

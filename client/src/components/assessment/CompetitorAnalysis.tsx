@@ -82,6 +82,15 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
           <div className="flex items-center text-sm xl:text-base text-muted-foreground">
             <Tag className="h-4 w-4 xl:h-5 xl:w-5 mr-1.5" />
             <span>Keyword: <span className="font-medium text-foreground">{displayKeyword}</span></span>
+            {data?.queryCount !== undefined && (
+              <span className="ml-4 flex items-center">
+                <Search className="h-3.5 w-3.5 xl:h-4 xl:w-4 mr-1.5 text-blue-500" />
+                <span className="text-xs xl:text-sm">
+                  API Queries: <span className="font-medium text-foreground">{data.queryCount}</span>
+                  {data.usingBingSearch && <span className="ml-1 text-green-500 text-xs">(Live data)</span>}
+                </span>
+              </span>
+            )}
             <Button 
               variant="ghost" 
               size="sm" 
@@ -96,6 +105,11 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
         
         <p className="text-sm xl:text-base text-muted-foreground">
           Based on analysis of search rankings and online presence for "{displayKeyword}" in {searchLocation}.
+          {data?.usingBingSearch && (
+            <span className="ml-1 text-xs text-blue-500">
+              Using real-time search data from Bing Search API.
+            </span>
+          )}
         </p>
       </div>
       
