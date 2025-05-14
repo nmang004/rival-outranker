@@ -216,7 +216,41 @@ class Analyzer {
   /**
    * Analyze a webpage and generate a comprehensive SEO assessment report
    */
-  async analyzePage(url: string, pageData: CrawlerOutput): Promise<SeoAnalysisResult> {
+  /**
+   * Main analyze method that accepts options for customization
+   * @param url URL to analyze
+   * @param options Analysis options including forcedPrimaryKeyword
+   */
+  async analyze(url: string, options: { forcedPrimaryKeyword?: string } = {}): Promise<SeoAnalysisResult> {
+    console.log(`Starting analysis for ${url} with options:`, options);
+    
+    try {
+      // First crawl the page to get the data
+      const crawler = await import('./crawler').then(m => m.crawler);
+      const pageData = await crawler.crawlPage(url);
+      
+      // Then analyze the page with the pageData and options
+      return this.analyzePageWithOptions(url, pageData, options);
+    } catch (error) {
+      console.error(`Error in analyze method for ${url}:`, error);
+      return this.createErrorAnalysisResult(url, error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  /**
+   * Analyze page with options for customization
+   */
+  async analyzePageWithOptions(url: string, pageData: CrawlerOutput, 
+                              options: { forcedPrimaryKeyword?: string } = {}): Promise<SeoAnalysisResult> {
+    // Forward to analyzePage with an augmented pageData that includes options
+    return this.analyzePage(url, pageData, options);
+  }
+
+  /**
+   * Analyze a webpage and generate a comprehensive SEO assessment report
+   */
+  async analyzePage(url: string, pageData: CrawlerOutput, 
+                   options: { forcedPrimaryKeyword?: string } = {}): Promise<SeoAnalysisResult> {
     try {
       console.log(`Analyzing page: ${url}`);
       
@@ -241,12 +275,18 @@ class Analyzer {
       let userEngagementAnalysis;
       let eatAnalysis;
       
-      // Try to extract primary keyword with error handling
-      try {
-        primaryKeyword = await keywordAnalyzer.extractPrimaryKeyword(pageData);
-      } catch (error) {
-        console.error("Error extracting primary keyword:", error);
-        primaryKeyword = this.extractKeywordFromUrl(url);
+      // Use forced primary keyword if provided, otherwise extract it
+      if (options.forcedPrimaryKeyword) {
+        primaryKeyword = options.forcedPrimaryKeyword;
+        console.log(`Using forced primary keyword: "${primaryKeyword}"`);
+      } else {
+        // Try to extract primary keyword with error handling
+        try {
+          primaryKeyword = await keywordAnalyzer.extractPrimaryKeyword(pageData);
+        } catch (error) {
+          console.error("Error extracting primary keyword:", error);
+          primaryKeyword = this.extractKeywordFromUrl(url);
+        }
       }
       
       // Perform each analysis step with individual error handling
