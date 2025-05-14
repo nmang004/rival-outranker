@@ -10,6 +10,7 @@ import SummarySection from "@/components/assessment/SummarySection";
 import AssessmentTabs from "@/components/assessment/AssessmentTabs";
 import ActionPlan from "@/components/assessment/ActionPlan";
 import NextSteps from "@/components/assessment/NextSteps";
+import { ExportPdfButton } from "@/components/assessment/ExportPdfButton";
 import { SeoAnalysisResult } from "@shared/schema";
 import { formatDate, formatUrl } from "@/lib/formatters";
 import {
@@ -196,12 +197,7 @@ export default function ResultsPage() {
     };
   }
 
-  const handleExportPDF = () => {
-    toast({
-      title: "Export Feature",
-      description: "PDF export functionality will be available in the next update.",
-    });
-  };
+  // The export functionality is now handled by the ExportPdfButton component
 
   const handleShare = () => {
     // Copy current URL to clipboard
@@ -263,27 +259,11 @@ export default function ResultsPage() {
             </div>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
-            <Button 
+            <ExportPdfButton 
+              analysisResult={data as SeoAnalysisResult}
               variant="outline"
               className="bg-primary-50 text-primary-700 border-primary-100 hover:bg-primary-100"
-              onClick={handleExportPDF}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Export PDF
-            </Button>
+            />
             <Button 
               variant="outline"
               onClick={handleShare}

@@ -173,13 +173,13 @@ async function addHeader(pdf: jsPDF, analysis: SeoAnalysisResult, includeLogo: b
   // Add logo if requested
   if (includeLogo) {
     // Use an SVG logo embedded directly
-    const logoSvg = \`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 48 48" fill="none">
+    const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 48 48" fill="none">
       <rect width="48" height="48" rx="8" fill="#0f172a"/>
       <path d="M12 12L24 6L36 12V24L24 30L12 24V12Z" fill="#3b82f6" stroke="white" stroke-width="2"/>
       <path d="M24 30V42" stroke="white" stroke-width="2"/>
       <path d="M36 24L42 28" stroke="white" stroke-width="2"/>
       <path d="M12 24L6 28" stroke="white" stroke-width="2"/>
-    </svg>\`;
+    </svg>`;
     
     // Convert SVG to data URL
     const svgBlob = new Blob([logoSvg], { type: 'image/svg+xml' });

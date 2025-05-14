@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeoAnalysisResult } from '@shared/schema';
 import { exportToPDF, PDFExportOptions } from '@/lib/pdfExport';
-import { FileDown, FilePdf } from 'lucide-react';
+import { FileDown, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExportPdfButtonProps {
@@ -78,7 +78,7 @@ export function ExportPdfButton({
                 size={size}
                 className={className}
               >
-                <FilePdf className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-2" />
                 {showLabel && 'Export PDF'}
               </Button>
             </DialogTrigger>
