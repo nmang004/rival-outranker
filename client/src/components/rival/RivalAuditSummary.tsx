@@ -226,17 +226,17 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
 
         {/* Structure & Navigation */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-lg flex items-center gap-1 sm:gap-2">
+              <ClipboardCheck className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <span>Structure & Navigation</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="space-y-2">
               <div className="flex justify-between mb-1">
-                <div className="text-sm font-medium">Completion Status</div>
-                <div className="text-sm font-medium">
+                <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                <div className="text-xs sm:text-sm font-medium">
                   {Math.round(getCategoryProgress(structureTotals))}%
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
                   "bg-red-500/20"
                 }`}
               />
-              <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px] sm:text-xs mt-2">
                 <div className="text-center">
                   <div className="text-destructive font-medium">{structureTotals.priorityOfi}</div>
                   <div className="text-muted-foreground">Priority</div>
@@ -272,17 +272,17 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
 
         {/* Contact Pages */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-lg flex items-center gap-1 sm:gap-2">
+              <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <span>Contact Page</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="space-y-2">
               <div className="flex justify-between mb-1">
-                <div className="text-sm font-medium">Completion Status</div>
-                <div className="text-sm font-medium">
+                <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                <div className="text-xs sm:text-sm font-medium">
                   {Math.round(getCategoryProgress(contactTotals))}%
                 </div>
               </div>
@@ -294,7 +294,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
                   "bg-red-500/20"
                 }`}
               />
-              <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px] sm:text-xs mt-2">
                 <div className="text-center">
                   <div className="text-destructive font-medium">{contactTotals.priorityOfi}</div>
                   <div className="text-muted-foreground">Priority</div>
@@ -318,17 +318,17 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
 
         {/* Service Pages */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-lg flex items-center gap-1 sm:gap-2">
+              <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <span>Service Pages</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="space-y-2">
               <div className="flex justify-between mb-1">
-                <div className="text-sm font-medium">Completion Status</div>
-                <div className="text-sm font-medium">
+                <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                <div className="text-xs sm:text-sm font-medium">
                   {Math.round(getCategoryProgress(serviceTotals))}%
                 </div>
               </div>
@@ -340,7 +340,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
                   "bg-red-500/20"
                 }`}
               />
-              <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px] sm:text-xs mt-2">
                 <div className="text-center">
                   <div className="text-destructive font-medium">{serviceTotals.priorityOfi}</div>
                   <div className="text-muted-foreground">Priority</div>
@@ -364,17 +364,17 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
 
         {/* Location Pages */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+            <CardTitle className="text-sm sm:text-lg flex items-center gap-1 sm:gap-2">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               <span>Location Pages</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="space-y-2">
               <div className="flex justify-between mb-1">
-                <div className="text-sm font-medium">Completion Status</div>
-                <div className="text-sm font-medium">
+                <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                <div className="text-xs sm:text-sm font-medium">
                   {Math.round(getCategoryProgress(locationTotals))}%
                 </div>
               </div>
@@ -386,7 +386,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
                   "bg-red-500/20"
                 }`}
               />
-              <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+              <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px] sm:text-xs mt-2">
                 <div className="text-center">
                   <div className="text-destructive font-medium">{locationTotals.priorityOfi}</div>
                   <div className="text-muted-foreground">Priority</div>
@@ -411,17 +411,17 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
         {/* Service Area Pages - Only show if exists */}
         {audit.serviceAreaPages && (
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Globe className="h-5 w-5 text-primary" />
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+              <CardTitle className="text-sm sm:text-lg flex items-center gap-1 sm:gap-2">
+                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 <span>Service Area Pages</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               <div className="space-y-2">
                 <div className="flex justify-between mb-1">
-                  <div className="text-sm font-medium">Completion Status</div>
-                  <div className="text-sm font-medium">
+                  <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                  <div className="text-xs sm:text-sm font-medium">
                     {Math.round(getCategoryProgress(serviceAreaTotals))}%
                   </div>
                 </div>
@@ -433,7 +433,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
                     "bg-red-500/20"
                   }`}
                 />
-                <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+                <div className="grid grid-cols-4 gap-1 sm:gap-2 text-[10px] sm:text-xs mt-2">
                   <div className="text-center">
                     <div className="text-destructive font-medium">{serviceAreaTotals.priorityOfi}</div>
                     <div className="text-muted-foreground">Priority</div>
