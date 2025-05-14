@@ -41,8 +41,16 @@ type FormValues = z.infer<typeof formSchema>;
 export default function RivalRankTrackerPage() {
   const [, navigate] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pageLoaded, setPageLoaded] = useState(false);
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  
+  // Mark the page as loaded after initial authentication check
+  useEffect(() => {
+    if (!isLoading) {
+      setPageLoaded(true);
+    }
+  }, [isLoading]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -71,6 +79,12 @@ export default function RivalRankTrackerPage() {
             .filter(c => c !== "")
         : [];
       
+      console.log("Submitting request to track keywords:", {
+        keywords: keywordList,
+        website: values.website,
+        competitors: competitorsList
+      });
+      
       // Submit request to track keywords
       const response = await apiRequest("/api/rival-rank-tracker", {
         method: "POST",
@@ -81,7 +95,7 @@ export default function RivalRankTrackerPage() {
         }
       });
       
-      if (response.data.id) {
+      if (response.data && response.data.id) {
         toast({
           title: "Analysis started!",
           description: "Your keyword tracking analysis is being processed.",
@@ -90,6 +104,7 @@ export default function RivalRankTrackerPage() {
         // Navigate to results page with the analysis ID
         navigate(`/rival-rank-tracker-results/${response.data.id}`);
       } else {
+        console.error("Invalid response:", response);
         throw new Error("Failed to create analysis");
       }
     } catch (error) {
@@ -104,9 +119,15 @@ export default function RivalRankTrackerPage() {
     }
   }
 
-  if (isLoading) {
+  // Show loading spinner while authentication status is being checked
+  if (!pageLoaded || isLoading) {
     return (
       <div className="container mx-auto py-8">
+        <PageHeader
+          title="Rival Rank Tracker"
+          description="Track your keyword rankings against competitors over time"
+          icon={<BarChart className="h-6 w-6 mr-2" />}
+        />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>

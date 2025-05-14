@@ -88,8 +88,9 @@ export default function RivalRankTrackerResultsPage() {
   // Fetch keyword tracking analysis
   const { data: analysis, isLoading, error } = useQuery({
     queryKey: ["/api/rival-rank-tracker", id],
-    retry: false,
+    retry: 3,
     refetchInterval: (data) => {
+      console.log("Checking analysis status:", data?.status);
       // If the analysis is still processing, poll every 5 seconds
       return data?.status === "processing" ? 5000 : false;
     },
