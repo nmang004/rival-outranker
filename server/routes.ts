@@ -20,6 +20,12 @@ import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
+import { 
+  getKeywordData, 
+  getKeywordSuggestions,
+  getCompetitorRankings,
+  checkApiHealth 
+} from "./services/dataForSeoService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware
@@ -1630,6 +1636,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Generate keyword suggestions (requires authentication)
+  // DataForSEO API endpoint to get keyword data
+  app.post("/api/keyword-research", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { keyword, location } = req.body;
+      if (!keyword) {
+        return res.status(400).json({ message: 'Keyword is required' });
+      }
+      
+      console.log(`Keyword research requested for: "${keyword}"`);
+      
+      // Default to US location if not specified (2840 is US in DataForSEO)
+      const locationCode = location || 2840;
+      
+      // Get keyword data from DataForSEO
+      const keywordData = await getKeywordData(keyword, locationCode);
+      
+      res.json(keywordData);
+    } catch (error) {
+      console.error('Error fetching keyword data:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch keyword data",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // DataForSEO API endpoint to get keyword suggestions
+  app.post("/api/keyword-suggestions", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { keyword, location } = req.body;
+      if (!keyword) {
+        return res.status(400).json({ message: 'Keyword is required' });
+      }
+      
+      console.log(`Keyword suggestions requested for: "${keyword}"`);
+      
+      // Default to US location if not specified (2840 is US in DataForSEO)
+      const locationCode = location || 2840;
+      
+      // Get keyword suggestions from DataForSEO
+      const suggestions = await getKeywordSuggestions(keyword, locationCode);
+      
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Error fetching keyword suggestions:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch keyword suggestions",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Legacy keyword suggestions endpoint - keeps compatibility with existing code
   app.post("/api/keywords/suggest", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const { baseKeyword } = req.body;
@@ -1638,6 +1697,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = req.user.claims.sub;
+      
+      // Try to use the DataForSEO API first
+      try {
+        console.log(`Getting keyword suggestions from DataForSEO for: "${baseKeyword}"`);
+        const dataForSeoSuggestions = await getKeywordSuggestions(baseKeyword);
+        
+        // Transform to the expected format
+        const formattedSuggestions = dataForSeoSuggestions.map((suggestion: any) => ({
+          userId,
+          baseKeyword,
+          suggestedKeyword: suggestion.keyword,
+          searchVolume: suggestion.volume || 0,
+          difficulty: suggestion.difficulty || 0,
+          source: 'DataForSEO'
+        }));
+        
+        // Store suggestions in the database
+        const storedSuggestions = [];
+        for (const suggestion of formattedSuggestions) {
+          try {
+            const storedSuggestion = await storage.createKeywordSuggestion(suggestion);
+            storedSuggestions.push(storedSuggestion);
+          } catch (error) {
+            console.error('Error storing keyword suggestion:', error);
+            // Continue with other suggestions even if one fails
+          }
+        }
+        
+        return res.json(storedSuggestions);
+      } catch (dataForSeoError) {
+        console.error('DataForSEO API error, falling back to legacy method:', dataForSeoError);
+      }
+      
+      // Fall back to the legacy method if DataForSEO fails
       const suggestions = await keywordService.generateSuggestions(userId, baseKeyword);
       
       // Store suggestions in the database

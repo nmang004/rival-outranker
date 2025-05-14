@@ -17,6 +17,7 @@ import RivalRankTrackerPage from "@/pages/RivalRankTrackerPage";
 import SimpleRivalRankTracker from "@/pages/SimpleRivalRankTracker";
 import SimpleRivalRankTrackerResults from "@/pages/SimpleRivalRankTrackerResults";
 import BasicRankTracker from "@/pages/BasicRankTracker";
+import KeywordResearch from "@/pages/KeywordResearch";
 import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
 import KeywordsPage from "@/pages/KeywordsPage";
@@ -53,6 +54,7 @@ function Router() {
             <Route path="/simple-rival-rank-tracker" component={SimpleRivalRankTracker} />
             <Route path="/simple-rival-rank-tracker-results/:id" component={SimpleRivalRankTrackerResults} />
             <Route path="/basic-rank-tracker" component={BasicRankTracker} />
+            <Route path="/keyword-research" component={KeywordResearch} />
             <Route component={NotFound} />
           </Switch>
         </div>
