@@ -1,5 +1,6 @@
 import Excel from 'exceljs';
 import { RivalAudit, AuditItem } from '@shared/schema';
+import { Buffer } from 'buffer';
 
 /**
  * Generate an Excel file from a Rival Audit

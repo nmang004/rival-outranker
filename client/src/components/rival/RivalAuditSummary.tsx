@@ -29,9 +29,26 @@ interface RivalAuditSummaryProps {
 }
 
 export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
+  const { toast } = useToast();
+  
   // Function to handle exporting to Excel
   const handleExportToExcel = () => {
-    window.open(`/api/rival-audit/1/export?url=${encodeURIComponent(audit.url)}`, '_blank');
+    try {
+      toast({
+        title: "Exporting audit data",
+        description: "Your Excel file is being generated and will download shortly.",
+        duration: 3000
+      });
+      
+      window.open(`/api/rival-audit/1/export?url=${encodeURIComponent(audit.url)}`, '_blank');
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the audit data. Please try again.",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
   };
   // Calculate total items for each category
   const getCategoryTotals = (categoryItems: any[]) => {
