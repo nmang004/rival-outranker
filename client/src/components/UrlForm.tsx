@@ -367,6 +367,30 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "", 
                   />
                 </div>
                 
+                {/* Target Keyword Field for multiple mode */}
+                <div className="mb-4">
+                  <label htmlFor="multiTargetKeyword" className="flex items-center text-sm font-medium text-foreground mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" 
+                      className="mr-2 h-4 w-4 text-primary" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                        d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                    </svg>
+                    Target Keyword (Optional)
+                  </label>
+                  <Input 
+                    type="text"
+                    id="multiTargetKeyword"
+                    className="py-2 focus:ring-primary focus:border-primary/70 border-primary/20 text-foreground bg-white shadow-sm"
+                    placeholder="Enter primary keyword to focus on"
+                    value={targetKeyword}
+                    onChange={(e) => setTargetKeyword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 ml-1">
+                    Adding a target keyword will pre-populate the keyword field in the analysis
+                  </p>
+                </div>
+                
                 <Card className="p-3 mb-4 max-h-[240px] overflow-y-auto border-primary/10 shadow-sm">
                   <h4 className="text-sm font-medium mb-2 flex items-center">
                     <Globe className="h-4 w-4 mr-2 text-primary/70" />

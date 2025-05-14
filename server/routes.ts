@@ -105,8 +105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pageData = await crawler.crawlPage(url);
         
         // Perform standard SEO analysis
-        console.log("Analyzing page:", url);
-        const analysisResult = await analyzer.analyzePage(url, pageData);
+        console.log("Analyzing page:", url, targetKeyword ? `with target keyword: ${targetKeyword}` : '');
+        const analysisResult = await analyzer.analyzePage(url, pageData, targetKeyword ? { forcedPrimaryKeyword: targetKeyword } : {});
         
         // If deep content analysis is requested, perform that as well
         if (runDeepContentAnalysis) {
