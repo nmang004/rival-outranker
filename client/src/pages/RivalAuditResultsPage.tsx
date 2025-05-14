@@ -28,19 +28,25 @@ import {
   Globe,
   Phone,
   Briefcase,
-  MapPin
+  MapPin,
+  ListFilter,
+  LineChart,
+  ArrowRight
 } from "lucide-react";
 import { RivalAudit, AuditItem, AuditStatus } from "@shared/schema";
 
 // Import components for the Rival Audit
 import RivalAuditSection from "../components/rival/RivalAuditSection";
 import RivalAuditSummary from "../components/rival/RivalAuditSummary";
+import RivalAuditDashboard from "../components/rival/RivalAuditDashboard";
+import RivalAuditRecommendations from "../components/rival/RivalAuditRecommendations";
 
 export default function RivalAuditResultsPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("summary");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "dashboard">("list");
   
   // Get auditId and URL from URL query params
   const params = new URLSearchParams(window.location.search);
@@ -196,26 +202,50 @@ export default function RivalAuditResultsPage() {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={goBack} className="text-xs sm:text-sm">
-              <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Back
-            </Button>
-            {websiteUrl && (
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshAudit}
-                disabled={isRefreshing}
-                className="text-xs sm:text-sm"
-              >
-                <svg className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                {isRefreshing ? 'Refreshing...' : 'Refresh Audit'}
+            <div className="w-full sm:w-auto flex gap-2 mb-2 sm:mb-0">
+              <Button variant="outline" size="sm" onClick={goBack} className="text-xs sm:text-sm">
+                <ChevronLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Back
               </Button>
-            )}
-            <Button size="sm" onClick={handleExportToExcel} className="text-xs sm:text-sm">
-              <FileDown className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Export to Excel
-            </Button>
+              
+              <div className="ml-auto sm:ml-0 border rounded-md flex">
+                <Button 
+                  variant={viewMode === "list" ? "default" : "ghost"} 
+                  size="sm" 
+                  className="rounded-r-none text-xs h-8"
+                  onClick={() => setViewMode("list")}
+                >
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> List
+                </Button>
+                <Button 
+                  variant={viewMode === "dashboard" ? "default" : "ghost"} 
+                  size="sm" 
+                  className="rounded-l-none text-xs h-8"
+                  onClick={() => setViewMode("dashboard")}
+                >
+                  <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Dashboard
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              {websiteUrl && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshAudit}
+                  disabled={isRefreshing}
+                  className="text-xs sm:text-sm"
+                >
+                  <svg className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {isRefreshing ? 'Refreshing...' : 'Refresh Audit'}
+                </Button>
+              )}
+              <Button size="sm" onClick={handleExportToExcel} className="text-xs sm:text-sm">
+                <FileDown className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Export to Excel
+              </Button>
+            </div>
           </div>
         </div>
 
