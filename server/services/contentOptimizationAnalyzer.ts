@@ -242,7 +242,7 @@ class ContentOptimizationAnalyzer {
     // Check for duplicate identical links
     const linkUrls = internalLinks.map(link => link.url);
     const duplicateLinks = linkUrls.filter((url, index) => linkUrls.indexOf(url) !== index);
-    const uniqueDuplicates = [...new Set(duplicateLinks)];
+    const uniqueDuplicates = Array.from(new Set(duplicateLinks));
     
     if (uniqueDuplicates.length > 0) {
       issues.push(`${uniqueDuplicates.length} duplicate internal ${uniqueDuplicates.length === 1 ? 'link was' : 'links were'} found.`);
@@ -360,7 +360,7 @@ class ContentOptimizationAnalyzer {
       grade,
       averageWordsPerSentence: avgWordsPerSentence.toFixed(1),
       complexWordPercentage: complexWordPercentage.toFixed(1),
-      fleschKincaidGrade: Math.max(0, fleschKincaidGrade.toFixed(1))
+      fleschKincaidGrade: fleschKincaidGrade.toFixed(1) // This is a string, not a number now
     };
   }
   

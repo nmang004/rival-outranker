@@ -156,7 +156,8 @@ class Analyzer {
       };
     } catch (error) {
       console.error('Error analyzing page:', error);
-      throw new Error(`Failed to analyze page: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to analyze page: ${errorMessage}`);
     }
   }
 
@@ -452,7 +453,7 @@ class Analyzer {
     }
     
     // De-duplicate types
-    types = [...new Set(types)];
+    types = Array.from(new Set(types));
     
     // Calculate score
     let score = 50; // Base score
