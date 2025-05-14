@@ -1,4 +1,4 @@
-export { AuthDialog } from './AuthDialog';
+export { LoginButton as AuthDialog } from './LoginButton';
 export { LoginForm } from './LoginForm';
 export { RegisterForm } from './RegisterForm';
 export { ProfileForm } from './ProfileForm';
