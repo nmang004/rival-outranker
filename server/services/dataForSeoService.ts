@@ -28,10 +28,12 @@ export interface KeywordData {
 }
 
 export interface RelatedKeyword {
+  id?: number;
   keyword: string;
   searchVolume?: number;
   difficulty?: number;
   cpc?: string;
+  relevance?: number;
 }
 
 /**
@@ -245,8 +247,8 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
     
     return results.map((item: any, index: number) => ({
       id: index + 1,
-      text: item.keyword,
-      volume: item.search_volume || 0,
+      keyword: item.keyword,
+      searchVolume: item.search_volume || 0,
       difficulty: Math.round(item.keyword_difficulty || 0),
       cpc: item.cpc ? `$${parseFloat(item.cpc).toFixed(2)}` : '$0.00',
       relevance: Math.round((1 - (index / 15)) * 100) // Higher relevance for earlier results

@@ -1637,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Generate keyword suggestions (requires authentication)
   // DataForSEO API endpoint to get keyword data
-  app.post("/api/keyword-research", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/keyword-research", async (req: Request, res: Response) => {
     try {
       const { keyword, location } = req.body;
       if (!keyword) {
@@ -1663,7 +1663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // DataForSEO API endpoint to get keyword suggestions
-  app.post("/api/keyword-suggestions", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/keyword-suggestions", async (req: Request, res: Response) => {
     try {
       const { keyword, location } = req.body;
       if (!keyword) {
