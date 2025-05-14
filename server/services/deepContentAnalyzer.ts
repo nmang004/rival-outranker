@@ -1265,16 +1265,30 @@ export class DeepContentAnalyzer {
     
     // Add recommendations based on annotations
     if (analysis.annotatedContent) {
+      // Gather all annotations
       const allAnnotations = [
         ...analysis.annotatedContent.introduction.annotations || [],
         ...(analysis.annotatedContent.mainContent || []).flatMap(section => section.annotations || []),
         ...analysis.annotatedContent.conclusion.annotations || []
       ];
       
-      // Get high severity annotations
-      const highSeverityAnnotations = allAnnotations.filter(a => a.severity === 'high');
+      // Deduplicate annotations by their suggestion text
+      const uniqueAnnotations: any[] = [];
+      const seenSuggestions = new Set();
       
-      for (const annotation of highSeverityAnnotations.slice(0, 3)) {
+      for (const annotation of allAnnotations) {
+        if (!seenSuggestions.has(annotation.suggestion)) {
+          uniqueAnnotations.push(annotation);
+          seenSuggestions.add(annotation.suggestion);
+        }
+      }
+      
+      // Get high severity annotations
+      const highSeverityAnnotations = uniqueAnnotations
+        .filter(a => a.severity === 'high')
+        .slice(0, 3);
+      
+      for (const annotation of highSeverityAnnotations) {
         recommendations.push(annotation.suggestion);
       }
     }

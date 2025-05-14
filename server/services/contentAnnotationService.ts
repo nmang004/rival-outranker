@@ -107,7 +107,7 @@ export class ContentAnnotationService {
     
     if (wordCount > 150) {
       annotations.push({
-        content: paragraphText,
+        content: paragraphText.substring(0, 50) + "...",
         issue: 'Paragraph too long',
         suggestion: 'Break this paragraph into smaller chunks of 2-4 sentences for better readability',
         position: 0,
@@ -137,8 +137,20 @@ export class ContentAnnotationService {
     );
     
     if (hasPassiveVoiceIndicator && hasPassiveVoiceWord) {
+      let passiveExample = "";
+      // Find an example of passive voice in the paragraph
+      for (const indicator of passiveVoiceIndicators) {
+        if (paragraphText.includes(indicator)) {
+          const sentenceStart = paragraphText.indexOf(indicator);
+          const startPoint = Math.max(0, paragraphText.lastIndexOf('.', sentenceStart) + 1);
+          const endPoint = paragraphText.indexOf('.', sentenceStart + 1);
+          passiveExample = paragraphText.substring(startPoint, endPoint > 0 ? endPoint + 1 : paragraphText.length);
+          break;
+        }
+      }
+      
       annotations.push({
-        content: paragraphText,
+        content: passiveExample || paragraphText.substring(0, 50) + "...",
         issue: 'Passive voice detected',
         suggestion: 'Convert passive voice to active voice for more engaging and direct content',
         position: 0,
@@ -153,7 +165,7 @@ export class ContentAnnotationService {
     
     if (longSentences.length > 0) {
       annotations.push({
-        content: paragraphText,
+        content: longSentences[0].substring(0, 60) + "...",
         issue: 'Long sentences detected',
         suggestion: 'Break down complex sentences for better readability. Aim for 15-20 words per sentence',
         position: 0,
@@ -177,7 +189,7 @@ export class ContentAnnotationService {
     
     if (!hasTransitionWord && paragraphText.length > 80) {
       annotations.push({
-        content: paragraphText,
+        content: paragraphText.substring(0, 50) + "...",
         issue: 'Lacks transition words',
         suggestion: 'Add transition words (e.g., "furthermore", "however", "for example") to improve flow and readability',
         position: 0,
@@ -192,7 +204,7 @@ export class ContentAnnotationService {
     
     if (keywordDensity > 5) {
       annotations.push({
-        content: paragraphText,
+        content: paragraphText.substring(0, 50) + "...",
         issue: 'Keyword stuffing',
         suggestion: `Reduce usage of "${primaryKeyword}" as it appears excessive. Aim for natural inclusion`,
         position: 0,
@@ -201,7 +213,7 @@ export class ContentAnnotationService {
       });
     } else if (paragraphText.length > 100 && keywordAppearances === 0) {
       annotations.push({
-        content: paragraphText,
+        content: paragraphText.substring(0, 50) + "...",
         issue: 'Missing target keyword',
         suggestion: `Try to naturally include your target keyword "${primaryKeyword}" in this paragraph`,
         position: 0,
