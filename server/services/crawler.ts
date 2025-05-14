@@ -155,7 +155,7 @@ class Crawler {
       const contentLength = parseInt(responseHeaders['content-length'] || '0', 10) || resourceSize;
       
       // Extract all other data
-      const result: CrawlerOutput = {
+      const result = {
         url: normalizedUrl,
         statusCode: response.status,
         title: $('title').text().trim(),
@@ -179,7 +179,7 @@ class Crawler {
         accessibility: this.checkAccessibility($),
         seoIssues: {
           noindex,
-          brokenLinks: links.internal.filter(link => link.broken).length,
+          brokenLinks: links.internal.filter((link: {url: string, text: string, broken: boolean}) => link.broken).length,
           missingAltText: this.countMissingAltText($),
           duplicateMetaTags: this.checkDuplicateMetaTags($),
           thinContent: this.checkThinContent($),

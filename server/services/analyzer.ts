@@ -2,6 +2,8 @@ import { SeoAnalysisResult, SeoScore } from '@shared/schema';
 import { CrawlerOutput } from '@/lib/types';
 import { keywordAnalyzer } from './keywordAnalyzer';
 import { pageSpeed } from './pageSpeed';
+import { contentOptimizationAnalyzer } from './contentOptimizationAnalyzer';
+import { technicalSeoAnalyzer } from './technicalSeoAnalyzer';
 
 class Analyzer {
   /**
@@ -20,8 +22,12 @@ class Analyzer {
       // Analyze meta tags
       const metaTagsAnalysis = this.analyzeMetaTags(pageData, primaryKeyword);
       
-      // Analyze content
+      // Analyze content with enhanced content optimization analyzer
       const contentAnalysis = this.analyzeContent(pageData);
+      const enhancedContentAnalysis = contentOptimizationAnalyzer.analyzeContent(pageData, primaryKeyword);
+      
+      // Analyze technical SEO aspects
+      const technicalAnalysis = await technicalSeoAnalyzer.analyzeTechnicalSeo(pageData);
       
       // Analyze internal links
       const internalLinksAnalysis = this.analyzeInternalLinks(pageData);
@@ -44,10 +50,23 @@ class Analyzer {
       // Analyze E-E-A-T factors
       const eatAnalysis = this.analyzeEAT(pageData);
       
-      // Calculate overall score based on all factors
+      // Add enhanced content analysis score and technical analysis score
+      const contentScore: SeoScore = {
+        score: enhancedContentAnalysis.score,
+        category: enhancedContentAnalysis.assessment.toLowerCase() as 'excellent' | 'good' | 'needs-work' | 'poor'
+      };
+      
+      const technicalScore: SeoScore = {
+        score: technicalAnalysis.score,
+        category: technicalAnalysis.assessment.toLowerCase() as 'excellent' | 'good' | 'needs-work' | 'poor'
+      };
+      
+      // Calculate overall score based on all factors, giving more weight to enhanced analyses
       const overallScore = this.calculateOverallScore([
         keywordAnalysis.overallScore,
         metaTagsAnalysis.overallScore,
+        contentScore, // Enhanced content score (given more weight)
+        technicalScore, // Technical SEO score (given more weight)
         contentAnalysis.overallScore,
         internalLinksAnalysis.overallScore,
         imageAnalysis.overallScore,
