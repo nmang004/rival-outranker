@@ -56,8 +56,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint to analyze a URL
   app.post("/api/analyze", async (req: Request, res: Response) => {
     try {
-      // Extract URL and deep content analysis flag
-      const { url: rawUrl, runDeepContentAnalysis = false } = req.body;
+      // Extract URL, deep content analysis flag, and competitor analysis flag
+      const { 
+        url: rawUrl, 
+        runDeepContentAnalysis = false,
+        includeCompetitorAnalysis = false 
+      } = req.body;
       
       // Validate the URL
       urlFormSchema.parse({ url: rawUrl });
@@ -69,7 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(202).json({ 
         message: runDeepContentAnalysis ? "Deep content analysis started" : "Analysis started", 
         url,
-        runDeepContentAnalysis 
+        runDeepContentAnalysis,
+        includeCompetitorAnalysis
       });
       
       try {

@@ -24,9 +24,10 @@ export default function Home() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [useDeepContentAnalysis, setUseDeepContentAnalysis] = useState(false);
+  const [includeCompetitorAnalysis, setIncludeCompetitorAnalysis] = useState(false);
 
   const analyzeMutation = useMutation({
-    mutationFn: async (data: { url: string, runDeepContentAnalysis?: boolean }) => {
+    mutationFn: async (data: { url: string, runDeepContentAnalysis?: boolean, includeCompetitorAnalysis?: boolean }) => {
       // First check if the URL is our own API endpoint or Replit domain
       if (data.url.includes('/api/') || data.url.includes('replit.dev') || data.url.includes('replit.app')) {
         throw new Error('Cannot analyze our own API endpoints or Replit domains');
@@ -278,13 +279,14 @@ export default function Home() {
         throw new Error('Cannot analyze our own API endpoints or Replit domains');
       }
       
-      // Include the deep content analysis option with the standard analysis request
+      // Include the deep content analysis and competitor analysis options with the standard analysis request
       const requestData = { 
         url,
-        runDeepContentAnalysis: useDeepContentAnalysis
+        runDeepContentAnalysis: useDeepContentAnalysis,
+        includeCompetitorAnalysis: includeCompetitorAnalysis
       };
       
-      // Use standard analysis with the deep content flag
+      // Use standard analysis with the appropriate flags
       analyzeMutation.mutate(requestData);
     } catch (error) {
       setIsSubmitting(false);
@@ -407,6 +409,8 @@ export default function Home() {
                         <input 
                           type="checkbox" 
                           id="competitor-analysis"
+                          checked={includeCompetitorAnalysis}
+                          onChange={(e) => setIncludeCompetitorAnalysis(e.target.checked)}
                           className="rounded border-gray-300 text-primary focus:ring-primary mt-0.5"
                         />
                         <div className="ml-2">
