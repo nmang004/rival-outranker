@@ -35,22 +35,28 @@ export default function ContentTab({
       recommendations.push("Consider expanding content to 600+ words for more comprehensive coverage.");
     }
     
-    // Heading structure recommendations
-    if (contentData.headingStructure.h1Count === 0) {
-      recommendations.push("Add an H1 heading to clearly define your page's main topic.");
-    } else if (contentData.headingStructure.h1Count > 1) {
-      recommendations.push("Use only one H1 heading per page. Multiple H1s can confuse search engines about your page's main topic.");
-    }
-    
-    if (contentData.headingStructure.h2Count === 0) {
-      recommendations.push("Add H2 subheadings to organize your content and make it more scannable.");
+    // Heading structure recommendations - safely check if headingStructure exists
+    if (contentData.headingStructure) {
+      if (contentData.headingStructure.h1Count === 0) {
+        recommendations.push("Add an H1 heading to clearly define your page's main topic.");
+      } else if (contentData.headingStructure.h1Count > 1) {
+        recommendations.push("Use only one H1 heading per page. Multiple H1s can confuse search engines about your page's main topic.");
+      }
+      
+      if (contentData.headingStructure.h2Count === 0) {
+        recommendations.push("Add H2 subheadings to organize your content and make it more scannable.");
+      }
+    } else {
+      // If no heading structure data
+      recommendations.push("Add proper headings (H1, H2, H3) to organize your content and improve SEO.");
     }
     
     if (contentData.readabilityScore < 60) {
       recommendations.push("Simplify your content for better readability. Use shorter sentences and simpler words.");
     }
     
-    if (!contentData.hasMultimedia) {
+    // Only check hasMultimedia if it exists
+    if (contentData.hasMultimedia === false) {
       recommendations.push("Add images, videos, or infographics to enhance engagement and visual appeal.");
     }
     
