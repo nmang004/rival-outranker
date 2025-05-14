@@ -91,11 +91,30 @@ export default function BasicRankTracker() {
     direction: 'ascending' | 'descending';
   }>({ key: 'position', direction: 'ascending' });
 
-  // Helper function to format numbers
+  // Helper function to format numbers in SEO industry standard format
   const formatNumber = (num?: number): string => {
     if (num === undefined) return "N/A";
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    
+    // Format large numbers with K/M suffixes like industry tools
+    if (num >= 1000000) {
+      // For millions, use decimal point for values under 10M
+      if (num < 10000000) {
+        return `${(num / 1000000).toFixed(1)}M`;
+      }
+      return `${Math.round(num / 1000000)}M`;
+    }
+    
+    if (num >= 10000) {
+      // For larger K values, round to nearest K
+      return `${Math.round(num / 1000)}K`;
+    }
+    
+    if (num >= 1000) {
+      // For smaller K values (1K-10K), use decimal point
+      return `${(num / 1000).toFixed(1)}K`;
+    }
+    
+    // For small numbers, just show the value
     return num.toString();
   };
   
@@ -249,26 +268,66 @@ export default function BasicRankTracker() {
       
       // Generate enhanced keywords with trends and competitor rankings
       const enhancedKeywords = keywordList.map((text, index) => {
-        const position = Math.floor(Math.random() * 30) + 1;
+        // More realistic position based on keyword length and uniqueness
+        const baseDifficulty = 20 + (text.length > 15 ? 10 : 30); // Longer terms are often less competitive
+        const wordCount = text.split(' ').length;
+        const uniqueScore = new Set(text.toLowerCase().split('')).size / text.length;
+        
+        // Generate position based on these factors - more unique/specific queries rank better
+        const positionBase = wordCount > 2 ? 10 : 25;
+        const position = Math.max(1, Math.floor(positionBase * (0.7 + (Math.random() * 0.6))));
+        
+        // Generate realistic trend data
         const trend = generateTrendData(text);
+        
+        // Calculate search volume - more realistic data patterns
+        // Short/common terms have higher volume
+        const baseVolume = wordCount === 1 ? 
+          Math.floor(Math.random() * 60000) + 5000 : // Single words have higher volume
+          wordCount === 2 ? 
+            Math.floor(Math.random() * 20000) + 1000 : // Two words have medium volume
+            Math.floor(Math.random() * 5000) + 100;    // Long phrases have lower volume
+            
+        // Keyword difficulty - more realistic patterns
+        // Short/common terms are more difficult to rank for
+        const difficulty = Math.min(95, Math.max(5, Math.floor(baseDifficulty * (0.7 + (Math.random() * 0.6)))));
+        
+        // More realistic CPC values based on term length (shorter terms usually cost more)
+        const baseCpc = 1.5 + (3 / Math.max(1, wordCount));
+        const cpc = `$${(baseCpc + (Math.random() * 2)).toFixed(2)}`;
         
         // Generate competitor rankings for this keyword
         const competitorRankings = finalCompetitorList.map(competitorUrl => {
+          // Make competitor rankings somewhat correlated with difficulty
+          const competitorPosition = Math.floor((Math.random() * 40) + (difficulty * 0.2));
+          
+          // Fix URL to avoid double https://
+          const urlPath = text.toLowerCase().replace(/\s+/g, "-");
+          const url = competitorUrl.startsWith('http') ? 
+            `${competitorUrl}/${urlPath}` : 
+            `https://${competitorUrl}/${urlPath}`;
+            
           return {
             competitorUrl,
-            position: Math.floor(Math.random() * 50) + 1,
-            url: `https://${competitorUrl}/${text.toLowerCase().replace(/\s+/g, "-")}`,
+            position: competitorPosition,
+            url,
           };
         });
         
+        // Fix URL to avoid double https://
+        const urlPath = text.toLowerCase().replace(/\s+/g, '-');
+        const url = website.startsWith('http') ? 
+          `${website}/${urlPath}` : 
+          `https://${website}/${urlPath}`;
+          
         return {
           id: index + 1,
           text,
           position,
-          url: `https://${website}/${text.toLowerCase().replace(/\s+/g, '-')}`,
-          volume: Math.floor(Math.random() * 8000) + 500,
-          difficulty: Math.floor(Math.random() * 70) + 20,
-          cpc: `$${(Math.random() * 5 + 1).toFixed(2)}`,
+          url,
+          volume: baseVolume,
+          difficulty,
+          cpc,
           trend,
           competitorRankings,
         };
