@@ -182,11 +182,15 @@ export default function KeywordResearch() {
         }
       });
       
+      console.log('Keyword API response:', keywordResponse);
       setKeywordData(keywordResponse);
       
       // Related keywords are now included in the main response
       if (keywordResponse && keywordResponse.relatedKeywords) {
+        console.log('Found related keywords:', keywordResponse.relatedKeywords);
         setRelatedKeywords(keywordResponse.relatedKeywords);
+      } else {
+        console.log('No related keywords found in response');
       }
       setActiveTab('overview');
     } catch (error) {
