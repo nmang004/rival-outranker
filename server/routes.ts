@@ -5,7 +5,7 @@ import { crawler } from "./services/crawler";
 import { analyzer } from "./services/analyzer_fixed";
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
 import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
-import { bingSearchService } from "./services/bingSearchService";
+import { searchService } from "./services/searchService";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -429,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let bingResults = [];
         try {
           console.log(`Searching for competitors using Bing Search API: "${primaryKeyword}, ${location}"`);
-          bingResults = await bingSearchService.searchCompetitors(primaryKeyword, location, { count: 5 });
+          bingResults = await searchService.searchCompetitors(primaryKeyword, location, { count: 5 });
           console.log(`Found ${bingResults.length} competitors from Bing Search`);
         } catch (bingError) {
           console.error("Error using Bing Search API:", bingError);
@@ -446,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 weaknesses: ["Content could be improved", "Technical SEO needs enhancement", "Limited social proof"]
               })),
               timestamp: new Date(),
-              queryCount: bingSearchService.getQueryCount()
+              queryCount: searchService.getQueryCount()
             }
           : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
         
@@ -502,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           localVisibility: Math.round(50 + Math.random() * 40),
           contentQuality: Math.round(50 + Math.random() * 30),
           backlinkScore: Math.round(30 + Math.random() * 50),
-          queryCount: bingSearchService.getQueryCount(), // Include the Bing Search API query count
+          queryCount: searchService.getQueryCount(), // Include the Search API query count
           usingBingSearch: bingResults.length > 0, // Flag to indicate whether Bing Search was used
           strengths: [
             "Strong on-page SEO implementation",
@@ -723,10 +723,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API endpoint to get Bing Search API query count
-  app.get("/api/bing-query-count", (_req: Request, res: Response) => {
+  // API endpoint to get Search API query count
+  app.get("/api/search-query-count", (_req: Request, res: Response) => {
     try {
-      const count = bingSearchService.getQueryCount();
+      const count = searchService.getQueryCount();
       const limit = 1000; // Default API limit, can be adjusted if needed
       const remaining = Math.max(0, limit - count);
       
