@@ -540,29 +540,33 @@ class RivalAuditCrawler {
     items.push({
       name: "Is the website appealing? Modern?",
       description: "The website should have a modern, professional design",
-      // Using schema markup as a proxy for modern design
-      status: homepage.hasSchema ? 'OK' : 'OFI',
-      importance: 'High'
+      // Using schema markup, social tags, and viewport as proxies for modern design
+      status: (homepage.hasSchema && homepage.hasSocialTags && homepage.mobileFriendly) ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: homepage.pageLoadSpeed.score < 50 ? "Page load speed is slow, which affects user experience" : undefined
     });
     
     // Check if site is intuitive
     items.push({
       name: "Is the website intuitive? Usable?",
       description: "Users should be able to easily navigate the site",
-      // Check for reasonable number of internal links
-      status: homepage.links.internal.length >= 5 && homepage.links.internal.length <= 30 ? 'OK' : 'OFI',
-      importance: 'High'
+      // Check for reasonable number of internal links and proper navigation structure
+      status: (homepage.links.internal.length >= 5 && 
+              homepage.links.broken.length === 0 && 
+              homepage.contentStructure.hasLists) ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: homepage.links.broken.length > 0 ? `Found ${homepage.links.broken.length} broken links` : undefined
     });
     
     // Check content readability
     items.push({
       name: "Is the copy readable? Not keyword stuffed. Clear.",
       description: "Content should be user-friendly and readable",
-      // Basic check for reasonable word count
-      status: homepage.wordCount >= 400 && homepage.wordCount <= 2000 ? 'OK' : 'OFI',
+      status: (homepage.wordCount >= 400 && homepage.wordCount <= 2000 && homepage.readabilityScore > 50) ? 'OK' : 'OFI',
       importance: 'Medium',
       notes: homepage.wordCount < 400 ? "Content may be too thin" : 
              homepage.wordCount > 2000 ? "Content may be too dense" : 
+             homepage.readabilityScore < 50 ? "Content readability score is low" :
              undefined
     });
     
@@ -575,16 +579,22 @@ class RivalAuditCrawler {
       name: "Pages are easy to read? No typos/spelling errors? Sufficiently long?",
       description: "Content should be error-free and comprehensive",
       status: averageWordCount >= 400 ? 'OK' : 'OFI',
-      importance: 'Medium'
+      importance: 'Medium',
+      notes: averageWordCount < 400 ? `Average word count per page (${Math.round(averageWordCount)}) is low` : undefined
     });
     
     // Check for user intent
     items.push({
       name: "Does the site answer user intent?",
       description: "Content should match what users are searching for",
-      status: homepage.metaDescription.length > 50 ? 'OK' : 'OFI',
+      status: (homepage.headings.h1.length > 0 && 
+               homepage.metaDescription.length > 80 && 
+               homepage.contentStructure.hasFAQs) ? 'OK' : 'OFI',
       importance: 'High',
-      notes: homepage.metaDescription.length < 50 ? "Meta description is too short or missing" : undefined
+      notes: homepage.headings.h1.length === 0 ? "Missing H1 heading" : 
+             homepage.metaDescription.length < 80 ? "Meta description is too short or missing" : 
+             !homepage.contentStructure.hasFAQs ? "Consider adding FAQ content to address user questions" : 
+             undefined
     });
     
     // Check for reviews
@@ -599,7 +609,58 @@ class RivalAuditCrawler {
       name: "Leverages reviews on website?",
       description: "Reviews build trust and credibility",
       status: hasReviews ? 'OK' : 'OFI',
-      importance: 'Medium'
+      importance: 'Medium',
+      notes: !hasReviews ? "No evidence of customer reviews or testimonials found" : undefined
+    });
+    
+    // Check SSL (HTTPS)
+    items.push({
+      name: "Has SSL?",
+      description: "HTTPS is required for security and SEO",
+      status: homepage.hasHttps ? 'OK' : 'Priority OFI',
+      importance: 'High',
+      notes: !homepage.hasHttps ? "Site is not using HTTPS which is a security risk and SEO disadvantage" : undefined
+    });
+    
+    // Check mobile-friendliness
+    items.push({
+      name: "Is site mobile friendly?",
+      description: "Site should be responsive on all devices",
+      status: homepage.mobileFriendly ? 'OK' : 'Priority OFI',
+      importance: 'High',
+      notes: !homepage.mobileFriendly ? "No mobile viewport meta tag found" : undefined
+    });
+    
+    // Check for schema markup
+    items.push({
+      name: "Has schema markup?",
+      description: "Structured data helps search engines understand content",
+      status: homepage.hasSchema ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: homepage.hasSchema ? 
+        `Schema types: ${homepage.schemaTypes.length > 0 ? homepage.schemaTypes.join(', ') : 'Unknown'}` : 
+        "No schema markup detected"
+    });
+    
+    // Check for image optimization
+    items.push({
+      name: "Images properly optimized?",
+      description: "Images should have alt text and appropriate sizes",
+      status: (homepage.images.withoutAlt === 0 && homepage.images.largeImages < 3) ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: homepage.images.withoutAlt > 0 ? `${homepage.images.withoutAlt} images missing alt text` : 
+             homepage.images.largeImages > 2 ? `${homepage.images.largeImages} large images could be optimized` : undefined
+    });
+    
+    // Check page speed
+    items.push({
+      name: "Page load speed",
+      description: "Pages should load quickly for better user experience and SEO",
+      status: homepage.pageLoadSpeed.score > 70 ? 'OK' : 
+              homepage.pageLoadSpeed.score > 50 ? 'OFI' : 'Priority OFI',
+      importance: 'High',
+      notes: homepage.pageLoadSpeed.score < 70 ? 
+             `Page speed score: ${homepage.pageLoadSpeed.score}/100. LCP: ${homepage.pageLoadSpeed.largestContentfulPaint}ms` : undefined
     });
     
     return items;
@@ -621,26 +682,31 @@ class RivalAuditCrawler {
     ];
     
     const badUrlPatterns = [/\?id=\d+/, /\.php/, /\.aspx/, /\.html/, /[_0-9]{6,}/];
-    const hasReadableUrls = allUrls.every(url => !badUrlPatterns.some(pattern => pattern.test(url)));
+    const problematicUrls = allUrls.filter(url => badUrlPatterns.some(pattern => pattern.test(url)));
+    const hasReadableUrls = problematicUrls.length === 0;
     
     items.push({
       name: "Human-readable? Simple? Informative?",
       description: "URLs should be user-friendly",
       status: hasReadableUrls ? 'OK' : 'OFI',
-      importance: 'Medium'
+      importance: 'Medium',
+      notes: hasReadableUrls ? undefined : `Found ${problematicUrls.length} URLs that are not human-readable`
     });
     
     // Check if location pages use localized URLs
     const locationPageUrls = site.locationPages.map(p => p.url);
-    const hasLocalizedUrls = locationPageUrls.length > 0 && locationPageUrls.some(url => 
-      /\/(locations?|cities|towns|areas|regions|states|provinces)\/[a-z-]+/.test(url)
+    const localizedUrls = locationPageUrls.filter(url => 
+      /\/(locations?|cities|towns|areas|regions|states|provinces|[a-z]+-[a-z]+)\/[a-z-]+/.test(url.toLowerCase())
     );
+    const hasLocalizedUrls = localizedUrls.length > 0;
     
     items.push({
       name: "Localized?",
       description: "URLs should include location information where relevant",
       status: hasLocalizedUrls ? 'OK' : site.locationPages.length > 0 ? 'OFI' : 'N/A',
-      importance: 'Medium'
+      importance: 'Medium',
+      notes: !hasLocalizedUrls && site.locationPages.length > 0 ? 
+        "Location pages don't include location information in URLs" : undefined
     });
     
     // Check if URLs contain keywords
@@ -661,34 +727,40 @@ class RivalAuditCrawler {
       .filter(word => !['page', 'home', 'about', 'contact', 'the', 'and', 'for', 'with'].includes(word));
     
     // Check if these keywords appear in the URLs
-    const keywordRichUrls = keywords.some(keyword => 
-      allUrls.some(url => url.toLowerCase().includes(keyword))
+    const keywordUrls = allUrls.filter(url => 
+      keywords.some(keyword => url.toLowerCase().includes(keyword))
     );
+    const keywordRichUrls = keywordUrls.length > 0;
     
     items.push({
       name: "Keyword-rich?",
       description: "URLs should contain relevant keywords",
       status: keywordRichUrls ? 'OK' : 'OFI',
-      importance: 'Medium'
+      importance: 'Medium',
+      notes: keywordRichUrls ? 
+        `Found ${keywordUrls.length} URLs containing relevant keywords` : 
+        "URLs don't contain relevant keywords from page titles"
     });
     
-    // Check if URLs include GBP categories
-    // Since we don't have actual GBP data, this is a proxy check based on common business categories
-    const commonCategories = ['plumber', 'electrician', 'dentist', 'doctor', 'lawyer', 'restaurant', 'hotel'];
-    const hasCategoryUrls = commonCategories.some(category => 
-      allUrls.some(url => url.toLowerCase().includes(category))
-    );
+    // Check if URLs are properly structured with a clear hierarchy
+    const hierarchicalUrls = allUrls.filter(url => {
+      const path = new URL(url).pathname;
+      const segments = path.split('/').filter(Boolean);
+      return segments.length >= 2; // At least two levels deep
+    });
     
     items.push({
-      name: "Do the urls include categories or services found on their GBP page?",
-      description: "URLs should align with Google Business Profile categories",
-      status: hasCategoryUrls ? 'OK' : 'N/A', // We don't have actual GBP data
-      importance: 'Low'
+      name: "Clear URL hierarchy?",
+      description: "URLs should have a logical folder structure",
+      status: hierarchicalUrls.length > 3 ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: hierarchicalUrls.length <= 3 ? 
+        "Site lacks clear URL hierarchy with logical folder structure" : undefined
     });
     
     // Check if navigation labels match page titles
     const navLinks = site.homepage.links.internal;
-    const navMatchesTitle = navLinks.some(link => {
+    const matchingNavLinks = navLinks.filter(link => {
       const matchingPage = [
         site.homepage,
         ...(site.contactPage ? [site.contactPage] : []),
@@ -699,12 +771,61 @@ class RivalAuditCrawler {
       
       return matchingPage && matchingPage.title;
     });
+    const navMatchesTitle = matchingNavLinks.length > 0;
     
     items.push({
       name: "Navigation labels aligned with page <title>?",
       description: "Navigation labels should match page titles",
       status: navMatchesTitle ? 'OK' : 'OFI',
-      importance: 'Low'
+      importance: 'Low',
+      notes: !navMatchesTitle ? "Navigation links don't match page titles" : undefined
+    });
+    
+    // Check if there are broken links
+    const brokenLinks = site.homepage.links.broken.length;
+    
+    items.push({
+      name: "No broken links?",
+      description: "Site should not have broken or invalid links",
+      status: brokenLinks === 0 ? 'OK' : brokenLinks < 3 ? 'OFI' : 'Priority OFI',
+      importance: 'High',
+      notes: brokenLinks > 0 ? `Found ${brokenLinks} broken or invalid links` : undefined
+    });
+    
+    // Check if the site has a canonical domain version
+    const hasCanonical = site.homepage.hasCanonical;
+    
+    items.push({
+      name: "Canonical domain version?",
+      description: "Site should use canonical tags to prevent duplicate content",
+      status: hasCanonical ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasCanonical ? "No canonical tag found on homepage" : undefined
+    });
+    
+    // Check if the site has a sitemap
+    const hasSitemap = site.homepage.hasSitemap;
+    
+    items.push({
+      name: "XML sitemap?",
+      description: "Site should have an XML sitemap for search engines",
+      status: hasSitemap ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasSitemap ? "No sitemap reference found" : undefined
+    });
+    
+    // Check heading structure for proper hierarchy
+    const hasProperHeadingStructure = site.homepage.headings.h1.length === 1 && 
+                                  site.homepage.headings.h2.length > 0;
+    
+    items.push({
+      name: "Proper heading structure?",
+      description: "Pages should use headings in hierarchical order (H1, H2, H3)",
+      status: hasProperHeadingStructure ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: site.homepage.headings.h1.length === 0 ? "Homepage missing H1 heading" :
+             site.homepage.headings.h1.length > 1 ? "Multiple H1 headings on homepage" :
+             site.homepage.headings.h2.length === 0 ? "No H2 headings on homepage" : undefined
     });
     
     return items;
@@ -722,7 +843,8 @@ class RivalAuditCrawler {
       name: "Has a contact page?",
       description: "A dedicated contact page is important",
       status: contactPage ? 'OK' : 'Priority OFI',
-      importance: 'High'
+      importance: 'High',
+      notes: !contactPage ? "No dedicated contact page found" : undefined
     });
     
     if (contactPage) {
@@ -745,7 +867,8 @@ class RivalAuditCrawler {
         name: "Business name appears in the copy?",
         description: "Business name should be prominently displayed",
         status: hasBusinessName ? 'OK' : 'OFI',
-        importance: 'High'
+        importance: 'High',
+        notes: !hasBusinessName ? "Business name not prominently displayed on contact page" : undefined
       });
       
       // Check if address appears in the contact page
@@ -753,7 +876,8 @@ class RivalAuditCrawler {
         name: "Address appears in the copy?",
         description: "Physical address should be visible",
         status: contactPage.hasAddress ? 'OK' : 'OFI',
-        importance: 'High'
+        importance: 'High',
+        notes: !contactPage.hasAddress ? "No physical address found on contact page" : undefined
       });
       
       // Check if phone number appears in the contact page
@@ -761,7 +885,8 @@ class RivalAuditCrawler {
         name: "Phone number appears in the copy?",
         description: "Phone number should be easy to find",
         status: contactPage.hasPhoneNumber ? 'OK' : 'OFI',
-        importance: 'High'
+        importance: 'High',
+        notes: !contactPage.hasPhoneNumber ? "No phone number found on contact page" : undefined
       });
       
       // Check if the phone number is clickable (we can't directly check this from just HTML)
@@ -773,8 +898,67 @@ class RivalAuditCrawler {
         name: "Phone number is clickable?",
         description: "Phone numbers should be clickable for mobile users",
         status: hasTelLink ? 'OK' : contactPage.hasPhoneNumber ? 'OFI' : 'N/A',
-        importance: 'Medium'
+        importance: 'Medium',
+        notes: !hasTelLink && contactPage.hasPhoneNumber ? "Phone number exists but is not clickable" : undefined
       });
+      
+      // Check if the page has a contact form
+      items.push({
+        name: "Has a contact form?",
+        description: "Page should have a working contact form",
+        status: contactPage.hasContactForm ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: !contactPage.hasContactForm ? "No contact form found on contact page" : undefined
+      });
+      
+      // Check if the contact page has schema markup
+      items.push({
+        name: "Has schema markup?",
+        description: "Contact page should have LocalBusiness schema",
+        status: contactPage.hasSchema ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: contactPage.hasSchema ? 
+          `Found schema types: ${contactPage.schemaTypes.length > 0 ? contactPage.schemaTypes.join(', ') : 'Unknown'}` : 
+          "No schema markup found on contact page"
+      });
+      
+      // Check for map or location embedding
+      const hasMapEmbedding = contactPage.bodyText.toLowerCase().includes('map') || 
+                           contactPage.links.external.some(link => 
+                             link.includes('maps.google.com') || 
+                             link.includes('maps.apple.com')
+                           );
+      
+      items.push({
+        name: "Has map or directions?",
+        description: "Contact page should include a map or directions",
+        status: hasMapEmbedding ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: !hasMapEmbedding ? "No map or directions found on contact page" : undefined
+      });
+      
+      // Check for business hours
+      const hasBusinessHours = contactPage.bodyText.toLowerCase().includes('hours') || 
+                            contactPage.bodyText.toLowerCase().includes('open') ||
+                            /\b(mon|tue|wed|thu|fri|sat|sun)\b/i.test(contactPage.bodyText);
+      
+      items.push({
+        name: "Lists business hours?",
+        description: "Contact page should display business hours",
+        status: hasBusinessHours ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: !hasBusinessHours ? "No business hours found on contact page" : undefined
+      });
+      
+      // Check mobile-friendliness
+      items.push({
+        name: "Mobile-friendly?",
+        description: "Contact page should be optimized for mobile devices",
+        status: contactPage.mobileFriendly ? 'OK' : 'Priority OFI',
+        importance: 'High',
+        notes: !contactPage.mobileFriendly ? "Contact page is not mobile-friendly" : undefined
+      });
+      
     } else {
       // If there's no contact page, mark all contact-related items as N/A
       items.push({
@@ -803,6 +987,41 @@ class RivalAuditCrawler {
         description: "Phone numbers should be clickable for mobile users",
         status: 'N/A',
         importance: 'Medium'
+      });
+      
+      items.push({
+        name: "Has a contact form?",
+        description: "Page should have a working contact form",
+        status: 'N/A',
+        importance: 'Medium'
+      });
+      
+      items.push({
+        name: "Has schema markup?",
+        description: "Contact page should have LocalBusiness schema",
+        status: 'N/A',
+        importance: 'Medium'
+      });
+      
+      items.push({
+        name: "Has map or directions?",
+        description: "Contact page should include a map or directions",
+        status: 'N/A',
+        importance: 'Medium'
+      });
+      
+      items.push({
+        name: "Lists business hours?",
+        description: "Contact page should display business hours",
+        status: 'N/A',
+        importance: 'Medium'
+      });
+      
+      items.push({
+        name: "Mobile-friendly?",
+        description: "Contact page should be optimized for mobile devices",
+        status: 'N/A',
+        importance: 'High'
       });
     }
     
