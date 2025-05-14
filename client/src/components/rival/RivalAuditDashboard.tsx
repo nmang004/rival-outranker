@@ -225,7 +225,7 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
               <div className="col-span-1">
-                <div className="text-lg font-semibold mb-2">SEO Issue Distribution</div>
+                <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Issue Distribution</div>
                 <div className="h-[200px] sm:h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -271,7 +271,7 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
                 </div>
               </div>
               <div className="col-span-2">
-                <div className="text-lg font-semibold mb-3">SEO Optimization Status by Category</div>
+                <div className="text-lg font-semibold mb-3 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Optimization Status by Category</div>
                 <div className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-lg space-y-4">
                   {completionProgressData.map((item, index) => (
                     <div key={index} className="space-y-1.5">
