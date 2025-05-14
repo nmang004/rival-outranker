@@ -111,18 +111,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Store the analysis result, ensuring no NaN values are saved
-        const score = analysisResult.overallScore.score;
+        // Process the analysis result, fixing any NaN or invalid values
+        // Sanitize the entire analysis result to ensure no NaN values
+        const sanitizedResult = JSON.parse(
+          JSON.stringify(analysisResult, (key, value) => {
+            // Replace NaN values with defaults
+            if (typeof value === 'number' && isNaN(value)) {
+              return key.toLowerCase().includes('score') ? 50 : 0;
+            }
+            return value;
+          })
+        );
+        
+        // Ensure the overall score has a valid value
+        if (!sanitizedResult.overallScore || isNaN(sanitizedResult.overallScore.score)) {
+          sanitizedResult.overallScore = { score: 50, category: 'needs-work' };
+        }
+        
+        // Store sanitized result
         const analysisData = {
           url: url, // Use the normalized URL
-          overallScore: isNaN(score) ? 50 : score, // Use default score if NaN
-          results: {
-            ...analysisResult,
-            overallScore: {
-              ...analysisResult.overallScore,
-              score: isNaN(score) ? 50 : score, // Also fix NaN in results
-            }
-          }
+          overallScore: sanitizedResult.overallScore.score,
+          results: sanitizedResult
         };
         
         // Validate and save to storage
