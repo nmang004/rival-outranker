@@ -1,509 +1,314 @@
 import * as cheerio from 'cheerio';
 import { CrawlerOutput } from '@/lib/types';
+import { contentAnnotationService } from './contentAnnotationService';
 
-// Define interfaces for the deep content analysis
-interface ContentStructureMetrics {
-  headingStructure: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    headingsWithKeywords: number;
-    totalHeadings: number;
-  };
-  paragraphStructure: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    avgParagraphLength: number;
-    shortParagraphCount: number;
-    longParagraphCount: number;
-    totalParagraphs: number;
-  };
-  contentDistribution: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    introductionQuality: number;
-    bodyContentQuality: number;
-    conclusionQuality: number;
-  };
-}
-
-interface ReadabilityMetrics {
-  fleschReadingEase: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    interpretation: string;
-  };
-  sentenceComplexity: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    avgSentenceLength: number;
-    complexSentencePercentage: number;
-  };
-  wordChoice: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    simpleWordPercentage: number;
-    complexWordPercentage: number;
-    avgWordLength: number;
-  };
-}
-
-interface SemanticRelevanceMetrics {
-  topicCoverage: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    keyTopics: string[];
-    topicDepthScore: number;
-  };
-  keywordContext: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    keywordInContext: boolean;
-    semanticRelevance: number;
-  };
-  entityAnalysis: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    entities: {
-      type: string;
-      name: string;
-      frequency: number;
-    }[];
-  };
-}
-
-interface ContentEngagementMetrics {
-  contentFormats: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    hasLists: boolean;
-    hasTables: boolean;
-    hasBlockquotes: boolean;
-    hasHighlightedText: boolean;
-  };
-  interactiveElements: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    hasVideos: boolean;
-    hasEmbeds: boolean;
-    hasInteractiveContent: boolean;
-  };
-  callsToAction: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-    hasCTA: boolean;
-    ctaQuality: number;
-    ctaCount: number;
-  };
-}
-
-interface ContentAnnotation {
-  content: string;
-  issue: string;
-  suggestion: string;
-  position: number;
-  severity: 'high' | 'medium' | 'low';
-  type: 'structure' | 'readability' | 'semantics' | 'engagement';
-}
-
-interface AnnotatedContentSection {
-  content: string;
-  annotations: ContentAnnotation[];
-}
-
-interface DeepContentAnalysisResult {
-  overallScore: {
-    score: number;
-    category: 'excellent' | 'good' | 'needs-work' | 'poor';
-  };
-  structure: ContentStructureMetrics;
-  readability: ReadabilityMetrics;
-  semanticRelevance: SemanticRelevanceMetrics;
-  engagement: ContentEngagementMetrics;
-  recommendations: string[];
-  annotatedContent: {
-    title: string;
-    introduction: AnnotatedContentSection;
-    mainContent: AnnotatedContentSection[];
-    conclusion: AnnotatedContentSection;
-  };
-}
-
-class DeepContentAnalyzer {
+/**
+ * Deep Content Analyzer provides rich analysis of content structure,
+ * readability, semantic relevance, and engagement.
+ */
+export class DeepContentAnalyzer {
   /**
-   * Perform deep content analysis 
+   * Perform deep content analysis of a webpage
    */
-  async analyzeContent(
-    pageData: CrawlerOutput, 
-    primaryKeyword: string
-  ): Promise<DeepContentAnalysisResult> {
+  async analyzeContent(url: string, pageData: CrawlerOutput, primaryKeyword: string = ''): Promise<any> {
     try {
-      // Use raw HTML if available, otherwise fall back to content text
-      const htmlContent = pageData.rawHtml || pageData.content.text;
-      const $ = cheerio.load(htmlContent);
+      // Extract primary keyword if not provided
+      if (!primaryKeyword && pageData.title) {
+        primaryKeyword = this.extractPrimaryKeyword(pageData.title, pageData.content.text);
+      }
       
-      // 1. Analyze content structure
-      const structureMetrics = this.analyzeContentStructure($, pageData, primaryKeyword);
+      // Get the categories/sections from the page
+      const mainContent = pageData.content.paragraphs || [];
       
-      // 2. Analyze readability
-      const readabilityMetrics = this.analyzeReadability(pageData);
+      // Analyze structure
+      const structure = this.analyzeStructure(pageData, primaryKeyword);
       
-      // 3. Analyze semantic relevance
-      const semanticMetrics = this.analyzeSemanticRelevance(pageData, primaryKeyword);
+      // Analyze readability
+      const readability = this.analyzeReadability(pageData);
       
-      // 4. Analyze engagement metrics
-      const engagementMetrics = this.analyzeContentEngagement($, pageData);
+      // Analyze semantic relevance
+      const semanticRelevance = this.analyzeSemanticRelevance(pageData, primaryKeyword);
       
-      // 5. Generate recommendations
-      const recommendations = this.generateRecommendations(
-        structureMetrics,
-        readabilityMetrics,
-        semanticMetrics,
-        engagementMetrics
+      // Analyze engagement elements
+      const engagement = this.analyzeEngagement(pageData);
+      
+      // Generate annotated content
+      const annotatedContent = this.generateAnnotatedContent(pageData, primaryKeyword);
+      
+      // Calculate overall score (weighted average of section scores)
+      const structureScore = (structure.headingStructure.score + structure.paragraphStructure.score + structure.contentDistribution.score) / 3;
+      const readabilityScore = (readability.fleschReadingEase.score + readability.sentenceComplexity.score + readability.wordChoice.score) / 3;
+      const semanticScore = (semanticRelevance.topicCoverage.score + semanticRelevance.keywordContext.score + semanticRelevance.entityAnalysis.score) / 3;
+      const engagementScore = (engagement.contentFormats.score + engagement.interactiveElements.score + engagement.callsToAction.score) / 3;
+      
+      const overallScore = Math.round(
+        (structureScore * 0.3) + // Content structure is very important
+        (readabilityScore * 0.25) + // Readability is critical
+        (semanticScore * 0.25) + // Semantic relevance matters for ranking
+        (engagementScore * 0.2) // Engagement elements boost performance
       );
       
-      // 6. Calculate overall score
-      const overallScore = this.calculateOverallScore(
-        structureMetrics,
-        readabilityMetrics,
-        semanticMetrics,
-        engagementMetrics
-      );
-      
-      // 7. Create annotated content sections
-      const annotatedContent = this.createAnnotatedContent(
-        $, 
-        pageData, 
-        primaryKeyword,
-        structureMetrics,
-        readabilityMetrics,
-        semanticMetrics,
-        engagementMetrics
-      );
+      // Generate key recommendations based on the lowest scores
+      const recommendations = this.generateRecommendations({
+        structure, readability, semanticRelevance, engagement, annotatedContent
+      });
       
       return {
-        overallScore,
-        structure: structureMetrics,
-        readability: readabilityMetrics,
-        semanticRelevance: semanticMetrics,
-        engagement: engagementMetrics,
+        url,
+        overallScore: {
+          score: overallScore,
+          category: this.getScoreCategory(overallScore)
+        },
+        structure,
+        readability,
+        semanticRelevance,
+        engagement,
         recommendations,
         annotatedContent
       };
     } catch (error) {
       console.error('Error in deep content analysis:', error);
-      
-      // Return default result on error
-      return this.getDefaultAnalysisResult();
+      throw new Error('Failed to analyze content: ' + (error as Error).message);
     }
   }
   
   /**
-   * Analyze content structure metrics
+   * Extract a primary keyword from the title and content
    */
-  private analyzeContentStructure(
-    $: cheerio.CheerioAPI, 
-    pageData: CrawlerOutput, 
-    primaryKeyword: string
-  ): ContentStructureMetrics {
-    // Extract heading structure directly from HTML using Cheerio
-    const h1Texts = $('h1').map((_, el) => $(el).text().trim()).get();
-    const h2Texts = $('h2').map((_, el) => $(el).text().trim()).get();
-    const h3Texts = $('h3').map((_, el) => $(el).text().trim()).get();
-    const h4Texts = $('h4').map((_, el) => $(el).text().trim()).get();
+  private extractPrimaryKeyword(title: string, content: string): string {
+    // Simple approach: Take the first 2-3 most meaningful words from title
+    // Exclude common stop words
+    const stopWords = ['a', 'an', 'the', 'in', 'on', 'at', 'for', 'to', 'of', 'by', 'with', 'and', 'or', 'but'];
     
-    // Use our extracted headings or fall back to pageData
-    const headings = {
-      h1: h1Texts.length > 0 ? h1Texts : pageData.headings.h1,
-      h2: h2Texts.length > 0 ? h2Texts : pageData.headings.h2,
-      h3: h3Texts.length > 0 ? h3Texts : pageData.headings.h3,
-      h4: h4Texts.length > 0 ? h4Texts : pageData.headings.h4,
-      h5: pageData.headings.h5,
-      h6: pageData.headings.h6
-    };
-    
-    const totalHeadings = 
-      headings.h1.length + 
-      headings.h2.length + 
-      headings.h3.length + 
-      headings.h4.length + 
-      headings.h5.length + 
-      headings.h6.length;
-    
-    // Count headings with the primary keyword
-    const lowercaseKeyword = primaryKeyword.toLowerCase();
-    const headingsWithKeywords = [
-      ...headings.h1,
-      ...headings.h2,
-      ...headings.h3,
-      ...headings.h4,
-      ...headings.h5,
-      ...headings.h6
-    ].filter(heading => heading.toLowerCase().includes(lowercaseKeyword)).length;
-    
-    const headingScore = this.calculateHeadingScore(
-      headings,
-      totalHeadings,
-      headingsWithKeywords
+    const titleWords = title.toLowerCase().split(/\s+/);
+    const meaningfulWords = titleWords.filter(word => 
+      word.length > 3 && !stopWords.includes(word)
     );
     
-    // Paragraph structure analysis
-    const paragraphs = pageData.content.paragraphs;
+    if (meaningfulWords.length > 0) {
+      // Take the first 2-3 meaningful words
+      return meaningfulWords.slice(0, Math.min(3, meaningfulWords.length)).join(' ');
+    }
+    
+    // Fallback: Use the first part of the title
+    return title.split(' - ')[0].split('|')[0].slice(0, 30);
+  }
+  
+  /**
+   * Analyze the content structure (headings, paragraphs, distribution)
+   */
+  private analyzeStructure(pageData: CrawlerOutput, primaryKeyword: string): any {
+    // Analyze heading structure
+    const headingStructure = this.analyzeHeadingStructure(pageData, primaryKeyword);
+    
+    // Analyze paragraph structure
+    const paragraphStructure = this.analyzeParagraphStructure(pageData);
+    
+    // Analyze content distribution
+    const contentDistribution = this.analyzeContentDistribution(pageData, primaryKeyword);
+    
+    return {
+      headingStructure,
+      paragraphStructure,
+      contentDistribution
+    };
+  }
+  
+  /**
+   * Analyze heading structure
+   */
+  private analyzeHeadingStructure(pageData: CrawlerOutput, primaryKeyword: string): any {
+    const { h1, h2, h3, h4, h5, h6 } = pageData.headings;
+    const allHeadings = [...h1, ...h2, ...h3, ...h4, ...h5, ...h6];
+    const totalHeadings = allHeadings.length;
+    
+    // Check how many headings include the primary keyword
+    const headingsWithKeywords = allHeadings.filter(heading => 
+      heading.toLowerCase().includes(primaryKeyword.toLowerCase())
+    ).length;
+    
+    // Check if H1 is present
+    const hasH1 = h1.length > 0;
+    
+    // Check if there's a logical hierarchy (H1 > H2 > H3...)
+    const hasLogicalHierarchy = 
+      (h1.length <= 1) && // Only one H1
+      (h2.length >= h1.length) && // More H2s than H1s
+      (h3.length >= 0); // H3s are optional
+    
+    // Score calculation based on multiple factors
+    let score = 0;
+    
+    // Base score for having headings at all
+    if (totalHeadings > 0) score += 30;
+    
+    // Score for headings with keywords
+    if (totalHeadings > 0) {
+      const keywordRatio = headingsWithKeywords / totalHeadings;
+      score += Math.min(30, keywordRatio * 100); // Up to 30 points
+    }
+    
+    // Score for having H1
+    if (hasH1) score += 20;
+    
+    // Score for logical hierarchy
+    if (hasLogicalHierarchy) score += 20;
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      headingsWithKeywords,
+      totalHeadings
+    };
+  }
+  
+  /**
+   * Analyze paragraph structure
+   */
+  private analyzeParagraphStructure(pageData: CrawlerOutput): any {
+    const paragraphs = pageData.content.paragraphs || [];
     const totalParagraphs = paragraphs.length;
     
-    // Calculate avg paragraph length (words)
-    const avgParagraphLength = paragraphs.reduce(
-      (sum, p) => sum + (p.match(/\S+/g) || []).length, 0
-    ) / (totalParagraphs || 1);
+    if (totalParagraphs === 0) {
+      return {
+        score: 0,
+        category: 'poor',
+        avgParagraphLength: 0,
+        shortParagraphCount: 0,
+        longParagraphCount: 0,
+        totalParagraphs: 0
+      };
+    }
     
-    // Count short paragraphs (< 20 words) and long paragraphs (> 200 words)
-    const shortParagraphCount = paragraphs.filter(
-      p => (p.match(/\S+/g) || []).length < 20
-    ).length;
+    // Calculate average paragraph length
+    const paragraphLengths = paragraphs.map(p => p.split(/\s+/).length);
+    const avgParagraphLength = paragraphLengths.reduce((sum, len) => sum + len, 0) / totalParagraphs;
     
-    const longParagraphCount = paragraphs.filter(
-      p => (p.match(/\S+/g) || []).length > 200
-    ).length;
+    // Count short and long paragraphs
+    const shortParagraphCount = paragraphLengths.filter(len => len < 40).length; // Less than 40 words
+    const longParagraphCount = paragraphLengths.filter(len => len > 150).length; // More than 150 words
     
-    const paragraphScore = this.calculateParagraphScore(
+    // Calculate scores
+    let score = 50; // Start at 50
+    
+    // Ideal paragraph length is between 40-100 words
+    if (avgParagraphLength >= 40 && avgParagraphLength <= 100) {
+      score += 25;
+    } else if (avgParagraphLength > 100 && avgParagraphLength <= 150) {
+      score += 15; // A bit too long
+    } else if (avgParagraphLength < 40 && avgParagraphLength >= 20) {
+      score += 15; // A bit too short
+    } else {
+      score -= 10; // Far from ideal
+    }
+    
+    // Penalize for too many long paragraphs
+    if (longParagraphCount > 0) {
+      const longRatio = longParagraphCount / totalParagraphs;
+      score -= Math.min(30, longRatio * 100); // Penalty up to 30 points
+    }
+    
+    // Slight reward for having some short paragraphs (improves readability)
+    if (shortParagraphCount > 0 && shortParagraphCount < totalParagraphs * 0.7) {
+      const shortRatio = shortParagraphCount / totalParagraphs;
+      score += Math.min(15, shortRatio * 50); // Bonus up to 15 points
+    }
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
       avgParagraphLength,
       shortParagraphCount,
       longParagraphCount,
       totalParagraphs
-    );
-    
-    // Content distribution analysis
-    const contentLength = pageData.content.text.length;
-    const wordCount = pageData.content.wordCount;
-    
-    // Estimate intro, body, conclusion quality
-    const hasIntro = paragraphs.length >= 1;
-    const hasConclusion = paragraphs.length >= 3;
-    const introQuality = hasIntro ? this.estimateIntroQuality(paragraphs[0], primaryKeyword) : 0;
-    
-    const conclusionQuality = hasConclusion 
-      ? this.estimateConclusionQuality(paragraphs[paragraphs.length - 1], primaryKeyword)
-      : 0;
-    
-    const bodyContentQuality = this.estimateBodyContentQuality(
-      wordCount,
-      headings,
-      totalParagraphs
-    );
-    
-    const contentDistributionScore = this.calculateContentDistributionScore(
-      introQuality,
-      bodyContentQuality,
-      conclusionQuality
-    );
-    
-    return {
-      headingStructure: {
-        score: headingScore,
-        category: this.getScoreCategory(headingScore),
-        headingsWithKeywords,
-        totalHeadings,
-      },
-      paragraphStructure: {
-        score: paragraphScore,
-        category: this.getScoreCategory(paragraphScore),
-        avgParagraphLength,
-        shortParagraphCount,
-        longParagraphCount,
-        totalParagraphs,
-      },
-      contentDistribution: {
-        score: contentDistributionScore,
-        category: this.getScoreCategory(contentDistributionScore),
-        introductionQuality: introQuality,
-        bodyContentQuality,
-        conclusionQuality,
-      }
     };
   }
   
   /**
-   * Calculate heading structure score
+   * Analyze content distribution (intro, body, conclusion)
    */
-  private calculateHeadingScore(
-    headings: {
-      h1: string[];
-      h2: string[];
-      h3: string[];
-      h4: string[];
-      h5: string[];
-      h6: string[];
-    },
-    totalHeadings: number,
-    headingsWithKeywords: number
-  ): number {
-    let score = 0;
+  private analyzeContentDistribution(pageData: CrawlerOutput, primaryKeyword: string): any {
+    const paragraphs = pageData.content.paragraphs || [];
     
-    // Check if there's exactly one H1
-    if (headings.h1.length === 1) {
-      score += 20;
-    } else if (headings.h1.length > 1) {
-      score += 5; // Penalty for multiple H1s
+    if (paragraphs.length === 0) {
+      return {
+        score: 0,
+        category: 'poor',
+        introductionQuality: 0,
+        bodyContentQuality: 0,
+        conclusionQuality: 0
+      };
     }
     
-    // Check for H2s
-    if (headings.h2.length >= 2) {
-      score += 20;
-    } else if (headings.h2.length === 1) {
-      score += 10;
+    // Assume introduction is the first 1-2 paragraphs
+    const introductionParagraphs = paragraphs.slice(0, Math.min(2, paragraphs.length));
+    const introductionText = introductionParagraphs.join('\n\n');
+    
+    // Assume conclusion is the last 1-2 paragraphs
+    const conclusionParagraphs = paragraphs.slice(-Math.min(2, paragraphs.length));
+    const conclusionText = conclusionParagraphs.join('\n\n');
+    
+    // The rest is body content
+    const bodyParagraphs = paragraphs.slice(
+      Math.min(2, paragraphs.length), 
+      paragraphs.length - Math.min(2, paragraphs.length)
+    );
+    const bodyText = bodyParagraphs.join('\n\n');
+    
+    // Score introduction (50 base score)
+    let introductionQuality = 50;
+    
+    // Introduction should mention the primary keyword
+    if (introductionText.toLowerCase().includes(primaryKeyword.toLowerCase())) {
+      introductionQuality += 20;
     }
     
-    // Check for H3s
-    if (headings.h3.length >= 2) {
-      score += 10;
-    } else if (headings.h3.length === 1) {
-      score += 5;
+    // Introduction should be reasonably sized
+    const introWords = introductionText.split(/\s+/).length;
+    if (introWords >= 40 && introWords <= 100) {
+      introductionQuality += 20; // Ideal length
+    } else if (introWords > 20) {
+      introductionQuality += 10; // Acceptable length
     }
     
-    // Check heading hierarchy (H2s should follow H1, etc.)
-    const hasProperHierarchy = 
-      (headings.h1.length === 0 || 
-       (headings.h1.length > 0 && headings.h2.length > 0)) &&
-      (headings.h2.length === 0 || 
-       (headings.h2.length > 0 && (headings.h3.length > 0 || headings.h1.length > 0)));
-    
-    if (hasProperHierarchy) {
-      score += 20;
+    // Introduction should have a hook (question or statement)
+    if (introductionText.includes('?') || 
+        introductionText.includes('!') ||
+        /\d+%|\d+\s+out of|\d+\s+of/.test(introductionText)) {
+      introductionQuality += 10; // Has a hook
     }
     
-    // Check keyword presence in headings
-    if (totalHeadings > 0) {
-      const keywordHeadingRatio = headingsWithKeywords / totalHeadings;
-      if (keywordHeadingRatio >= 0.5) {
-        score += 30;
-      } else if (keywordHeadingRatio >= 0.3) {
-        score += 20;
-      } else if (keywordHeadingRatio > 0) {
-        score += 10;
-      }
+    // Score body content (60 base score)
+    let bodyContentQuality = 60;
+    
+    // Body should have substantial content
+    if (bodyParagraphs.length >= 3) {
+      bodyContentQuality += 20;
+    } else if (bodyParagraphs.length > 0) {
+      bodyContentQuality += 10;
+    } else {
+      bodyContentQuality -= 30; // Penalize severely for no body content
     }
     
-    return Math.min(100, score);
-  }
-  
-  /**
-   * Calculate paragraph structure score
-   */
-  private calculateParagraphScore(
-    avgParagraphLength: number,
-    shortParagraphCount: number,
-    longParagraphCount: number,
-    totalParagraphs: number
-  ): number {
-    let score = 0;
-    
-    // Optimal paragraph length (40-120 words)
-    if (avgParagraphLength >= 40 && avgParagraphLength <= 120) {
-      score += 30;
-    } else if (avgParagraphLength >= 20 && avgParagraphLength <= 150) {
-      score += 20;
-    } else if (avgParagraphLength > 0) {
-      score += 10;
+    // Body should use headings to organize content
+    const hasH2orH3 = pageData.headings.h2.length > 0 || pageData.headings.h3.length > 0;
+    if (hasH2orH3) {
+      bodyContentQuality += 20;
     }
     
-    // Penalty for too many short paragraphs
-    if (totalParagraphs > 0) {
-      const shortParagraphRatio = shortParagraphCount / totalParagraphs;
-      if (shortParagraphRatio <= 0.2) {
-        score += 20;
-      } else if (shortParagraphRatio <= 0.4) {
-        score += 10;
-      }
-    }
+    // Score conclusion (50 base score)
+    let conclusionQuality = 50;
     
-    // Penalty for too many long paragraphs
-    if (totalParagraphs > 0) {
-      const longParagraphRatio = longParagraphCount / totalParagraphs;
-      if (longParagraphRatio <= 0.1) {
-        score += 20;
-      } else if (longParagraphRatio <= 0.2) {
-        score += 10;
-      }
-    }
-    
-    // Bonus for good paragraph count
-    if (totalParagraphs >= 5 && totalParagraphs <= 20) {
-      score += 30;
-    } else if (totalParagraphs > 20) {
-      score += 20;
-    } else if (totalParagraphs > 0) {
-      score += 10;
-    }
-    
-    return Math.min(100, score);
-  }
-  
-  /**
-   * Estimate introduction quality
-   */
-  private estimateIntroQuality(introText: string, primaryKeyword: string): number {
-    if (!introText) {
-      return 0;
-    }
-    
-    let score = 0;
-    const words = introText.match(/\S+/g) || [];
-    
-    // Length check
-    if (words.length >= 30 && words.length <= 100) {
-      score += 30;
-    } else if (words.length > 100) {
-      score += 15;
-    } else if (words.length > 0) {
-      score += 10;
-    }
-    
-    // Keyword presence
-    if (introText.toLowerCase().includes(primaryKeyword.toLowerCase())) {
-      score += 40;
-    }
-    
-    // Hook presence (questions, stats, quotes, etc.)
-    if (
-      introText.includes('?') || 
-      /\d+%/.test(introText) || 
-      introText.includes('"') || 
-      /^\W/.test(introText)
-    ) {
-      score += 30;
-    }
-    
-    return Math.min(100, score);
-  }
-  
-  /**
-   * Estimate conclusion quality
-   */
-  private estimateConclusionQuality(conclusionText: string, primaryKeyword: string): number {
-    if (!conclusionText) {
-      return 0;
-    }
-    
-    let score = 0;
-    const words = conclusionText.match(/\S+/g) || [];
-    
-    // Length check
-    if (words.length >= 30 && words.length <= 100) {
-      score += 30;
-    } else if (words.length > 100) {
-      score += 15;
-    } else if (words.length > 0) {
-      score += 10;
-    }
-    
-    // Keyword presence
-    if (conclusionText.toLowerCase().includes(primaryKeyword.toLowerCase())) {
-      score += 30;
-    }
-    
-    // Conclusion indicators
+    // Conclusion should summarize or wrap up
     const conclusionIndicators = [
       'in conclusion', 'to summarize', 'to sum up', 'finally', 'in summary',
-      'overall', 'in the end', 'as a result', 'ultimately', 'in closing'
+      'overall', 'in the end', 'as a result', 'ultimately', 'lastly'
     ];
     
     const hasIndicator = conclusionIndicators.some(indicator => 
@@ -511,815 +316,978 @@ class DeepContentAnalyzer {
     );
     
     if (hasIndicator) {
-      score += 20;
+      conclusionQuality += 20;
     }
     
-    // Call to action
-    if (
-      conclusionText.includes('contact') || 
-      conclusionText.includes('call') || 
-      conclusionText.includes('email') || 
-      conclusionText.includes('click') || 
-      conclusionText.includes('buy') || 
-      conclusionText.includes('visit') || 
-      conclusionText.includes('download')
-    ) {
-      score += 20;
-    }
+    // Conclusion should have a call to action
+    const ctaIndicators = [
+      'contact', 'call', 'email', 'click', 'sign up', 'register',
+      'download', 'get', 'try', 'visit', 'learn more'
+    ];
     
-    return Math.min(100, score);
-  }
-  
-  /**
-   * Estimate body content quality
-   */
-  private estimateBodyContentQuality(
-    wordCount: number,
-    headings: {
-      h1: string[];
-      h2: string[];
-      h3: string[];
-      h4: string[];
-      h5: string[];
-      h6: string[];
-    },
-    totalParagraphs: number
-  ): number {
-    let score = 0;
-    
-    // Content length
-    if (wordCount >= 1000) {
-      score += 30;
-    } else if (wordCount >= 500) {
-      score += 20;
-    } else if (wordCount >= 300) {
-      score += 10;
-    }
-    
-    // Heading usage
-    const h2Count = headings.h2.length;
-    const h3Count = headings.h3.length;
-    
-    if (h2Count >= 2 && h3Count >= 3) {
-      score += 40;
-    } else if (h2Count >= 2 || h3Count >= 3) {
-      score += 20;
-    } else if (h2Count > 0 || h3Count > 0) {
-      score += 10;
-    }
-    
-    // Paragraph count
-    if (totalParagraphs >= 10) {
-      score += 30;
-    } else if (totalParagraphs >= 5) {
-      score += 20;
-    } else if (totalParagraphs > 0) {
-      score += 10;
-    }
-    
-    return Math.min(100, score);
-  }
-  
-  /**
-   * Calculate content distribution score
-   */
-  private calculateContentDistributionScore(
-    introQuality: number,
-    bodyContentQuality: number,
-    conclusionQuality: number
-  ): number {
-    // Weighted average with higher weight for body content
-    return Math.round(
-      (introQuality * 0.25) + 
-      (bodyContentQuality * 0.5) + 
-      (conclusionQuality * 0.25)
-    );
-  }
-  
-  /**
-   * Analyze readability metrics
-   */
-  private analyzeReadability(pageData: CrawlerOutput): ReadabilityMetrics {
-    const text = pageData.content.text;
-    const wordCount = pageData.content.wordCount;
-    
-    // Sentences analysis
-    const sentences = this.extractSentences(text);
-    const sentenceCount = sentences.length;
-    
-    // Calculate Flesch Reading Ease
-    const avgSentenceLength = sentenceCount > 0 
-      ? wordCount / sentenceCount 
-      : 0;
-    
-    const syllableCount = this.countSyllables(text);
-    const avgSyllablesPerWord = wordCount > 0 
-      ? syllableCount / wordCount 
-      : 0;
-    
-    const fleschScore = this.calculateFleschReadingEase(
-      avgSentenceLength, 
-      avgSyllablesPerWord
+    const hasCTA = ctaIndicators.some(indicator => 
+      conclusionText.toLowerCase().includes(indicator)
     );
     
-    const fleschInterpretation = this.getFleschInterpretation(fleschScore);
+    if (hasCTA) {
+      conclusionQuality += 30;
+    }
     
-    // Sentence complexity analysis
-    const complexSentences = sentences.filter(sentence => 
-      (sentence.match(/\S+/g) || []).length > 20 || 
-      sentence.includes(',') || 
-      sentence.includes(';')
-    );
+    // Clamp scores between 0-100
+    introductionQuality = Math.min(100, Math.max(0, introductionQuality));
+    bodyContentQuality = Math.min(100, Math.max(0, bodyContentQuality));
+    conclusionQuality = Math.min(100, Math.max(0, conclusionQuality));
     
-    const complexSentencePercentage = sentenceCount > 0 
-      ? (complexSentences.length / sentenceCount) * 100 
-      : 0;
-    
-    const sentenceComplexityScore = this.calculateSentenceComplexityScore(
-      avgSentenceLength,
-      complexSentencePercentage
-    );
-    
-    // Word choice analysis
-    const words = text.match(/\S+/g) || [];
-    const complexWords = words.filter(word => this.isComplexWord(word));
-    const complexWordPercentage = wordCount > 0 
-      ? (complexWords.length / wordCount) * 100 
-      : 0;
-    const simpleWordPercentage = 100 - complexWordPercentage;
-    
-    const avgWordLength = words.reduce(
-      (sum, word) => sum + word.length, 0
-    ) / (words.length || 1);
-    
-    const wordChoiceScore = this.calculateWordChoiceScore(
-      simpleWordPercentage,
-      avgWordLength
+    // Overall score is weighted average
+    const score = Math.round(
+      (introductionQuality * 0.3) + 
+      (bodyContentQuality * 0.4) + 
+      (conclusionQuality * 0.3)
     );
     
     return {
-      fleschReadingEase: {
-        score: fleschScore,
-        category: this.getReadabilityCategory(fleschScore),
-        interpretation: fleschInterpretation
-      },
-      sentenceComplexity: {
-        score: sentenceComplexityScore,
-        category: this.getScoreCategory(sentenceComplexityScore),
-        avgSentenceLength,
-        complexSentencePercentage
-      },
-      wordChoice: {
-        score: wordChoiceScore,
-        category: this.getScoreCategory(wordChoiceScore),
-        simpleWordPercentage,
-        complexWordPercentage,
-        avgWordLength
-      }
+      score,
+      category: this.getScoreCategory(score),
+      introductionQuality,
+      bodyContentQuality,
+      conclusionQuality
     };
   }
   
   /**
-   * Extract sentences from text
+   * Analyze readability (Flesch Reading Ease, sentence complexity, word choice)
    */
-  private extractSentences(text: string): string[] {
-    // Basic sentence extraction with regex
-    // This won't be perfect but should work for most cases
-    return text
-      .replace(/([.?!])\s*(?=[A-Z])/g, "$1|")
-      .split("|")
-      .filter(sentence => sentence.trim().length > 0);
-  }
-  
-  /**
-   * Count syllables in text
-   */
-  private countSyllables(text: string): number {
-    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+  private analyzeReadability(pageData: CrawlerOutput): any {
+    const text = pageData.content.text || '';
     
-    return words.reduce((total, word) => {
-      // Common approach for syllable counting
-      word = word.toLowerCase().replace(/(?:[^laeiouy]|ed|[^laeiouy]e)$/, '');
-      word = word.replace(/^y/, '');
-      
-      const syllableMatches = word.match(/[aeiouy]{1,2}/g);
-      const count = syllableMatches ? syllableMatches.length : 1;
-      
-      return total + count;
-    }, 0);
+    // Analyze Flesch Reading Ease
+    const fleschReadingEase = this.calculateFleschReadingEase(text);
+    
+    // Analyze sentence complexity
+    const sentenceComplexity = this.analyzeSentenceComplexity(text);
+    
+    // Analyze word choice
+    const wordChoice = this.analyzeWordChoice(text);
+    
+    return {
+      fleschReadingEase,
+      sentenceComplexity,
+      wordChoice
+    };
   }
   
   /**
    * Calculate Flesch Reading Ease score
+   * Higher scores = easier to read (90-100: 5th grade, 60-70: 8th-9th grade, 0-30: College graduate)
    */
-  private calculateFleschReadingEase(
-    avgSentenceLength: number, 
-    avgSyllablesPerWord: number
-  ): number {
-    // Flesch Reading Ease formula
-    const score = 206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord);
-    
-    // Clamp between 0-100
-    return Math.max(0, Math.min(100, score));
-  }
-  
-  /**
-   * Get interpretation for Flesch Reading Ease score
-   */
-  private getFleschInterpretation(score: number): string {
-    if (score >= 90) return "Very easy to read, understood by average 11-year-old student";
-    if (score >= 80) return "Easy to read, conversational English";
-    if (score >= 70) return "Fairly easy to read";
-    if (score >= 60) return "Plain English, understood by 13-15 year old students";
-    if (score >= 50) return "Fairly difficult to read";
-    if (score >= 30) return "Difficult to read, best understood by college graduates";
-    return "Very difficult to read, best understood by university graduates";
-  }
-  
-  /**
-   * Get readability category from Flesch score
-   */
-  private getReadabilityCategory(score: number): 'excellent' | 'good' | 'needs-work' | 'poor' {
-    if (score >= 70) return 'excellent';
-    if (score >= 50) return 'good';
-    if (score >= 30) return 'needs-work';
-    return 'poor';
-  }
-  
-  /**
-   * Check if a word is complex
-   */
-  private isComplexWord(word: string): boolean {
-    // Complex words have 3+ syllables
-    const syllableCount = this.countSyllables(word);
-    return syllableCount >= 3;
-  }
-  
-  /**
-   * Calculate sentence complexity score
-   */
-  private calculateSentenceComplexityScore(
-    avgSentenceLength: number,
-    complexSentencePercentage: number
-  ): number {
-    let score = 0;
-    
-    // Optimal average sentence length (15-20 words)
-    if (avgSentenceLength >= 15 && avgSentenceLength <= 20) {
-      score += 50;
-    } else if (avgSentenceLength >= 10 && avgSentenceLength <= 25) {
-      score += 30;
-    } else if (avgSentenceLength > 0) {
-      score += 10;
+  private calculateFleschReadingEase(text: string): any {
+    if (!text) {
+      return {
+        score: 0,
+        category: 'poor',
+        interpretation: 'No text to analyze'
+      };
     }
     
-    // Complex sentence percentage (lower is better)
-    if (complexSentencePercentage <= 20) {
-      score += 50;
-    } else if (complexSentencePercentage <= 40) {
-      score += 30;
-    } else if (complexSentencePercentage <= 60) {
-      score += 10;
-    }
+    // Count sentences (naively)
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentenceCount = Math.max(1, sentences.length);
     
-    return score;
-  }
-  
-  /**
-   * Calculate word choice score
-   */
-  private calculateWordChoiceScore(
-    simpleWordPercentage: number,
-    avgWordLength: number
-  ): number {
-    let score = 0;
+    // Count words
+    const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+    const wordCount = Math.max(1, words.length);
     
-    // Simple word percentage (higher is better)
-    if (simpleWordPercentage >= 80) {
-      score += 50;
-    } else if (simpleWordPercentage >= 70) {
-      score += 40;
-    } else if (simpleWordPercentage >= 60) {
-      score += 30;
-    } else if (simpleWordPercentage >= 50) {
-      score += 20;
+    // Count syllables (very approximate)
+    const syllableCount = this.estimateSyllables(text);
+    
+    // Calculate Flesch Reading Ease
+    // 206.835 - 1.015 × (words/sentences) - 84.6 × (syllables/words)
+    const wordsPerSentence = wordCount / sentenceCount;
+    const syllablesPerWord = syllableCount / wordCount;
+    
+    let flesch = 206.835 - (1.015 * wordsPerSentence) - (84.6 * syllablesPerWord);
+    
+    // Clamp to 0-100 range
+    flesch = Math.min(100, Math.max(0, flesch));
+    
+    // Interpret the score
+    let interpretation = '';
+    let category = '';
+    
+    if (flesch >= 90) {
+      interpretation = 'Very easy to read. Easily understood by an average 11-year-old student.';
+      category = 'excellent';
+    } else if (flesch >= 80) {
+      interpretation = 'Easy to read. Conversational English for consumers.';
+      category = 'excellent';
+    } else if (flesch >= 70) {
+      interpretation = 'Fairly easy to read.';
+      category = 'good';
+    } else if (flesch >= 60) {
+      interpretation = 'Plain English. Easily understood by 13- to 15-year-old students.';
+      category = 'good';
+    } else if (flesch >= 50) {
+      interpretation = 'Fairly difficult to read.';
+      category = 'needs-work';
+    } else if (flesch >= 30) {
+      interpretation = 'Difficult to read, best understood by college graduates.';
+      category = 'needs-work';
     } else {
-      score += 10;
+      interpretation = 'Very difficult to read, best understood by university graduates.';
+      category = 'poor';
     }
-    
-    // Average word length (4-6 characters is optimal)
-    if (avgWordLength >= 4 && avgWordLength <= 6) {
-      score += 50;
-    } else if (avgWordLength > 0) {
-      score += 25;
-    }
-    
-    return score;
-  }
-  
-  /**
-   * Analyze semantic relevance
-   */
-  private analyzeSemanticRelevance(
-    pageData: CrawlerOutput, 
-    primaryKeyword: string
-  ): SemanticRelevanceMetrics {
-    const text = pageData.content.text;
-    
-    // Topic coverage analysis
-    const keyTopics = this.extractKeyTopics(text, primaryKeyword);
-    const topicDepthScore = this.calculateTopicDepthScore(text, keyTopics);
-    
-    const topicCoverageScore = topicDepthScore;
-    
-    // Keyword context analysis
-    const keywordInContext = text.toLowerCase().includes(primaryKeyword.toLowerCase());
-    const semanticRelevance = this.calculateSemanticRelevance(text, primaryKeyword);
-    
-    const keywordContextScore = keywordInContext ? 60 + (semanticRelevance * 40) : semanticRelevance * 30;
-    
-    // Entity analysis
-    const entities = this.extractEntities(text);
-    
-    const entityScore = Math.min(100, entities.length * 10);
     
     return {
-      topicCoverage: {
-        score: topicCoverageScore,
-        category: this.getScoreCategory(topicCoverageScore),
-        keyTopics,
-        topicDepthScore
-      },
-      keywordContext: {
-        score: keywordContextScore,
-        category: this.getScoreCategory(keywordContextScore),
-        keywordInContext,
-        semanticRelevance
-      },
-      entityAnalysis: {
-        score: entityScore,
-        category: this.getScoreCategory(entityScore),
-        entities
-      }
+      score: Math.round(flesch),
+      category,
+      interpretation
     };
   }
   
   /**
-   * Extract key topics from text
+   * Estimate syllable count (simplified method)
    */
-  private extractKeyTopics(text: string, primaryKeyword: string): string[] {
-    // Split text into words and count frequency
-    const words = text.toLowerCase().match(/\b\w{3,}\b/g) || [];
-    const wordCounts: Record<string, number> = {};
+  private estimateSyllables(text: string): number {
+    if (!text) return 0;
     
-    words.forEach(word => {
-      if (this.isStopWord(word)) {
-        return;
+    const words = text.toLowerCase().split(/\s+/);
+    let count = 0;
+    
+    for (const word of words) {
+      if (word.length <= 3) {
+        count++; // Assume small words have one syllable
+        continue;
       }
-      wordCounts[word] = (wordCounts[word] || 0) + 1;
+      
+      // Count vowel groups as syllables
+      let wordCount = 0;
+      const matches = word.match(/[aeiouy]+/g);
+      
+      if (matches) {
+        wordCount = matches.length;
+      }
+      
+      // Adjust for common patterns
+      if (word.endsWith('e')) {
+        wordCount--; // Silent e
+      }
+      
+      if (word.endsWith('le') && word.length > 2 && !['a','e','i','o','u'].includes(word[word.length-3])) {
+        wordCount++; // Handle "ble", "cle", etc.
+      }
+      
+      if (word.endsWith('es') || word.endsWith('ed')) {
+        wordCount--; // Adjust for es/ed endings
+      }
+      
+      // Minimum 1 syllable per word
+      count += Math.max(1, wordCount);
+    }
+    
+    return count;
+  }
+  
+  /**
+   * Analyze sentence complexity
+   */
+  private analyzeSentenceComplexity(text: string): any {
+    if (!text) {
+      return {
+        score: 0,
+        category: 'poor',
+        avgSentenceLength: 0,
+        complexSentencePercentage: 0
+      };
+    }
+    
+    // Split into sentences
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentenceCount = sentences.length;
+    
+    if (sentenceCount === 0) {
+      return {
+        score: 0,
+        category: 'poor',
+        avgSentenceLength: 0,
+        complexSentencePercentage: 0
+      };
+    }
+    
+    // Calculate average words per sentence
+    const sentenceLengths = sentences.map(s => s.split(/\s+/).filter(w => w.trim().length > 0).length);
+    const avgSentenceLength = sentenceLengths.reduce((sum, len) => sum + len, 0) / sentenceCount;
+    
+    // Calculate complex sentences (more than 20 words)
+    const complexSentences = sentenceLengths.filter(len => len > 20);
+    const complexSentencePercentage = (complexSentences.length / sentenceCount) * 100;
+    
+    // Score calculation
+    let score = 100;
+    
+    // Ideal avg sentence length is 15-20 words
+    if (avgSentenceLength > 20) {
+      score -= (avgSentenceLength - 20) * 3; // Penalty for longer sentences
+    } else if (avgSentenceLength < 10) {
+      score -= (10 - avgSentenceLength) * 3; // Penalty for very short sentences
+    }
+    
+    // Penalize for high percentage of complex sentences
+    score -= complexSentencePercentage * 0.7;
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      avgSentenceLength,
+      complexSentencePercentage: Math.round(complexSentencePercentage)
+    };
+  }
+  
+  /**
+   * Analyze word choice
+   */
+  private analyzeWordChoice(text: string): any {
+    if (!text) {
+      return {
+        score: 0,
+        category: 'poor',
+        simpleWordPercentage: 0,
+        complexWordPercentage: 0,
+        avgWordLength: 0
+      };
+    }
+    
+    // Split into words
+    const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+    const wordCount = words.length;
+    
+    if (wordCount === 0) {
+      return {
+        score: 0,
+        category: 'poor',
+        simpleWordPercentage: 0,
+        complexWordPercentage: 0,
+        avgWordLength: 0
+      };
+    }
+    
+    // Calculate average word length
+    const wordLengths = words.map(w => w.length);
+    const avgWordLength = wordLengths.reduce((sum, len) => sum + len, 0) / wordCount;
+    
+    // Define complex words (more than 3 syllables or longer than 10 characters)
+    const complexWords = words.filter(word => {
+      if (word.length > 10) return true;
+      
+      // Simplified syllable counting (count vowel groups)
+      const matches = word.match(/[aeiouy]+/g);
+      const syllables = matches ? matches.length : 1;
+      
+      return syllables > 3;
     });
     
-    // Get top 5 words by frequency
-    const topWords = Object.entries(wordCounts)
+    const complexWordCount = complexWords.length;
+    const complexWordPercentage = (complexWordCount / wordCount) * 100;
+    const simpleWordPercentage = 100 - complexWordPercentage;
+    
+    // Score calculation
+    let score = 100;
+    
+    // Penalize for high percentage of complex words
+    if (complexWordPercentage > 15) {
+      score -= (complexWordPercentage - 15) * 2;
+    }
+    
+    // Penalize if average word length is too high
+    if (avgWordLength > 6) {
+      score -= (avgWordLength - 6) * 7;
+    }
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      simpleWordPercentage: Math.round(simpleWordPercentage),
+      complexWordPercentage: Math.round(complexWordPercentage),
+      avgWordLength: Math.round(avgWordLength * 10) / 10 // Round to 1 decimal
+    };
+  }
+  
+  /**
+   * Analyze semantic relevance (topic coverage, keyword context, entities)
+   */
+  private analyzeSemanticRelevance(pageData: CrawlerOutput, primaryKeyword: string): any {
+    // Analyze topic coverage
+    const topicCoverage = this.analyzeTopicCoverage(pageData, primaryKeyword);
+    
+    // Analyze keyword context
+    const keywordContext = this.analyzeKeywordContext(pageData, primaryKeyword);
+    
+    // Analyze entities
+    const entityAnalysis = this.analyzeEntities(pageData);
+    
+    return {
+      topicCoverage,
+      keywordContext,
+      entityAnalysis
+    };
+  }
+  
+  /**
+   * Analyze topic coverage
+   */
+  private analyzeTopicCoverage(pageData: CrawlerOutput, primaryKeyword: string): any {
+    const text = pageData.content.text || '';
+    
+    if (!text) {
+      return {
+        score: 0,
+        category: 'poor',
+        keyTopics: [],
+        topicDepthScore: 0
+      };
+    }
+    
+    // Extract key topics (simple approach)
+    const words = text.toLowerCase().split(/\s+/);
+    const stopWords = [
+      'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with',
+      'by', 'about', 'as', 'into', 'like', 'through', 'after', 'over', 'between',
+      'out', 'against', 'during', 'without', 'before', 'under', 'around', 'among',
+      'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+      'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'can', 'could',
+      'may', 'might', 'must', 'of', 'that', 'this', 'these', 'those', 'it', 'its'
+    ];
+    
+    // Filter out stop words and count word frequency
+    const wordFrequency: Record<string, number> = {};
+    
+    for (const word of words) {
+      if (word.length < 4 || stopWords.includes(word)) continue;
+      wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+    }
+    
+    // Get the top N frequent words
+    const topWords = Object.entries(wordFrequency)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(([word]) => word)
-      .filter(word => word !== primaryKeyword.toLowerCase());
+      .map(([word]) => word);
     
-    return topWords.slice(0, 5);
+    // Check if primary keyword is in the top words
+    const keywordFound = topWords.some(word => 
+      word.includes(primaryKeyword.toLowerCase()) || 
+      primaryKeyword.toLowerCase().includes(word)
+    );
+    
+    let score = 50; // Base score
+    
+    // Award points for having the primary keyword in top words
+    if (keywordFound) {
+      score += 20;
+    }
+    
+    // Award points for having a reasonable number of topics
+    if (topWords.length >= 5) {
+      score += 15;
+    } else if (topWords.length >= 3) {
+      score += 10;
+    }
+    
+    // Calculate topic depth (how much content covers each topic)
+    const contentWords = words.filter(w => w.length >= 4 && !stopWords.includes(w)).length;
+    const topicDepthScore = Math.min(100, (contentWords / 50) * 10); // 10 points per 50 relevant words, max 100
+    
+    score += Math.min(15, topicDepthScore / 10); // Up to 15 points for depth
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      keyTopics: topWords,
+      topicDepthScore: Math.round(topicDepthScore)
+    };
   }
   
   /**
-   * Check if a word is a stop word
+   * Analyze keyword context
    */
-  private isStopWord(word: string): boolean {
-    const stopWords = new Set([
-      'the', 'and', 'but', 'for', 'nor', 'yet', 'so', 'such', 'than',
-      'a', 'an', 'that', 'this', 'it', 'is', 'are', 'was', 'were', 'be',
-      'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'to',
-      'at', 'by', 'for', 'from', 'in', 'into', 'of', 'on', 'onto', 'with',
-      'without', 'within'
-    ]);
+  private analyzeKeywordContext(pageData: CrawlerOutput, primaryKeyword: string): any {
+    const text = pageData.content.text || '';
     
-    return stopWords.has(word.toLowerCase());
+    if (!text || !primaryKeyword) {
+      return {
+        score: 0,
+        category: 'poor',
+        keywordInContext: false,
+        semanticRelevance: 0
+      };
+    }
+    
+    // Check if keyword appears in the text
+    const keywordInContext = text.toLowerCase().includes(primaryKeyword.toLowerCase());
+    
+    // Calculate keyword density
+    const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+    const wordCount = words.length;
+    
+    const keywordMatches = (text.toLowerCase().match(new RegExp(primaryKeyword.toLowerCase(), 'g')) || []).length;
+    const keywordDensity = (keywordMatches / wordCount) * 100;
+    
+    // Check if keyword appears in important elements
+    const keywordInTitle = pageData.title?.toLowerCase().includes(primaryKeyword.toLowerCase()) || false;
+    const keywordInH1 = pageData.headings.h1.some(h => h.toLowerCase().includes(primaryKeyword.toLowerCase()));
+    const keywordInH2 = pageData.headings.h2.some(h => h.toLowerCase().includes(primaryKeyword.toLowerCase()));
+    const keywordInMeta = pageData.meta.description?.toLowerCase().includes(primaryKeyword.toLowerCase()) || false;
+    
+    // Calculate semantic relevance score
+    let score = 0;
+    
+    // Base score for keyword presence
+    if (keywordInContext) {
+      score += 30;
+    }
+    
+    // Bonus for optimal keyword density (1-3%)
+    if (keywordDensity >= 1 && keywordDensity <= 3) {
+      score += 20;
+    } else if (keywordDensity > 3 && keywordDensity <= 5) {
+      score += 10; // Still acceptable
+    } else if (keywordDensity > 5) {
+      score -= Math.min(20, (keywordDensity - 5) * 5); // Penalty for keyword stuffing
+    }
+    
+    // Bonus for keyword in important elements
+    if (keywordInTitle) score += 15;
+    if (keywordInH1) score += 15;
+    if (keywordInH2) score += 10;
+    if (keywordInMeta) score += 10;
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      keywordInContext,
+      semanticRelevance: Math.round(score)
+    };
   }
   
   /**
-   * Calculate topic depth score
+   * Analyze entities (people, places, organizations)
    */
-  private calculateTopicDepthScore(text: string, keyTopics: string[]): number {
-    // Count mentions of key topics
-    let totalMentions = 0;
+  private analyzeEntities(pageData: CrawlerOutput): any {
+    const text = pageData.content.text || '';
     
-    keyTopics.forEach(topic => {
-      const regex = new RegExp(`\\b${this.escapeRegExp(topic)}\\b`, 'gi');
-      const matches = text.match(regex) || [];
-      totalMentions += matches.length;
-    });
+    if (!text) {
+      return {
+        score: 0,
+        category: 'poor',
+        entities: []
+      };
+    }
     
-    // Score based on mentions and topic count
-    const score = Math.min(100, (totalMentions * 5) + (keyTopics.length * 10));
+    // Simple entity extraction - this is a very basic approach
+    // A production system would use a proper NLP library for entity extraction
     
-    return score;
-  }
-  
-  /**
-   * Escape string for use in RegExp
-   */
-  private escapeRegExp(string: string): string {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-  
-  /**
-   * Calculate semantic relevance score
-   */
-  private calculateSemanticRelevance(text: string, primaryKeyword: string): number {
-    // This is a simplified version - in real life we'd use more NLP
+    // Extract potential entities (capitalized words not at the start of sentences)
+    const sentences = text.split(/[.!?]+/);
+    const entities: Record<string, {type: string, count: number}> = {};
     
-    // Look for semantically related terms
-    const keywordParts = primaryKeyword.toLowerCase().split(/\s+/);
-    
-    // Check if keyword parts appear near each other
-    let nearMatches = 0;
-    keywordParts.forEach(part => {
-      if (text.toLowerCase().includes(part)) {
-        nearMatches++;
-      }
-    });
-    
-    const keywordPartRatio = keywordParts.length > 0 
-      ? nearMatches / keywordParts.length 
-      : 0;
-    
-    return keywordPartRatio;
-  }
-  
-  /**
-   * Extract entities from text
-   */
-  private extractEntities(text: string): { type: string; name: string; frequency: number }[] {
-    // This is a simplified approach without a proper NLP engine
-    
-    const entities: { type: string; name: string; frequency: number }[] = [];
-    
-    // Person detection (Mr./Mrs./Dr. followed by capitalized words)
-    const personRegex = /\b(Mr\.|Mrs\.|Dr\.|Prof\.|Sir|Miss|Ms\.|Lord|Lady)\s+([A-Z][a-z]+)\b/g;
-    let personMatch;
-    while ((personMatch = personRegex.exec(text)) !== null) {
-      const name = personMatch[1] + " " + personMatch[2];
-      const existingEntity = entities.find(e => e.name === name && e.type === 'person');
+    for (const sentence of sentences) {
+      const words = sentence.split(/\s+/);
       
-      if (existingEntity) {
-        existingEntity.frequency += 1;
-      } else {
-        entities.push({ type: 'person', name, frequency: 1 });
+      for (let i = 1; i < words.length; i++) { // Skip first word of sentences
+        const word = words[i].trim();
+        
+        // Check if word is capitalized and not a common word
+        if (word.length > 1 && word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) {
+          // Try to determine entity type (very naive approach)
+          let type = 'other';
+          
+          // Look for organization indicators
+          if (word.includes('Inc') || word.includes('Corp') || word.includes('LLC') || 
+              word.includes('Ltd') || word.includes('Company') || word.includes('Association')) {
+            type = 'organization';
+          }
+          // Look for location indicators
+          else if (word.includes('Street') || word.includes('Road') || word.includes('Avenue') || 
+                   word.includes('City') || word.includes('County') || word.includes('State') || 
+                   word.includes('Country')) {
+            type = 'location';
+          }
+          // Assume people (very naive)
+          else if (word.length > 3 && !word.endsWith('ing') && !word.endsWith('ed')) {
+            type = 'person';
+          }
+          
+          // Add to entities count
+          const key = `${word}:${type}`;
+          entities[key] = entities[key] || { type, count: 0 };
+          entities[key].count += 1;
+        }
       }
     }
     
-    // Organization detection (consecutive capitalized words)
-    const orgRegex = /\b([A-Z][a-z]*\s+){1,3}(Inc\.|Corp\.|LLC|Ltd\.|Company|Association|Organization|Group)\b/g;
-    let orgMatch;
-    while ((orgMatch = orgRegex.exec(text)) !== null) {
-      const name = orgMatch[0];
-      const existingEntity = entities.find(e => e.name === name && e.type === 'organization');
-      
-      if (existingEntity) {
-        existingEntity.frequency += 1;
-      } else {
-        entities.push({ type: 'organization', name, frequency: 1 });
-      }
-    }
+    // Convert to array and sort by frequency
+    const entityArray = Object.entries(entities).map(([key, data]) => {
+      const [name] = key.split(':');
+      return {
+        type: data.type,
+        name,
+        frequency: data.count
+      };
+    }).sort((a, b) => b.frequency - a.frequency).slice(0, 10);
     
-    // Location detection (common location indicators)
-    const locationRegex = /\b([A-Z][a-z]+\s)?(City|Street|Avenue|Road|Boulevard|Lane|Drive|Place|Square|Park|Bridge|River|Lake|Mountain|Forest|Desert|Beach|Ocean|Sea|Town|Village|Country)\b/g;
-    let locationMatch;
-    while ((locationMatch = locationRegex.exec(text)) !== null) {
-      const name = locationMatch[0];
-      const existingEntity = entities.find(e => e.name === name && e.type === 'location');
-      
-      if (existingEntity) {
-        existingEntity.frequency += 1;
-      } else {
-        entities.push({ type: 'location', name, frequency: 1 });
-      }
-    }
+    // Score based on entity diversity and frequency
+    let score = 50; // Base score
     
-    // Date detection
-    const dateRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(st|nd|rd|th)?,\s+\d{4}\b/g;
-    let dateMatch;
-    while ((dateMatch = dateRegex.exec(text)) !== null) {
-      const name = dateMatch[0];
-      const existingEntity = entities.find(e => e.name === name && e.type === 'date');
-      
-      if (existingEntity) {
-        existingEntity.frequency += 1;
-      } else {
-        entities.push({ type: 'date', name, frequency: 1 });
-      }
-    }
+    // Award points for entity diversity
+    const types = new Set(entityArray.map(e => e.type));
+    score += Math.min(20, types.size * 10); // Up to 20 points for diverse entity types
     
-    // Limit to top entities by frequency
-    return entities
-      .sort((a, b) => b.frequency - a.frequency)
-      .slice(0, 10);
+    // Award points for number of entities
+    score += Math.min(30, entityArray.length * 3); // Up to 30 points
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      entities: entityArray
+    };
   }
   
   /**
-   * Analyze content engagement metrics
+   * Analyze engagement elements (content formats, interactive elements, CTAs)
    */
-  private analyzeContentEngagement(
-    $: cheerio.CheerioAPI, 
-    pageData: CrawlerOutput
-  ): ContentEngagementMetrics {
-    // Content formats analysis
+  private analyzeEngagement(pageData: CrawlerOutput): any {
+    // Analyze content formats
+    const contentFormats = this.analyzeContentFormats(pageData);
+    
+    // Analyze interactive elements
+    const interactiveElements = this.analyzeInteractiveElements(pageData);
+    
+    // Analyze calls to action
+    const callsToAction = this.analyzeCallsToAction(pageData);
+    
+    return {
+      contentFormats,
+      interactiveElements,
+      callsToAction
+    };
+  }
+  
+  /**
+   * Analyze content formats (lists, tables, quotes, etc.)
+   */
+  private analyzeContentFormats(pageData: CrawlerOutput): any {
+    const html = pageData.rawHtml || '';
+    
+    if (!html) {
+      return {
+        score: 0,
+        category: 'poor',
+        hasLists: false,
+        hasTables: false,
+        hasBlockquotes: false,
+        hasHighlightedText: false
+      };
+    }
+    
+    // Use cheerio to parse HTML
+    const $ = cheerio.load(html);
+    
+    // Check for various content formats
     const hasLists = $('ul, ol').length > 0;
     const hasTables = $('table').length > 0;
     const hasBlockquotes = $('blockquote').length > 0;
-    const hasHighlightedText = $('strong, b, em, i, mark').length > 0;
+    const hasHighlightedText = $('strong, b, em, i, mark, span[style*="color"], span[style*="background"]').length > 0;
     
-    const contentFormatsScore = this.calculateContentFormatsScore(
+    // Count images and count images with alt text
+    const totalImages = $('img').length;
+    const imagesWithAlt = $('img[alt]').length;
+    const imageAltRatio = totalImages > 0 ? imagesWithAlt / totalImages : 0;
+    
+    // Calculate score
+    let score = 50; // Base score
+    
+    // Award points for different content formats
+    if (hasLists) score += 10;
+    if (hasTables) score += 10;
+    if (hasBlockquotes) score += 10;
+    if (hasHighlightedText) score += 10;
+    
+    // Award points for image alt text ratio
+    score += Math.round(imageAltRatio * 10);
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
       hasLists,
       hasTables,
       hasBlockquotes,
       hasHighlightedText
-    );
-    
-    // Interactive elements analysis
-    const hasVideos = $('video, iframe[src*="youtube"], iframe[src*="vimeo"]').length > 0;
-    const hasEmbeds = $('iframe:not([src*="youtube"]):not([src*="vimeo"]), embed, object').length > 0;
-    const hasInteractiveContent = $('button, input, select, textarea').length > 0;
-    
-    const interactiveScore = this.calculateInteractiveScore(
-      hasVideos,
-      hasEmbeds,
-      hasInteractiveContent
-    );
-    
-    // CTA analysis
-    const ctaPatterns = [
-      /\b(click|tap|submit|subscribe|sign up|join|download|get|buy|purchase|order|book|register)\b/i,
-      /\b(call|contact|email|send)\b/i,
-      /\b(now|today|immediately|instantly)\b/i,
-      /[!]\s*$/,
-      /\b(free|discount|sale|offer|deal|limited time|exclusive)\b/i
-    ];
-    
-    const ctaCount = ctaPatterns.reduce((count, pattern) => {
-      const matches = (pageData.content.text.match(pattern) || []).length;
-      return count + matches;
-    }, 0);
-    
-    const hasCTA = ctaCount > 0;
-    const ctaQuality = this.calculateCTAQuality(ctaCount, pageData.content.text.length);
-    
-    const ctaScore = this.calculateCTAScore(hasCTA, ctaQuality, ctaCount);
-    
-    return {
-      contentFormats: {
-        score: contentFormatsScore,
-        category: this.getScoreCategory(contentFormatsScore),
-        hasLists,
-        hasTables,
-        hasBlockquotes,
-        hasHighlightedText
-      },
-      interactiveElements: {
-        score: interactiveScore,
-        category: this.getScoreCategory(interactiveScore),
-        hasVideos,
-        hasEmbeds,
-        hasInteractiveContent
-      },
-      callsToAction: {
-        score: ctaScore,
-        category: this.getScoreCategory(ctaScore),
-        hasCTA,
-        ctaQuality,
-        ctaCount
-      }
     };
   }
   
   /**
-   * Calculate content formats score
+   * Analyze interactive elements (videos, embeds, etc.)
    */
-  private calculateContentFormatsScore(
-    hasLists: boolean,
-    hasTables: boolean,
-    hasBlockquotes: boolean,
-    hasHighlightedText: boolean
-  ): number {
-    let score = 0;
+  private analyzeInteractiveElements(pageData: CrawlerOutput): any {
+    const html = pageData.rawHtml || '';
     
-    if (hasLists) score += 25;
-    if (hasTables) score += 25;
-    if (hasBlockquotes) score += 25;
-    if (hasHighlightedText) score += 25;
-    
-    return score;
-  }
-  
-  /**
-   * Calculate interactive elements score
-   */
-  private calculateInteractiveScore(
-    hasVideos: boolean,
-    hasEmbeds: boolean,
-    hasInteractiveContent: boolean
-  ): number {
-    let score = 0;
-    
-    if (hasVideos) score += 40;
-    if (hasEmbeds) score += 30;
-    if (hasInteractiveContent) score += 30;
-    
-    return score;
-  }
-  
-  /**
-   * Calculate CTA quality
-   */
-  private calculateCTAQuality(ctaCount: number, textLength: number): number {
-    if (textLength === 0) return 0;
-    
-    // Density of CTAs (optimal is about 1 per 500 characters)
-    const ctaDensity = (ctaCount / textLength) * 1000;
-    
-    if (ctaDensity >= 0.5 && ctaDensity <= 3) {
-      return 100; // Good density
-    } else if (ctaDensity > 0 && ctaDensity < 0.5) {
-      return 50; // Too few CTAs
-    } else if (ctaDensity > 3) {
-      return 25; // Too many CTAs
+    if (!html) {
+      return {
+        score: 0,
+        category: 'poor',
+        hasVideos: false,
+        hasEmbeds: false,
+        hasInteractiveContent: false
+      };
     }
     
-    return 0;
+    // Use cheerio to parse HTML
+    const $ = cheerio.load(html);
+    
+    // Check for various interactive elements
+    const hasVideos = $('video, iframe[src*="youtube"], iframe[src*="vimeo"]').length > 0;
+    const hasEmbeds = $('iframe').not('iframe[src*="youtube"]').not('iframe[src*="vimeo"]').length > 0;
+    
+    // Check for interactive content
+    const hasInteractiveContent = 
+      $('button, input, select, textarea, [onclick], [role="button"], a[href^="#"]').length > 0;
+    
+    // Calculate score
+    let score = 50; // Base score
+    
+    // Award points for different interactive elements
+    if (hasVideos) score += 20;
+    if (hasEmbeds) score += 15;
+    if (hasInteractiveContent) score += 15;
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      hasVideos,
+      hasEmbeds,
+      hasInteractiveContent
+    };
   }
   
   /**
-   * Calculate CTA score
+   * Analyze calls to action
    */
-  private calculateCTAScore(
-    hasCTA: boolean,
-    ctaQuality: number,
-    ctaCount: number
-  ): number {
-    if (!hasCTA) return 0;
+  private analyzeCallsToAction(pageData: CrawlerOutput): any {
+    const html = pageData.rawHtml || '';
+    const text = pageData.content.text || '';
     
-    let score = 0;
-    
-    // Base score for having CTAs
-    score += 40;
-    
-    // Quality factor
-    score += ctaQuality * 0.4;
-    
-    // Bonus for having optimal number of CTAs (2-5)
-    if (ctaCount >= 2 && ctaCount <= 5) {
-      score += 20;
-    } else if (ctaCount > 5) {
-      score += 10;
+    if (!html || !text) {
+      return {
+        score: 0,
+        category: 'poor',
+        hasCTA: false,
+        ctaQuality: 0,
+        ctaCount: 0
+      };
     }
     
-    return Math.min(100, score);
+    // Use cheerio to parse HTML
+    const $ = cheerio.load(html);
+    
+    // Look for buttons that might be CTAs
+    const buttonElements = $('button, .btn, .button, a.cta, a.btn, [role="button"]');
+    const buttonCTAs = buttonElements.length;
+    
+    // Look for text that might be CTAs
+    const ctaPhrases = [
+      'sign up', 'subscribe', 'register', 'join', 'download', 'get started',
+      'try', 'buy now', 'purchase', 'order', 'call', 'contact', 'learn more',
+      'read more', 'find out more', 'discover', 'schedule', 'request', 'submit',
+      'apply now', 'get quote', 'free trial'
+    ];
+    
+    let textCTACount = 0;
+    
+    for (const phrase of ctaPhrases) {
+      const regex = new RegExp(phrase, 'gi');
+      const matches = text.match(regex);
+      if (matches) {
+        textCTACount += matches.length;
+      }
+    }
+    
+    // Total CTA count
+    const ctaCount = buttonCTAs + Math.min(5, textCTACount); // Cap text CTAs to avoid overcounting
+    
+    // Check if there's at least one CTA
+    const hasCTA = ctaCount > 0;
+    
+    // Calculate CTA quality (basic heuristic)
+    let ctaQuality = 0;
+    
+    if (hasCTA) {
+      ctaQuality = 50; // Base quality
+      
+      // Higher quality if there are button CTAs
+      if (buttonCTAs > 0) {
+        ctaQuality += 20;
+      }
+      
+      // Higher quality if there are multiple CTAs but not too many
+      if (ctaCount >= 2 && ctaCount <= 5) {
+        ctaQuality += 20;
+      } else if (ctaCount > 5) {
+        ctaQuality += 10; // Too many CTAs can be overwhelming
+      }
+      
+      // Check for action verbs in button text
+      let actionVerbCount = 0;
+      buttonElements.each((_, element) => {
+        const buttonText = $(element).text().toLowerCase();
+        const hasActionVerb = ctaPhrases.some(phrase => buttonText.includes(phrase));
+        if (hasActionVerb) actionVerbCount++;
+      });
+      
+      if (actionVerbCount > 0) {
+        ctaQuality += Math.min(10, actionVerbCount * 5); // Up to 10 points
+      }
+    }
+    
+    // Calculate overall score
+    let score = 0;
+    
+    if (hasCTA) {
+      score = 50; // Base score for having a CTA
+      
+      // Add quality score (weighted)
+      score += (ctaQuality * 0.5);
+    }
+    
+    // Ensure score is within 0-100 range
+    score = Math.min(100, Math.max(0, score));
+    ctaQuality = Math.min(100, Math.max(0, ctaQuality));
+    
+    return {
+      score: Math.round(score),
+      category: this.getScoreCategory(score),
+      hasCTA,
+      ctaQuality: Math.round(ctaQuality),
+      ctaCount
+    };
+  }
+  
+  /**
+   * Generate annotated content
+   */
+  private generateAnnotatedContent(pageData: CrawlerOutput, primaryKeyword: string): any {
+    const title = pageData.title || '';
+    const paragraphs = pageData.content.paragraphs || [];
+    
+    if (paragraphs.length === 0) {
+      return {
+        title,
+        introduction: { 
+          content: "No content found to analyze", 
+          annotations: [{
+            content: "No content found",
+            issue: "Missing content",
+            suggestion: "Add relevant content to your page",
+            position: 0,
+            severity: 'high',
+            type: 'structure'
+          }]
+        },
+        mainContent: [{ 
+          content: "No content found to analyze", 
+          annotations: [] 
+        }],
+        conclusion: { 
+          content: "No content found to analyze", 
+          annotations: [] 
+        }
+      };
+    }
+    
+    // Identify introduction (first 1-2 paragraphs)
+    const { introContent, annotations: introAnnotations } = 
+      contentAnnotationService.identifyIntroductionParagraphs(paragraphs, title, primaryKeyword);
+    
+    // Identify conclusion (last 1-2 paragraphs)
+    const { conclusionContent, annotations: conclusionAnnotations } = 
+      contentAnnotationService.identifyConclusionParagraphs(paragraphs, primaryKeyword);
+    
+    // The remaining paragraphs form the main content
+    // Group them into sections of 2-3 paragraphs
+    const mainParagraphs = paragraphs.slice(
+      Math.min(2, paragraphs.length),
+      paragraphs.length - Math.min(2, paragraphs.length)
+    );
+    
+    const mainContent = [];
+    
+    // Group into sections of max 2-3 paragraphs
+    const sectionSize = 3;
+    
+    for (let i = 0; i < mainParagraphs.length; i += sectionSize) {
+      const sectionParagraphs = mainParagraphs.slice(i, i + sectionSize);
+      const sectionContent = sectionParagraphs.join('\n\n');
+      
+      // Generate annotations for this section
+      const sectionAnnotations = sectionParagraphs.flatMap(paragraph => 
+        contentAnnotationService.generateParagraphAnnotations(paragraph, primaryKeyword)
+      );
+      
+      mainContent.push({
+        content: sectionContent,
+        annotations: sectionAnnotations
+      });
+    }
+    
+    return {
+      title,
+      introduction: {
+        content: introContent,
+        annotations: introAnnotations
+      },
+      mainContent,
+      conclusion: {
+        content: conclusionContent,
+        annotations: conclusionAnnotations
+      }
+    };
   }
   
   /**
    * Generate recommendations based on analysis
    */
-  private generateRecommendations(
-    structure: ContentStructureMetrics,
-    readability: ReadabilityMetrics,
-    semanticRelevance: SemanticRelevanceMetrics,
-    engagement: ContentEngagementMetrics
-  ): string[] {
+  private generateRecommendations(analysis: any): string[] {
     const recommendations: string[] = [];
     
     // Structure recommendations
-    if (structure.headingStructure.score < 70) {
-      if (structure.headingStructure.totalHeadings === 0) {
-        recommendations.push("Add heading tags (H1, H2, H3) to structure your content and improve readability.");
-      } else if (structure.headingStructure.headingsWithKeywords / structure.headingStructure.totalHeadings < 0.3) {
-        recommendations.push("Include your target keyword in more headings to improve keyword relevance.");
+    if (analysis.structure.headingStructure.score < 70) {
+      if (analysis.structure.headingStructure.totalHeadings === 0) {
+        recommendations.push("Add hierarchical headings (H1, H2, H3) to organize your content");
+      } else if (analysis.structure.headingStructure.headingsWithKeywords === 0) {
+        recommendations.push("Include your target keywords in headings to improve SEO");
+      } else if (analysis.structure.headingStructure.score < 50) {
+        recommendations.push("Improve your heading structure with a clear hierarchy (one H1, multiple H2s, etc.)");
       }
     }
     
-    if (structure.paragraphStructure.score < 70) {
-      if (structure.paragraphStructure.avgParagraphLength > 120) {
-        recommendations.push("Break up long paragraphs into smaller chunks of 3-5 sentences to improve readability.");
-      } else if (structure.paragraphStructure.avgParagraphLength < 40) {
-        recommendations.push("Expand very short paragraphs to provide more context and depth to your content.");
+    if (analysis.structure.paragraphStructure.score < 70) {
+      if (analysis.structure.paragraphStructure.avgParagraphLength > 120) {
+        recommendations.push("Break down long paragraphs into smaller, more digestible chunks (40-80 words ideal)");
+      } else if (analysis.structure.paragraphStructure.avgParagraphLength < 30) {
+        recommendations.push("Expand your paragraphs with more detailed information while maintaining readability");
+      }
+    }
+    
+    if (analysis.structure.contentDistribution.score < 70) {
+      if (analysis.structure.contentDistribution.introductionQuality < 50) {
+        recommendations.push("Strengthen your introduction by clearly stating what the content will cover and including your primary keyword");
+      }
+      if (analysis.structure.contentDistribution.conclusionQuality < 50) {
+        recommendations.push("Add a strong conclusion with a summary of key points and a clear call-to-action");
       }
     }
     
     // Readability recommendations
-    if (readability.fleschReadingEase.score < 50) {
-      recommendations.push("Simplify your language. Use shorter sentences and less complex words to improve readability.");
+    if (analysis.readability.fleschReadingEase.score < 60) {
+      recommendations.push("Simplify your language to improve readability - use shorter sentences and simpler words");
     }
     
-    if (readability.sentenceComplexity.score < 70) {
-      if (readability.sentenceComplexity.avgSentenceLength > 20) {
-        recommendations.push("Shorten your sentences. Aim for an average of 15-20 words per sentence.");
+    if (analysis.readability.sentenceComplexity.score < 70) {
+      if (analysis.readability.sentenceComplexity.avgSentenceLength > 25) {
+        recommendations.push("Shorten your sentences to 15-20 words on average for better readability");
       }
-      if (readability.sentenceComplexity.complexSentencePercentage > 40) {
-        recommendations.push("Reduce complex sentences with multiple clauses and commas. Split them into shorter, clearer statements.");
-      }
-    }
-    
-    if (readability.wordChoice.score < 70) {
-      if (readability.wordChoice.complexWordPercentage > 30) {
-        recommendations.push("Use simpler words where possible. Replace complex multi-syllable words with shorter alternatives.");
+      if (analysis.readability.sentenceComplexity.complexSentencePercentage > 30) {
+        recommendations.push("Break down complex sentences into simpler ones to improve reader comprehension");
       }
     }
     
-    // Semantic recommendations
-    if (semanticRelevance.topicCoverage.score < 70) {
-      recommendations.push(`Expand your content to include more related topics such as: ${semanticRelevance.topicCoverage.keyTopics.join(', ')}.`);
+    if (analysis.readability.wordChoice.score < 70) {
+      if (analysis.readability.wordChoice.complexWordPercentage > 20) {
+        recommendations.push("Replace complex words with simpler alternatives where possible");
+      }
     }
     
-    if (semanticRelevance.keywordContext.score < 70) {
-      recommendations.push("Improve the context around your target keyword. Make sure it appears naturally within relevant sentences.");
+    // Semantic relevance recommendations
+    if (analysis.semanticRelevance.topicCoverage.score < 70) {
+      recommendations.push("Expand your content to cover more aspects of your topic in greater depth");
+    }
+    
+    if (analysis.semanticRelevance.keywordContext.score < 70) {
+      if (!analysis.semanticRelevance.keywordContext.keywordInContext) {
+        recommendations.push("Include your target keyword naturally throughout your content, especially in the introduction and conclusion");
+      }
     }
     
     // Engagement recommendations
-    if (engagement.contentFormats.score < 50) {
-      let suggestion = "Add more variety to your content format by including ";
-      const missing = [];
-      if (!engagement.contentFormats.hasLists) missing.push("bullet or numbered lists");
-      if (!engagement.contentFormats.hasTables) missing.push("tables for organized data");
-      if (!engagement.contentFormats.hasBlockquotes) missing.push("blockquotes for testimonials or important points");
-      if (!engagement.contentFormats.hasHighlightedText) missing.push("bold or italic text for emphasis");
+    if (analysis.engagement.contentFormats.score < 70) {
+      const missingFormats = [];
+      if (!analysis.engagement.contentFormats.hasLists) missingFormats.push("bullet lists");
+      if (!analysis.engagement.contentFormats.hasTables) missingFormats.push("tables");
+      if (!analysis.engagement.contentFormats.hasBlockquotes) missingFormats.push("quotes");
+      if (!analysis.engagement.contentFormats.hasHighlightedText) missingFormats.push("highlighted text");
       
-      suggestion += missing.join(", ") + ".";
-      recommendations.push(suggestion);
-    }
-    
-    if (engagement.interactiveElements.score < 50) {
-      if (!engagement.interactiveElements.hasVideos) {
-        recommendations.push("Add video content to increase engagement and time on page.");
-      }
-      if (!engagement.interactiveElements.hasInteractiveContent) {
-        recommendations.push("Consider adding interactive elements like calculators, quizzes, or forms to engage users.");
+      if (missingFormats.length > 0) {
+        recommendations.push(`Add varied content formats (${missingFormats.join(', ')}) to improve engagement and readability`);
       }
     }
     
-    if (engagement.callsToAction.score < 50) {
-      if (!engagement.callsToAction.hasCTA) {
-        recommendations.push("Add clear calls-to-action (CTAs) to guide visitors on what to do next.");
-      } else if (engagement.callsToAction.ctaQuality < 50) {
-        recommendations.push("Improve your CTAs by making them more specific, action-oriented, and strategically placed.");
+    if (analysis.engagement.interactiveElements.score < 70) {
+      if (!analysis.engagement.interactiveElements.hasVideos) {
+        recommendations.push("Consider adding video content to increase engagement and time on page");
       }
     }
     
-    return recommendations;
-  }
-  
-  /**
-   * Calculate overall score based on all metrics
-   */
-  private calculateOverallScore(
-    structure: ContentStructureMetrics,
-    readability: ReadabilityMetrics,
-    semanticRelevance: SemanticRelevanceMetrics,
-    engagement: ContentEngagementMetrics
-  ): { score: number, category: 'excellent' | 'good' | 'needs-work' | 'poor' } {
-    // Calculate weighted average of all scores
-    const structureAvg = (
-      structure.headingStructure.score + 
-      structure.paragraphStructure.score + 
-      structure.contentDistribution.score
-    ) / 3;
+    if (analysis.engagement.callsToAction.score < 70) {
+      if (!analysis.engagement.callsToAction.hasCTA) {
+        recommendations.push("Add clear calls-to-action to guide users on what to do next");
+      } else if (analysis.engagement.callsToAction.ctaQuality < 50) {
+        recommendations.push("Improve your CTAs with action verbs and clear value propositions");
+      }
+    }
     
-    const readabilityAvg = (
-      readability.fleschReadingEase.score + 
-      readability.sentenceComplexity.score + 
-      readability.wordChoice.score
-    ) / 3;
+    // Add recommendations based on annotations
+    if (analysis.annotatedContent) {
+      const allAnnotations = [
+        ...analysis.annotatedContent.introduction.annotations || [],
+        ...(analysis.annotatedContent.mainContent || []).flatMap(section => section.annotations || []),
+        ...analysis.annotatedContent.conclusion.annotations || []
+      ];
+      
+      // Get high severity annotations
+      const highSeverityAnnotations = allAnnotations.filter(a => a.severity === 'high');
+      
+      for (const annotation of highSeverityAnnotations.slice(0, 3)) {
+        recommendations.push(annotation.suggestion);
+      }
+    }
     
-    const semanticAvg = (
-      semanticRelevance.topicCoverage.score + 
-      semanticRelevance.keywordContext.score + 
-      semanticRelevance.entityAnalysis.score
-    ) / 3;
+    // Ensure we have at least 3 recommendations
+    if (recommendations.length < 3) {
+      recommendations.push("Add more detailed and comprehensive content to fully address your topic");
+      recommendations.push("Include relevant statistics, examples, or case studies to support your points");
+      recommendations.push("Break up large text blocks with subheadings to improve scanability");
+    }
     
-    const engagementAvg = (
-      engagement.contentFormats.score + 
-      engagement.interactiveElements.score + 
-      engagement.callsToAction.score
-    ) / 3;
-    
-    // Apply weights to each category
-    const overallScore = Math.round(
-      (structureAvg * 0.3) + 
-      (readabilityAvg * 0.3) + 
-      (semanticAvg * 0.25) + 
-      (engagementAvg * 0.15)
-    );
-    
-    return {
-      score: overallScore,
-      category: this.getScoreCategory(overallScore)
-    };
+    // Cap at 10 recommendations
+    return recommendations.slice(0, 10);
   }
   
   /**
@@ -1330,511 +1298,6 @@ class DeepContentAnalyzer {
     if (score >= 60) return 'good';
     if (score >= 40) return 'needs-work';
     return 'poor';
-  }
-  
-  /**
-   * Get default analysis result on error
-   */
-  private getDefaultAnalysisResult(): DeepContentAnalysisResult {
-    return {
-      overallScore: {
-        score: 0,
-        category: 'poor'
-      },
-      structure: {
-        headingStructure: {
-          score: 0,
-          category: 'poor',
-          headingsWithKeywords: 0,
-          totalHeadings: 0
-        },
-        paragraphStructure: {
-          score: 0,
-          category: 'poor',
-          avgParagraphLength: 0,
-          shortParagraphCount: 0,
-          longParagraphCount: 0,
-          totalParagraphs: 0
-        },
-        contentDistribution: {
-          score: 0,
-          category: 'poor',
-          introductionQuality: 0,
-          bodyContentQuality: 0,
-          conclusionQuality: 0
-        }
-      },
-      readability: {
-        fleschReadingEase: {
-          score: 0,
-          category: 'poor',
-          interpretation: "Unable to analyze"
-        },
-        sentenceComplexity: {
-          score: 0,
-          category: 'poor',
-          avgSentenceLength: 0,
-          complexSentencePercentage: 0
-        },
-        wordChoice: {
-          score: 0,
-          category: 'poor',
-          simpleWordPercentage: 0,
-          complexWordPercentage: 0,
-          avgWordLength: 0
-        }
-      },
-      semanticRelevance: {
-        topicCoverage: {
-          score: 0,
-          category: 'poor',
-          keyTopics: [],
-          topicDepthScore: 0
-        },
-        keywordContext: {
-          score: 0,
-          category: 'poor',
-          keywordInContext: false,
-          semanticRelevance: 0
-        },
-        entityAnalysis: {
-          score: 0,
-          category: 'poor',
-          entities: []
-        }
-      },
-      engagement: {
-        contentFormats: {
-          score: 0,
-          category: 'poor',
-          hasLists: false,
-          hasTables: false,
-          hasBlockquotes: false,
-          hasHighlightedText: false
-        },
-        interactiveElements: {
-          score: 0,
-          category: 'poor',
-          hasVideos: false,
-          hasEmbeds: false,
-          hasInteractiveContent: false
-        },
-        callsToAction: {
-          score: 0,
-          category: 'poor',
-          hasCTA: false,
-          ctaQuality: 0,
-          ctaCount: 0
-        }
-      },
-      recommendations: [
-        "Unable to perform deep content analysis. Please try again."
-      ],
-      annotatedContent: {
-        title: "Unable to analyze",
-        introduction: {
-          content: "Content analysis failed",
-          annotations: []
-        },
-        mainContent: [],
-        conclusion: {
-          content: "Content analysis failed",
-          annotations: []
-        }
-      }
-    };
-  }
-  
-  /**
-   * Create annotated content with improvement suggestions
-   */
-  private createAnnotatedContent(
-    $: cheerio.CheerioAPI,
-    pageData: CrawlerOutput,
-    primaryKeyword: string,
-    structureMetrics: ContentStructureMetrics,
-    readabilityMetrics: ReadabilityMetrics,
-    semanticMetrics: SemanticRelevanceMetrics,
-    engagementMetrics: ContentEngagementMetrics
-  ): DeepContentAnalysisResult['annotatedContent'] {
-    try {
-      // Get page title
-      const title = pageData.title || 'Untitled Page';
-      
-      // Initialize content section arrays
-      const headers: {content: string, type: string, level: number}[] = [];
-      const paragraphs: {content: string, section: string}[] = [];
-      const ctaElements: {content: string, type: string}[] = [];
-      
-      // Extract headers (h1, h2, h3, h4, h5, h6)
-      $('h1, h2, h3, h4, h5, h6').each((i, el) => {
-        const tagName = $(el).prop('tagName').toLowerCase();
-        const level = parseInt(tagName.replace('h', ''));
-        const content = $(el).text().trim();
-        if (content.length > 0) {
-          headers.push({
-            content,
-            type: tagName,
-            level
-          });
-        }
-      });
-      
-      // Extract paragraph content
-      $('p').each((i, el) => {
-        const content = $(el).text().trim();
-        if (content.length > 0) {
-          // Try to determine which section this paragraph belongs to
-          let section = 'body';
-          
-          // Check if it's under any of the extracted headers
-          const prevHeaders = $('h1, h2, h3, h4, h5, h6').filter((j, header) => {
-            return $(header).index() < $(el).index();
-          });
-          
-          if (prevHeaders.length > 0) {
-            const lastHeader = $(prevHeaders[prevHeaders.length - 1]).text().trim();
-            section = lastHeader;
-          }
-          
-          paragraphs.push({
-            content,
-            section
-          });
-        }
-      });
-      
-      // Extract potential CTAs
-      $('a, button, input[type="submit"], input[type="button"], .cta, [class*="cta"]').each((i, el) => {
-        let type = $(el).prop('tagName').toLowerCase();
-        let content = $(el).text().trim();
-        
-        // For inputs, use value as the content
-        if (type === 'input') {
-          content = $(el).attr('value') || '';
-          type = $(el).attr('type') || 'button';
-        }
-        
-        if (content.length > 0) {
-          ctaElements.push({
-            content,
-            type
-          });
-        }
-      });
-      
-      // Group paragraphs by section
-      const paragraphsBySection: {[key: string]: string[]} = {};
-      paragraphs.forEach(p => {
-        if (!paragraphsBySection[p.section]) {
-          paragraphsBySection[p.section] = [];
-        }
-        paragraphsBySection[p.section].push(p.content);
-      });
-      
-      // Create the introduction section
-      const introductionParagraphs = paragraphs.slice(0, Math.min(2, paragraphs.length));
-      const introductionText = introductionParagraphs.map(p => p.content).join('\n\n');
-      const introAnnotations: ContentAnnotation[] = [];
-      
-      // Check if introduction mentions the primary keyword
-      if (!this.textContainsKeyword(introductionText, primaryKeyword)) {
-        introAnnotations.push({
-          content: introductionText,
-          issue: 'Primary keyword missing from introduction',
-          suggestion: `Consider adding the primary keyword "${primaryKeyword}" early in your introduction to establish relevance.`,
-          position: 0,
-          severity: 'high',
-          type: 'semantics'
-        });
-      }
-      
-      // Check introduction length
-      if (introductionText.split(' ').length < 30) {
-        introAnnotations.push({
-          content: introductionText,
-          issue: 'Introduction too short',
-          suggestion: 'Expand your introduction to provide more context and engage readers from the start.',
-          position: 0,
-          severity: 'medium',
-          type: 'structure'
-        });
-      }
-      
-      // Process headers for main content sections
-      const headerSections: Array<{ heading: string, content: string, annotations: ContentAnnotation[] }> = [];
-      
-      // Create sections from our grouped paragraphs
-      Object.entries(paragraphsBySection).forEach(([sectionTitle, paragraphsInSection]) => {
-        // Skip if this is part of the introduction
-        if (sectionTitle === 'body' && introductionParagraphs.some(p => 
-          paragraphsInSection.includes(p.content))) {
-          return;
-        }
-        
-        const sectionContent = paragraphsInSection.join('\n\n');
-        
-        if (sectionContent.length > 0) {
-          const annotations: ContentAnnotation[] = [];
-          
-          // Check section length
-          const wordCount = sectionContent.split(' ').length;
-          if (wordCount > 300) {
-            annotations.push({
-              content: sectionContent,
-              issue: 'Section too long',
-              suggestion: 'Consider breaking this section into smaller subsections with additional headings.',
-              position: 0,
-              severity: 'medium',
-              type: 'structure'
-            });
-          }
-          
-          // Check sentence complexity
-          const avgWordPerSentence = this.estimateAvgWordsPerSentence(sectionContent);
-          if (avgWordPerSentence > 25) {
-            annotations.push({
-              content: sectionContent,
-              issue: 'Complex sentences',
-              suggestion: 'Simplify your sentences by breaking long ones into shorter statements. Aim for 15-20 words per sentence.',
-              position: 0,
-              severity: 'medium',
-              type: 'readability'
-            });
-          }
-          
-          // Check for passive voice (simple detection)
-          if (this.hasPassiveVoice(sectionContent)) {
-            annotations.push({
-              content: sectionContent,
-              issue: 'Passive voice detected',
-              suggestion: 'Convert passive voice to active voice for more engaging and direct content.',
-              position: 0,
-              severity: 'low',
-              type: 'engagement'
-            });
-          }
-          
-          // Check keyword density in section
-          if (this.textContainsKeyword(sectionContent, primaryKeyword)) {
-            const keywordDensity = this.calculateKeywordDensity(sectionContent, primaryKeyword);
-            if (keywordDensity > 5) {
-              annotations.push({
-                content: sectionContent,
-                issue: 'Keyword stuffing',
-                suggestion: `Reduce usage of "${primaryKeyword}" as it appears excessive. Aim for natural inclusion.`,
-                position: 0,
-                severity: 'high',
-                type: 'semantics'
-              });
-            }
-          } else if (sectionTitle !== 'body' && sectionTitle.length > 10) {
-            // Check if heading contains the keyword (for actual section headings, not the default 'body')
-            annotations.push({
-              content: sectionTitle,
-              issue: 'Heading missing keyword',
-              suggestion: `Consider including your primary keyword "${primaryKeyword}" in this heading for better SEO.`,
-              position: 0,
-              severity: 'medium',
-              type: 'semantics'
-            });
-          }
-          
-          headerSections.push({
-            heading: sectionTitle === 'body' ? 'Main Content' : sectionTitle,
-            content: sectionContent,
-            annotations: annotations
-          });
-        }
-      });
-      
-      // Handle CTAs separately
-      const ctaSections: Array<{ heading: string, content: string, annotations: ContentAnnotation[] }> = [];
-      
-      // Group CTAs by type
-      const ctasByType: {[key: string]: string[]} = {};
-      ctaElements.forEach(cta => {
-        if (!ctasByType[cta.type]) {
-          ctasByType[cta.type] = [];
-        }
-        ctasByType[cta.type].push(cta.content);
-      });
-      
-      // Create CTA sections
-      Object.entries(ctasByType).forEach(([ctaType, contents]) => {
-        const ctaContent = contents.join('\n• ');
-        
-        if (ctaContent.length > 0) {
-          const annotations: ContentAnnotation[] = [];
-          
-          // Check if CTAs contain the keyword
-          if (!this.textContainsKeyword(ctaContent, primaryKeyword) && ctaType === 'a') {
-            annotations.push({
-              content: ctaContent,
-              issue: 'CTAs missing keyword',
-              suggestion: `Consider including your primary keyword "${primaryKeyword}" in your call-to-action links.`,
-              position: 0,
-              severity: 'low',
-              type: 'semantics'
-            });
-          }
-          
-          // Check for clear action words
-          const hasActionVerb = ['click', 'subscribe', 'download', 'buy', 'try', 'get', 'join', 'sign up', 'learn', 'contact']
-            .some(verb => ctaContent.toLowerCase().includes(verb));
-            
-          if (!hasActionVerb && ctaContent.length > 10) {
-            annotations.push({
-              content: ctaContent,
-              issue: 'Weak call-to-action',
-              suggestion: 'Use strong action verbs in your CTAs like "Get", "Buy", "Download", or "Subscribe".',
-              position: 0,
-              severity: 'medium',
-              type: 'engagement'
-            });
-          }
-          
-          ctaSections.push({
-            heading: `${ctaType.charAt(0).toUpperCase() + ctaType.slice(1)} CTAs`,
-            content: `• ${ctaContent}`,
-            annotations: annotations
-          });
-        }
-      });
-      
-      // Combine header sections and CTA sections for the main content
-      const mainContent: AnnotatedContentSection[] = [
-        ...headerSections.map(section => ({
-          content: section.content,
-          annotations: section.annotations
-        })),
-        ...ctaSections.map(section => ({
-          content: section.content,
-          annotations: section.annotations
-        }))
-      ];
-      
-      // Identify conclusion (last few paragraphs)
-      const conclusionParagraphs = paragraphs.slice(-Math.min(2, paragraphs.length));
-      // Filter out paragraphs that appear to be CTAs
-      const filteredConclusionParagraphs = conclusionParagraphs.filter(p => {
-        return !ctaElements.some(cta => p.content.includes(cta.content));
-      });
-      
-      const conclusionText = filteredConclusionParagraphs.length > 0 
-        ? filteredConclusionParagraphs.map(p => p.content).join('\n\n')
-        : "No clear conclusion found";
-      const conclusionAnnotations: ContentAnnotation[] = [];
-      
-      // Check if conclusion has a call-to-action
-      if (!this.hasCTA(conclusionText)) {
-        conclusionAnnotations.push({
-          content: conclusionText,
-          issue: 'Missing call-to-action',
-          suggestion: 'Add a clear call-to-action to guide readers on next steps after reading your content.',
-          position: 0,
-          severity: 'medium',
-          type: 'engagement'
-        });
-      }
-      
-      // Check if conclusion summarizes key points
-      if (conclusionText.split(' ').length < 40) {
-        conclusionAnnotations.push({
-          content: conclusionText,
-          issue: 'Conclusion too brief',
-          suggestion: 'Expand your conclusion to summarize key points and reinforce your main message.',
-          position: 0,
-          severity: 'medium',
-          type: 'structure'
-        });
-      }
-      
-      return {
-        title,
-        introduction: {
-          content: introductionText,
-          annotations: introAnnotations
-        },
-        mainContent,
-        conclusion: {
-          content: conclusionText,
-          annotations: conclusionAnnotations
-        }
-      };
-    } catch (error) {
-      console.error('Error creating annotated content:', error);
-      return {
-        title: pageData.title || 'Untitled Page',
-        introduction: { content: "Error analyzing content", annotations: [] },
-        mainContent: [],
-        conclusion: { content: "Error analyzing content", annotations: [] }
-      };
-    }
-  }
-  
-  /**
-   * Check if text contains a keyword (case insensitive)
-   */
-  private textContainsKeyword(text: string, keyword: string): boolean {
-    return text.toLowerCase().includes(keyword.toLowerCase());
-  }
-  
-  /**
-   * Calculate keyword density in text
-   */
-  private calculateKeywordDensity(text: string, keyword: string): number {
-    const words = text.split(/\s+/);
-    const keywordRegex = new RegExp(keyword, 'gi');
-    const keywordCount = (text.match(keywordRegex) || []).length;
-    
-    return (keywordCount / words.length) * 100;
-  }
-  
-  /**
-   * Simple check for passive voice markers
-   */
-  private hasPassiveVoice(text: string): boolean {
-    const passiveMarkers = [
-      ' is ', ' are ', ' was ', ' were ', ' be ', ' been ', ' being ',
-      ' has been ', ' have been ', ' had been ', ' will be ', ' will have been '
-    ];
-    
-    return passiveMarkers.some(marker => text.includes(marker) && 
-      text.includes(marker + 'made') ||
-      text.includes(marker + 'done') ||
-      text.includes(marker + 'created') ||
-      text.includes(marker + 'built') ||
-      text.includes(marker + 'written') ||
-      text.includes(marker + 'seen') ||
-      text.includes(marker + 'found') ||
-      text.includes(marker + 'given')
-    );
-  }
-  
-  /**
-   * Check if text includes a call-to-action
-   */
-  private hasCTA(text: string): boolean {
-    const ctaMarkers = [
-      'call ', 'contact', 'sign up', 'signup', 'register', 'subscribe',
-      'download', 'learn more', 'click', 'buy', 'purchase', 'order', 'shop',
-      'visit', 'check out', 'discover', 'try', 'get started', 'join', 'read more'
-    ];
-    
-    return ctaMarkers.some(marker => text.toLowerCase().includes(marker));
-  }
-  
-  /**
-   * Estimate average words per sentence in text
-   */
-  private estimateAvgWordsPerSentence(text: string): number {
-    // Split by sentence-ending punctuation
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    if (sentences.length === 0) return 0;
-    
-    const words = text.split(/\s+/).filter(w => w.length > 0);
-    return words.length / sentences.length;
   }
 }
 

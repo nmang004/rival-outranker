@@ -103,3 +103,124 @@ export interface AnalysisComparison {
   };
   dateCompared: Date;
 }
+
+// Content annotation for deep content analysis
+export interface ContentAnnotation {
+  content: string;
+  issue: string;
+  suggestion: string;
+  position: number;
+  severity: 'high' | 'medium' | 'low';
+  type: 'structure' | 'readability' | 'semantics' | 'engagement';
+}
+
+// Annotated content section for deep content analysis
+export interface AnnotatedContentSection {
+  content: string;
+  annotations: ContentAnnotation[];
+}
+
+// Deep content analysis result
+export interface DeepContentAnalysisResult {
+  overallScore: {
+    score: number;
+    category: 'excellent' | 'good' | 'needs-work' | 'poor';
+  };
+  structure: {
+    headingStructure: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      headingsWithKeywords: number;
+      totalHeadings: number;
+    };
+    paragraphStructure: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      avgParagraphLength: number;
+      shortParagraphCount: number;
+      longParagraphCount: number;
+      totalParagraphs: number;
+    };
+    contentDistribution: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      introductionQuality: number;
+      bodyContentQuality: number;
+      conclusionQuality: number;
+    };
+  };
+  readability: {
+    fleschReadingEase: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      interpretation: string;
+    };
+    sentenceComplexity: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      avgSentenceLength: number;
+      complexSentencePercentage: number;
+    };
+    wordChoice: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      simpleWordPercentage: number;
+      complexWordPercentage: number;
+      avgWordLength: number;
+    };
+  };
+  semanticRelevance: {
+    topicCoverage: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      keyTopics: string[];
+      topicDepthScore: number;
+    };
+    keywordContext: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      keywordInContext: boolean;
+      semanticRelevance: number;
+    };
+    entityAnalysis: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      entities: {
+        type: string;
+        name: string;
+        frequency: number;
+      }[];
+    };
+  };
+  engagement: {
+    contentFormats: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      hasLists: boolean;
+      hasTables: boolean;
+      hasBlockquotes: boolean;
+      hasHighlightedText: boolean;
+    };
+    interactiveElements: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      hasVideos: boolean;
+      hasEmbeds: boolean;
+      hasInteractiveContent: boolean;
+    };
+    callsToAction: {
+      score: number;
+      category: 'excellent' | 'good' | 'needs-work' | 'poor';
+      hasCTA: boolean;
+      ctaQuality: number;
+      ctaCount: number;
+    };
+  };
+  recommendations: string[];
+  annotatedContent: {
+    title: string;
+    introduction: AnnotatedContentSection;
+    mainContent: AnnotatedContentSection[];
+    conclusion: AnnotatedContentSection;
+  };
+}

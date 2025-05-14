@@ -137,6 +137,52 @@ export default function DeepContentResultsPage() {
     );
   }
   
+  // If loading or error, show appropriate UI
+  if (isDataLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold tracking-tight gradient-heading mb-4">
+            Analyzing Content
+          </h1>
+          <p className="text-muted-foreground mb-8">Please wait while we analyze your content in depth.</p>
+          <div className="flex justify-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Analysis Error</CardTitle>
+            <CardDescription>
+              There was a problem analyzing the content for {url}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>The server encountered an error while processing your request. Please try again later.</p>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button asChild variant="outline">
+              <Link href="/deep-content">
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Return to Deep Content Analysis
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+  
+  // Use actual API data or fallback to default
+  const analysisData = contentAnalysis || defaultData;
+  
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <div className="mb-8">
@@ -183,9 +229,9 @@ export default function DeepContentResultsPage() {
             variant="outline" 
             size="sm" 
             onClick={handleExportPDF}
-            disabled={isLoading}
+            disabled={isPdfLoading}
           >
-            {isLoading ? (
+            {isPdfLoading ? (
               <>
                 <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                 Exporting...
@@ -208,17 +254,17 @@ export default function DeepContentResultsPage() {
           <CardContent>
             <div className="flex items-center justify-center">
               <div className={`h-32 w-32 rounded-full flex items-center justify-center text-3xl font-bold border-8 ${
-                contentAnalysis.overallScore >= 80 ? 'border-green-500 text-green-600' :
-                contentAnalysis.overallScore >= 60 ? 'border-yellow-500 text-yellow-600' :
+                analysisData.overallScore.score >= 80 ? 'border-green-500 text-green-600' :
+                analysisData.overallScore.score >= 60 ? 'border-yellow-500 text-yellow-600' :
                 'border-red-500 text-red-600'
               }`}>
-                {contentAnalysis.overallScore}
+                {analysisData.overallScore.score}
               </div>
             </div>
             <p className="text-center mt-4 text-sm text-muted-foreground">
               {
-                contentAnalysis.overallScore >= 80 ? 'Excellent content quality with minor improvements needed' :
-                contentAnalysis.overallScore >= 60 ? 'Good content with several opportunities for improvement' :
+                analysisData.overallScore.score >= 80 ? 'Excellent content quality with minor improvements needed' :
+                analysisData.overallScore.score >= 60 ? 'Good content with several opportunities for improvement' :
                 'Content needs significant improvements to be effective'
               }
             </p>
@@ -234,11 +280,11 @@ export default function DeepContentResultsPage() {
               {includeHeaders && (
                 <div className="flex flex-col items-center">
                   <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold border-4 ${
-                    contentAnalysis.sections.headers.score >= 80 ? 'border-green-500 text-green-600' :
-                    contentAnalysis.sections.headers.score >= 60 ? 'border-yellow-500 text-yellow-600' :
+                    analysisData.structure.headingStructure.score >= 80 ? 'border-green-500 text-green-600' :
+                    analysisData.structure.headingStructure.score >= 60 ? 'border-yellow-500 text-yellow-600' :
                     'border-red-500 text-red-600'
                   }`}>
-                    {contentAnalysis.sections.headers.score}
+                    {analysisData.structure.headingStructure.score}
                   </div>
                   <p className="text-center mt-2 font-medium">Headers</p>
                 </div>
@@ -247,11 +293,11 @@ export default function DeepContentResultsPage() {
               {includeBody && (
                 <div className="flex flex-col items-center">
                   <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold border-4 ${
-                    contentAnalysis.sections.body.score >= 80 ? 'border-green-500 text-green-600' :
-                    contentAnalysis.sections.body.score >= 60 ? 'border-yellow-500 text-yellow-600' :
+                    analysisData.structure.paragraphStructure.score >= 80 ? 'border-green-500 text-green-600' :
+                    analysisData.structure.paragraphStructure.score >= 60 ? 'border-yellow-500 text-yellow-600' :
                     'border-red-500 text-red-600'
                   }`}>
-                    {contentAnalysis.sections.body.score}
+                    {analysisData.structure.paragraphStructure.score}
                   </div>
                   <p className="text-center mt-2 font-medium">Body Content</p>
                 </div>
@@ -260,11 +306,11 @@ export default function DeepContentResultsPage() {
               {includeCTA && (
                 <div className="flex flex-col items-center">
                   <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold border-4 ${
-                    contentAnalysis.sections.cta.score >= 80 ? 'border-green-500 text-green-600' :
-                    contentAnalysis.sections.cta.score >= 60 ? 'border-yellow-500 text-yellow-600' :
+                    analysisData.engagement.callsToAction.score >= 80 ? 'border-green-500 text-green-600' :
+                    analysisData.engagement.callsToAction.score >= 60 ? 'border-yellow-500 text-yellow-600' :
                     'border-red-500 text-red-600'
                   }`}>
-                    {contentAnalysis.sections.cta.score}
+                    {analysisData.engagement.callsToAction.score}
                   </div>
                   <p className="text-center mt-2 font-medium">CTAs</p>
                 </div>
@@ -273,11 +319,11 @@ export default function DeepContentResultsPage() {
               {includeImpressions && (
                 <div className="flex flex-col items-center">
                   <div className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold border-4 ${
-                    contentAnalysis.sections.impressions.score >= 80 ? 'border-green-500 text-green-600' :
-                    contentAnalysis.sections.impressions.score >= 60 ? 'border-yellow-500 text-yellow-600' :
+                    analysisData.structure.contentDistribution.score >= 80 ? 'border-green-500 text-green-600' :
+                    analysisData.structure.contentDistribution.score >= 60 ? 'border-yellow-500 text-yellow-600' :
                     'border-red-500 text-red-600'
                   }`}>
-                    {contentAnalysis.sections.impressions.score}
+                    {analysisData.structure.contentDistribution.score}
                   </div>
                   <p className="text-center mt-2 font-medium">First Impressions</p>
                 </div>
@@ -309,301 +355,320 @@ export default function DeepContentResultsPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-medium mb-3">Key Strengths</h3>
+                  <h3 className="text-lg font-medium mb-3">Key Recommendations</h3>
                   <ul className="space-y-2">
-                    {[
-                      ...includeHeaders ? contentAnalysis.sections.headers.strengths : [],
-                      ...includeBody ? contentAnalysis.sections.body.strengths : [],
-                      ...includeCTA ? contentAnalysis.sections.cta.strengths : [],
-                      ...includeImpressions ? contentAnalysis.sections.impressions.strengths : []
-                    ].slice(0, 5).map((strength, index) => (
+                    {analysisData.recommendations.slice(0, 5).map((recommendation, index) => (
                       <li key={index} className="flex items-start">
-                        <span className="rounded-full h-5 w-5 bg-green-500/10 text-green-600 flex items-center justify-center text-xs mr-2 mt-0.5">✓</span>
-                        <span>{strength}</span>
+                        <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">→</span>
+                        <span>{recommendation}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-medium mb-3">Top Improvement Opportunities</h3>
-                  <ul className="space-y-2">
-                    {[
-                      ...includeHeaders ? contentAnalysis.sections.headers.weaknesses : [],
-                      ...includeBody ? contentAnalysis.sections.body.weaknesses : [],
-                      ...includeCTA ? contentAnalysis.sections.cta.weaknesses : [],
-                      ...includeImpressions ? contentAnalysis.sections.impressions.weaknesses : []
-                    ].slice(0, 5).map((weakness, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="rounded-full h-5 w-5 bg-red-500/10 text-red-600 flex items-center justify-center text-xs mr-2 mt-0.5">!</span>
-                        <span>{weakness}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <h3 className="text-lg font-medium mb-3">Content Quality Breakdown</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-1 text-sm">
+                        <span>Structure</span>
+                        <span className="font-medium">{Math.round((
+                          analysisData.structure.headingStructure.score + 
+                          analysisData.structure.paragraphStructure.score + 
+                          analysisData.structure.contentDistribution.score
+                        ) / 3)}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded overflow-hidden">
+                        <div 
+                          className="h-full bg-primary" 
+                          style={{ 
+                            width: `${Math.round((
+                              analysisData.structure.headingStructure.score + 
+                              analysisData.structure.paragraphStructure.score + 
+                              analysisData.structure.contentDistribution.score
+                            ) / 3)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1 text-sm">
+                        <span>Readability</span>
+                        <span className="font-medium">{Math.round((
+                          analysisData.readability.fleschReadingEase.score + 
+                          analysisData.readability.sentenceComplexity.score + 
+                          analysisData.readability.wordChoice.score
+                        ) / 3)}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded overflow-hidden">
+                        <div 
+                          className="h-full bg-primary" 
+                          style={{ 
+                            width: `${Math.round((
+                              analysisData.readability.fleschReadingEase.score + 
+                              analysisData.readability.sentenceComplexity.score + 
+                              analysisData.readability.wordChoice.score
+                            ) / 3)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1 text-sm">
+                        <span>Semantic Relevance</span>
+                        <span className="font-medium">{Math.round((
+                          analysisData.semanticRelevance.topicCoverage.score + 
+                          analysisData.semanticRelevance.keywordContext.score + 
+                          analysisData.semanticRelevance.entityAnalysis.score
+                        ) / 3)}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded overflow-hidden">
+                        <div 
+                          className="h-full bg-primary" 
+                          style={{ 
+                            width: `${Math.round((
+                              analysisData.semanticRelevance.topicCoverage.score + 
+                              analysisData.semanticRelevance.keywordContext.score + 
+                              analysisData.semanticRelevance.entityAnalysis.score
+                            ) / 3)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-1 text-sm">
+                        <span>Engagement</span>
+                        <span className="font-medium">{Math.round((
+                          analysisData.engagement.contentFormats.score + 
+                          analysisData.engagement.interactiveElements.score + 
+                          analysisData.engagement.callsToAction.score
+                        ) / 3)}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded overflow-hidden">
+                        <div 
+                          className="h-full bg-primary" 
+                          style={{ 
+                            width: `${Math.round((
+                              analysisData.engagement.contentFormats.score + 
+                              analysisData.engagement.interactiveElements.score + 
+                              analysisData.engagement.callsToAction.score
+                            ) / 3)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              <Separator className="my-6" />
-              
-              <div>
-                <h3 className="text-lg font-medium mb-3">Priority Recommendations</h3>
-                <ol className="space-y-2">
-                  {[
-                    ...includeHeaders ? contentAnalysis.sections.headers.recommendations : [],
-                    ...includeBody ? contentAnalysis.sections.body.recommendations : [],
-                    ...includeCTA ? contentAnalysis.sections.cta.recommendations : [],
-                    ...includeImpressions ? contentAnalysis.sections.impressions.recommendations : []
-                  ].slice(0, 5).map((recommendation, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="rounded-full h-5 w-5 bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs mr-2 mt-0.5">{index + 1}</span>
-                      <span>{recommendation}</span>
-                    </li>
-                  ))}
-                </ol>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="sections">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center text-xl">
-                <FileText className="mr-2 h-5 w-5 text-primary" />
-                Section-by-Section Analysis
-              </CardTitle>
-              <CardDescription>
-                Detailed analysis of each content section with specific recommendations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                {includeHeaders && (
-                  <AccordionItem value="headers">
-                    <AccordionTrigger>
-                      <div className="flex items-center">
-                        <span>Headers & Titles</span>
-                        <span className={`ml-3 text-sm px-2 py-0.5 rounded-full ${
-                          contentAnalysis.sections.headers.score >= 80 ? 'bg-green-100 text-green-700' :
-                          contentAnalysis.sections.headers.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          Score: {contentAnalysis.sections.headers.score}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4 pt-2">
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">STRENGTHS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.headers.strengths.map((strength, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-green-600 mr-2">✓</span>
-                                <span>{strength}</span>
-                              </li>
-                            ))}
-                          </ul>
+          <div className="space-y-6">
+            {includeHeaders && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                      analysisData.structure.headingStructure.score >= 80 ? 'bg-green-500' :
+                      analysisData.structure.headingStructure.score >= 60 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}></span>
+                    Headers Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Score: {analysisData.structure.headingStructure.score}/100 – {analysisData.structure.headingStructure.category.charAt(0).toUpperCase() + analysisData.structure.headingStructure.category.slice(1)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Key Metrics</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Total Headings</p>
+                          <p className="text-lg font-medium">{analysisData.structure.headingStructure.totalHeadings}</p>
                         </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">WEAKNESSES</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.headers.weaknesses.map((weakness, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-red-600 mr-2">✗</span>
-                                <span>{weakness}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">RECOMMENDATIONS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.headers.recommendations.map((recommendation, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-blue-600 mr-2">→</span>
-                                <span>{recommendation}</span>
-                              </li>
-                            ))}
-                          </ul>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Headings with Keywords</p>
+                          <p className="text-lg font-medium">{analysisData.structure.headingStructure.headingsWithKeywords}</p>
                         </div>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-                
-                {includeBody && (
-                  <AccordionItem value="body">
-                    <AccordionTrigger>
-                      <div className="flex items-center">
-                        <span>Body Content</span>
-                        <span className={`ml-3 text-sm px-2 py-0.5 rounded-full ${
-                          contentAnalysis.sections.body.score >= 80 ? 'bg-green-100 text-green-700' :
-                          contentAnalysis.sections.body.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          Score: {contentAnalysis.sections.body.score}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4 pt-2">
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">STRENGTHS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.body.strengths.map((strength, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-green-600 mr-2">✓</span>
-                                <span>{strength}</span>
-                              </li>
-                            ))}
-                          </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
+                      <ul className="space-y-2">
+                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('head') || rec.toLowerCase().includes('title')).slice(0, 3).map((rec, i) => (
+                          <li key={i} className="text-sm flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {includeBody && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                      analysisData.structure.paragraphStructure.score >= 80 ? 'bg-green-500' :
+                      analysisData.structure.paragraphStructure.score >= 60 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}></span>
+                    Body Content Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Score: {analysisData.structure.paragraphStructure.score}/100 – {analysisData.structure.paragraphStructure.category.charAt(0).toUpperCase() + analysisData.structure.paragraphStructure.category.slice(1)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Key Metrics</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Total Paragraphs</p>
+                          <p className="text-lg font-medium">{analysisData.structure.paragraphStructure.totalParagraphs}</p>
                         </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">WEAKNESSES</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.body.weaknesses.map((weakness, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-red-600 mr-2">✗</span>
-                                <span>{weakness}</span>
-                              </li>
-                            ))}
-                          </ul>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Avg Paragraph Length</p>
+                          <p className="text-lg font-medium">{Math.round(analysisData.structure.paragraphStructure.avgParagraphLength)} words</p>
                         </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">RECOMMENDATIONS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.body.recommendations.map((recommendation, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-blue-600 mr-2">→</span>
-                                <span>{recommendation}</span>
-                              </li>
-                            ))}
-                          </ul>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Short Paragraphs</p>
+                          <p className="text-lg font-medium">{analysisData.structure.paragraphStructure.shortParagraphCount}</p>
                         </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-                
-                {includeCTA && (
-                  <AccordionItem value="cta">
-                    <AccordionTrigger>
-                      <div className="flex items-center">
-                        <span>Call-to-Actions</span>
-                        <span className={`ml-3 text-sm px-2 py-0.5 rounded-full ${
-                          contentAnalysis.sections.cta.score >= 80 ? 'bg-green-100 text-green-700' :
-                          contentAnalysis.sections.cta.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          Score: {contentAnalysis.sections.cta.score}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4 pt-2">
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">STRENGTHS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.cta.strengths.map((strength, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-green-600 mr-2">✓</span>
-                                <span>{strength}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">WEAKNESSES</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.cta.weaknesses.map((weakness, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-red-600 mr-2">✗</span>
-                                <span>{weakness}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">RECOMMENDATIONS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.cta.recommendations.map((recommendation, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-blue-600 mr-2">→</span>
-                                <span>{recommendation}</span>
-                              </li>
-                            ))}
-                          </ul>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Long Paragraphs</p>
+                          <p className="text-lg font-medium">{analysisData.structure.paragraphStructure.longParagraphCount}</p>
                         </div>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-                
-                {includeImpressions && (
-                  <AccordionItem value="impressions">
-                    <AccordionTrigger>
-                      <div className="flex items-center">
-                        <span>First Impressions</span>
-                        <span className={`ml-3 text-sm px-2 py-0.5 rounded-full ${
-                          contentAnalysis.sections.impressions.score >= 80 ? 'bg-green-100 text-green-700' :
-                          contentAnalysis.sections.impressions.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          Score: {contentAnalysis.sections.impressions.score}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4 pt-2">
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">STRENGTHS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.impressions.strengths.map((strength, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-green-600 mr-2">✓</span>
-                                <span>{strength}</span>
-                              </li>
-                            ))}
-                          </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
+                      <ul className="space-y-2">
+                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('paragraph') || rec.toLowerCase().includes('content') || rec.toLowerCase().includes('text')).slice(0, 3).map((rec, i) => (
+                          <li key={i} className="text-sm flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {includeCTA && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                      analysisData.engagement.callsToAction.score >= 80 ? 'bg-green-500' :
+                      analysisData.engagement.callsToAction.score >= 60 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}></span>
+                    Call-to-Action Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Score: {analysisData.engagement.callsToAction.score}/100 – {analysisData.engagement.callsToAction.category.charAt(0).toUpperCase() + analysisData.engagement.callsToAction.category.slice(1)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Key Metrics</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">CTA Count</p>
+                          <p className="text-lg font-medium">{analysisData.engagement.callsToAction.ctaCount || 0}</p>
                         </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">WEAKNESSES</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.impressions.weaknesses.map((weakness, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-red-600 mr-2">✗</span>
-                                <span>{weakness}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">RECOMMENDATIONS</h4>
-                          <ul className="space-y-1">
-                            {contentAnalysis.sections.impressions.recommendations.map((recommendation, index) => (
-                              <li key={index} className="flex items-start text-sm">
-                                <span className="text-blue-600 mr-2">→</span>
-                                <span>{recommendation}</span>
-                              </li>
-                            ))}
-                          </ul>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Has Clear CTAs</p>
+                          <p className="text-lg font-medium">{analysisData.engagement.callsToAction.hasCTA ? 'Yes' : 'No'}</p>
                         </div>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
-              </Accordion>
-            </CardContent>
-          </Card>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
+                      <ul className="space-y-2">
+                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('cta') || rec.toLowerCase().includes('call to action') || rec.toLowerCase().includes('button')).slice(0, 3).map((rec, i) => (
+                          <li key={i} className="text-sm flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {includeImpressions && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center">
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                      analysisData.structure.contentDistribution.score >= 80 ? 'bg-green-500' :
+                      analysisData.structure.contentDistribution.score >= 60 ? 'bg-yellow-500' :
+                      'bg-red-500'
+                    }`}></span>
+                    First Impression Analysis
+                  </CardTitle>
+                  <CardDescription>
+                    Score: {analysisData.structure.contentDistribution.score}/100 – {analysisData.structure.contentDistribution.category.charAt(0).toUpperCase() + analysisData.structure.contentDistribution.category.slice(1)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Key Metrics</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Introduction Quality</p>
+                          <p className="text-lg font-medium">{analysisData.structure.contentDistribution.introductionQuality}/100</p>
+                        </div>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Body Content Quality</p>
+                          <p className="text-lg font-medium">{analysisData.structure.contentDistribution.bodyContentQuality}/100</p>
+                        </div>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-xs text-muted-foreground">Conclusion Quality</p>
+                          <p className="text-lg font-medium">{analysisData.structure.contentDistribution.conclusionQuality}/100</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
+                      <ul className="space-y-2">
+                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('introduction') || rec.toLowerCase().includes('opening') || rec.toLowerCase().includes('first')).slice(0, 3).map((rec, i) => (
+                          <li key={i} className="text-sm flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
         
         <TabsContent value="readability">
@@ -614,106 +679,82 @@ export default function DeepContentResultsPage() {
                 Readability Analysis
               </CardTitle>
               <CardDescription>
-                Analysis of your content's readability metrics and how they impact user engagement
+                Detailed metrics on how easy your content is to read and comprehend
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="flex flex-col items-center p-4 border rounded-lg">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">FLESCH-KINCAID SCORE</h3>
-                  <div className={`text-3xl font-bold ${
-                    contentAnalysis.readabilityMetrics.fleschKincaidScore >= 70 ? 'text-green-600' :
-                    contentAnalysis.readabilityMetrics.fleschKincaidScore >= 50 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {contentAnalysis.readabilityMetrics.fleschKincaidScore}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h3 className="text-sm font-medium mb-2">Flesch Reading Ease</h3>
+                    <div className={`text-2xl font-bold mb-1 ${
+                      analysisData.readability.fleschReadingEase.score >= 70 ? 'text-green-600' :
+                      analysisData.readability.fleschReadingEase.score >= 50 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {analysisData.readability.fleschReadingEase.score}/100
+                    </div>
+                    <p className="text-xs text-muted-foreground">{analysisData.readability.fleschReadingEase.interpretation || 'This measures how easy your text is to read. Higher scores indicate easier readability.'}</p>
                   </div>
-                  <p className="text-xs text-center mt-2">
-                    {
-                      contentAnalysis.readabilityMetrics.fleschKincaidScore >= 80 ? 'Very easy to read - 6th grade level' :
-                      contentAnalysis.readabilityMetrics.fleschKincaidScore >= 70 ? 'Easy to read - 7th grade level' :
-                      contentAnalysis.readabilityMetrics.fleschKincaidScore >= 60 ? 'Standard - 8-9th grade level' :
-                      contentAnalysis.readabilityMetrics.fleschKincaidScore >= 50 ? 'Fairly difficult - 10-12th grade level' :
-                      'Difficult - College level'
-                    }
-                  </p>
+                  
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h3 className="text-sm font-medium mb-2">Sentence Complexity</h3>
+                    <div className={`text-2xl font-bold mb-1 ${
+                      analysisData.readability.sentenceComplexity.score >= 70 ? 'text-green-600' :
+                      analysisData.readability.sentenceComplexity.score >= 50 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {analysisData.readability.sentenceComplexity.score}/100
+                    </div>
+                    <p className="text-xs text-muted-foreground">Average sentence length: {Math.round(analysisData.readability.sentenceComplexity.avgSentenceLength)} words</p>
+                  </div>
+                  
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h3 className="text-sm font-medium mb-2">Word Choice</h3>
+                    <div className={`text-2xl font-bold mb-1 ${
+                      analysisData.readability.wordChoice.score >= 70 ? 'text-green-600' :
+                      analysisData.readability.wordChoice.score >= 50 ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {analysisData.readability.wordChoice.score}/100
+                    </div>
+                    <p className="text-xs text-muted-foreground">Complex words: {analysisData.readability.wordChoice.complexWordPercentage}% of total</p>
+                  </div>
                 </div>
                 
-                <div className="flex flex-col items-center p-4 border rounded-lg">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">AVG. SENTENCE LENGTH</h3>
-                  <div className={`text-3xl font-bold ${
-                    contentAnalysis.readabilityMetrics.avgSentenceLength <= 14 ? 'text-green-600' :
-                    contentAnalysis.readabilityMetrics.avgSentenceLength <= 20 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {contentAnalysis.readabilityMetrics.avgSentenceLength}
+                <div>
+                  <h3 className="text-lg font-medium mb-3">Reading Level Assessment</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <p className="text-sm">
+                      {analysisData.readability.fleschReadingEase.score >= 80 ? (
+                        "Your content is very easy to read and understand. It can be comprehended by an average 11-year-old student or someone with a 5th-grade education level. This makes your content highly accessible to a wide audience."
+                      ) : analysisData.readability.fleschReadingEase.score >= 60 ? (
+                        "Your content is easily understood by 13 to 15-year-old students or those with an 8th to 9th-grade education level. It strikes a good balance between readability and sophistication."
+                      ) : analysisData.readability.fleschReadingEase.score >= 50 ? (
+                        "Your content is fairly difficult to read, suitable for 10th to 12th-grade students. Consider simplifying some sentences to improve readability for a broader audience."
+                      ) : (
+                        "Your content is difficult to read, appropriate for college-level education. Consider breaking down complex sentences and using simpler words to improve accessibility."
+                      )}
+                    </p>
                   </div>
-                  <p className="text-xs text-center mt-2">
-                    {
-                      contentAnalysis.readabilityMetrics.avgSentenceLength <= 14 ? 'Excellent - Easy to read' :
-                      contentAnalysis.readabilityMetrics.avgSentenceLength <= 20 ? 'Good - Fairly readable' :
-                      'Needs improvement - Consider shortening sentences'
-                    }
-                  </p>
                 </div>
                 
-                <div className="flex flex-col items-center p-4 border rounded-lg">
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">PASSIVE VOICE</h3>
-                  <div className={`text-3xl font-bold ${
-                    contentAnalysis.readabilityMetrics.passiveVoicePercentage <= 10 ? 'text-green-600' :
-                    contentAnalysis.readabilityMetrics.passiveVoicePercentage <= 20 ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {contentAnalysis.readabilityMetrics.passiveVoicePercentage}%
-                  </div>
-                  <p className="text-xs text-center mt-2">
-                    {
-                      contentAnalysis.readabilityMetrics.passiveVoicePercentage <= 10 ? 'Excellent - Active voice dominant' :
-                      contentAnalysis.readabilityMetrics.passiveVoicePercentage <= 20 ? 'Good - Could reduce passive voice slightly' :
-                      'Needs improvement - Too much passive voice'
-                    }
-                  </p>
+                <div>
+                  <h3 className="text-lg font-medium mb-3">Readability Recommendations</h3>
+                  <ul className="space-y-2">
+                    {analysisData.recommendations.filter(rec => 
+                      rec.toLowerCase().includes('read') || 
+                      rec.toLowerCase().includes('sentence') || 
+                      rec.toLowerCase().includes('word') ||
+                      rec.toLowerCase().includes('complex')
+                    ).slice(0, 5).map((rec, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">→</span>
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
-              
-              <Separator className="my-6" />
-              
-              <div>
-                <h3 className="text-lg font-medium mb-4">Readability Recommendations</h3>
-                <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <span className="rounded-full h-5 w-5 bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
-                    <span>
-                      {contentAnalysis.readabilityMetrics.avgSentenceLength > 14 ? 
-                        'Reduce average sentence length to 12-14 words per sentence for optimal readability.' : 
-                        'Maintain your excellent average sentence length of less than 14 words per sentence.'}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="rounded-full h-5 w-5 bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
-                    <span>
-                      {contentAnalysis.readabilityMetrics.passiveVoicePercentage > 10 ? 
-                        'Reduce passive voice usage to less than 10% of your content to improve clarity and impact.' : 
-                        'Continue using predominantly active voice to maintain directness and clarity.'}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="rounded-full h-5 w-5 bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
-                    <span>
-                      {contentAnalysis.readabilityMetrics.complexWordsPercentage > 10 ? 
-                        'Replace complex words with simpler alternatives when possible to improve readability.' : 
-                        'Your use of simple, direct language enhances readability - keep it up!'}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="rounded-full h-5 w-5 bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs mr-2 mt-0.5">4</span>
-                    <span>
-                      {contentAnalysis.readabilityMetrics.fleschKincaidScore < 60 ? 
-                        'Break down complex ideas into smaller, more digestible pieces to improve comprehension.' : 
-                        'Your content has a good readability level, making it accessible to a broad audience.'}
-                    </span>
-                  </li>
-                </ul>
               </div>
             </CardContent>
           </Card>
@@ -732,45 +773,118 @@ export default function DeepContentResultsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {contentAnalysis.contentAnnotations.map((annotation, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center mb-3">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full mr-2 ${
-                        annotation.type === 'header' ? 'bg-purple-100 text-purple-700' :
-                        annotation.type === 'body' ? 'bg-blue-100 text-blue-700' :
-                        'bg-orange-100 text-orange-700'
-                      }`}>
-                        {annotation.type === 'header' ? 'HEADER' : annotation.type === 'body' ? 'BODY' : 'CTA'}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        Element {index + 1}
-                      </span>
+                {/* Introduction section */}
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-muted p-3 flex items-center justify-between">
+                    <h3 className="font-medium">Introduction</h3>
+                    <span className="text-xs text-muted-foreground">{analysisData.annotatedContent.introduction.annotations.length} annotations</span>
+                  </div>
+                  
+                  <div className="p-4">
+                    <div className="bg-muted/30 p-3 rounded-md mb-4">
+                      <p className="text-sm font-mono whitespace-pre-wrap">{analysisData.annotatedContent.introduction.content}</p>
                     </div>
                     
-                    <div className="bg-muted p-3 rounded-md mb-3">
-                      <p className="text-sm font-mono">{annotation.content}</p>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <h4 className="text-sm font-medium mb-1">Issues:</h4>
-                      <ul className="text-sm space-y-1">
-                        {annotation.issues && annotation.issues.map((issue, idx) => (
-                          <li key={idx} className="flex items-start">
-                            <span className="text-red-500 mr-2">•</span>
-                            <span>{issue}</span>
-                          </li>
+                    {analysisData.annotatedContent.introduction.annotations.length > 0 ? (
+                      <div className="space-y-4">
+                        {analysisData.annotatedContent.introduction.annotations.map((annotation, index) => (
+                          <div key={index} className="border-l-2 border-primary pl-4 py-1">
+                            <div className="flex items-center mb-1">
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
+                                annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}>
+                                {annotation.severity.toUpperCase()}
+                              </span>
+                              <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                            </div>
+                            <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
+                            <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No issues found in the introduction.</p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Main content sections */}
+                {analysisData.annotatedContent.mainContent.map((section, sectionIndex) => (
+                  <div key={sectionIndex} className="border rounded-lg overflow-hidden">
+                    <div className="bg-muted p-3 flex items-center justify-between">
+                      <h3 className="font-medium">Content Section {sectionIndex + 1}</h3>
+                      <span className="text-xs text-muted-foreground">{section.annotations.length} annotations</span>
                     </div>
                     
-                    <div>
-                      <h4 className="text-sm font-medium mb-1">Suggestion:</h4>
-                      <div className="bg-green-50 border border-green-100 p-3 rounded-md">
-                        <p className="text-sm font-mono text-green-800">{annotation.suggestions}</p>
+                    <div className="p-4">
+                      <div className="bg-muted/30 p-3 rounded-md mb-4">
+                        <p className="text-sm font-mono whitespace-pre-wrap">{section.content}</p>
                       </div>
+                      
+                      {section.annotations.length > 0 ? (
+                        <div className="space-y-4">
+                          {section.annotations.map((annotation, annotationIndex) => (
+                            <div key={annotationIndex} className="border-l-2 border-primary pl-4 py-1">
+                              <div className="flex items-center mb-1">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
+                                  annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                  annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {annotation.severity.toUpperCase()}
+                                </span>
+                                <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                              </div>
+                              <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
+                              <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No issues found in this section.</p>
+                      )}
                     </div>
                   </div>
                 ))}
+                
+                {/* Conclusion section */}
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-muted p-3 flex items-center justify-between">
+                    <h3 className="font-medium">Conclusion</h3>
+                    <span className="text-xs text-muted-foreground">{analysisData.annotatedContent.conclusion.annotations.length} annotations</span>
+                  </div>
+                  
+                  <div className="p-4">
+                    <div className="bg-muted/30 p-3 rounded-md mb-4">
+                      <p className="text-sm font-mono whitespace-pre-wrap">{analysisData.annotatedContent.conclusion.content}</p>
+                    </div>
+                    
+                    {analysisData.annotatedContent.conclusion.annotations.length > 0 ? (
+                      <div className="space-y-4">
+                        {analysisData.annotatedContent.conclusion.annotations.map((annotation, index) => (
+                          <div key={index} className="border-l-2 border-primary pl-4 py-1">
+                            <div className="flex items-center mb-1">
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
+                                annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}>
+                                {annotation.severity.toUpperCase()}
+                              </span>
+                              <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                            </div>
+                            <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
+                            <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No issues found in the conclusion.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -782,12 +896,6 @@ export default function DeepContentResultsPage() {
           <Link href="/deep-content">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Deep Content Analysis
-          </Link>
-        </Button>
-        
-        <Button asChild>
-          <Link href="/competitor-analysis">
-            Try Competitor Analysis
           </Link>
         </Button>
       </div>
