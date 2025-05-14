@@ -47,12 +47,13 @@ export interface Competitor {
 
 // Rival Rank Tracker analysis
 export interface RivalRankTrackerAnalysis {
-  id: number;
-  status: "processing" | "completed" | "failed";
+  id: string;
+  status: "processing" | "completed" | "error";
   website: string;
   keywords: TrackedKeyword[];
   competitors: Competitor[];
-  avgPosition: number | null;
+  avgPosition?: number;
   createdAt: Date;
   updatedAt: Date;
+  error?: string;
 }

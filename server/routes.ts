@@ -1919,8 +1919,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the analysis data structure before returning
       if (!analysis.keywords || !Array.isArray(analysis.keywords)) {
         console.error("Invalid analysis data structure:", analysis);
-        // If invalid structure, return a fresh demo analysis
-        const demoAnalysis = generateDemoRankTrackerAnalysis(id);
+        // If invalid structure, create a fresh demo analysis
+        const demoAnalysis = {
+          id,
+          status: "completed",
+          website: "yourwebsite.com",
+          keywords: [
+            {
+              id: Math.floor(Math.random() * 10000),
+              text: "seo best practices",
+              currentRanking: {
+                position: 5,
+                url: "https://yourwebsite.com/seo-best-practices",
+                date: new Date()
+              },
+              competitorRankings: [
+                {
+                  competitorUrl: "competitor1.com",
+                  position: 8,
+                  url: "https://competitor1.com/seo",
+                  date: new Date()
+                },
+                {
+                  competitorUrl: "competitor2.com",
+                  position: 12,
+                  url: "https://competitor2.com/seo-tips",
+                  date: new Date()
+                }
+              ],
+              metrics: {
+                volume: 2500,
+                difficulty: 45,
+                cpc: "3.20",
+                trend: [2400, 2450, 2480, 2520, 2550, 2500, 2490, 2510, 2540, 2530, 2520, 2500],
+                relatedKeywords: [
+                  { keyword: "seo best practices guide", volume: 1200, difficulty: 40 },
+                  { keyword: "seo best practices 2025", volume: 900, difficulty: 38 }
+                ]
+              }
+            },
+            {
+              id: Math.floor(Math.random() * 10000),
+              text: "keyword research tool",
+              currentRanking: {
+                position: 10,
+                url: "https://yourwebsite.com/keyword-research",
+                date: new Date()
+              },
+              competitorRankings: [
+                {
+                  competitorUrl: "competitor1.com",
+                  position: 15,
+                  url: "https://competitor1.com/keyword-tools",
+                  date: new Date()
+                },
+                {
+                  competitorUrl: "competitor2.com",
+                  position: 7,
+                  url: "https://competitor2.com/keyword-research",
+                  date: new Date()
+                }
+              ],
+              metrics: {
+                volume: 3200,
+                difficulty: 52,
+                cpc: "4.10",
+                trend: [3100, 3150, 3200, 3180, 3250, 3300, 3290, 3210, 3240, 3230, 3220, 3200],
+                relatedKeywords: [
+                  { keyword: "free keyword research tool", volume: 2100, difficulty: 55 },
+                  { keyword: "best keyword research tool", volume: 1800, difficulty: 60 }
+                ]
+              }
+            }
+          ],
+          competitors: [
+            { url: "competitor1.com" },
+            { url: "competitor2.com" }
+          ],
+          avgPosition: 7.5,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
         global.rivalRankTrackerResults[id] = demoAnalysis;
         
         console.log(`Returning new demo analysis for ID ${id} due to invalid data structure`);
