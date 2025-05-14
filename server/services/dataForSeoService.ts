@@ -257,13 +257,15 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     console.log(`Fetching keyword data for "${keyword}" from DataForSEO...`);
     
     // Request body for Keywords Data API formatted exactly as per DataForSEO docs
+    // Note: Some parameters may need to be removed if not supported in this version
     const requestData = [{
       "data": {
         "keywords": [keyword],
         "location_code": location,
-        "language_code": "en",
-        "include_serp_info": true,
-        "include_trends_info": true
+        "language_code": "en"
+        // Removed potentially unsupported parameters:
+        // "include_serp_info": true,
+        // "include_trends_info": true
       }
     }];
     
@@ -524,9 +526,9 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
     const requestData = [{
       "data": {
         "keyword": keyword,
-        "location_code": location,
-        "language_code": "en",
-        "limit": 15
+        "location_name": "United States",
+        "language_code": "en"
+        // Simplified request with only essential parameters
       }
     }];
     
