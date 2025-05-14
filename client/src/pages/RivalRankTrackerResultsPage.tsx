@@ -365,7 +365,7 @@ export default function RivalRankTrackerResultsPage() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
           <PageHeader 
-            title={analysis.website}
+            title={analysisData.website}
             description="Keyword Ranking Analysis"
             icon={<BarChart className="h-6 w-6 mr-2" />}
           />
@@ -728,8 +728,8 @@ export default function RivalRankTrackerResultsPage() {
                           </TableCell>
                         </TableRow>
                         
-                        {analysis.competitors.map((competitor: any) => {
-                          const competitorRankings = analysis.keywords
+                        {analysisData.competitors.map((competitor: any) => {
+                          const competitorRankings = analysisData.keywords
                             .flatMap((k: any) => k.competitorRankings || [])
                             .filter((r: any) => r.competitorUrl === competitor.url);
                           
@@ -759,10 +759,10 @@ export default function RivalRankTrackerResultsPage() {
                                 {avgPosition ? `#${avgPosition.toFixed(1)}` : "N/A"}
                               </TableCell>
                               <TableCell>
-                                {top10Count} of {analysis.keywords.length}
+                                {top10Count} of {analysisData.keywords.length}
                               </TableCell>
                               <TableCell>
-                                {competitorRankings.filter(r => r.position).length} of {analysis.keywords.length}
+                                {competitorRankings.filter(r => r.position).length} of {analysisData.keywords.length}
                               </TableCell>
                             </TableRow>
                           );
@@ -794,14 +794,14 @@ export default function RivalRankTrackerResultsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {analysis.keywords.some((k: any) => k.metrics?.trend?.length > 0) ? (
+              {analysisData.keywords.some((k: any) => k.metrics?.trend?.length > 0) ? (
                 <div className="space-y-8">
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart
                         data={Array.from({ length: 12 }, (_, i) => ({
                           month: i,
-                          ...analysis.keywords.reduce((acc: any, keyword: any) => {
+                          ...analysisData.keywords.reduce((acc: any, keyword: any) => {
                             if (keyword.metrics?.trend && keyword.metrics.trend[i] !== undefined) {
                               acc[keyword.text] = keyword.metrics.trend[i];
                             }
@@ -828,7 +828,7 @@ export default function RivalRankTrackerResultsPage() {
                           }}
                         />
                         <Legend />
-                        {analysis.keywords
+                        {analysisData.keywords
                           .filter((k: any) => k.metrics?.trend?.length > 0)
                           .slice(0, 5) // Limit to 5 keywords for readability
                           .map((keyword: any, index: number) => (
