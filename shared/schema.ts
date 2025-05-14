@@ -1,16 +1,28 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table.
+// This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
 // Define schema for user accounts with enhanced profile information
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  id: varchar("id").primaryKey().notNull(), // Replit Auth uses string IDs
+  username: text("username").unique(),
+  email: text("email").unique(),
+  password: text("password"),
   firstName: text("first_name"),
   lastName: text("last_name"),
-  profileImage: text("profile_image"),
+  profileImageUrl: text("profile_image_url"),
   company: text("company"),
   jobTitle: text("job_title"),
   bio: text("bio"),
@@ -25,7 +37,7 @@ export const users = pgTable("users", {
 export const analyses = pgTable("analyses", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),
-  userId: integer("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   overallScore: integer("overall_score").notNull(),
   results: jsonb("results").notNull(),
@@ -34,7 +46,7 @@ export const analyses = pgTable("analyses", {
 // User projects to organize saved analyses
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: text("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

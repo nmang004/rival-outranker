@@ -17,18 +17,29 @@ import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware
   app.use(cookieParser());
   
-  // Apply optional authentication middleware to all routes
-  app.use(optionalAuth);
+  // Setup Replit Auth middleware
+  await setupAuth(app);
   
-  // Register authentication routes
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  
+  // Legacy routes - keep for backward compatibility
   app.use('/api/auth', authRouter);
-  
-  // Register user routes
   app.use('/api/user', userRouter);
   
   // Utility function for URL normalization

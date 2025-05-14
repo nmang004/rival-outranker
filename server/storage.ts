@@ -11,20 +11,21 @@ import { eq, desc, and, inArray, sql } from "drizzle-orm";
 // Interfaces for storage operations
 export interface IStorage {
   // User operations
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, userData: UpdateUser): Promise<User>;
-  updateLastLogin(id: number): Promise<User>;
-  verifyEmail(id: number): Promise<User>;
+  updateUser(id: string, userData: UpdateUser): Promise<User>;
+  updateLastLogin(id: string): Promise<User>;
+  verifyEmail(id: string): Promise<User>;
   getUserCount(): Promise<number>;
+  upsertUser(userData: { id: string, email?: string | null, firstName?: string | null, lastName?: string | null, profileImageUrl?: string | null }): Promise<User>;
   
   // Analysis operations
   createAnalysis(analysis: InsertAnalysis): Promise<Analysis>;
   getAnalysis(id: number): Promise<Analysis | undefined>;
   getAnalysesByUrl(url: string): Promise<Analysis[]>;
-  getAnalysesByUserId(userId: number): Promise<Analysis[]>;
+  getAnalysesByUserId(userId: string): Promise<Analysis[]>;
   getLatestAnalyses(limit: number): Promise<Analysis[]>;
   getAllAnalyses(): Promise<Analysis[]>;
   updateAnalysisResults(id: number, results: any): Promise<Analysis>;
@@ -32,7 +33,7 @@ export interface IStorage {
   // Project operations
   createProject(project: InsertProject): Promise<Project>;
   getProject(id: number): Promise<Project | undefined>;
-  getProjectsByUserId(userId: number): Promise<Project[]>;
+  getProjectsByUserId(userId: string): Promise<Project[]>;
   updateProject(id: number, projectData: UpdateProject): Promise<Project>;
   deleteProject(id: number): Promise<void>;
   

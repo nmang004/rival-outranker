@@ -58,18 +58,23 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <AuthDialog 
-                  mode="login" 
-                  buttonProps={{ size: "lg", className: "w-full flex items-center justify-center" }} 
-                  buttonText="Login to Your Account"
-                  buttonIcon={<UserCog className="mr-2 h-5 w-5" />}
-                />
-                <AuthDialog 
-                  mode="register" 
-                  buttonProps={{ variant: "outline", size: "lg", className: "w-full flex items-center justify-center" }} 
-                  buttonText="Create an Account"
-                  buttonIcon={<UserCircle2 className="mr-2 h-5 w-5" />}
-                />
+                <Button 
+                  size="lg" 
+                  className="w-full flex items-center justify-center"
+                  onClick={() => window.location.href = '/api/login'}
+                >
+                  <UserCog className="mr-2 h-5 w-5" />
+                  Login to Your Account
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full flex items-center justify-center"
+                  onClick={() => window.location.href = '/api/login'}
+                >
+                  <UserCircle2 className="mr-2 h-5 w-5" />
+                  Create an Account
+                </Button>
               </div>
               
               <div className="mt-8 pt-6 border-t">
