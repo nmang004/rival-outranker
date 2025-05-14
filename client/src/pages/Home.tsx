@@ -191,12 +191,8 @@ export default function Home() {
                 return false;
               }
               
-              // Check if we should redirect to deep content results
-              if (isDeepContentAnalysis && matchingAnalysis.results && matchingAnalysis.results.deepContentAnalysis) {
-                setLocation(`/deep-content-results?url=${encodeURIComponent(matchingAnalysis.url)}`);
-              } else {
-                setLocation(`/results?url=${encodeURIComponent(matchingAnalysis.url)}`);
-              }
+              // Always redirect to the main results page to show all analysis tabs
+              setLocation(`/results?url=${encodeURIComponent(matchingAnalysis.url)}`);
               return true;
             }
           }
@@ -239,12 +235,10 @@ export default function Home() {
         // just redirect to results anyway and let the results page handle any missing data
         if (attempts >= maxAttempts - 2) {
           setAnalysisProgress(100);
-          // Use the appropriate results page based on the requested analysis type
-          if (isDeepContentAnalysis) {
-            setLocation(`/deep-content-results?url=${encodeURIComponent(url)}`);
-          } else {
-            setLocation(`/results?url=${encodeURIComponent(url)}`);
-          }
+          // Always redirect to the main results page
+          // This ensures deep content analysis appears in the regular assessment tabs
+          setLocation(`/results?url=${encodeURIComponent(url)}`);
+          // We don't need separate page handling for deep content analysis anymore
           return;
         }
         
