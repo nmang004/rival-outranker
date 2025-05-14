@@ -73,51 +73,54 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
   ];
 
   // Prepare data for category comparison chart
+  // Ensure we have at least a minimal value (0.1) for all categories to ensure they display
+  const ensureMinValue = (val: number) => val === 0 ? 0.1 : val;
+  
   const categoryComparisonData = [
     {
       name: 'On-Page',
-      'Priority Issues': onPageTotals.priorityOfi,
-      'Opportunities': onPageTotals.ofi,
-      'Completed': onPageTotals.ok,
-      'Not Applicable': onPageTotals.na,
+      'Priority Issues': ensureMinValue(onPageTotals.priorityOfi),
+      'Opportunities': ensureMinValue(onPageTotals.ofi),
+      'Completed': ensureMinValue(onPageTotals.ok),
+      'Not Applicable': ensureMinValue(onPageTotals.na),
     },
     {
       name: 'Structure',
-      'Priority Issues': structureTotals.priorityOfi,
-      'Opportunities': structureTotals.ofi,
-      'Completed': structureTotals.ok,
-      'Not Applicable': structureTotals.na,
+      'Priority Issues': ensureMinValue(structureTotals.priorityOfi),
+      'Opportunities': ensureMinValue(structureTotals.ofi),
+      'Completed': ensureMinValue(structureTotals.ok),
+      'Not Applicable': ensureMinValue(structureTotals.na),
     },
     {
       name: 'Contact',
-      'Priority Issues': contactTotals.priorityOfi,
-      'Opportunities': contactTotals.ofi,
-      'Completed': contactTotals.ok,
-      'Not Applicable': contactTotals.na,
+      'Priority Issues': ensureMinValue(contactTotals.priorityOfi),
+      'Opportunities': ensureMinValue(contactTotals.ofi),
+      'Completed': ensureMinValue(contactTotals.ok),
+      'Not Applicable': ensureMinValue(contactTotals.na),
     },
     {
       name: 'Services',
-      'Priority Issues': serviceTotals.priorityOfi,
-      'Opportunities': serviceTotals.ofi,
-      'Completed': serviceTotals.ok,
-      'Not Applicable': serviceTotals.na,
+      'Priority Issues': ensureMinValue(serviceTotals.priorityOfi),
+      'Opportunities': ensureMinValue(serviceTotals.ofi),
+      'Completed': ensureMinValue(serviceTotals.ok),
+      'Not Applicable': ensureMinValue(serviceTotals.na),
     },
     {
       name: 'Locations',
-      'Priority Issues': locationTotals.priorityOfi,
-      'Opportunities': locationTotals.ofi,
-      'Completed': locationTotals.ok,
-      'Not Applicable': locationTotals.na,
+      'Priority Issues': ensureMinValue(locationTotals.priorityOfi),
+      'Opportunities': ensureMinValue(locationTotals.ofi),
+      'Completed': ensureMinValue(locationTotals.ok),
+      'Not Applicable': ensureMinValue(locationTotals.na),
     },
   ];
 
   if (audit.serviceAreaPages) {
     categoryComparisonData.push({
       name: 'Service Areas',
-      'Priority Issues': serviceAreaTotals.priorityOfi,
-      'Opportunities': serviceAreaTotals.ofi,
-      'Completed': serviceAreaTotals.ok,
-      'Not Applicable': serviceAreaTotals.na,
+      'Priority Issues': ensureMinValue(serviceAreaTotals.priorityOfi),
+      'Opportunities': ensureMinValue(serviceAreaTotals.ofi),
+      'Completed': ensureMinValue(serviceAreaTotals.ok),
+      'Not Applicable': ensureMinValue(serviceAreaTotals.na),
     });
   }
 
@@ -246,6 +249,11 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
                       </Pie>
                       <Tooltip 
                         formatter={(value, name) => {
+                          // Handle case where value is 0
+                          if (!value || value === 0) {
+                            return ["0 items (0%)", name];
+                          }
+                          
                           const total = audit.summary.total || 
                             (audit.summary.priorityOfiCount + audit.summary.ofiCount + audit.summary.okCount + audit.summary.naCount);
                           return [`${value} items (${((Number(value)/total) * 100).toFixed(1)}%)`, name];
@@ -323,8 +331,15 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
-                <YAxis />
-                <Tooltip formatter={(value, name) => [`${value} items`, name]} />
+                <YAxis 
+                  tickFormatter={(value) => Math.floor(value) === value ? value.toString() : ''}
+                  domain={[0, 'dataMax']} 
+                />
+                <Tooltip formatter={(value, name) => {
+                  // If it's our minimal value (0.1), display as 0 in the tooltip
+                  const displayValue = value === 0.1 ? 0 : value;
+                  return [`${displayValue} items`, name];
+                }} />
                 <Legend wrapperStyle={{ paddingTop: 10 }} />
                 <Bar dataKey="Priority Issues" stackId="a" fill="#ef4444" name="Priority Issues" />
                 <Bar dataKey="Opportunities" stackId="a" fill="#eab308" name="Opportunities" />
