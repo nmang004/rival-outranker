@@ -1053,7 +1053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     contactPage: { items: any[] };
     servicePages: { items: any[] };
     locationPages: { items: any[] };
-    serviceAreaPages: { items: any[] };
+    serviceAreaPages?: { items: any[] };
   }
   
   // In-memory cache for audit results (would be a database in production)

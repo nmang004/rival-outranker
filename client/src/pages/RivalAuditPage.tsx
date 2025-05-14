@@ -39,8 +39,8 @@ export default function RivalAuditPage() {
         data: { url: values.url },
       });
       
-      // Redirect to results page with audit ID
-      navigate(`/rival-audit-results?id=${response.id}`);
+      // Redirect to results page with audit ID and URL for refresh capability
+      navigate(`/rival-audit-results?id=${response.id}&url=${encodeURIComponent(values.url)}`);
       
     } catch (error) {
       console.error("Error starting rival audit:", error);

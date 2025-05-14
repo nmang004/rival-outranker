@@ -37,16 +37,68 @@ export default function RivalAuditResultsPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("summary");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Get auditId from URL query params
+  // Get auditId and URL from URL query params
   const params = new URLSearchParams(window.location.search);
   const auditId = params.get("id");
+  const websiteUrl = params.get("url");
   
-  // Fetch the audit data
-  const { data: audit, isLoading, isError } = useQuery<RivalAudit>({
+  // Fetch the audit data, including the website URL if available
+  const { data: audit, isLoading, isError, refetch } = useQuery<RivalAudit>({
     queryKey: [`/api/rival-audit/${auditId}`],
+    queryFn: async () => {
+      // Include URL in the request to ensure we get the right data
+      const endpoint = websiteUrl
+        ? `/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}`
+        : `/api/rival-audit/${auditId}`;
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error("Failed to fetch audit data");
+      }
+      return response.json();
+    },
     enabled: !!auditId,
   });
+  
+  // Function to refresh/recrawl the audit
+  const handleRefreshAudit = async () => {
+    if (!websiteUrl || !auditId) {
+      toast({
+        title: "Cannot refresh audit",
+        description: "Missing website URL or audit ID",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsRefreshing(true);
+    try {
+      toast({
+        title: "Refreshing audit data",
+        description: "Starting fresh crawl of the website. This may take a minute...",
+      });
+      
+      // Force a fresh crawl with the refresh parameter
+      await fetch(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&refresh=true`);
+      
+      // Refetch the data
+      await refetch();
+      
+      toast({
+        title: "Audit refreshed",
+        description: "Successfully updated audit data with fresh crawl results",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh the audit data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Handle export to Excel
   const handleExportToExcel = async () => {
@@ -134,11 +186,28 @@ export default function RivalAuditResultsPage() {
             <p className="text-muted-foreground">
               Comprehensive SEO audit for <span className="font-medium">{audit.url}</span>
             </p>
+            {audit.summary.total && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Analyzed {audit.summary.total} SEO factors across all categories
+              </p>
+            )}
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
             <Button variant="outline" onClick={goBack}>
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
+            {websiteUrl && (
+              <Button 
+                variant="outline" 
+                onClick={handleRefreshAudit}
+                disabled={isRefreshing}
+              >
+                <svg className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {isRefreshing ? 'Refreshing...' : 'Refresh Audit'}
+              </Button>
+            )}
             <Button onClick={handleExportToExcel}>
               <FileDown className="mr-2 h-4 w-4" /> Export to Excel
             </Button>
