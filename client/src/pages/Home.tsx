@@ -4,7 +4,14 @@ import UrlForm from "@/components/UrlForm";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { urlFormSchema } from "@shared/schema";
-import { Loader2, ChevronDown } from "lucide-react";
+import { 
+  Loader2, 
+  ChevronDown, 
+  LineChart, 
+  BarChart2, 
+  Search,
+  Rocket
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 
@@ -167,20 +174,7 @@ export default function Home() {
         <div className="animate-float inline-block mb-6">
           <div className="bg-white p-3 rounded-full shadow-md border border-primary/10">
             <div className="rounded-full bg-primary/10 p-2">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className="text-primary"
-              >
-                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"></path>
-              </svg>
+              <LineChart className="w-6 h-6 text-primary" />
             </div>
           </div>
         </div>
@@ -198,37 +192,14 @@ export default function Home() {
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/50 rounded-t-xl"></div>
           <div className="absolute -top-4 -right-4 bg-white p-2 rounded-full shadow-lg border border-primary/10 z-10">
             <div className="rounded-full bg-primary p-2 text-white">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="m15 9-6 6"></path>
-                <path d="m9 9 6 6"></path>
-              </svg>
+              <Rocket className="w-4 h-4" />
             </div>
           </div>
           
           <div className="text-left mb-6">
             <div className="flex items-center">
               <div className="rounded-full p-3 bg-primary/10 mr-4 animate-pulse-slow">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                  <path d="M9.5 3H4a2 2 0 0 0-2 2v5.5"></path>
-                  <path d="M14.5 21H20a2 2 0 0 0 2-2v-5.5"></path>
-                  <path d="M3 10V3"></path>
-                  <path d="M21 14v7"></path>
-                  <path d="M14 21h-4"></path>
-                  <path d="M10 3h4"></path>
-                  <path d="m7.5 8.5 9 9"></path>
-                  <path d="m7.5 15.5 9-9"></path>
-                </svg>
+                <Search className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold gradient-text">Analyze Your Website</h3>
