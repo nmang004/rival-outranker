@@ -684,11 +684,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keyword: displayKeyword, // Include the keyword in the response
         location: location, // Include the location in the response
         competitors,
-        allCompetitorUrls: competitorResults.allCompetitorUrls || 
-          competitors.map(c => ({ 
-            url: c.url, 
-            name: new URL(c.url).hostname.replace('www.', '') 
-          })),
+        allCompetitorUrls: competitors.map(c => ({ 
+          url: c.url, 
+          name: new URL(c.url).hostname.replace('www.', '') 
+        })),
         keywordGap,
         marketPosition: `${Math.ceil(Math.random() * 5)}/10`,
         growthScore: `${Math.ceil(4 + Math.random() * 6)}/10`,
@@ -697,7 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentQuality: Math.round(50 + Math.random() * 30),
         backlinkScore: Math.round(30 + Math.random() * 50),
         queryCount: searchService.getQueryCount(), // Include the Search API query count
-        meta: competitorResults.meta || {
+        meta: {
           totalResults: competitors.length,
           analyzedResults: competitors.length,
           searchQuery: `${displayKeyword} ${location}`
@@ -891,18 +890,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Get the existing analysis data
                 const analysisData = mostRecentAnalysis.results;
                 
-                // Add competitor data to the existing results
-                const updatedResults = {
-                  ...analysisData,
-                  competitorAnalysis: {
-                    competitors: competitorResults.competitors,
-                    keyword: queryKeyword,
-                    location: city,
-                    queryCount: competitorResults.queryCount || 0,
-                    usingRealSearch: competitorResults.usingRealSearch || false,
-                    keywordGap: competitorResults.keywordGap || []
-                  }
+                // Create a new results object by deep cloning the existing one
+                const updatedResults = JSON.parse(JSON.stringify(analysisData));
+                
+                // Add the competitor analysis
+                updatedResults.competitorAnalysis = {
+                  competitors: competitorResults.competitors || [],
+                  keyword: queryKeyword,
+                  location: city,
+                  queryCount: 0, // Default value
+                  usingRealSearch: false, // Default value
+                  keywordGap: [] // Default empty array
                 };
+                
+                // Add optional properties if they exist in competitorResults
+                if (competitorResults.queryCount !== undefined) {
+                  updatedResults.competitorAnalysis.queryCount = competitorResults.queryCount;
+                }
+                
+                if (competitorResults.usingRealSearch !== undefined) {
+                  updatedResults.competitorAnalysis.usingRealSearch = competitorResults.usingRealSearch;
+                }
+                
+                if (competitorResults.keywordGap) {
+                  updatedResults.competitorAnalysis.keywordGap = competitorResults.keywordGap;
+                }
                 
                 // Update the analysis with new data
                 await storage.updateAnalysisResults(mostRecentAnalysis.id, updatedResults);
