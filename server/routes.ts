@@ -60,9 +60,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint to analyze a URL
   app.post("/api/analyze", async (req: Request, res: Response) => {
     try {
-      // Extract URL, deep content analysis flag, and competitor analysis flag
+      // Extract URL, target keyword, deep content analysis flag, and competitor analysis flag
       const { 
         url: rawUrl, 
+        targetKeyword = null,
         runDeepContentAnalysis = false,
         includeCompetitorAnalysis = false 
       } = req.body;
