@@ -6,6 +6,7 @@ import { analyzer } from "./services/analyzer_fixed";
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
 import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
 import { searchService } from "./services/searchService";
+import { generateRivalAuditExcel } from "./services/excelExporter";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -1082,8 +1083,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const url = req.query.url as string || "https://example.com";
       const mockAudit = generateMockRivalAudit(url);
       
-      // Import the excelExporter
-      const { generateRivalAuditExcel } = await import('./services/excelExporter');
+      // We already imported the excelExporter at the top of the file
       
       // Generate Excel file
       const excelBuffer = await generateRivalAuditExcel(mockAudit);
@@ -1123,7 +1123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
     
     // Generate mock importance
-    const getImportance = (index: number) => {
+    const getImportance = (index: number): "High" | "Medium" | "Low" => {
       const val = (seed + index) % 3;
       if (val === 0) return 'High';
       if (val === 1) return 'Medium';

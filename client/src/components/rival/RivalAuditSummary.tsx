@@ -5,6 +5,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { 
   BarChart3, 
@@ -16,15 +17,22 @@ import {
   Globe, 
   AlertCircle, 
   AlertTriangle, 
-  CheckCircle 
+  CheckCircle,
+  FileSpreadsheet,
+  Download
 } from "lucide-react";
 import { RivalAudit } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 interface RivalAuditSummaryProps {
   audit: RivalAudit;
 }
 
 export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
+  // Function to handle exporting to Excel
+  const handleExportToExcel = () => {
+    window.open(`/api/rival-audit/1/export?url=${encodeURIComponent(audit.url)}`, '_blank');
+  };
   // Calculate total items for each category
   const getCategoryTotals = (categoryItems: any[]) => {
     return {
@@ -83,11 +91,22 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Overall Audit Status</CardTitle>
-          <CardDescription>
-            Summary of findings across all audit categories
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Overall Audit Status</CardTitle>
+            <CardDescription>
+              Summary of findings across all audit categories
+            </CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={handleExportToExcel}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>Export to Excel</span>
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
