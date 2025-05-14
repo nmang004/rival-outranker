@@ -4,6 +4,68 @@ import axios from 'axios';
 const API_LOGIN = process.env.DATAFORSEO_API_LOGIN;
 const API_PASSWORD = process.env.DATAFORSEO_API_PASSWORD;
 
+/**
+ * Polls a DataForSEO task until it's complete and returns the results
+ * @param taskId The ID of the task to check
+ * @param endpoint The API endpoint for the task get request
+ * @param maxAttempts Maximum number of polling attempts
+ * @param delayMs Delay between polling attempts in milliseconds
+ * @returns Task result object
+ */
+async function getTaskResult(taskId: string, endpoint: string, maxAttempts: number = 10, delayMs: number = 2000): Promise<any> {
+  let attempts = 0;
+  
+  // Function to delay execution
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  while (attempts < maxAttempts) {
+    attempts++;
+    
+    try {
+      console.log(`Checking task status (attempt ${attempts}/${maxAttempts})...`);
+      
+      // Get task status
+      const response = await dataForSeoClient.get(`${endpoint}/${taskId}`);
+      
+      if (response.data?.status_code !== 20000) {
+        throw new Error(`Invalid response: ${response.data?.status_message || 'Unknown error'}`);
+      }
+      
+      const taskData = response.data.tasks?.[0];
+      
+      if (!taskData) {
+        throw new Error('No task data returned');
+      }
+      
+      // Check if task is complete
+      if (taskData.status_code === 20000) {
+        console.log(`Task ${taskId} completed successfully`);
+        return taskData;
+      }
+      
+      // Check if task failed
+      if (taskData.status_code >= 40000) {
+        throw new Error(`Task failed: ${taskData.status_message || 'Unknown error'}`);
+      }
+      
+      // Task is still processing, wait and try again
+      console.log(`Task ${taskId} is still processing, waiting ${delayMs}ms...`);
+      await delay(delayMs);
+      
+    } catch (error: any) {
+      // If it's the last attempt, throw the error
+      if (attempts >= maxAttempts) {
+        throw error;
+      }
+      
+      console.error(`Error checking task (attempt ${attempts}): ${error.message}`);
+      await delay(delayMs);
+    }
+  }
+  
+  throw new Error(`Task ${taskId} did not complete after ${maxAttempts} attempts`);
+}
+
 // Verify API credentials are available
 if (!API_LOGIN || !API_PASSWORD) {
   console.error('DataForSEO API credentials are missing. Make sure DATAFORSEO_API_LOGIN and DATAFORSEO_API_PASSWORD are set correctly in your environment.');
@@ -265,29 +327,39 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     
     console.log('DataForSEO search_volume request payload:', JSON.stringify(requestData, null, 2));
     
-    // Use the live endpoint for immediate results
-    const keywordDataResponse = await dataForSeoClient.post(
-      '/keywords_data/google_ads/search_volume/live',
-      requestData
+    // Use the standard endpoint with normal priority to reduce costs
+    const taskPostResponse = await dataForSeoClient.post(
+      '/keywords_data/google_ads/search_volume/task_post',
+      requestData.map(item => ({
+        ...item,
+        priority: 1  // Normal priority (lower cost)
+      }))
     );
     
-    console.log('DataForSEO live response:', JSON.stringify(keywordDataResponse.data, null, 2));
+    // Handle task post response to get the task ID
+    const taskPostData = taskPostResponse.data;
     
-    // Direct access to response data structure
-    const data = keywordDataResponse.data;
-    
-    if (!data || data.status_code !== 20000 || !data.tasks || data.tasks.length === 0) {
-      throw new Error(`Invalid API response: ${JSON.stringify(data)}`);
+    if (!taskPostData || taskPostData.status_code !== 20000 || !taskPostData.tasks || taskPostData.tasks.length === 0) {
+      throw new Error(`Invalid task post API response: ${JSON.stringify(taskPostData)}`);
     }
     
-    const task = data.tasks[0];
+    const taskId = taskPostData.tasks[0].id;
     
-    if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
-      throw new Error(`Task error: ${task.status_message || 'No results'}`);
+    if (!taskId) {
+      throw new Error('No task ID returned from DataForSEO');
+    }
+    
+    console.log(`DataForSEO task created with ID: ${taskId}, waiting for results...`);
+    
+    // Wait for task to complete and get results
+    const taskResult = await getTaskResult(taskId, '/keywords_data/google_ads/search_volume/task_get');
+    
+    if (!taskResult || !taskResult.result || taskResult.result.length === 0) {
+      throw new Error('No results from DataForSEO task');
     }
     
     // Extract the keyword data from the result
-    const keywordResult = task.result[0];
+    const keywordResult = taskResult.result[0];
     
     // Extract trend data (if available)
     let trend: number[] = [];
@@ -320,11 +392,37 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
         }
       }];
       
-      // Use google_ads endpoint for related keywords too
-      const relatedKeywordsResponse = await dataForSeoClient.post(
-        '/keywords_data/google_ads/keywords_for_keywords/live',
-        relatedRequestData
+      // Use standard endpoint with normal priority for related keywords
+      const relatedKeywordsTaskResponse = await dataForSeoClient.post(
+        '/keywords_data/google_ads/keywords_for_keywords/task_post',
+        relatedRequestData.map(item => ({
+          ...item,
+          priority: 1 // Normal priority (lower cost)
+        }))
       );
+      
+      // Handle task creation response
+      if (relatedKeywordsTaskResponse.data?.status_code !== 20000 || 
+          !relatedKeywordsTaskResponse.data?.tasks?.[0]?.id) {
+        throw new Error('Failed to create task for related keywords');
+      }
+      
+      const relatedKeywordsTaskId = relatedKeywordsTaskResponse.data.tasks[0].id;
+      
+      // Get task results
+      const relatedKeywordsTaskResult = await getTaskResult(
+        relatedKeywordsTaskId, 
+        '/keywords_data/google_ads/keywords_for_keywords/task_get'
+      );
+      
+      // Format response to match the live endpoint format
+      const relatedKeywordsResponse = { 
+        data: {
+          status_code: 20000,
+          status_message: "Ok.",
+          tasks: [relatedKeywordsTaskResult]
+        }
+      };
       
       console.log('DataForSEO related keywords response status:', 
         relatedKeywordsResponse.data?.status_code,
@@ -542,11 +640,37 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
     
     console.log('DataForSEO keyword suggestions request payload:', JSON.stringify(requestData, null, 2));
     
-    // Use the search_volume endpoint which we know works
-    const suggestionsResponse = await dataForSeoClient.post(
-      '/keywords_data/google_ads/search_volume/live', 
-      requestData
+    // Use the standard endpoint with normal priority to reduce costs
+    const suggestionsTaskResponse = await dataForSeoClient.post(
+      '/keywords_data/google_ads/search_volume/task_post', 
+      requestData.map(item => ({
+        ...item,
+        priority: 1  // Normal priority (lower cost)
+      }))
     );
+    
+    // Handle task creation response
+    if (suggestionsTaskResponse.data?.status_code !== 20000 || 
+        !suggestionsTaskResponse.data?.tasks?.[0]?.id) {
+      throw new Error('Failed to create task for keyword suggestions');
+    }
+    
+    const suggestionsTaskId = suggestionsTaskResponse.data.tasks[0].id;
+    
+    // Get task results
+    const suggestionsTaskResult = await getTaskResult(
+      suggestionsTaskId, 
+      '/keywords_data/google_ads/search_volume/task_get'
+    );
+    
+    // Format response to match the live endpoint format
+    const suggestionsResponse = { 
+      data: {
+        status_code: 20000,
+        status_message: "Ok.",
+        tasks: [suggestionsTaskResult]
+      }
+    };
     
     console.log('DataForSEO suggestions response status:', 
       suggestionsResponse.data?.status_code,
