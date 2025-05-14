@@ -1167,9 +1167,9 @@ class RivalAuditCrawler {
     });
     
     // Check for brand pages
-    const hasBrandPages = site.otherPages.some(page => 
-      page.title.toLowerCase().includes('brand') ||
-      page.metaDescription.toLowerCase().includes('brand')
+    const hasBrandPages = Array.isArray(site.otherPages) && site.otherPages.some(page => 
+      (page?.title?.toLowerCase().includes('brand') || 
+       page?.metaDescription?.toLowerCase().includes('brand'))
     );
     
     items.push({
@@ -1224,8 +1224,8 @@ class RivalAuditCrawler {
     );
     
     // Check if any blog pages have dates in their content
-    const hasDatedBlog = blogPages.some(page => 
-      page.bodyText && page.bodyText.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\b\s+\d{1,2},\s+\d{4}\b/i)
+    const hasDatedBlog = Array.isArray(blogPages) && blogPages.length > 0 && blogPages.some(page => 
+      page?.bodyText && typeof page.bodyText === 'string' && page.bodyText.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\b\s+\d{1,2},\s+\d{4}\b/i)
     );
     
     items.push({
@@ -1377,10 +1377,11 @@ class RivalAuditCrawler {
     });
     
     // Check for localized alt text
-    const hasLocalizedAltText = site.homepage.images.withAlt > 0 && 
-      site.homepage.images.altTexts && 
+    const hasLocalizedAltText = site.homepage.images?.withAlt > 0 && 
+      site.homepage.images?.altTexts && 
+      Array.isArray(site.homepage.images?.altTexts) &&
       site.homepage.images.altTexts.some(alt => 
-        alt.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) // City, State pattern
+        alt && typeof alt === 'string' && alt.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) // City, State pattern
       );
     
     items.push({
