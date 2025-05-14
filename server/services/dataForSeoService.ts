@@ -365,7 +365,12 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     console.log('Processed keyword data:', JSON.stringify(result, null, 2));
     return result;
   } catch (error: any) {
-    console.error('Error fetching keyword data from DataForSEO:', error.message);
+    console.error('Error fetching keyword data from DataForSEO:', error.message || error);
+    
+    // Log more detailed error information if available
+    if (error.response?.data) {
+      console.error('API error details:', JSON.stringify(error.response.data, null, 2));
+    }
     
     // Return a clean structure with zeros instead of generating fake data
     return {
