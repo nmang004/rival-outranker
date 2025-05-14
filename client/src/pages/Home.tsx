@@ -133,8 +133,13 @@ export default function Home() {
               return false; // Keep polling until minimum time elapsed
             }
             
-            // Minimum wait time elapsed, redirect to results
-            setLocation(`/results?url=${encodeURIComponent(url)}`);
+            // Minimum wait time elapsed, redirect to the appropriate results page
+            if (isDeepContentAnalysis && result.results.deepContentAnalysis) {
+              console.log('Redirecting to deep content results');
+              setLocation(`/deep-content-results?url=${encodeURIComponent(url)}`);
+            } else {
+              setLocation(`/results?url=${encodeURIComponent(url)}`);
+            }
             return true;
           }
         }
