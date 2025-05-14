@@ -132,10 +132,12 @@ export default function ContentTab({
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-500">Word Count</span>
-                <span className="font-medium text-gray-700">{contentData.wordCount} words</span>
+                <span className="font-medium text-gray-700">
+                  {contentData?.wordCount || 0} words
+                </span>
               </div>
               <Progress 
-                value={Math.min(contentData.wordCount / 15, 100)} 
+                value={Math.min((contentData?.wordCount || 0) / 15, 100)} 
                 className="h-2 bg-blue-500"
               />
               <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -150,11 +152,11 @@ export default function ContentTab({
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-500">Readability Score</span>
                 <span className={`font-medium ${readability.color}`}>
-                  {contentData.readabilityScore} - {readability.text}
+                  {contentData?.readabilityScore || 50} - {readability.text}
                 </span>
               </div>
               <Progress 
-                value={contentData.readabilityScore} 
+                value={contentData?.readabilityScore || 50} 
                 className="h-2 bg-blue-500"
               />
             </div>
@@ -163,7 +165,7 @@ export default function ContentTab({
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-500">Multimedia Content</span>
                 <span className="font-medium text-gray-700">
-                  {contentData.hasMultimedia ? (
+                  {contentData?.hasMultimedia ? (
                     <span className="text-success-500 flex items-center">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Present
@@ -184,36 +186,40 @@ export default function ContentTab({
         <div className="bg-gray-50 rounded-lg p-4">
           <h5 className="text-sm font-medium text-gray-700 mb-3">Heading Structure</h5>
           
-          {contentData.headingStructure ? (
+          {contentData.headingStructure || contentData.h1Count !== undefined ? (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">H1 Headings</span>
                 <span className={`font-medium ${
-                  contentData.headingStructure.h1Count === 1 ? "text-success-500" : 
-                  contentData.headingStructure.h1Count === 0 ? "text-danger-500" : "text-warning-500"
+                  (contentData.headingStructure?.h1Count === 1 || contentData.h1Count === 1) ? "text-success-500" : 
+                  (contentData.headingStructure?.h1Count === 0 || contentData.h1Count === 0) ? "text-danger-500" : "text-warning-500"
                 }`}>
-                  {contentData.headingStructure.h1Count}
-                  {contentData.headingStructure.h1Count === 1 ? " (Optimal)" : 
-                   contentData.headingStructure.h1Count === 0 ? " (Missing)" : " (Too many)"}
+                  {contentData.headingStructure?.h1Count ?? contentData.h1Count ?? 0}
+                  {(contentData.headingStructure?.h1Count === 1 || contentData.h1Count === 1) ? " (Optimal)" : 
+                   (contentData.headingStructure?.h1Count === 0 || contentData.h1Count === 0) ? " (Missing)" : " (Too many)"}
                 </span>
               </div>
               
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">H2 Headings</span>
-                <span className="font-medium text-gray-700">{contentData.headingStructure.h2Count}</span>
+                <span className="font-medium text-gray-700">
+                  {contentData.headingStructure?.h2Count ?? contentData.h2Count ?? 0}
+                </span>
               </div>
               
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">H3 Headings</span>
-                <span className="font-medium text-gray-700">{contentData.headingStructure.h3Count}</span>
+                <span className="font-medium text-gray-700">
+                  {contentData.headingStructure?.h3Count ?? contentData.h3Count ?? 0}
+                </span>
               </div>
               
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">H4-H6 Headings</span>
                 <span className="font-medium text-gray-700">
-                  {contentData.headingStructure.h4Count + 
-                   contentData.headingStructure.h5Count + 
-                   contentData.headingStructure.h6Count}
+                  {(contentData.headingStructure?.h4Count || 0) + 
+                   (contentData.headingStructure?.h5Count || 0) + 
+                   (contentData.headingStructure?.h6Count || 0)}
                 </span>
               </div>
             </div>
@@ -226,7 +232,7 @@ export default function ContentTab({
           <div className="pt-2 mt-2 border-t border-gray-200">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Paragraph Count</span>
-              <span className="font-medium text-gray-700">{contentData.paragraphCount}</span>
+              <span className="font-medium text-gray-700">{contentData?.paragraphCount || 0}</span>
             </div>
           </div>
         </div>
@@ -236,11 +242,11 @@ export default function ContentTab({
           <div className="flex items-center justify-between mb-3">
             <h5 className="text-sm font-medium text-gray-700">Internal Links</h5>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              internalLinksData.overallScore.score >= 70 ? 'bg-blue-100 text-blue-800' : 
-              internalLinksData.overallScore.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+              internalLinksData?.overallScore?.score >= 70 ? 'bg-blue-100 text-blue-800' : 
+              internalLinksData?.overallScore?.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
               'bg-red-100 text-red-800'
             }`}>
-              Score: {internalLinksData.overallScore.score}/100
+              Score: {internalLinksData?.overallScore?.score || 50}/100
             </span>
           </div>
           
@@ -288,39 +294,39 @@ export default function ContentTab({
           <div className="flex items-center justify-between mb-3">
             <h5 className="text-sm font-medium text-gray-700">Images</h5>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              imageData.overallScore.score >= 70 ? 'bg-blue-100 text-blue-800' : 
-              imageData.overallScore.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+              imageData?.overallScore?.score >= 70 ? 'bg-blue-100 text-blue-800' : 
+              imageData?.overallScore?.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
               'bg-red-100 text-red-800'
             }`}>
-              Score: {imageData.overallScore.score}/100
+              Score: {imageData?.overallScore?.score || 50}/100
             </span>
           </div>
           
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Total Images</span>
-              <span className="font-medium text-gray-700">{imageData.count}</span>
+              <span className="font-medium text-gray-700">{imageData?.count || 0}</span>
             </div>
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">With Alt Text</span>
               <span className="font-medium text-success-500">
-                {imageData.withAltCount !== undefined ? imageData.withAltCount : 
-                (imageData.altCount !== undefined ? imageData.altCount : 0)}
+                {imageData?.withAltCount !== undefined ? imageData.withAltCount : 
+                (imageData?.withAltCount || 0)}
               </span>
             </div>
             
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Without Alt Text</span>
               <span className={`font-medium ${
-                (imageData.withoutAltCount === 0 || 
-                 (imageData.count && imageData.altCount !== undefined && 
-                  imageData.count - imageData.altCount === 0)) 
+                (imageData?.withoutAltCount === 0 || 
+                 (imageData?.count && imageData?.withAltCount !== undefined && 
+                  imageData.count - imageData.withAltCount === 0)) 
                   ? "text-success-500" : "text-danger-500"
               }`}>
-                {imageData.withoutAltCount !== undefined ? imageData.withoutAltCount : 
-                 (imageData.count && imageData.altCount !== undefined ? 
-                  imageData.count - imageData.altCount : 0)}
+                {imageData?.withoutAltCount !== undefined ? imageData.withoutAltCount : 
+                 (imageData?.count && imageData?.withAltCount !== undefined ? 
+                  imageData.count - imageData.withAltCount : 0)}
               </span>
             </div>
             
