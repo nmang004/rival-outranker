@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
+import { US_CITIES } from '@shared/us-cities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -60,20 +61,29 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   // State for location selection modal
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(city || "United States");
+  const [locationSearchTerm, setLocationSearchTerm] = useState('');
   const [runningAnalysis, setRunningAnalysis] = useState(false);
   
-  // Popular US cities for quick selection
+  // Filter US cities based on search term
+  const filteredCities = locationSearchTerm
+    ? US_CITIES
+        .filter(cityItem => 
+          `${cityItem.city}, ${cityItem.state}`.toLowerCase().includes(locationSearchTerm.toLowerCase())
+        )
+        .slice(0, 8) // Limit to 8 results for performance
+    : [];
+    
+  // Popular US cities and regions for quick selection
   const popularLocations = [
     "United States", 
-    "New York", 
-    "Los Angeles", 
-    "Chicago", 
-    "Houston", 
-    "Phoenix", 
-    "Philadelphia",
-    "San Antonio",
-    "San Diego",
-    "Dallas"
+    "New York, NY", 
+    "Los Angeles, CA", 
+    "Chicago, IL", 
+    "Houston, TX", 
+    "San Francisco, CA",
+    "Miami, FL",
+    "Seattle, WA",
+    "Boston, MA"
   ];
   
   // Function to start competitor analysis
@@ -174,14 +184,44 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
                 <label htmlFor="location" className="text-sm font-medium">
                   Location
                 </label>
-                <input
-                  id="location"
-                  type="text"
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Enter a city, state, or country"
-                />
+                <div className="relative">
+                  <input
+                    id="location"
+                    type="text"
+                    value={locationSearchTerm}
+                    onChange={(e) => setLocationSearchTerm(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Search for a city (e.g. Seattle, New York)"
+                  />
+                  
+                  {/* Search results dropdown */}
+                  {locationSearchTerm && filteredCities.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg max-h-64 overflow-auto">
+                      {filteredCities.map((cityItem, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            const cityString = `${cityItem.city}, ${cityItem.state}`;
+                            setSelectedLocation(cityString);
+                            setLocationSearchTerm(cityString);
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none text-sm"
+                        >
+                          {cityItem.city}, {cityItem.state}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Show the current selection */}
+                {selectedLocation && (
+                  <div className="flex items-center mt-2">
+                    <span className="text-sm text-muted-foreground">Selected location: </span>
+                    <span className="ml-2 text-sm font-medium">{selectedLocation}</span>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -193,7 +233,10 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
                     <button
                       key={location}
                       type="button"
-                      onClick={() => setSelectedLocation(location)}
+                      onClick={() => {
+                        setSelectedLocation(location);
+                        setLocationSearchTerm(location);
+                      }}
                       className={`text-xs px-2 py-1 rounded-full ${
                         selectedLocation === location
                           ? 'bg-primary text-white'
