@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,6 +9,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+
+// Define profile interface
+interface ProfileData {
+  firstName?: string;
+  lastName?: string;
+  profileImage?: string;
+  company?: string;
+  jobTitle?: string;
+  bio?: string;
+  websiteUrl?: string;
+}
 
 // Profile update schema
 const profileSchema = z.object({
@@ -27,31 +38,37 @@ export function ProfileForm() {
   const { updateProfile, user } = useAuth();
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+  const { data: profile, isLoading: isLoadingProfile } = useQuery<ProfileData>({
     queryKey: ['/api/user/profile'],
   });
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: profile?.firstName || "",
-      lastName: profile?.lastName || "",
-      company: profile?.company || "",
-      jobTitle: profile?.jobTitle || "",
-      bio: profile?.bio || "",
-      websiteUrl: profile?.websiteUrl || "",
-      profileImage: profile?.profileImage || "",
-    },
-    values: {
-      firstName: profile?.firstName || "",
-      lastName: profile?.lastName || "",
-      company: profile?.company || "",
-      jobTitle: profile?.jobTitle || "",
-      bio: profile?.bio || "",
-      websiteUrl: profile?.websiteUrl || "",
-      profileImage: profile?.profileImage || "",
+      firstName: "",
+      lastName: "",
+      company: "",
+      jobTitle: "",
+      bio: "",
+      websiteUrl: "",
+      profileImage: "",
     }
   });
+  
+  // Update form values when profile data is loaded
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        company: profile.company || "",
+        jobTitle: profile.jobTitle || "",
+        bio: profile.bio || "",
+        websiteUrl: profile.websiteUrl || "",
+        profileImage: profile.profileImage || "",
+      });
+    }
+  }, [profile, form]);
 
   const { formState } = form;
   const { isSubmitting } = formState;

@@ -550,10 +550,10 @@ export default function Home() {
       </div>
       
       {/* Features Section */}
-      <div className="bg-gradient-to-tr from-primary/5 to-white py-16">
+      <div className="bg-gradient-to-tr from-primary/5 to-white py-10">
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold gradient-heading mb-4">Comprehensive SEO Analysis</h2>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold gradient-heading mb-3">Comprehensive SEO Analysis</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               Our tool analyzes over 70 SEO factors to provide actionable insights that help improve your website's visibility in search engines
             </p>
