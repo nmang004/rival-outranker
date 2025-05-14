@@ -4,6 +4,11 @@ import axios from 'axios';
 const API_LOGIN = process.env.DATAFORSEO_API_LOGIN;
 const API_PASSWORD = process.env.DATAFORSEO_API_PASSWORD;
 
+// Verify API credentials are available
+if (!API_LOGIN || !API_PASSWORD) {
+  console.error('DataForSEO API credentials are missing. Make sure DATAFORSEO_API_LOGIN and DATAFORSEO_API_PASSWORD are set correctly in your environment.');
+}
+
 /**
  * Generates a list of fallback keyword suggestions when the API isn't available
  * @param baseKeyword The original keyword to generate suggestions for
@@ -156,6 +161,15 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       'https://api.dataforseo.com/v3/keywords_data/google/search_volume/live',
       [requestData]
     );
+    
+    // Log response for debugging
+    console.log('DataForSEO API response status code:', keywordDataResponse.data?.status_code);
+    console.log('DataForSEO API response status message:', keywordDataResponse.data?.status_message);
+    
+    if (keywordDataResponse.data?.status_code !== 20000) {
+      console.error('DataForSEO API error:', keywordDataResponse.data);
+      throw new Error(`DataForSEO API returned error: ${keywordDataResponse.data?.status_message}`);
+    }
     
     // Process the response
     const results = keywordDataResponse.data?.tasks?.[0]?.result?.[0] || {};
@@ -360,7 +374,7 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
     try {
       // First try the keywords_for_keywords endpoint
       const suggestionsResponse = await dataForSeoClient.post(
-        '/v3/keywords_data/google/keywords_for_keywords/live',
+        'https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live',
         [{
           "keyword": keyword,
           "location_code": location,
@@ -376,7 +390,7 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
       try {
         // Fall back to keyword suggestions endpoint
         const suggestionsResponse = await dataForSeoClient.post(
-          '/v3/keywords_data/google/keyword_suggestions/live',
+          'https://api.dataforseo.com/v3/keywords_data/google/keyword_suggestions/live',
           [{
             "keyword": keyword,
             "location_code": location,
