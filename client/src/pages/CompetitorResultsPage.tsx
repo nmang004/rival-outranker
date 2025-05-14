@@ -12,6 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import CompetitorAnalysis from '@/components/assessment/CompetitorAnalysis';
+import FullCompetitorResults from '@/components/assessment/FullCompetitorResults';
 
 export default function CompetitorResultsPage() {
   const [location] = useLocation();
@@ -148,7 +149,17 @@ export default function CompetitorResultsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Main competitor analysis section - top competitors */}
           <CompetitorAnalysis url={url} city={city} isRequested={true} keyword="" />
+          
+          {/* Full SERP results with pagination */}
+          <div className="mt-8">
+            <h3 className="text-lg font-medium mb-4">Complete Search Results</h3>
+            <div className="text-sm text-muted-foreground mb-4">
+              Showing all websites ranking for your target keyword in {city || "your location"}
+            </div>
+            <FullCompetitorResults url={url} city={city} />
+          </div>
         </CardContent>
       </Card>
       

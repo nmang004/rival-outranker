@@ -403,8 +403,23 @@ export const competitorSchema = z.object({
   weaknesses: z.array(z.string())
 });
 
+// Schema for simplified competitor url listing (for pagination)
+export const competitorUrlSchema = z.object({
+  url: z.string(),
+  name: z.string()
+});
+
+// Meta information about the competitor search
+export const competitorMetaSchema = z.object({
+  totalResults: z.number(),
+  analyzedResults: z.number(),
+  searchQuery: z.string(),
+  error: z.string().optional()
+});
+
 export const competitorAnalysisResultSchema = z.object({
   keyword: z.string(),
+  location: z.string(),
   competitors: z.array(competitorSchema),
   comparisonMetrics: z.object({
     avgKeywordDensity: z.number(),
@@ -413,7 +428,10 @@ export const competitorAnalysisResultSchema = z.object({
     avgH2Count: z.number(),
     avgImagesWithAlt: z.number(),
     topKeywords: z.array(z.string())
-  })
+  }),
+  // New fields for advanced competitor analysis with pagination
+  allCompetitorUrls: z.array(competitorUrlSchema),
+  meta: competitorMetaSchema
 });
 
 export type SeoScore = z.infer<typeof seoScoreSchema>;
@@ -434,4 +452,6 @@ export type TechnicalSeoAnalysis = z.infer<typeof technicalSeoAnalysisSchema>;
 export type DeepContentAnalysis = z.infer<typeof deepContentAnalysisSchema>;
 export type SeoAnalysisResult = z.infer<typeof seoAnalysisResultSchema>;
 export type Competitor = z.infer<typeof competitorSchema>;
+export type CompetitorUrl = z.infer<typeof competitorUrlSchema>;
+export type CompetitorMeta = z.infer<typeof competitorMetaSchema>;
 export type CompetitorAnalysisResult = z.infer<typeof competitorAnalysisResultSchema>;
