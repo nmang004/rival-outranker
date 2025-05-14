@@ -62,6 +62,71 @@
   html {
     scroll-behavior: smooth;
   }
+  
+  /* Optimizations for high-resolution displays */
+  @media (min-width: 1440px) {
+    .container {
+      @apply max-w-screen-xl mx-auto;
+    }
+    
+    h1 {
+      @apply text-4xl md:text-5xl;
+    }
+    
+    h2 {
+      @apply text-3xl md:text-4xl;
+    }
+  }
+  
+  /* 4K display optimizations */
+  @media (min-width: 2560px) {
+    .container {
+      @apply max-w-screen-2xl mx-auto;
+    }
+    
+    h1 {
+      @apply text-5xl md:text-6xl;
+    }
+    
+    h2 {
+      @apply text-4xl md:text-5xl;
+    }
+    
+    p, li, a, button, input, textarea, select {
+      @apply text-lg;
+    }
+    
+    .card, .button, .input {
+      @apply scale-105;
+    }
+  }
+  
+  /* 8K display optimizations */
+  @media (min-width: 4320px) {
+    .container {
+      @apply max-w-[3840px] mx-auto;
+    }
+    
+    html {
+      font-size: 20px;
+    }
+    
+    h1 {
+      @apply text-6xl md:text-7xl;
+    }
+    
+    h2 {
+      @apply text-5xl md:text-6xl;
+    }
+    
+    p, li, a, button, input, textarea, select {
+      @apply text-xl;
+    }
+    
+    .card, .button, .input {
+      @apply scale-110;
+    }
+  }
 }
 
 @layer components {
@@ -76,6 +141,40 @@
   
   .gradient-border {
     @apply border border-transparent bg-gradient-to-r from-primary/30 to-primary/10 bg-clip-border;
+  }
+  
+  /* Large display layout optimizations */
+  .high-res-layout {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  @media (min-width: 1440px) {
+    .high-res-layout {
+      @apply max-w-screen-xl;
+    }
+  }
+  
+  @media (min-width: 2560px) {
+    .high-res-layout {
+      @apply max-w-screen-2xl;
+    }
+  }
+  
+  /* Multi-column layouts for larger screens */
+  .high-res-grid {
+    @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  
+  @media (min-width: 1440px) {
+    .high-res-grid {
+      @apply lg:grid-cols-3 xl:grid-cols-4;
+    }
+  }
+  
+  @media (min-width: 2560px) {
+    .high-res-grid {
+      @apply xl:grid-cols-5 2xl:grid-cols-6;
+    }
   }
   
   /* Card animations and effects */

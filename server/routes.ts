@@ -463,7 +463,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         ];
         
+        // Clean up the keyword for display (remove location if present at the end)
+        const displayKeyword = primaryKeyword
+          .replace(/\s+in\s+[a-zA-Z\s,]+$/, '') // Remove " in [location]" if it exists
+          .trim();
+        
         const competitorAnalysis = {
+          keyword: displayKeyword, // Include the keyword in the response
+          location: location, // Include the location in the response
           competitors,
           keywordGap,
           marketPosition: `${Math.ceil(Math.random() * 5)}/10`,

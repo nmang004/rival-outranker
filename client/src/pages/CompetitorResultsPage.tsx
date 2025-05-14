@@ -55,18 +55,18 @@ export default function CompetitorResultsPage() {
   
   if (!url || !city) {
     return (
-      <div className="container mx-auto px-4 py-12 max-w-4xl text-center">
-        <Card>
+      <div className="high-res-layout py-12 text-center">
+        <Card className="mx-auto max-w-4xl xl:max-w-5xl">
           <CardHeader>
-            <CardTitle>Missing Information</CardTitle>
-            <CardDescription>
+            <CardTitle className="xl:text-3xl">Missing Information</CardTitle>
+            <CardDescription className="xl:text-lg">
               URL or city parameter is missing. Please return to the competitor analysis page.
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">
-            <Button asChild>
+            <Button asChild className="xl:text-base xl:h-10 xl:px-5">
               <Link href="/competitor-analysis">
-                <ChevronLeft className="mr-2 h-4 w-4" />
+                <ChevronLeft className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
                 Go to Competitor Analysis
               </Link>
             </Button>
@@ -77,7 +77,7 @@ export default function CompetitorResultsPage() {
   }
   
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="high-res-layout py-6">
       <div className="mb-8">
         <Breadcrumb>
           <BreadcrumbList>
@@ -98,21 +98,21 @@ export default function CompetitorResultsPage() {
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight gradient-heading">
+          <h1 className="text-3xl font-bold tracking-tight gradient-heading md:text-4xl xl:text-5xl">
             Competitor Analysis Results
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 xl:text-lg">
             Analysis for <span className="font-medium text-foreground">{url}</span> in <span className="font-medium text-foreground">{city}</span>
           </p>
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={handlePrint} className="xl:text-base xl:h-10 xl:px-5">
+            <Printer className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
             Print
           </Button>
-          <Button variant="outline" size="sm" onClick={handleShare}>
-            <Share2 className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={handleShare} className="xl:text-base xl:h-10 xl:px-5">
+            <Share2 className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
             Share
           </Button>
           <Button 
@@ -120,15 +120,16 @@ export default function CompetitorResultsPage() {
             size="sm" 
             onClick={handleExportPDF}
             disabled={isLoading}
+            className="xl:text-base xl:h-10 xl:px-5"
           >
             {isLoading ? (
               <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                <RefreshCw className="mr-2 h-4 w-4 xl:h-5 xl:w-5 animate-spin" />
                 Exporting...
               </>
             ) : (
               <>
-                <Download className="mr-2 h-4 w-4" />
+                <Download className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
                 Export PDF
               </>
             )}
@@ -138,11 +139,11 @@ export default function CompetitorResultsPage() {
       
       <Card className="mb-8">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-xl">
-            <Globe className="mr-2 h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center text-xl xl:text-2xl">
+            <Globe className="mr-2 h-5 w-5 text-primary xl:h-6 xl:w-6" />
             Competitive Landscape in {city}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="xl:text-lg">
             Detailed analysis of your top competitors in this market and how they compare to your website
           </CardDescription>
         </CardHeader>
@@ -152,14 +153,14 @@ export default function CompetitorResultsPage() {
       </Card>
       
       <div className="flex justify-between items-center mt-8">
-        <Button variant="ghost" asChild>
+        <Button variant="ghost" asChild className="xl:text-base xl:h-10">
           <Link href="/competitor-analysis">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 h-4 w-4 xl:h-5 xl:w-5" />
             Back to Competitor Analysis
           </Link>
         </Button>
         
-        <Button asChild>
+        <Button asChild className="xl:text-base xl:h-10 xl:px-5">
           <Link href="/deep-content">
             Try Deep Content Analysis
           </Link>
