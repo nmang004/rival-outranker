@@ -95,6 +95,12 @@ export default function NavBar() {
                       Rival Rank Tracker
                     </DropdownMenuItem>
                   </Link>
+                  <Link href="/basic-rank-tracker">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <BarChart className="h-4 w-4 mr-2" />
+                      Basic Rank Tracker
+                    </DropdownMenuItem>
+                  </Link>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Link href="/history">
@@ -170,6 +176,19 @@ export default function NavBar() {
               }}>
                 <div className="flex items-center">
                   <BarChart className="h-4 w-4 mr-2" /> Rival Rank Tracker
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="cursor-pointer pl-4">
+            <div className={mobileLinkClass("/basic-rank-tracker") + " w-full text-left"}>
+              <div className="flex items-center justify-between" onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "/basic-rank-tracker";
+                setMobileMenuOpen(false);
+              }}>
+                <div className="flex items-center">
+                  <BarChart className="h-4 w-4 mr-2" /> Basic Rank Tracker
                 </div>
               </div>
             </div>
