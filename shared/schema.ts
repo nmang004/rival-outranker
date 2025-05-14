@@ -109,6 +109,7 @@ export type ProjectAnalysis = typeof projectAnalyses.$inferSelect;
 // Custom types for SEO analysis results
 export const urlFormSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
+  includeCompetitorAnalysis: z.boolean().optional().default(false),
 });
 
 export type SeoScoreCategory = 'excellent' | 'good' | 'needs-work' | 'poor';

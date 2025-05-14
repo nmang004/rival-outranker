@@ -24,7 +24,7 @@ export default function SearchApiUsage() {
   
   // Calculate usage percentage
   const count = data?.count || data?.queryCount || 0;
-  const limit = data?.limit || 1000; // Default limit if not provided
+  const limit = data?.limit || 100; // Google Search API free daily limit
   const remaining = data?.remaining || (limit - count);
   const usagePercentage = Math.min(100, Math.round((count / limit) * 100));
   

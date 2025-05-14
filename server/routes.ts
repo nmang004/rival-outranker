@@ -727,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search-query-count", (_req: Request, res: Response) => {
     try {
       const count = searchService.getQueryCount();
-      const limit = 1000; // Default API limit, can be adjusted if needed
+      const limit = 100; // Google Search API daily free limit
       const remaining = Math.max(0, limit - count);
       
       return res.json({ 
