@@ -265,7 +265,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     
     console.log('DataForSEO search_volume request payload:', JSON.stringify(requestData, null, 2));
     
-    // Use the live endpoint again to ensure compatibility
+    // Use the live endpoint for immediate results
     const keywordDataResponse = await dataForSeoClient.post(
       '/keywords_data/google_ads/search_volume/live',
       requestData
