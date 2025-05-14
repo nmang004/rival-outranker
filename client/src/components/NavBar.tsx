@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { 
+  BarChart2, 
+  FileText, 
+  Users, 
+  History, 
+  Bell, 
+  Menu, 
+  X,
+  LineChart
+} from "lucide-react";
 
 export default function NavBar() {
   const [location] = useLocation();
@@ -32,7 +41,7 @@ export default function NavBar() {
               <Link href="/">
                 <div className="flex items-center cursor-pointer">
                   <div className="rounded-full p-1.5 bg-primary/10 mr-2">
-                    <Search className="h-5 w-5 text-primary" />
+                    <LineChart className="h-5 w-5 text-primary" />
                   </div>
                   <span className="gradient-heading text-xl">SEO Best Practices</span>
                 </div>
@@ -41,22 +50,22 @@ export default function NavBar() {
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
               <Link href="/">
                 <div className={linkClass("/")}>
-                  Dashboard
+                  <BarChart2 className="h-4 w-4 mr-1" /> Dashboard
                 </div>
               </Link>
               <Link href="/deep-content">
                 <div className={linkClass("/deep-content")}>
-                  Deep Content
+                  <FileText className="h-4 w-4 mr-1" /> Deep Content
                 </div>
               </Link>
               <Link href="/competitor-analysis">
                 <div className={linkClass("/competitor-analysis")}>
-                  Competitors
+                  <Users className="h-4 w-4 mr-1" /> Competitors
                 </div>
               </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
-                  History
+                  <History className="h-4 w-4 mr-1" /> History
                 </div>
               </Link>
             </div>
@@ -68,19 +77,7 @@ export default function NavBar() {
               className="ml-3 relative rounded-full text-muted-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50"
             >
               <span className="sr-only">View notifications</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
+              <Bell className="h-5 w-5" />
             </Button>
             <div className="ml-3 relative">
               <div>
@@ -104,36 +101,8 @@ export default function NavBar() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className={`${mobileMenuOpen ? 'hidden' : 'block'} h-5 w-5`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className={`${mobileMenuOpen ? 'block' : 'hidden'} h-5 w-5`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <Menu className={`${mobileMenuOpen ? 'hidden' : 'block'} h-5 w-5`} aria-hidden="true" />
+              <X className={`${mobileMenuOpen ? 'block' : 'hidden'} h-5 w-5`} aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -144,22 +113,30 @@ export default function NavBar() {
         <div className="pt-2 pb-3 space-y-1 bg-white">
           <Link href="/" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/")}>
-              Dashboard
+              <div className="flex items-center">
+                <BarChart2 className="h-4 w-4 mr-2" /> Dashboard
+              </div>
             </div>
           </Link>
           <Link href="/deep-content" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/deep-content")}>
-              Deep Content Analysis
+              <div className="flex items-center">
+                <FileText className="h-4 w-4 mr-2" /> Deep Content Analysis
+              </div>
             </div>
           </Link>
           <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/competitor-analysis")}>
-              Competitor Analysis
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2" /> Competitor Analysis
+              </div>
             </div>
           </Link>
           <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/history")}>
-              Analysis History
+              <div className="flex items-center">
+                <History className="h-4 w-4 mr-2" /> Analysis History
+              </div>
             </div>
           </Link>
         </div>
@@ -176,19 +153,7 @@ export default function NavBar() {
             </div>
             <button className="ml-auto flex-shrink-0 p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 transition-colors">
               <span className="sr-only">View notifications</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
+              <Bell className="h-5 w-5" />
             </button>
           </div>
         </div>
