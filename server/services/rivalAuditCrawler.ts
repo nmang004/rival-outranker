@@ -1445,34 +1445,57 @@ class RivalAuditCrawler {
   }
   
   /**
-   * Generate the structure & navigation audit items
+   * Generate the structure & navigation audit items based on CSV
    */
   private generateStructureAuditItems(site: SiteStructure): AuditItem[] {
     const items: AuditItem[] = [];
     
-    // Check if URLs are human-readable
+    // Get all URLs and pages for analysis
     const allUrls = [
       site.homepage.url,
       ...(site.contactPage ? [site.contactPage.url] : []),
       ...site.servicePages.map(p => p.url),
       ...site.locationPages.map(p => p.url),
-      ...site.otherPages.map(p => p.url)
+      ...site.otherPages.map(p => p.url),
+      ...site.serviceAreaPages.map(p => p.url)
     ];
     
+    const allPages = [
+      site.homepage,
+      ...(site.contactPage ? [site.contactPage] : []),
+      ...site.servicePages,
+      ...site.locationPages,
+      ...site.otherPages,
+      ...site.serviceAreaPages
+    ];
+    
+    // Get all titles and headings for analysis
+    const allTitles = allPages.map(p => p.title);
+    const allH1s = allPages.flatMap(p => p.headings.h1);
+    const allH2s = allPages.flatMap(p => p.headings.h2);
+    
+    // Extract navigation items from the homepage
+    const navLinks = site.homepage.links.internal.slice(0, 10); // Assuming top 10 links are navigation
+    
+    // ==========================================
+    // URLs section checks
+    // ==========================================
+    
+    // Check if URLs are human-readable
     const badUrlPatterns = [/\?id=\d+/, /\.php/, /\.aspx/, /\.html/, /[_0-9]{6,}/];
     const problematicUrls = allUrls.filter(url => badUrlPatterns.some(pattern => pattern.test(url)));
     const hasReadableUrls = problematicUrls.length === 0;
     
     items.push({
       name: "Human-readable? Simple? Informative?",
-      description: "URLs should be user-friendly",
+      description: "URLs should be easy to read and understand",
       status: hasReadableUrls ? 'OK' : 'OFI',
-      importance: 'Medium',
+      importance: 'High',
       notes: hasReadableUrls ? undefined : `Found ${problematicUrls.length} URLs that are not human-readable`
     });
     
-    // Check if location pages use localized URLs
-    const locationPageUrls = site.locationPages.map(p => p.url);
+    // Check if location/service pages use localized URLs
+    const locationPageUrls = [...site.locationPages.map(p => p.url), ...site.serviceAreaPages.map(p => p.url)];
     const localizedUrls = locationPageUrls.filter(url => 
       /\/(locations?|cities|towns|areas|regions|states|provinces|[a-z]+-[a-z]+)\/[a-z-]+/.test(url.toLowerCase())
     );
@@ -1481,20 +1504,11 @@ class RivalAuditCrawler {
     items.push({
       name: "Localized?",
       description: "URLs should include location information where relevant",
-      status: hasLocalizedUrls ? 'OK' : site.locationPages.length > 0 ? 'OFI' : 'N/A',
+      status: hasLocalizedUrls ? 'OK' : (site.locationPages.length > 0 || site.serviceAreaPages.length > 0) ? 'OFI' : 'N/A',
       importance: 'Medium',
-      notes: !hasLocalizedUrls && site.locationPages.length > 0 ? 
-        "Location pages don't include location information in URLs" : undefined
+      notes: !hasLocalizedUrls && (site.locationPages.length > 0 || site.serviceAreaPages.length > 0) ? 
+        "Location/service area pages don't include location information in URLs" : undefined
     });
-    
-    // Check if URLs contain keywords
-    const allTitles = [
-      site.homepage.title,
-      ...(site.contactPage ? [site.contactPage.title] : []),
-      ...site.servicePages.map(p => p.title),
-      ...site.locationPages.map(p => p.title),
-      ...site.otherPages.map(p => p.title)
-    ];
     
     // Extract keywords from titles
     const keywords = allTitles
@@ -1508,102 +1522,567 @@ class RivalAuditCrawler {
     const keywordUrls = allUrls.filter(url => 
       keywords.some(keyword => url.toLowerCase().includes(keyword))
     );
-    const keywordRichUrls = keywordUrls.length > 0;
+    const keywordRichUrls = keywordUrls.length > allUrls.length / 3; // At least 1/3 of URLs have keywords
     
     items.push({
       name: "Keyword-rich?",
       description: "URLs should contain relevant keywords",
       status: keywordRichUrls ? 'OK' : 'OFI',
-      importance: 'Medium',
-      notes: keywordRichUrls ? 
-        `Found ${keywordUrls.length} URLs containing relevant keywords` : 
-        "URLs don't contain relevant keywords from page titles"
+      importance: 'High',
+      notes: keywordRichUrls ? undefined : "Many URLs don't contain relevant keywords from page titles"
     });
     
-    // Check if URLs are properly structured with a clear hierarchy
-    const hierarchicalUrls = allUrls.filter(url => {
-      const path = new URL(url).pathname;
-      const segments = path.split('/').filter(Boolean);
-      return segments.length >= 2; // At least two levels deep
-    });
+    // Check if URLs include GBP categories
+    // Common GBP categories for service businesses
+    const commonGbpCategories = ['hvac', 'heating', 'cooling', 'air conditioning', 'repair', 'installation', 'maintenance', 'service'];
+    const urlsWithGbpCategories = allUrls.filter(url => 
+      commonGbpCategories.some(category => url.toLowerCase().includes(category))
+    );
+    const hasGbpCategoriesInUrls = urlsWithGbpCategories.length > 0;
     
     items.push({
-      name: "Clear URL hierarchy?",
-      description: "URLs should have a logical folder structure",
-      status: hierarchicalUrls.length > 3 ? 'OK' : 'OFI',
+      name: "Do the urls include categories or services found on their GBP page?",
+      description: "URLs should align with Google Business Profile categories",
+      status: hasGbpCategoriesInUrls ? 'OK' : 'OFI',
       importance: 'Medium',
-      notes: hierarchicalUrls.length <= 3 ? 
-        "Site lacks clear URL hierarchy with logical folder structure" : undefined
+      notes: hasGbpCategoriesInUrls ? undefined : "URLs don't include common service categories"
     });
     
-    // Check if navigation labels match page titles
-    const navLinks = site.homepage.links.internal;
-    const matchingNavLinks = navLinks.filter(link => {
-      const matchingPage = [
-        site.homepage,
-        ...(site.contactPage ? [site.contactPage] : []),
-        ...site.servicePages,
-        ...site.locationPages,
-        ...site.otherPages
-      ].find(page => page.url === link);
-      
-      return matchingPage && matchingPage.title;
+    // Check if URLs avoid stop words
+    const stopWords = ['and', 'or', 'the', 'a', 'an', 'in', 'on', 'at', 'by', 'for', 'with', 'about', 'to'];
+    const urlsWithStopWords = allUrls.filter(url => {
+      const pathSegments = new URL(url).pathname.split('/').filter(Boolean);
+      return pathSegments.some(segment => 
+        stopWords.some(word => segment.split('-').includes(word))
+      );
     });
-    const navMatchesTitle = matchingNavLinks.length > 0;
+    const avoidStopWords = urlsWithStopWords.length < 3; // Allow a few exceptions
     
+    items.push({
+      name: "Free of stop words? (i.e. small \"connective\" words such as \"and\", \"or\", etc.)",
+      description: "URLs should avoid small connective words",
+      status: avoidStopWords ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: avoidStopWords ? undefined : `Found ${urlsWithStopWords.length} URLs containing stop words`
+    });
+    
+    // Check for nonsense or overly complex URLs
+    const nonsenseUrlPatterns = [
+      /[0-9]{4,}/, // Long number sequences
+      /[a-zA-Z0-9]{10,}/, // Very long single segments without hyphens
+      /(-){2,}/, // Multiple consecutive hyphens
+    ];
+    
+    const nonsenseUrls = allUrls.filter(url => {
+      const pathSegments = new URL(url).pathname.split('/').filter(Boolean);
+      return pathSegments.some(segment => 
+        nonsenseUrlPatterns.some(pattern => pattern.test(segment))
+      );
+    });
+    const hasNoNonsenseUrls = nonsenseUrls.length === 0;
+    
+    items.push({
+      name: "No nonsense URLs?",
+      description: "URLs should be clean and purposeful",
+      status: hasNoNonsenseUrls ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: hasNoNonsenseUrls ? undefined : `Found ${nonsenseUrls.length} URLs with complex or nonsensical patterns`
+    });
+    
+    // ==========================================
+    // Top Navigation section checks
+    // ==========================================
+    
+    // Check for logical navigation structure
+    const hasLogicalNavigation = navLinks.length >= 3 && navLinks.length <= 10;
+    
+    items.push({
+      name: "Logical?",
+      description: "Navigation structure should be logical and intuitive",
+      status: hasLogicalNavigation ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasLogicalNavigation ? (navLinks.length < 3 ? "Too few navigation links" : "Too many navigation links") : undefined
+    });
+    
+    // Check for text-based navigation (no image-only navigation)
+    // This is hard to determine programmatically without rendering the page
+    items.push({
+      name: "Uses readable text? (No images)",
+      description: "Navigation should use text rather than images",
+      status: 'N/A', // Hard to determine without visual analysis
+      importance: 'Medium',
+      notes: "Requires visual inspection to determine if navigation uses text instead of images"
+    });
+    
+    // Check for shallow click depth
+    const hasShallowClickDepth = allUrls.filter(url => {
+      const pathSegments = new URL(url).pathname.split('/').filter(Boolean);
+      return pathSegments.length <= 3; // Not more than 3 levels deep
+    }).length > allUrls.length * 0.8; // At least 80% of URLs have shallow depth
+    
+    items.push({
+      name: "Shallow click depth for important pages?",
+      description: "Important pages should be accessible within 2-3 clicks",
+      status: hasShallowClickDepth ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: hasShallowClickDepth ? undefined : "Many pages are deep in the site hierarchy"
+    });
+    
+    // Check if primary services are in top navigation
+    const servicePageUrls = site.servicePages.map(p => p.url);
+    const serviceInNav = servicePageUrls.some(url => navLinks.includes(url));
+    
+    items.push({
+      name: "Are the primary products/services linked from the top navigation?",
+      description: "Main services should be accessible from top navigation",
+      status: serviceInNav ? 'OK' : site.servicePages.length > 0 ? 'OFI' : 'N/A',
+      importance: 'High',
+      notes: !serviceInNav && site.servicePages.length > 0 ? "Service pages not linked from top navigation" : undefined
+    });
+    
+    // Check if location pages are in top navigation
+    const locationInNav = site.locationPages.length > 0 && 
+                        site.locationPages.some(p => navLinks.includes(p.url));
+    
+    items.push({
+      name: "Are Location Pages (i.e. physical locations) linked from the top navigation?",
+      description: "Location pages should be accessible from top navigation",
+      status: locationInNav ? 'OK' : site.locationPages.length > 0 ? 'OFI' : 'N/A',
+      importance: 'High',
+      notes: !locationInNav && site.locationPages.length > 0 ? "Location pages not linked from top navigation" : undefined
+    });
+    
+    // Check if service area (city) pages are in top navigation
+    const serviceAreaInNav = site.serviceAreaPages.length > 0 && 
+                           site.serviceAreaPages.some(p => navLinks.includes(p.url));
+    
+    items.push({
+      name: "Are City Pages (i.e. service area pages) linked from the top navigation?",
+      description: "Service area pages should be accessible from top navigation",
+      status: serviceAreaInNav ? 'OK' : site.serviceAreaPages.length > 0 ? 'OFI' : 'N/A',
+      importance: 'Medium',
+      notes: !serviceAreaInNav && site.serviceAreaPages.length > 0 ? "Service area pages not linked from top navigation" : undefined
+    });
+    
+    // Check if navigation labels align with page titles
+    // This would require DOM traversal for accurate analysis
     items.push({
       name: "Navigation labels aligned with page <title>?",
       description: "Navigation labels should match page titles",
-      status: navMatchesTitle ? 'OK' : 'OFI',
-      importance: 'Low',
-      notes: !navMatchesTitle ? "Navigation links don't match page titles" : undefined
-    });
-    
-    // Check if there are broken links
-    const brokenLinks = site.homepage.links.broken.length;
-    
-    items.push({
-      name: "No broken links?",
-      description: "Site should not have broken or invalid links",
-      status: brokenLinks === 0 ? 'OK' : brokenLinks < 3 ? 'OFI' : 'Priority OFI',
+      status: 'N/A', // Hard to determine programmatically
       importance: 'High',
-      notes: brokenLinks > 0 ? `Found ${brokenLinks} broken or invalid links` : undefined
+      notes: "Requires visual inspection to verify navigation label alignment with page titles"
     });
     
-    // Check if the site has a canonical domain version
-    const hasCanonical = site.homepage.hasCanonical;
-    
+    // Check if navigation labels align with H1s
     items.push({
-      name: "Canonical domain version?",
-      description: "Site should use canonical tags to prevent duplicate content",
-      status: hasCanonical ? 'OK' : 'OFI',
-      importance: 'Medium',
-      notes: !hasCanonical ? "No canonical tag found on homepage" : undefined
+      name: "Navigation labels aligned with page <h1>?",
+      description: "Navigation labels should match page headings",
+      status: 'N/A', // Hard to determine programmatically
+      importance: 'High',
+      notes: "Requires visual inspection to verify navigation label alignment with H1 headings"
     });
     
-    // Check if the site has a sitemap
-    const hasSitemap = site.homepage.hasSitemap;
-    
+    // Check if navigation labels align with URLs
     items.push({
-      name: "XML sitemap?",
-      description: "Site should have an XML sitemap for search engines",
-      status: hasSitemap ? 'OK' : 'OFI',
-      importance: 'Medium',
-      notes: !hasSitemap ? "No sitemap reference found" : undefined
+      name: "Navigation labels aligned with URLs?",
+      description: "Navigation labels should align with URL structure",
+      status: 'N/A', // Hard to determine programmatically
+      importance: 'High',
+      notes: "Requires visual inspection to verify navigation label alignment with URLs"
     });
     
-    // Check heading structure for proper hierarchy
-    const hasProperHeadingStructure = site.homepage.headings.h1.length === 1 && 
-                                  site.homepage.headings.h2.length > 0;
+    // Check if navigation items contain keywords
+    items.push({
+      name: "Do the top navigation items contain keywords?",
+      description: "Navigation items should include relevant keywords",
+      status: 'N/A', // Hard to determine programmatically
+      importance: 'High',
+      notes: "Requires visual inspection to verify navigation items contain keywords"
+    });
+    
+    // ==========================================
+    // Page Titles section - technical
+    // ==========================================
+    
+    // Check if titles include location information
+    const titlesWithLocation = allTitles.filter(title => {
+      // Common patterns for location in titles
+      const locationPatterns = [
+        /\b[A-Z][a-z]+,\s*[A-Z]{2}\b/,  // City, State format: Miami, FL
+        /\b[A-Z][a-z]+\s+[A-Z]{2}\b/,   // City State format: Miami FL
+        /\bin\s+[A-Z][a-z]+\b/i,        // "in City" format: in Miami
+        /\bnear\s+[A-Z][a-z]+\b/i,      // "near City" format: near Miami
+        /\bserving\s+[A-Z][a-z]+\b/i     // "serving City" format: serving Miami
+      ];
+      
+      return locationPatterns.some(pattern => pattern.test(title));
+    });
+    
+    const hasLocalizedTitles = titlesWithLocation.length > 0;
     
     items.push({
-      name: "Proper heading structure?",
-      description: "Pages should use headings in hierarchical order (H1, H2, H3)",
-      status: hasProperHeadingStructure ? 'OK' : 'OFI',
+      name: "Localized? (i.e. <city>, <state>, or neighbourhoods in every <title>)",
+      description: "Titles should include location information",
+      status: hasLocalizedTitles ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: hasLocalizedTitles ? undefined : "Page titles don't include location information"
+    });
+    
+    // Check if homepage title includes GBP primary category
+    const homepageTitle = site.homepage.title.toLowerCase();
+    const primaryGbpCategories = ['hvac', 'heating', 'cooling', 'air conditioning', 'contractor', 'service'];
+    const homepageHasPrimaryGbp = primaryGbpCategories.some(category => homepageTitle.includes(category));
+    
+    items.push({
+      name: "Contains GBP primary category on homepage?",
+      description: "Homepage title should include Google Business Profile category",
+      status: homepageHasPrimaryGbp ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: homepageHasPrimaryGbp ? undefined : "Homepage title doesn't include primary service category"
+    });
+    
+    // Check if other pages include GBP categories
+    const otherPagesWithGbp = allTitles.slice(1).filter(title => {
+      const title_lower = title.toLowerCase();
+      const allGbpCategories = [
+        'hvac', 'heating', 'cooling', 'air conditioning', 'repair', 'installation', 
+        'maintenance', 'service', 'contractor', 'air quality', 'ducts', 'ductwork'
+      ];
+      return allGbpCategories.some(category => title_lower.includes(category));
+    });
+    
+    const otherPagesHaveGbp = otherPagesWithGbp.length > allTitles.length * 0.3; // At least 30% should have GBP categories
+    
+    items.push({
+      name: "Contains other GBP categories on other pages?",
+      description: "Other pages should include relevant GBP categories",
+      status: otherPagesHaveGbp ? 'OK' : 'OFI',
       importance: 'Medium',
-      notes: site.homepage.headings.h1.length === 0 ? "Homepage missing H1 heading" :
-             site.homepage.headings.h1.length > 1 ? "Multiple H1 headings on homepage" :
-             site.homepage.headings.h2.length === 0 ? "No H2 headings on homepage" : undefined
+      notes: otherPagesHaveGbp ? undefined : "Most page titles don't include service categories"
+    });
+    
+    // Check if titles are keyword-rich
+    const keywordRichTitles = allTitles.filter(title => {
+      const wordCount = title.split(/\s+/).length;
+      return wordCount >= 4 && wordCount <= 10; // Reasonable length with space for keywords
+    }).length > allTitles.length * 0.7; // At least 70% of titles should be keyword-rich
+    
+    items.push({
+      name: "Keyword-rich? (Without keyword stuffing)",
+      description: "Titles should include keywords naturally",
+      status: keywordRichTitles ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: keywordRichTitles ? undefined : "Many page titles lack sufficient keywords or are too short/long"
+    });
+    
+    // Check title length
+    const goodTitleLengths = allTitles.filter(title => {
+      return title.length >= 30 && title.length <= 70; // Between 30 and 70 characters
+    }).length > allTitles.length * 0.7; // At least 70% should have good length
+    
+    items.push({
+      name: "Good length? (Aiming for 50 - 60 characters may be outdated.)",
+      description: "Titles should have appropriate length",
+      status: goodTitleLengths ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: goodTitleLengths ? undefined : "Many page titles have suboptimal length"
+    });
+    
+    // ==========================================
+    // Page Titles section - human factors
+    // ==========================================
+    
+    // Check if titles are noticeable
+    items.push({
+      name: "Noticeable?",
+      description: "Titles should stand out and be attention-grabbing",
+      status: 'N/A', // Hard to determine programmatically
+      importance: 'Medium',
+      notes: "Requires human judgment to determine if titles are attention-grabbing"
+    });
+    
+    // Check if each title is unique
+    const uniqueTitles = new Set(allTitles).size;
+    const allTitlesUnique = uniqueTitles === allTitles.length;
+    
+    items.push({
+      name: "Is each one different?",
+      description: "Each page should have a unique title",
+      status: allTitlesUnique ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: allTitlesUnique ? undefined : `Found ${allTitles.length - uniqueTitles} duplicate page titles`
+    });
+    
+    // Check if titles are relevant to their pages
+    items.push({
+      name: "Is the page title relevant for the page's purpose?",
+      description: "Titles should accurately represent page content",
+      status: 'N/A', // Hard to determine programmatically
+      importance: 'High',
+      notes: "Requires content analysis to determine relevance of titles to page content"
+    });
+    
+    // Check if keywords are at the beginning of titles
+    const titlesWithKeywordsFirst = allTitles.filter(title => {
+      const firstWords = title.split(/\s+/).slice(0, 3).join(' ').toLowerCase();
+      return keywords.some(keyword => firstWords.includes(keyword));
+    }).length > allTitles.length * 0.5; // At least half of titles should have keywords at the beginning
+    
+    items.push({
+      name: "Primary Keyword near beginning of title?",
+      description: "Main keyword should appear early in title",
+      status: titlesWithKeywordsFirst ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: titlesWithKeywordsFirst ? undefined : "Keywords are not positioned early in many page titles"
+    });
+    
+    // Check if business name appears in titles
+    const businessNameInTitles = allTitles.filter(title => {
+      // Extract potential business name from homepage title
+      const homepageWords = site.homepage.title.split(/\s+/);
+      const potentialBusinessName = homepageWords.slice(0, 3).join(' '); // Assume first 3 words might be business name
+      return title.includes(potentialBusinessName);
+    }).length > allTitles.length * 0.7; // Business name should be in at least 70% of titles
+    
+    items.push({
+      name: "Do they mention the business name or branding in each Page Title?",
+      description: "Titles should include business name",
+      status: businessNameInTitles ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: businessNameInTitles ? undefined : "Business name missing from many page titles"
+    });
+    
+    // ==========================================
+    // H1 section checks
+    // ==========================================
+    
+    // Check if H1s include location
+    const h1sWithLocation = allH1s.filter(h1 => {
+      const locationPatterns = [
+        /\b[A-Z][a-z]+,\s*[A-Z]{2}\b/,  // City, State format
+        /\b[A-Z][a-z]+\s+[A-Z]{2}\b/,   // City State format
+        /\bin\s+[A-Z][a-z]+\b/i,        // "in City" format
+        /\bnear\s+[A-Z][a-z]+\b/i,      // "near City" format
+        /\bserving\s+[A-Z][a-z]+\b/i     // "serving City" format
+      ];
+      
+      return locationPatterns.some(pattern => pattern.test(h1));
+    });
+    
+    const h1sLocalized = h1sWithLocation.length > 0;
+    
+    items.push({
+      name: "Localized? (i.e. includes city, state?)",
+      description: "H1 headings should include location information",
+      status: h1sLocalized ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: h1sLocalized ? undefined : "H1 headings don't include location information"
+    });
+    
+    // Check if H1s contain keywords
+    const h1sWithKeywords = allH1s.filter(h1 => {
+      return keywords.some(keyword => h1.toLowerCase().includes(keyword));
+    });
+    
+    const h1sKeywordRich = h1sWithKeywords.length > allH1s.length * 0.7; // At least 70% should contain keywords
+    
+    items.push({
+      name: "Keyword-rich?",
+      description: "H1 headings should include relevant keywords",
+      status: h1sKeywordRich ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: h1sKeywordRich ? undefined : "Many H1 headings lack relevant keywords"
+    });
+    
+    // Check if H1s match page purpose
+    items.push({
+      name: "Does the <h1> match the page's purpose? Primary Keyword for the page?",
+      description: "H1 should reflect page content and primary keyword",
+      status: 'N/A', // Hard to determine programmatically
+      importance: 'High',
+      notes: "Requires content analysis to determine if H1s match page purpose"
+    });
+    
+    // ==========================================
+    // H2 section checks
+    // ==========================================
+    
+    // Check if H2s include location
+    const h2sWithLocation = allH2s.filter(h2 => {
+      const locationPatterns = [
+        /\b[A-Z][a-z]+,\s*[A-Z]{2}\b/,  // City, State format
+        /\b[A-Z][a-z]+\s+[A-Z]{2}\b/,   // City State format
+        /\bin\s+[A-Z][a-z]+\b/i,        // "in City" format
+        /\bnear\s+[A-Z][a-z]+\b/i,      // "near City" format
+        /\bserving\s+[A-Z][a-z]+\b/i     // "serving City" format
+      ];
+      
+      return locationPatterns.some(pattern => pattern.test(h2));
+    });
+    
+    const h2sLocalized = h2sWithLocation.length > 0;
+    
+    items.push({
+      name: "Localized? (i.e. includes city, state?)",
+      description: "H2 headings should include location information where relevant",
+      status: h2sLocalized ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: h2sLocalized ? undefined : "H2 headings don't include location information"
+    });
+    
+    // Check if H2s contain keywords
+    const h2sWithKeywords = allH2s.filter(h2 => {
+      return keywords.some(keyword => h2.toLowerCase().includes(keyword));
+    });
+    
+    const h2sKeywordRich = h2sWithKeywords.length > allH2s.length * 0.5; // At least 50% should contain keywords
+    
+    items.push({
+      name: "Keyword-rich?",
+      description: "H2 headings should include relevant keywords",
+      status: h2sKeywordRich ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: h2sKeywordRich ? undefined : "Many H2 headings lack relevant keywords"
+    });
+    
+    // Check if H2s are used for content sections
+    const pagesWithMultipleH2s = allPages.filter(page => page.headings.h2.length > 1).length;
+    const h2sUsedForSections = pagesWithMultipleH2s > allPages.length * 0.5; // At least half of pages should have multiple H2s
+    
+    items.push({
+      name: "Are the <h2>'s used to lay out content sections of the page",
+      description: "H2s should structure the page content logically",
+      status: h2sUsedForSections ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: h2sUsedForSections ? undefined : "Many pages don't use H2 headings for content structure"
+    });
+    
+    // ==========================================
+    // Meta Description section checks
+    // ==========================================
+    
+    // Check if meta descriptions are present and describe the page
+    const pagesWithMetaDesc = allPages.filter(page => page.metaDescription && page.metaDescription.length > 10);
+    const metaDescWithKeywords = pagesWithMetaDesc.filter(page => 
+      keywords.some(keyword => page.metaDescription.toLowerCase().includes(keyword))
+    );
+    
+    const metaDescGood = metaDescWithKeywords.length > allPages.length * 0.7; // At least 70% should have good meta descriptions
+    
+    items.push({
+      name: "Does the Meta Description describe the page's purpose? Includes primary keyword?",
+      description: "Meta descriptions should summarize content and include primary keyword",
+      status: metaDescGood ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: metaDescGood ? undefined : "Many meta descriptions are missing or don't include keywords"
+    });
+    
+    // Check meta description length and presence
+    const goodLengthMetaDesc = pagesWithMetaDesc.filter(page => 
+      page.metaDescription.length >= 70 && page.metaDescription.length <= 160
+    );
+    
+    const metaDescLengthGood = goodLengthMetaDesc.length > allPages.length * 0.7; // At least 70% should have good length
+    
+    items.push({
+      name: "< 160 characters? Does every page have a meta description?",
+      description: "Meta descriptions should be concise and present on every page",
+      status: metaDescLengthGood ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: metaDescLengthGood ? undefined : `${allPages.length - goodLengthMetaDesc.length} pages have missing or improper length meta descriptions`
+    });
+    
+    // Check if homepage meta description has phone number
+    const phoneRegex = /(\+?1?[ -]?)?\(?[0-9]{3}\)?[ -]?[0-9]{3}[ -]?[0-9]{4}/;
+    const homepageMetaHasPhone = site.homepage.metaDescription && phoneRegex.test(site.homepage.metaDescription);
+    
+    items.push({
+      name: "Contains phone number CTA (at least on homepage)?",
+      description: "Homepage meta description should include phone number call-to-action",
+      status: homepageMetaHasPhone ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: homepageMetaHasPhone ? undefined : "Homepage meta description doesn't include phone number"
+    });
+    
+    // ==========================================
+    // Body section checks
+    // ==========================================
+    
+    // Check if body content includes location
+    const pagesWithLocationInBody = allPages.filter(page => {
+      if (!page.bodyText) return false;
+      
+      const locationPatterns = [
+        /\b[A-Z][a-z]+,\s*[A-Z]{2}\b/,  // City, State format
+        /\b[A-Z][a-z]+\s+[A-Z]{2}\b/,   // City State format
+        /\bin\s+[A-Z][a-z]+\b/i,        // "in City" format
+        /\bnear\s+[A-Z][a-z]+\b/i,      // "near City" format
+        /\bserving\s+[A-Z][a-z]+\b/i     // "serving City" format
+      ];
+      
+      return locationPatterns.some(pattern => pattern.test(page.bodyText));
+    });
+    
+    const bodyContentLocalized = pagesWithLocationInBody.length > allPages.length * 0.3; // At least 30% should mention locations
+    
+    items.push({
+      name: "Localized? (i.e. includes city, state?)",
+      description: "Body content should include location information",
+      status: bodyContentLocalized ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: bodyContentLocalized ? undefined : "Body content rarely includes location information"
+    });
+    
+    // Check if body content is keyword-rich
+    const pagesWithKeywordsInBody = allPages.filter(page => {
+      if (!page.bodyText) return false;
+      return keywords.some(keyword => 
+        (page.bodyText.toLowerCase().match(new RegExp('\\b' + keyword + '\\b', 'g')) || []).length >= 2
+      );
+    });
+    
+    const bodyContentKeywordRich = pagesWithKeywordsInBody.length > allPages.length * 0.7; // At least 70% should have keywords
+    
+    items.push({
+      name: "Keyword-rich?",
+      description: "Body content should include relevant keywords",
+      status: bodyContentKeywordRich ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: bodyContentKeywordRich ? undefined : "Body content lacks sufficient keyword usage"
+    });
+    
+    // Check for GBP primary category in homepage content
+    const primaryGbpInHomepage = site.homepage.bodyText && primaryGbpCategories.some(category => 
+      site.homepage.bodyText.toLowerCase().includes(category)
+    );
+    
+    items.push({
+      name: "GBP primary category appears in copy on the page linked from the GBP(s).",
+      description: "Content should include Google Business Profile primary category",
+      status: primaryGbpInHomepage ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: primaryGbpInHomepage ? undefined : "Homepage content doesn't include primary service category"
+    });
+    
+    // Check for GBP categories in site content
+    const gbpCategoriesInContent = allPages.some(page => {
+      if (!page.bodyText) return false;
+      const allGbpCategories = [
+        'hvac', 'heating', 'cooling', 'air conditioning', 'repair', 'installation', 
+        'maintenance', 'service', 'contractor', 'air quality', 'ducts', 'ductwork'
+      ];
+      return allGbpCategories.some(category => 
+        page.bodyText.toLowerCase().includes(category)
+      );
+    });
+    
+    items.push({
+      name: "Other GBP categories appear in copy of website?",
+      description: "Content should include other Google Business Profile categories",
+      status: gbpCategoriesInContent ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: gbpCategoriesInContent ? undefined : "Website content doesn't mention service categories"
     });
     
     return items;
