@@ -1377,9 +1377,11 @@ class RivalAuditCrawler {
     });
     
     // Check for localized alt text
-    const hasLocalizedAltText = site.homepage.images.withAlt > 0 && site.homepage.images.altTexts.some(alt => 
-      alt.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) // City, State pattern
-    );
+    const hasLocalizedAltText = site.homepage.images.withAlt > 0 && 
+      site.homepage.images.altTexts && 
+      site.homepage.images.altTexts.some(alt => 
+        alt.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) // City, State pattern
+      );
     
     items.push({
       name: "<city>,<state> + <relevant keyword> in <img alt>?",

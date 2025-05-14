@@ -1212,14 +1212,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return 'Low';
     };
     
-    // On-Page audit items
+    // On-Page audit items based on the provided CSV file
     const onPageItems = [
-      { name: "Is the website appealing? Modern?", description: "The website should have a modern, professional design", status: getStatus(1), importance: getImportance(1), notes: "Design is outdated compared to competitors" },
+      // On-Page UX/CTA Factors
+      { name: "Is the website appealing? Modern? (i.e. does not look out-of-date)", description: "The website should have a modern, professional design", status: getStatus(1), importance: getImportance(1), notes: "Design is outdated compared to competitors" },
       { name: "Is the website intuitive? Usable?", description: "Users should be able to easily navigate the site", status: getStatus(2), importance: getImportance(2), notes: "Navigation is confusing" },
       { name: "Is the copy readable? Not keyword stuffed. Clear.", description: "Content should be user-friendly and readable", status: getStatus(3), importance: getImportance(3) },
       { name: "Pages are easy to read? No typos/spelling errors? Sufficiently long?", description: "Content should be error-free and comprehensive", status: getStatus(4), importance: getImportance(4) },
-      { name: "Does the site answer user intent?", description: "Content should match what users are searching for", status: getStatus(5), importance: getImportance(5) },
-      { name: "Leverages reviews on website?", description: "Reviews build trust and credibility", status: getStatus(6), importance: getImportance(6) }
+      { name: "Does the site answer user intent? (E.g. want to buy vs. want information)", description: "Content should match what users are searching for", status: getStatus(5), importance: getImportance(5) },
+      { name: "Leverages reviews on website?", description: "Reviews build trust and credibility", status: getStatus(6), importance: getImportance(6) },
+      { name: "Strong call to action on homepage?", description: "Homepage should have clear call to action buttons", status: getStatus(7), importance: getImportance(7) },
+      { name: "Strong call to action on top locations pages? (if they exist)", description: "Location pages should have clear calls to action", status: getStatus(8), importance: getImportance(8) },
+      { name: "Strong call to action on top landing pages?", description: "Landing pages should have clear calls to action", status: getStatus(9), importance: getImportance(9) },
+      { name: "Can I find contact information?", description: "Contact information should be easy to find", status: getStatus(10), importance: getImportance(10) },
+      { name: "Phone number highly visible / high contrast and clickable?", description: "Phone number should be easy to see and tap/click", status: getStatus(11), importance: getImportance(11) },
+      { name: "Are there disruptive pop-ups?", description: "Pop-ups can harm user experience and SEO", status: getStatus(12), importance: getImportance(12) },
+      { name: "Clear favicon?", description: "Website should have a favicon for branding", status: getStatus(13), importance: getImportance(13) },
+      { name: "Uses bold and/or large text for emphasis? (i.e. better UX)", description: "Text emphasis improves readability and UX", status: getStatus(14), importance: getImportance(14) },
+      
+      // On-Page Factors
+      { name: "\"Localized\" content? (i.e. Contains <relevant keyword> + <target city>,<state>)", description: "Content should be localized for the target area", status: getStatus(15), importance: getImportance(15) },
+      { name: "Are top products/services linked from the body of the home page?", description: "Key services should be linked from homepage content", status: getStatus(16), importance: getImportance(16) },
+      { name: "Are locations pages (i.e. physical locations) linked from body of home page?", description: "Location pages should be linked from homepage", status: getStatus(17), importance: getImportance(17) },
+      { name: "Are service area pages (i.e. city pages) linked from body of the home page?", description: "Service area pages should be linked from homepage", status: getStatus(18), importance: getImportance(18) },
+      
+      // Footer
+      { name: "Contains NAP? (NAP = Name, Address, Phone)", description: "Footer should contain business NAP information", status: getStatus(19), importance: getImportance(19) },
+      { name: "Contains hours?", description: "Footer should contain business hours", status: getStatus(20), importance: getImportance(20) },
+      { name: "Includes clickable email link?", description: "Footer should contain clickable email", status: getStatus(21), importance: getImportance(21) },
+      { name: "Includes clickable phone number?", description: "Footer should contain clickable phone number", status: getStatus(22), importance: getImportance(22) },
+      { name: "Contains important site links? (i.e. Useful bottom nav?)", description: "Footer should contain important site navigation", status: getStatus(23), importance: getImportance(23) },
+      
+      // Content
+      { name: "Pages are easy to read? No typos?", description: "Content should be easy to read and error-free", status: getStatus(24), importance: getImportance(24) },
+      { name: "Pages contain more than ~300 words? No stubs!", description: "Pages should have sufficient content depth", status: getStatus(25), importance: getImportance(25) },
+      { name: "A page for every service?", description: "Each service should have a dedicated page", status: getStatus(26), importance: getImportance(26) },
+      { name: "A page for each brand carried?", description: "Each major brand should have a dedicated page", status: getStatus(27), importance: getImportance(27) },
+      { name: "Strong use of internal page linking? Short, descriptive anchor text?", description: "Pages should link to other relevant pages", status: getStatus(28), importance: getImportance(28) },
+      { name: "Links are styled to be clearly identifiable as links?", description: "Links should be visually distinct from regular text", status: getStatus(29), importance: getImportance(29) },
+      { name: "Is the content relevant for each page?", description: "Content should be relevant to the page topic", status: getStatus(30), importance: getImportance(30) },
+      { name: "Is the Blog recently update and does it display a date?", description: "Blog should be regularly updated with visible dates", status: getStatus(31), importance: getImportance(31) },
+      { name: "Content not hidden behind tabs or clicks?", description: "Content should be directly accessible", status: getStatus(32), importance: getImportance(32) },
+      { name: "Good use of reviews and/or testimonials? First-party reviews?", description: "Site should leverage customer reviews", status: getStatus(33), importance: getImportance(33) },
+      { name: "Do they demonstrate EEAT?", description: "Site should showcase Experience, Expertise, Authoritativeness, Trustworthiness", status: getStatus(34), importance: getImportance(34) },
+      { name: "Optimized for near me searches?", description: "Site should be optimized for local 'near me' searches", status: getStatus(35), importance: getImportance(35) },
+      { name: "Mobile link parity?", description: "Mobile version should have the same links as desktop", status: getStatus(36), importance: getImportance(36) },
+      { name: "Topics are clustered?", description: "Related topics should be grouped and interlinked", status: getStatus(37), importance: getImportance(37) },
+      
+      // Other Factors
+      { name: "Keyword & city, state alignment of URLs, <title>, <h1>?", description: "URLs, titles, and headings should align for SEO", status: getStatus(38), importance: getImportance(38) },
+      { name: "NAP on every page of site? (For 3 or fewer locations)", description: "NAP should appear on every page", status: getStatus(39), importance: getImportance(39) },
+      { name: "NAP is correct? (i.e. Works on Maps? Matches GBP?)", description: "NAP should be consistent across the web", status: getStatus(40), importance: getImportance(40) },
+      { name: "<city>,<state> + <relevant keyword> in <img alt>?", description: "Image alt text should include localization", status: getStatus(41), importance: getImportance(41) }
     ];
     
     // Structure & Navigation audit items
@@ -1258,6 +1302,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { name: "NAP: Business (N)ame appears in the copy?", description: "Name, Address, Phone information should be present", status: getStatus(26), importance: getImportance(26) }
     ];
     
+    // Service Area Pages audit items
+    const serviceAreaItems = [
+      { name: "Service area pages are optimized for local search?", description: "Pages should target local search queries", status: getStatus(42), importance: "High" },
+      { name: "Service area pages have unique content?", description: "Each page should have unique, non-duplicated content", status: getStatus(43), importance: "High" },
+      { name: "Service area pages have localized title tags?", description: "Title tags should include location and service keywords", status: getStatus(44), importance: "High" },
+      { name: "Service area pages have local NAP information?", description: "NAP should be relevant to the service area", status: getStatus(45), importance: "Medium" }
+    ];
+    
     return {
       url,
       timestamp: new Date(),
@@ -1266,11 +1318,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       contactPage: { items: contactItems },
       servicePages: { items: serviceItems },
       locationPages: { items: locationItems },
+      serviceAreaPages: { items: serviceAreaItems },
       summary: {
         priorityOfiCount: priorityCount,
         ofiCount: ofiCount,
         okCount: okCount,
-        naCount: naCount
+        naCount: naCount,
+        total: priorityCount + ofiCount + okCount + naCount
       }
     };
   }
