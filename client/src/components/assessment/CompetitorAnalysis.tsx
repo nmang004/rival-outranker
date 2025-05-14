@@ -98,9 +98,10 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
     
     try {
       // Create POST request body with all the data
+      // IMPORTANT: Server expects "city" parameter, not "location"
       const requestBody = {
         url: url,
-        location: selectedLocation,
+        city: selectedLocation, // Must use "city" instead of "location" to match server
         keyword: searchKeyword || ''
       };
       
@@ -119,16 +120,24 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
       
       const result = await response.json();
       
-      // Wait a moment for the server to process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for the server to process (3 seconds total)
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       // After POST completes, trigger a refetch of the GET query
-      refetch();
+      await refetch();
       
-      // Set running analysis to false after refetch completes
-      setTimeout(() => {
-        setRunningAnalysis(false);
-      }, 1000);
+      // Query the analysis endpoint directly to ensure we have the latest data
+      try {
+        const analysisResponse = await fetch(`/api/analysis?url=${encodeURIComponent(url)}`);
+        if (analysisResponse.ok) {
+          console.log("Successfully fetched latest analysis after competitor analysis");
+        }
+      } catch (err) {
+        console.error("Error fetching latest analysis:", err);
+      }
+      
+      // Set running analysis to false after all refetches complete
+      setRunningAnalysis(false);
     } catch (error) {
       console.error("Error fetching competitor data:", error);
       setRunningAnalysis(false);
