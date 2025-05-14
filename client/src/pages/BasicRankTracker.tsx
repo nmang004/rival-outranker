@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BarChart, Search, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { BarChart, Search, ArrowLeft, FileDown, ChevronDown, ChevronUp, Lightbulb, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,27 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { 
+  BarChart as BarChartComponent, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend
+} from "recharts";
 
 // Type definitions
 interface Keyword {
@@ -20,10 +41,28 @@ interface Keyword {
   volume?: number;
   difficulty?: number;
   cpc?: string;
+  trend?: number[]; // Historical positions
+  competitorRankings?: CompetitorRanking[];
+}
+
+interface CompetitorRanking {
+  competitorUrl: string;
+  position: number;
+  url: string;
 }
 
 interface Competitor {
   url: string;
+  avgPosition?: number;
+}
+
+interface KeywordSuggestion {
+  id: number;
+  text: string;
+  volume?: number;
+  difficulty?: number;
+  cpc?: string;
+  relevance?: number;
 }
 
 interface RankingData {
@@ -32,6 +71,7 @@ interface RankingData {
   competitors: Competitor[];
   avgPosition: number;
   date: string;
+  keywordSuggestions?: KeywordSuggestion[];
 }
 
 export default function BasicRankTracker() {
@@ -43,6 +83,13 @@ export default function BasicRankTracker() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<RankingData | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [selectedKeyword, setSelectedKeyword] = useState<Keyword | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'ascending' | 'descending';
+  }>({ key: 'position', direction: 'ascending' });
 
   // Helper function to format numbers
   const formatNumber = (num?: number): string => {
@@ -58,6 +105,109 @@ export default function BasicRankTracker() {
     if (position <= 10) return "text-emerald-500 font-semibold";
     if (position <= 20) return "text-amber-500";
     return "text-gray-600";
+  };
+  
+  // Helper function to generate trend history data
+  const generateTrendData = (keyword: string): number[] => {
+    // Generate a semi-realistic trend (7 days)
+    const seed = keyword.charCodeAt(0) + (keyword.length * 3);
+    const currentPosition = Math.floor(seed % 30) + 1;
+    const trend: number[] = [];
+    
+    for (let i = 0; i < 7; i++) {
+      // Add some variance around the current position
+      const variance = Math.floor(Math.sin(seed + i) * 5);
+      const pos = Math.max(1, currentPosition + variance);
+      trend.push(pos);
+    }
+    
+    return trend;
+  };
+  
+  // Helper function to generate keyword suggestions
+  const generateKeywordSuggestions = (baseKeywords: string[]): KeywordSuggestion[] => {
+    if (!baseKeywords.length) return [];
+    
+    const suggestions: KeywordSuggestion[] = [];
+    const modifiers = ['best', 'top', 'cheap', 'affordable', 'premium', 'professional', 'local', 'online'];
+    const suffixes = ['service', 'tool', 'software', 'solution', 'provider', 'company', 'platform'];
+    
+    baseKeywords.forEach((keyword, index) => {
+      const words = keyword.split(' ');
+      
+      // Base word variations
+      if (words.length === 1) {
+        suggestions.push({
+          id: suggestions.length + 1,
+          text: `${keyword}s`,
+          volume: Math.floor(Math.random() * 5000) + 200,
+          difficulty: Math.floor(Math.random() * 70) + 20,
+          cpc: `$${(Math.random() * 3 + 0.5).toFixed(2)}`,
+          relevance: 90
+        });
+      }
+      
+      // Add modifiers
+      const modifier = modifiers[index % modifiers.length];
+      suggestions.push({
+        id: suggestions.length + 1,
+        text: `${modifier} ${keyword}`,
+        volume: Math.floor(Math.random() * 3000) + 100,
+        difficulty: Math.floor(Math.random() * 70) + 20,
+        cpc: `$${(Math.random() * 3 + 0.5).toFixed(2)}`,
+        relevance: 85
+      });
+      
+      // Add suffix
+      const suffix = suffixes[(index + 3) % suffixes.length];
+      suggestions.push({
+        id: suggestions.length + 1,
+        text: `${keyword} ${suffix}`,
+        volume: Math.floor(Math.random() * 2000) + 100,
+        difficulty: Math.floor(Math.random() * 60) + 30,
+        cpc: `$${(Math.random() * 4 + 1).toFixed(2)}`,
+        relevance: 75
+      });
+    });
+    
+    return suggestions.slice(0, 10); // Limit to 10 suggestions
+  };
+  
+  // Helper function to format date
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+  
+  // Helper function to sort keywords
+  const sortedKeywords = (keywords: Keyword[]): Keyword[] => {
+    if (!keywords?.length) return [];
+    
+    return [...keywords].sort((a, b) => {
+      const aValue = a[sortConfig.key as keyof Keyword];
+      const bValue = b[sortConfig.key as keyof Keyword];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (sortConfig.direction === 'ascending') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  };
+
+  // Helper function to request sort
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
   };
 
   // Handle form submission
@@ -84,33 +234,81 @@ export default function BasicRankTracker() {
         .map(k => k.trim())
         .filter(k => k.length > 0);
       
-      const competitorList = competitors
+      const rawCompetitorList = competitors
         .split(/\n|,/)
         .map(c => c.trim())
-        .filter(c => c.length > 0)
-        .map(url => ({ url }));
+        .filter(c => c.length > 0);
+      
+      // Use default competitors if none provided
+      const finalCompetitorList = rawCompetitorList.length > 0 ? 
+        rawCompetitorList : 
+        ["competitor1.com", "competitor2.com", "competitor3.com"];
       
       // Generate mock data for demo purposes
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Create demo results
-      const mockResults: RankingData = {
-        website,
-        keywords: keywordList.map((text, index) => ({
+      // Generate enhanced keywords with trends and competitor rankings
+      const enhancedKeywords = keywordList.map((text, index) => {
+        const position = Math.floor(Math.random() * 30) + 1;
+        const trend = generateTrendData(text);
+        
+        // Generate competitor rankings for this keyword
+        const competitorRankings = finalCompetitorList.map(competitorUrl => {
+          return {
+            competitorUrl,
+            position: Math.floor(Math.random() * 50) + 1,
+            url: `https://${competitorUrl}/${text.toLowerCase().replace(/\s+/g, "-")}`,
+          };
+        });
+        
+        return {
           id: index + 1,
           text,
-          position: Math.floor(Math.random() * 30) + 1, // Random position 1-30
+          position,
           url: `https://${website}/${text.toLowerCase().replace(/\s+/g, '-')}`,
           volume: Math.floor(Math.random() * 8000) + 500,
           difficulty: Math.floor(Math.random() * 70) + 20,
-          cpc: `$${(Math.random() * 5 + 1).toFixed(2)}`
-        })),
-        competitors: competitorList.length > 0 ? competitorList : [
-          { url: "competitor1.com" },
-          { url: "competitor2.com" }
-        ],
-        avgPosition: Math.floor(Math.random() * 10) + 5, // Random avg position 5-15
-        date: new Date().toISOString()
+          cpc: `$${(Math.random() * 5 + 1).toFixed(2)}`,
+          trend,
+          competitorRankings,
+        };
+      });
+      
+      // Calculate competitor average positions
+      const enhancedCompetitors = finalCompetitorList.map(url => {
+        const rankings = enhancedKeywords.flatMap(k => 
+          k.competitorRankings?.filter(cr => cr.competitorUrl === url)
+            .map(cr => cr.position) || []
+        );
+        
+        const avgPosition = rankings.length 
+          ? Math.round(rankings.reduce((sum, pos) => sum + pos, 0) / rankings.length) 
+          : undefined;
+          
+        return {
+          url,
+          avgPosition
+        };
+      });
+      
+      // Generate keyword suggestions
+      const keywordSuggestions = generateKeywordSuggestions(keywordList);
+      
+      // Calculate overall average position
+      let avgPosition = 0;
+      if (enhancedKeywords.length) {
+        const sum = enhancedKeywords.reduce((acc, k) => acc + k.position, 0);
+        avgPosition = Math.round(sum / enhancedKeywords.length);
+      }
+      
+      // Create enhanced results
+      const mockResults: RankingData = {
+        website,
+        keywords: enhancedKeywords,
+        competitors: enhancedCompetitors,
+        avgPosition,
+        date: new Date().toISOString(),
+        keywordSuggestions
       };
       
       setResults(mockResults);
@@ -219,25 +417,136 @@ competitor2.com"
     );
   }
 
+  // Export functionality
+  const handleExport = () => {
+    if (!results) return;
+    
+    setIsExporting(true);
+    
+    try {
+      const csvContent = [
+        // Headers
+        ['Keyword', 'Position', 'URL', 'Search Volume', 'Difficulty', 'CPC'],
+        // Data rows
+        ...results.keywords.map(k => [
+          k.text,
+          k.position.toString(),
+          k.url,
+          k.volume?.toString() || 'N/A',
+          k.difficulty?.toString() || 'N/A',
+          k.cpc || 'N/A'
+        ])
+      ].map(row => row.join(',')).join('\n');
+      
+      // Create a blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${results.website}-keyword-rankings.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Export error:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // Functions to render trend data
+  const renderTrendChart = (trend: number[]) => {
+    if (!trend?.length) return null;
+    
+    const data = trend.map((position, index) => ({
+      day: index,
+      position
+    }));
+    
+    return (
+      <ResponsiveContainer width="100%" height={80}>
+        <LineChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+          <Line 
+            type="monotone" 
+            dataKey="position" 
+            stroke="#10b981" 
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={true}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  };
+  
+  // Function to render competitor comparison
+  const renderCompetitorComparison = (keyword: Keyword) => {
+    if (!keyword.competitorRankings?.length) return null;
+    
+    // Format the data for the bar chart
+    const data = [
+      {
+        name: 'Your Site',
+        position: keyword.position,
+        fill: '#10b981' // green
+      },
+      ...keyword.competitorRankings.map(cr => ({
+        name: cr.competitorUrl.replace(/^https?:\/\/(www\.)?/, '').split('.')[0],
+        position: cr.position,
+        fill: '#f59e0b' // amber
+      }))
+    ];
+    
+    return (
+      <div className="mt-4">
+        <h4 className="text-sm font-medium mb-2">Competitor Comparison</h4>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChartComponent 
+            data={data} 
+            layout="vertical"
+            margin={{ top: 5, right: 20, bottom: 5, left: 40 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+            <XAxis type="number" domain={[0, 'dataMax']} />
+            <YAxis type="category" dataKey="name" width={70} />
+            <RechartsTooltip 
+              formatter={(value: number) => [`Position: ${value}`, 'Ranking']}
+              labelFormatter={(name) => `${name}`}
+            />
+            <Bar dataKey="position" />
+          </BarChartComponent>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
   // Render results view
   return (
     <div className="container mx-auto py-8">
-      {/* Header with back button */}
+      <PageHeader
+        title="Keyword Rankings"
+        description={`Results for ${results?.website || ""}`}
+        icon={<BarChart className="h-6 w-6 mr-2" />}
+      />
+      
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <Button variant="ghost" className="mr-2" onClick={handleReset}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
+        <Button variant="outline" onClick={handleReset} className="flex items-center gap-1">
+          <ArrowLeft className="h-4 w-4" /> Back to Tracker
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-1"
+          >
+            <FileDown className="h-4 w-4" /> {isExporting ? "Exporting..." : "Export CSV"}
           </Button>
-          <PageHeader
-            title="Keyword Rankings"
-            description={`Results for ${results?.website || ""}`}
-            icon={<BarChart className="h-6 w-6 mr-2" />}
-          />
+          <Badge variant="outline" className="h-8">
+            {formatDate(results?.date || "")}
+          </Badge>
         </div>
-        
-        <Badge variant="outline" className="h-7">
-          {new Date(results?.date || "").toLocaleDateString()}
-        </Badge>
       </div>
       
       {/* Stats cards */}
@@ -285,63 +594,344 @@ competitor2.com"
         </Card>
       </div>
       
-      {/* Keywords table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Keyword Rankings</CardTitle>
-          <CardDescription>
-            Current ranking positions for tracked keywords
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {results && results.keywords.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Keyword</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Search Volume</TableHead>
-                  <TableHead>Difficulty</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.keywords.map((keyword) => (
-                  <TableRow key={keyword.id}>
-                    <TableCell className="font-medium">{keyword.text}</TableCell>
-                    <TableCell className={getRankingColor(keyword.position)}>
-                      {keyword.position}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
-                      {keyword.url}
-                    </TableCell>
-                    <TableCell>{formatNumber(keyword.volume)}</TableCell>
-                    <TableCell>
-                      {keyword.difficulty !== undefined ? (
-                        <Badge variant={keyword.difficulty < 50 ? "default" : "destructive"}>
-                          {keyword.difficulty}%
-                        </Badge>
-                      ) : (
-                        "N/A"
+      {/* Tabbed Interface */}
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Keyword Rankings</TabsTrigger>
+          <TabsTrigger value="competitors">Competitors</TabsTrigger>
+          <TabsTrigger value="suggestions">Keyword Ideas</TabsTrigger>
+        </TabsList>
+        
+        {/* Keywords Tab */}
+        <TabsContent value="overview" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Keyword Rankings</CardTitle>
+              <CardDescription>
+                Current ranking positions for tracked keywords
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {results && results.keywords.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="cursor-pointer" onClick={() => requestSort('text')}>
+                          Keyword
+                          {sortConfig.key === 'text' && (
+                            sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="inline ml-1 h-3 w-3" /> : 
+                            <ChevronDown className="inline ml-1 h-3 w-3" />
+                          )}
+                        </TableHead>
+                        <TableHead className="cursor-pointer" onClick={() => requestSort('position')}>
+                          Position
+                          {sortConfig.key === 'position' && (
+                            sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="inline ml-1 h-3 w-3" /> : 
+                            <ChevronDown className="inline ml-1 h-3 w-3" />
+                          )}
+                        </TableHead>
+                        <TableHead className="hidden md:table-cell">Trend</TableHead>
+                        <TableHead className="hidden lg:table-cell">URL</TableHead>
+                        <TableHead className="hidden md:table-cell cursor-pointer" onClick={() => requestSort('volume')}>
+                          Volume
+                          {sortConfig.key === 'volume' && (
+                            sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="inline ml-1 h-3 w-3" /> : 
+                            <ChevronDown className="inline ml-1 h-3 w-3" />
+                          )}
+                        </TableHead>
+                        <TableHead className="hidden md:table-cell cursor-pointer" onClick={() => requestSort('difficulty')}>
+                          Difficulty
+                          {sortConfig.key === 'difficulty' && (
+                            sortConfig.direction === 'ascending' ? 
+                            <ChevronUp className="inline ml-1 h-3 w-3" /> : 
+                            <ChevronDown className="inline ml-1 h-3 w-3" />
+                          )}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedKeywords(results.keywords).map((keyword) => (
+                        <TableRow 
+                          key={keyword.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setSelectedKeyword(keyword)}
+                        >
+                          <TableCell className="font-medium">{keyword.text}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getRankingColor(keyword.position)}>
+                              {keyword.position}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {keyword.trend && renderTrendChart(keyword.trend)}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-muted-foreground truncate max-w-xs">
+                            {keyword.url}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">{formatNumber(keyword.volume)}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {keyword.difficulty !== undefined ? (
+                              <Badge variant={keyword.difficulty < 50 ? "default" : "secondary"}>
+                                {keyword.difficulty}
+                              </Badge>
+                            ) : (
+                              "N/A"
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No keyword data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Selected Keyword Details */}
+          {selectedKeyword && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{selectedKeyword.text}</CardTitle>
+                <CardDescription>
+                  Detailed ranking information and competitor comparison
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Current Ranking</h3>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="p-4 rounded-lg border">
+                        <div className="text-sm text-muted-foreground">Position</div>
+                        <div className={`text-2xl font-bold ${getRankingColor(selectedKeyword.position)}`}>
+                          {selectedKeyword.position}
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-lg border">
+                        <div className="text-sm text-muted-foreground">Search Volume</div>
+                        <div className="text-2xl font-bold">{formatNumber(selectedKeyword.volume)}</div>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-semibold mb-2">Ranking URL</h3>
+                    <div className="p-4 rounded-lg border break-all">
+                      <div className="text-sm font-medium">{selectedKeyword.url}</div>
+                    </div>
+                    
+                    <h3 className="text-lg font-semibold mt-4 mb-2">7-Day Trend</h3>
+                    <div className="p-4 rounded-lg border">
+                      {selectedKeyword.trend && (
+                        <ResponsiveContainer width="100%" height={100}>
+                          <LineChart data={selectedKeyword.trend.map((pos, idx) => ({ day: idx, position: pos }))}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="day" tickFormatter={(val) => {
+                              const date = new Date();
+                              date.setDate(date.getDate() - (6 - val));
+                              return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            }} />
+                            <YAxis domain={['dataMin', 'dataMax']} reversed />
+                            <RechartsTooltip />
+                            <Line 
+                              type="monotone" 
+                              dataKey="position" 
+                              stroke="#10b981" 
+                              strokeWidth={2}
+                              isAnimationActive={true}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
                       )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              No keyword data available
-            </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Keyword Metrics</h3>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="p-4 rounded-lg border">
+                        <div className="text-sm text-muted-foreground">Difficulty</div>
+                        <div className="text-2xl font-bold">{selectedKeyword.difficulty}</div>
+                      </div>
+                      <div className="p-4 rounded-lg border">
+                        <div className="text-sm text-muted-foreground">CPC</div>
+                        <div className="text-2xl font-bold">{selectedKeyword.cpc}</div>
+                      </div>
+                    </div>
+                    
+                    {renderCompetitorComparison(selectedKeyword)}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4 flex justify-between">
+                <Button variant="outline" size="sm" onClick={() => setSelectedKeyword(null)}>
+                  Close Details
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Last updated: {formatDate(results?.date || "")}
+                </div>
+              </CardFooter>
+            </Card>
           )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={handleReset}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Tracker
-          </Button>
-          <Button variant="outline" onClick={() => window.print()}>Export PDF</Button>
-        </CardFooter>
-      </Card>
+        </TabsContent>
+        
+        {/* Competitors Tab */}
+        <TabsContent value="competitors" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Competitor Analysis</CardTitle>
+              <CardDescription>
+                Websites competing for your target keywords and their average positions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-6">
+                {results?.competitors.map((competitor, index) => (
+                  <div key={index} className="p-6 rounded-lg border">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold">{competitor.url}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Competing for {results.keywords.length} keywords
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">Avg. Position</div>
+                        <div className="text-2xl font-bold">{competitor.avgPosition || 'N/A'}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium mb-2">Top Ranking Keywords</h4>
+                      <div className="rounded-md border overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Keyword</TableHead>
+                              <TableHead>Their Position</TableHead>
+                              <TableHead>Your Position</TableHead>
+                              <TableHead className="hidden md:table-cell">Difference</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {results.keywords
+                              .filter(k => k.competitorRankings?.some(cr => cr.competitorUrl === competitor.url))
+                              .sort((a, b) => {
+                                const aPos = a.competitorRankings?.find(cr => cr.competitorUrl === competitor.url)?.position || 100;
+                                const bPos = b.competitorRankings?.find(cr => cr.competitorUrl === competitor.url)?.position || 100;
+                                return aPos - bPos;
+                              })
+                              .slice(0, 5)
+                              .map(keyword => {
+                                const compRank = keyword.competitorRankings?.find(cr => cr.competitorUrl === competitor.url);
+                                const diff = keyword.position - (compRank?.position || 0);
+                                
+                                return (
+                                  <TableRow key={`${keyword.id}-${competitor.url}`}>
+                                    <TableCell className="font-medium">{keyword.text}</TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className={getRankingColor(compRank?.position || 100)}>
+                                        {compRank?.position || 'N/A'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className={getRankingColor(keyword.position)}>
+                                        {keyword.position}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                      {diff > 0 ? (
+                                        <span className="text-red-500">-{diff}</span>
+                                      ) : diff < 0 ? (
+                                        <span className="text-green-500">+{Math.abs(diff)}</span>
+                                      ) : (
+                                        <span className="text-gray-500">0</span>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Keyword Suggestions Tab */}
+        <TabsContent value="suggestions" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                Keyword Suggestions
+              </CardTitle>
+              <CardDescription>
+                Related keywords you might want to consider targeting based on your current keywords
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {results?.keywordSuggestions && results.keywordSuggestions.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Keyword</TableHead>
+                        <TableHead>Relevance</TableHead>
+                        <TableHead className="hidden sm:table-cell">Search Volume</TableHead>
+                        <TableHead className="hidden md:table-cell">Difficulty</TableHead>
+                        <TableHead className="hidden md:table-cell">CPC</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {results.keywordSuggestions.map((suggestion) => (
+                        <TableRow key={suggestion.id}>
+                          <TableCell className="font-medium">{suggestion.text}</TableCell>
+                          <TableCell>
+                            {suggestion.relevance ? (
+                              <div className="flex items-center">
+                                <div className="w-16 h-2 rounded-full bg-gray-200 mr-2">
+                                  <div 
+                                    className="h-full rounded-full bg-green-500" 
+                                    style={{ width: `${suggestion.relevance}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm">{suggestion.relevance}%</span>
+                              </div>
+                            ) : 'N/A'}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">{formatNumber(suggestion.volume)}</TableCell>
+                          <TableCell className="hidden md:table-cell">{suggestion.difficulty || 'N/A'}</TableCell>
+                          <TableCell className="hidden md:table-cell">{suggestion.cpc || 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No keyword suggestions available
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4">
+              <div className="text-sm text-muted-foreground">
+                Based on the keywords you're currently tracking
+              </div>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
