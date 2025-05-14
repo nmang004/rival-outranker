@@ -22,11 +22,13 @@ interface PageCrawlResult {
   hasContactForm: boolean;
   hasPhoneNumber: boolean;
   hasAddress: boolean;
+  hasNAP: boolean; // Name, Address, Phone together
   images: {
     total: number;
     withAlt: number;
     withoutAlt: number;
     largeImages: number; // Images that may need optimization
+    altTexts: string[]; // Texts of image alt attributes
   };
   hasSchema: boolean;
   schemaTypes: string[]; // Types of schema detected
@@ -36,6 +38,7 @@ interface PageCrawlResult {
   hasSocialTags: boolean; // OpenGraph, Twitter Cards
   hasCanonical: boolean;
   hasRobotsMeta: boolean;
+  hasIcon: boolean; // Has favicon
   // Technical SEO
   hasHttps: boolean;
   hasHreflang: boolean;
@@ -55,6 +58,7 @@ interface PageCrawlResult {
     hasTable: boolean;
     hasLists: boolean;
     hasVideo: boolean;
+    hasEmphasis: boolean; // Has bold or large text for emphasis
   };
 }
 
@@ -323,6 +327,15 @@ class RivalAuditCrawler {
       const imagesWithAlt = $('img[alt]').length;
       const imagesWithoutAlt = totalImages - imagesWithAlt;
       
+      // Extract alt texts for analysis
+      const altTexts: string[] = [];
+      $('img[alt]').each((_, img) => {
+        const alt = $(img).attr('alt');
+        if (alt && alt.trim()) {
+          altTexts.push(alt.trim());
+        }
+      });
+      
       // Count large images (those with width or height over 1000px)
       let largeImages = 0;
       allImages.each((_, img) => {
@@ -382,6 +395,15 @@ class RivalAuditCrawler {
       const hasVideo = $('video').length > 0 || 
                     $('iframe[src*="youtube"]').length > 0 || 
                     $('iframe[src*="vimeo"]').length > 0;
+      const hasEmphasis = $('b, strong, h1, h2, h3, h4, h5, h6').length > 0 || 
+                       $('[style*="font-weight:bold"], [style*="font-weight: bold"]').length > 0 || 
+                       $('[style*="font-size"]').length > 0;
+                       
+      // Check for favicon/icon
+      const hasIcon = $('link[rel="icon"], link[rel="shortcut icon"]').length > 0;
+      
+      // Check for NAP (Name, Address, Phone together)
+      const hasNAP = hasPhoneNumber && hasAddress;
       
       // Check if mobile friendly (basic check for viewport meta tag)
       const hasMobileViewport = $('meta[name="viewport"]').length > 0;
@@ -438,11 +460,13 @@ class RivalAuditCrawler {
         hasContactForm,
         hasPhoneNumber,
         hasAddress,
+        hasNAP,
         images: {
           total: totalImages,
           withAlt: imagesWithAlt,
           withoutAlt: imagesWithoutAlt,
-          largeImages: largeImages
+          largeImages: largeImages,
+          altTexts: altTexts
         },
         hasSchema,
         schemaTypes,
@@ -452,6 +476,7 @@ class RivalAuditCrawler {
         hasSocialTags,
         hasCanonical,
         hasRobotsMeta,
+        hasIcon,
         // Technical SEO
         hasHttps,
         hasHreflang,
@@ -465,7 +490,8 @@ class RivalAuditCrawler {
           hasFAQs,
           hasTable,
           hasLists,
-          hasVideo
+          hasVideo,
+          hasEmphasis
         }
       };
       
