@@ -1,5 +1,5 @@
 import { storage } from '../storage';
-import { InsertKeywordRanking, InsertCompetitorRanking } from '@shared/schema';
+import { InsertKeywordRanking, InsertCompetitorRanking, InsertKeywordMetrics } from '@shared/schema';
 import axios from 'axios';
 
 /**
@@ -156,6 +156,155 @@ export class KeywordService {
     } catch (error) {
       console.error('Error performing Google search:', error);
       throw error;
+    }
+  }
+  
+  /**
+   * Update metrics for a keyword
+   * @param keywordId The ID of the keyword to update metrics for
+   */
+  async updateKeywordMetrics(keywordId: number): Promise<boolean> {
+    try {
+      // Get keyword info
+      const keyword = await storage.getKeyword(keywordId);
+      if (!keyword) {
+        throw new Error(`Keyword with ID ${keywordId} not found`);
+      }
+
+      // Get existing metrics or create new ones
+      let metrics = await storage.getKeywordMetrics(keywordId);
+      
+      // Calculate metrics based on search results and ranking data
+      const searchResults = await this.googleSearch(keyword.keyword);
+      if (!searchResults || !searchResults.items) {
+        console.error('No search results found for keyword:', keyword.keyword);
+        return false;
+      }
+      
+      // Extract metrics from search results
+      const totalResults = searchResults.searchInformation?.totalResults || 0;
+      
+      // Calculate keyword difficulty (0-100 scale)
+      // This is a simplified algorithm - in reality, difficulty would factor in domain authority, backlinks, etc.
+      // Higher competition = higher difficulty
+      let difficulty = 0;
+      const competitorRankings = await storage.getCompetitorRankingsByKeyword(keywordId);
+      
+      if (competitorRankings && competitorRankings.length > 0) {
+        // Check if top positions are taken by high authority domains
+        const topDomains = competitorRankings
+          .filter(r => r.rank <= 10)
+          .map(r => {
+            try {
+              const url = new URL(r.competitorUrl);
+              return url.hostname;
+            } catch (e) {
+              return r.competitorUrl;
+            }
+          });
+          
+        // Count .gov, .edu domains which typically have high authority
+        const highAuthorityDomains = topDomains.filter(domain => 
+          domain.endsWith('.gov') || 
+          domain.endsWith('.edu') || 
+          domain.endsWith('.org') || 
+          domain.includes('wikipedia') ||
+          domain.includes('amazon') ||
+          domain.includes('youtube')
+        ).length;
+        
+        // Base difficulty on position of competitors and number of high authority domains
+        difficulty = Math.min(100, Math.round(
+          (highAuthorityDomains * 10) + 
+          (competitorRankings.length * 5) + 
+          (Math.log10(parseInt(totalResults) || 1) * 10)
+        ));
+      }
+      
+      // Estimate search volume (this would normally come from a paid API)
+      // Here we're using a simplified algorithm based on search results
+      const estimatedSearchVolume = Math.round(
+        Math.min(10000, Math.max(10, Math.log10(parseInt(totalResults) || 1) * 1000))
+      );
+      
+      // Create or update metrics
+      const metricsData: InsertKeywordMetrics = {
+        keywordId,
+        searchVolume: estimatedSearchVolume,
+        globalSearchVolume: Math.round(estimatedSearchVolume * 2.5), // Global volume is usually higher
+        keywordDifficulty: difficulty,
+        cpc: Math.random() * 5, // Random CPC between 0-5 (would normally come from a paid API)
+        competition: difficulty / 100, // Scale 0-1
+        trendsData: { 
+          // Example trend data (would normally come from a trends API)
+          months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          values: [
+            Math.round(estimatedSearchVolume * (0.8 + Math.random() * 0.4)),
+            Math.round(estimatedSearchVolume * (0.8 + Math.random() * 0.4)),
+            Math.round(estimatedSearchVolume * (0.8 + Math.random() * 0.4)),
+            Math.round(estimatedSearchVolume * (0.8 + Math.random() * 0.4)),
+            Math.round(estimatedSearchVolume * (0.8 + Math.random() * 0.4)),
+            estimatedSearchVolume
+          ]
+        },
+        relatedKeywords: await this.getRelatedKeywords(keyword.keyword)
+      };
+      
+      if (metrics) {
+        await storage.updateKeywordMetrics(keywordId, metricsData);
+      } else {
+        await storage.createKeywordMetrics(metricsData);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating keyword metrics:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Get related keywords for a given keyword
+   */
+  private async getRelatedKeywords(keyword: string): Promise<any[]> {
+    try {
+      const searchResults = await this.googleSearch(keyword);
+      if (!searchResults) return [];
+      
+      const relatedKeywords: any[] = [];
+      
+      // Extract from related searches if available
+      if (searchResults.context?.facets) {
+        for (const facet of searchResults.context.facets) {
+          if (facet.label && facet.label !== keyword) {
+            relatedKeywords.push({
+              keyword: facet.label,
+              source: 'related'
+            });
+          }
+        }
+      }
+      
+      // Extract from "People also ask" section if available
+      if (searchResults.items) {
+        for (const item of searchResults.items) {
+          if (item.pagemap?.question) {
+            for (const question of item.pagemap.question) {
+              if (question.name) {
+                relatedKeywords.push({
+                  keyword: question.name,
+                  source: 'question'
+                });
+              }
+            }
+          }
+        }
+      }
+      
+      return relatedKeywords.slice(0, 10); // Limit to 10 related keywords
+    } catch (error) {
+      console.error('Error getting related keywords:', error);
+      return [];
     }
   }
   

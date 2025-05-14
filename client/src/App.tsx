@@ -14,6 +14,9 @@ import RivalAuditPage from "@/pages/RivalAuditPage";
 import RivalAuditResultsPage from "@/pages/RivalAuditResultsPage";
 import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
+import KeywordsPage from "@/pages/KeywordsPage";
+import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
+import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 
@@ -37,6 +40,9 @@ function Router() {
             <Route path="/test-export" component={TestExportPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/profile/:tab" component={ProfilePage} />
+            <Route path="/keywords" component={KeywordsPage} />
+            <Route path="/keywords/:id" component={KeywordDetailsPage} />
+            <Route path="/keyword-suggestions" component={KeywordSuggestionsPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
