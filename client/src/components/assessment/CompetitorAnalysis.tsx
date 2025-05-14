@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { US_CITIES } from '@shared/us-cities';
@@ -107,13 +107,16 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
     setRunningAnalysis(true);
     
     try {
+      console.log(`Running competitor analysis for ${url} in location ${selectedLocation}`);
+      
       // Create POST request body with all the data
-      // IMPORTANT: Server expects "city" parameter, not "location"
       const requestBody = {
         url: url,
-        city: selectedLocation, // Must use "city" instead of "location" to match server
+        city: selectedLocation, // Parameter name must match server expectation
         keyword: searchKeyword || ''
       };
+      
+      console.log("Request body:", requestBody);
       
       // Use POST endpoint for competitor analysis to ensure data is processed correctly
       const response = await fetch('/api/competitors', {
@@ -129,35 +132,33 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
       }
       
       const result = await response.json();
+      console.log("Competitor analysis initiated:", result);
       
-      // Wait for the server to process (3 seconds total)
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Show processing state for a moment
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Invalidate queries to force fresh data
+      // Invalidate both queries to force fresh data
       queryClient.invalidateQueries({ queryKey: [competitorQueryKey] });
       queryClient.invalidateQueries({ queryKey: [`/api/analysis?url=${encodeURIComponent(url)}`] });
       
-      // After POST completes, trigger a refetch of the GET query
+      // Trigger multiple refetches to ensure we get the updated data
+      // First refetch the competitor data
       await refetch();
       
-      // Query the analysis endpoint directly to ensure we have the latest data
+      // Then get the latest analysis data which should now include competitor results
       try {
         const analysisResponse = await fetch(`/api/analysis?url=${encodeURIComponent(url)}`);
         if (analysisResponse.ok) {
-          console.log("Successfully fetched latest analysis after competitor analysis");
           const analysisData = await analysisResponse.json();
-          console.log("Analysis data fetched:", analysisData);
+          console.log("Analysis data refreshed with competitor results:", analysisData);
           
-          // Trigger another refetch to make sure we have the latest competitor data
-          setTimeout(() => {
-            refetch();
-          }, 1000);
+          // Force a full page reload to ensure all data is fresh
+          window.location.reload();
         }
       } catch (err) {
         console.error("Error fetching latest analysis:", err);
       }
       
-      // Set running analysis to false after all refetches complete
       setRunningAnalysis(false);
     } catch (error) {
       console.error("Error fetching competitor data:", error);

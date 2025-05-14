@@ -876,8 +876,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Add competitor data to the existing results
                 const updatedResults = {
                   ...analysisData,
-                  competitors: competitorResults.competitors,
-                  competitorKeyword: queryKeyword
+                  competitorAnalysis: {
+                    competitors: competitorResults.competitors,
+                    keyword: queryKeyword,
+                    location: city,
+                    queryCount: competitorResults.queryCount || 0,
+                    usingRealSearch: competitorResults.usingRealSearch || false,
+                    keywordGap: competitorResults.keywordGap || []
+                  }
                 };
                 
                 // Update the analysis with new data

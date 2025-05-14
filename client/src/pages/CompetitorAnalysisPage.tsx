@@ -77,8 +77,9 @@ export default function CompetitorAnalysisPage() {
         },
       });
       
-      // Navigate to results page with URL and city parameters
-      navigate(`/competitor-results?url=${encodeURIComponent(values.url)}&city=${encodeURIComponent(values.city)}`);
+      // Navigate to the main results page instead of a separate competitor results page
+      // This ensures all analysis data is shown in one place
+      navigate(`/results?url=${encodeURIComponent(values.url)}`);
     } catch (error) {
       console.error('Error submitting form:', error);
       form.setError('root', { 
