@@ -13,7 +13,8 @@ import CompetitorResultsPage from "@/pages/CompetitorResultsPage";
 import RivalAuditPage from "@/pages/RivalAuditPage";
 import RivalAuditResultsPage from "@/pages/RivalAuditResultsPage";
 import RivalRankTrackerPage from "@/pages/RivalRankTrackerPage";
-import RivalRankTrackerResultsPage from "@/pages/RivalRankTrackerResultsPage";
+// Using our new, simpler component to replace the problematic one
+import RivalRankTrackerResults from "@/pages/RivalRankTrackerResults";
 import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
 import KeywordsPage from "@/pages/KeywordsPage";
@@ -46,7 +47,7 @@ function Router() {
             <Route path="/keywords/:id" component={KeywordDetailsPage} />
             <Route path="/keyword-suggestions" component={KeywordSuggestionsPage} />
             <Route path="/rival-rank-tracker" component={RivalRankTrackerPage} />
-            <Route path="/rival-rank-tracker-results/:id" component={RivalRankTrackerResultsPage} />
+            <Route path="/rival-rank-tracker-results/:id" component={RivalRankTrackerResults} />
             <Route component={NotFound} />
           </Switch>
         </div>
