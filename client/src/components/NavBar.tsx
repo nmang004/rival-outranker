@@ -74,31 +74,29 @@ export default function NavBar() {
                   <Users className="h-4 w-4 mr-1" /> Competitors
                 </button>
               </Link>
-              <div className="flex items-center group relative">
-                <Link href="/rival-audit">
-                  <div className={linkClass("/rival-audit")}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className={linkClass(location.startsWith("/rival") ? location : "")}>
                     <ClipboardCheck className="h-4 w-4 mr-1" /> 
                     Rival Audit
                     <ChevronDown className="h-3 w-3 ml-1" />
                   </div>
-                </Link>
-                <div className="absolute top-full left-0 hidden group-hover:block z-50 bg-white shadow-lg rounded-md border border-gray-200 mt-1 w-60">
-                  <div className="py-1">
-                    <Link href="/rival-audit">
-                      <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                        <ClipboardCheck className="h-4 w-4 mr-2" />
-                        Rival Audit
-                      </div>
-                    </Link>
-                    <Link href="/rival-rank-tracker">
-                      <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-                        <BarChart className="h-4 w-4 mr-2" />
-                        Rival Rank Tracker
-                      </div>
-                    </Link>
-                  </div>
-                </div>
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-60">
+                  <Link href="/rival-audit">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                      Rival Audit
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/rival-rank-tracker">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <BarChart className="h-4 w-4 mr-2" />
+                      Rival Rank Tracker
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-1" /> History
@@ -150,20 +148,32 @@ export default function NavBar() {
               </div>
             </button>
           </Link>
-          <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
-            <button className={mobileLinkClass("/rival-audit") + " w-full text-left cursor-pointer"}>
-              <div className="flex items-center">
-                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
+          <div className="cursor-pointer">
+            <div className={mobileLinkClass("/rival-audit") + " w-full text-left"}>
+              <div className="flex items-center justify-between" onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "/rival-audit";
+                setMobileMenuOpen(false);
+              }}>
+                <div className="flex items-center">
+                  <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
+                </div>
               </div>
-            </button>
-          </Link>
-          <Link href="/rival-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
-            <button className={mobileLinkClass("/rival-rank-tracker") + " w-full text-left cursor-pointer pl-8"}>
-              <div className="flex items-center">
-                <BarChart className="h-4 w-4 mr-2" /> Rival Rank Tracker
+            </div>
+          </div>
+          <div className="cursor-pointer pl-4">
+            <div className={mobileLinkClass("/rival-rank-tracker") + " w-full text-left"}>
+              <div className="flex items-center justify-between" onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "/rival-rank-tracker";
+                setMobileMenuOpen(false);
+              }}>
+                <div className="flex items-center">
+                  <BarChart className="h-4 w-4 mr-2" /> Rival Rank Tracker
+                </div>
               </div>
-            </button>
-          </Link>
+            </div>
+          </div>
           <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/history")}>
               <div className="flex items-center">
