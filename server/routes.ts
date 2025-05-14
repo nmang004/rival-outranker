@@ -9,7 +9,7 @@ import { searchService } from "./services/searchService";
 import { rivalAuditCrawler } from "./services/rivalAuditCrawler";
 import { generateRivalAuditExcel } from "./services/excelExporter";
 import { generateRivalAuditCsv } from "./services/csvExporter";
-import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
+import { urlFormSchema, insertAnalysisSchema, RivalAudit } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { authRouter } from "./routes/auth";
@@ -1037,6 +1037,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Type definition for RivalAudit right here to avoid import issues
+  interface CachedRivalAudit {
+    url: string;
+    timestamp: Date;
+    summary: {
+      priorityOfiCount: number;
+      ofiCount: number;
+      okCount: number;
+      naCount: number;
+      total?: number;
+    };
+    onPage: { items: any[] };
+    structureNavigation: { items: any[] };
+    contactPage: { items: any[] };
+    servicePages: { items: any[] };
+    locationPages: { items: any[] };
+    serviceAreaPages: { items: any[] };
+  }
+  
+  // In-memory cache for audit results (would be a database in production)
+  const auditCache: Record<number, CachedRivalAudit> = {};
+  
   // Rival Audit routes
   app.post("/api/rival-audit", async (req: Request, res: Response) => {
     try {
@@ -1060,9 +1082,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Crawl and analyze the website using our new crawler
           const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
           
-          // In a real implementation, we would store these results in the database
+          // Store the results in our in-memory cache
+          auditCache[auditId] = auditResults;
+          
           console.log(`Completed rival audit for ${url} with ID ${auditId}`);
           console.log(`Found ${auditResults.summary.priorityOfiCount} Priority OFIs, ${auditResults.summary.ofiCount} OFIs`);
+          console.log(`Cached audit results for ID ${auditId}`);
           
           // Associate this audit with current user if they're authenticated
           if (req.user?.id) {
@@ -1072,6 +1097,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
         } catch (error) {
           console.error("Error performing rival audit:", error);
+          // Store mock data as fallback
+          auditCache[auditId] = generateMockRivalAudit(url);
+          console.log(`Stored mock data for failed audit ${auditId}`);
         }
       }, 0);
       
@@ -1089,14 +1117,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid audit ID" });
       }
       
-      // Check if URL is provided - if so, we'll do a live audit
+      // Check if URL is provided - if so, we'll do a live audit instead of using cached data
       const url = req.query.url as string;
+      const forceRefresh = req.query.refresh === 'true';
       
-      // If we have a URL, generate an audit from the crawler
+      // If we have a URL and forceRefresh is true, generate a fresh audit
+      if (url && forceRefresh) {
+        try {
+          console.log(`Generating fresh audit for ${url} with ID ${auditId}`);
+          const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          
+          // Update the cache
+          auditCache[auditId] = auditResults;
+          
+          return res.json(auditResults);
+        } catch (crawlerError) {
+          console.error("Error generating fresh audit:", crawlerError);
+          // Continue to check the cache or fall back to mock data
+        }
+      }
+      
+      // Check if we have cached results for this ID
+      if (auditCache[auditId]) {
+        console.log(`Returning cached audit for ID ${auditId}`);
+        return res.json(auditCache[auditId]);
+      }
+      
+      // If we have a URL but no cached data, try to generate a new audit
       if (url) {
         try {
-          console.log(`Generating live audit for ${url} with ID ${auditId}`);
+          console.log(`No cached data found. Generating live audit for ${url} with ID ${auditId}`);
           const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          
+          // Store in cache for future requests
+          auditCache[auditId] = auditResults;
+          
           return res.json(auditResults);
         } catch (crawlerError) {
           console.error("Error generating live audit:", crawlerError);
@@ -1104,9 +1159,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // In a real implementation, we would fetch the saved audit from the database here
-      // For now, return mock data that matches our schema
+      // No cached data and no URL, or crawler failed - return mock data
+      console.log(`No cached data found for ID ${auditId}. Using mock data.`);
       const mockAudit = generateMockRivalAudit(url || "https://example.com");
+      
+      // Store mock data in cache to maintain consistency
+      auditCache[auditId] = mockAudit;
       
       res.json(mockAudit);
       
@@ -1128,20 +1186,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const format = (req.query.format || 'excel') as string;
       let auditData;
       
-      // If we have a URL, try to generate a live audit with the crawler
-      if (url) {
+      // First, check if we have cached data for this audit ID
+      if (auditCache[auditId]) {
+        console.log(`Using cached audit data for export (${format}) with ID ${auditId}`);
+        auditData = auditCache[auditId];
+      }
+      // If no cached data but we have a URL, try to generate a live audit
+      else if (url) {
         try {
           console.log(`Generating live audit for export (${format}): ${url}`);
           auditData = await rivalAuditCrawler.crawlAndAudit(url);
+          
+          // Store for future use
+          auditCache[auditId] = auditData;
         } catch (crawlerError) {
           console.error(`Error generating live audit for ${format} export:`, crawlerError);
           // Fall back to mock data if crawler fails
           auditData = generateMockRivalAudit(url);
+          auditCache[auditId] = auditData;
         }
       } else {
-        // In a real implementation, we would fetch the saved audit from the database
-        // For now, use mock data
+        // No cached data and no URL - use mock data
+        console.log(`No cached data or URL for ID ${auditId}. Using mock data for ${format} export.`);
         auditData = generateMockRivalAudit("https://example.com");
+        auditCache[auditId] = auditData;
       }
       
       // Format the URL for the filename
