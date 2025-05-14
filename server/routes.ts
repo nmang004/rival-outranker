@@ -43,6 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy routes - keep for backward compatibility
   app.use('/api/auth', authRouter);
   app.use('/api/user', userRouter);
+  app.use('/api/keywords', keywordRouter);
   
   // Utility function for URL normalization
   const normalizeUrl = (inputUrl: string) => {
@@ -1584,6 +1585,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     };
   }
+
+  // Keyword tracking API routes
+  
+  // Check keyword ranking (requires authentication)
+  app.post("/api/keywords/:id/check-ranking", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const keywordId = parseInt(req.params.id);
+      if (isNaN(keywordId)) {
+        return res.status(400).json({ message: 'Invalid keyword ID' });
+      }
+      
+      // Verify the keyword belongs to the authenticated user
+      const keyword = await storage.getKeyword(keywordId);
+      if (!keyword) {
+        return res.status(404).json({ message: 'Keyword not found' });
+      }
+      
+      const userId = req.user.claims.sub;
+      if (keyword.userId !== userId) {
+        return res.status(403).json({ message: 'Not authorized to access this keyword' });
+      }
+      
+      // Check ranking
+      const success = await keywordService.checkRanking(keywordId);
+      if (success) {
+        // Get the latest ranking
+        const latestRanking = await storage.getLatestKeywordRanking(keywordId);
+        res.json(latestRanking);
+      } else {
+        res.status(500).json({ message: 'Failed to check keyword ranking' });
+      }
+    } catch (error) {
+      console.error('Error checking keyword ranking:', error);
+      res.status(500).json({ 
+        message: "Failed to check keyword ranking",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Generate keyword suggestions (requires authentication)
+  app.post("/api/keywords/suggest", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { baseKeyword } = req.body;
+      if (!baseKeyword) {
+        return res.status(400).json({ message: 'Base keyword is required' });
+      }
+      
+      const userId = req.user.claims.sub;
+      const suggestions = await keywordService.generateSuggestions(userId, baseKeyword);
+      
+      // Store suggestions in the database
+      const storedSuggestions = [];
+      for (const suggestion of suggestions) {
+        try {
+          const storedSuggestion = await storage.createKeywordSuggestion(suggestion);
+          storedSuggestions.push(storedSuggestion);
+        } catch (error) {
+          console.error('Error storing keyword suggestion:', error);
+          // Continue with other suggestions even if one fails
+        }
+      }
+      
+      res.json(storedSuggestions);
+    } catch (error) {
+      console.error('Error generating keyword suggestions:', error);
+      res.status(500).json({ 
+        message: "Failed to generate keyword suggestions",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
