@@ -136,7 +136,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "page-speed",
         priority: "high",
-        icon: "✓",
+        icon: "!",
         title: "Optimize Core Web Vitals Performance",
         description: "Improve your page loading performance to enhance user experience and meet Google's Core Web Vitals requirements.",
         current: `Current performance score: ${data?.pageSpeedAnalysis?.overallScore.score}/100`,
