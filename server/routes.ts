@@ -1077,8 +1077,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid audit ID" });
       }
       
-      // For demonstration purposes
-      res.status(501).json({ message: "Excel export not implemented yet" });
+      // For demonstration, we'll use the mock audit data
+      // In a real implementation, this would be fetched from the database
+      const url = req.query.url as string || "https://example.com";
+      const mockAudit = generateMockRivalAudit(url);
+      
+      // Import the excelExporter
+      const { generateRivalAuditExcel } = await import('./services/excelExporter');
+      
+      // Generate Excel file
+      const excelBuffer = await generateRivalAuditExcel(mockAudit);
+      
+      // Set headers
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=rival-audit-${url.replace(/https?:\/\//i, '').replace(/[^a-z0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      // Send the Excel file
+      res.send(excelBuffer);
       
     } catch (error) {
       console.error("Error exporting rival audit:", error);
@@ -1099,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const naCount = rand(3);
     
     // Generate mock status for items based on the seed
-    const getStatus = (index: number) => {
+    const getStatus = (index: number): "Priority OFI" | "OFI" | "OK" | "N/A" => {
       const val = (seed + index) % 4;
       if (val === 0) return 'Priority OFI';
       if (val === 1) return 'OFI';
