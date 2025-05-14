@@ -1,6 +1,6 @@
-export * from "./LoginForm";
-export * from "./RegisterForm";
-export * from "./ProfileForm";
-export * from "./ChangePasswordForm";
-export * from "./AuthDialog";
-export * from "./UserAccountButton";
+export { AuthDialog } from './AuthDialog';
+export { LoginForm } from './LoginForm';
+export { RegisterForm } from './RegisterForm';
+export { ProfileForm } from './ProfileForm';
+export { ChangePasswordForm } from './ChangePasswordForm';
+export { UserAccountButton } from './UserAccountButton';
