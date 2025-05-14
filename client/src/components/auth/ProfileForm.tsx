@@ -1,195 +1,107 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useAuth, UpdateProfileData } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
+import { z } from "zod";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ReloadIcon } from '@radix-ui/react-icons';
-import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
+// Profile update schema
 const profileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  profileImage: z.string().url("Invalid URL").optional().or(z.string().length(0)),
   company: z.string().optional(),
   jobTitle: z.string().optional(),
-  bio: z.string().max(500, {
-    message: "Bio must not exceed 500 characters",
-  }).optional(),
-  websiteUrl: z.string().url({
-    message: "Please enter a valid URL",
-  }).optional().or(z.literal('')),
-  profileImage: z.string().optional(),
+  bio: z.string().max(500, "Bio cannot exceed 500 characters").optional(),
+  websiteUrl: z.string().url("Invalid URL").optional().or(z.string().length(0)),
 });
 
-export function ProfileForm() {
-  const { user, updateProfile, isUpdatingProfile } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
-  const form = useForm<UpdateProfileData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      company: user?.company || "",
-      jobTitle: user?.jobTitle || "",
-      bio: user?.bio || "",
-      websiteUrl: user?.websiteUrl || "",
-      profileImage: user?.profileImage || "",
-    },
+export function ProfileForm() {
+  const { updateProfile, user } = useAuth();
+  const [generalError, setGeneralError] = useState<string | null>(null);
+
+  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['/api/user/profile'],
   });
 
-  // Update form when user data changes
-  useEffect(() => {
-    if (user) {
-      form.reset({
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        company: user.company || "",
-        jobTitle: user.jobTitle || "",
-        bio: user.bio || "",
-        websiteUrl: user.websiteUrl || "",
-        profileImage: user.profileImage || "",
-      });
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      firstName: profile?.firstName || "",
+      lastName: profile?.lastName || "",
+      company: profile?.company || "",
+      jobTitle: profile?.jobTitle || "",
+      bio: profile?.bio || "",
+      websiteUrl: profile?.websiteUrl || "",
+      profileImage: profile?.profileImage || "",
+    },
+    values: {
+      firstName: profile?.firstName || "",
+      lastName: profile?.lastName || "",
+      company: profile?.company || "",
+      jobTitle: profile?.jobTitle || "",
+      bio: profile?.bio || "",
+      websiteUrl: profile?.websiteUrl || "",
+      profileImage: profile?.profileImage || "",
     }
-  }, [user, form]);
+  });
 
-  const onSubmit = async (data: UpdateProfileData) => {
-    setError(null);
-    setSuccess(null);
+  const { formState } = form;
+  const { isSubmitting } = formState;
 
-    // Filter out empty strings for optional fields
-    const filteredData = Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value !== "")
-    ) as UpdateProfileData;
-
-    updateProfile(filteredData, {
-      onSuccess: () => {
-        setSuccess("Profile updated successfully");
-      },
-      onError: (err: any) => {
-        setError(err.message || "Failed to update profile. Please try again.");
-      },
-    });
+  const onSubmit = async (data: ProfileFormValues) => {
+    setGeneralError(null);
+    try {
+      await updateProfile(data);
+    } catch (error) {
+      if (error instanceof Error) {
+        setGeneralError(error.message);
+      } else {
+        setGeneralError("An unexpected error occurred");
+      }
+    }
   };
 
-  if (!user) {
+  if (isLoadingProfile) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <Alert>
-            <AlertDescription>
-              Please log in to view and edit your profile.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Profile Settings</CardTitle>
-        <CardDescription>
-          Update your profile information and settings
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        {success && (
-          <Alert className="mb-4 bg-green-50 border-green-200">
-            <AlertDescription className="text-green-700">{success}</AlertDescription>
-          </Alert>
-        )}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your first name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your last name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+    <div className="bg-card rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
+      <p className="text-muted-foreground mb-6">
+        Update your profile information and preferences
+      </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="company"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your company name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="jobTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your job title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {generalError && (
+            <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">
+              {generalError}
             </div>
+          )}
 
+          <div className="grid gap-6 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="websiteUrl"
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Website URL</FormLabel>
+                  <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com" {...field} />
+                    <Input placeholder="First name" {...field} value={field.value || ''} />
                   </FormControl>
-                  <FormDescription>
-                    Your personal or company website
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -197,38 +109,116 @@ export function ProfileForm() {
 
             <FormField
               control={form.control}
-              name="bio"
+              name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bio</FormLabel>
+                  <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Tell us about yourself" 
-                      className="min-h-32 resize-none" 
-                      {...field} 
-                    />
+                    <Input placeholder="Last name" {...field} value={field.value || ''} />
                   </FormControl>
-                  <FormDescription>
-                    {(field.value?.length || 0)}/500 characters
-                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="profileImage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Profile Picture URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com/image.jpg" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormDescription>
+                  Enter a URL to an image for your profile picture
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="company"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your company" {...field} value={field.value || ''} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <Button type="submit" className="w-full md:w-auto" disabled={isUpdatingProfile}>
-              {isUpdatingProfile ? (
+            <FormField
+              control={form.control}
+              name="jobTitle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Job Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your job title" {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="bio"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bio</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Tell us about yourself" 
+                    {...field} 
+                    value={field.value || ''} 
+                    className="min-h-[120px]"
+                  />
+                </FormControl>
+                <FormDescription>
+                  {(field.value?.length || 0)}/500 characters
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="websiteUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Website URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://yourwebsite.com" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              {isSubmitting ? (
                 <>
-                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                  Saving changes...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
                 </>
               ) : (
                 "Save Changes"
               )}
             </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 }

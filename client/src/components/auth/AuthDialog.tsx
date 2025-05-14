@@ -1,68 +1,53 @@
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { LoginForm } from "./LoginForm";
-import { RegisterForm } from "./RegisterForm";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button, ButtonProps } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { RegisterForm } from "@/components/auth/RegisterForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type AuthMode = "login" | "register";
-
-type AuthDialogProps = {
-  triggerButton?: React.ReactNode;
-  mode?: AuthMode;
-  buttonProps?: ButtonProps;
+interface AuthDialogProps {
+  mode?: "login" | "register";
   buttonText?: string;
-};
+  buttonProps?: ButtonProps;
+}
 
-export function AuthDialog({
-  triggerButton,
-  mode = "login",
-  buttonProps,
-  buttonText,
-}: AuthDialogProps) {
-  const [authMode, setAuthMode] = useState<AuthMode>(mode);
-  const [isOpen, setIsOpen] = useState(false);
+export function AuthDialog({ mode = "login", buttonText, buttonProps }: AuthDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"login" | "register">(mode);
 
-  const handleModeSwitch = (newMode: AuthMode) => {
-    setAuthMode(newMode);
-  };
-
-  const handleSuccess = () => {
-    setIsOpen(false);
+  const closeDialog = () => {
+    setOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {triggerButton || (
-          <Button
-            className={cn(
-              buttonProps?.variant === "outline"
-                ? "border-primary/20 hover:bg-primary/5"
-                : ""
-            )}
-            {...buttonProps}
-          >
-            {buttonText || (authMode === "login" ? "Login" : "Register")}
-          </Button>
-        )}
+        <Button {...buttonProps}>{buttonText || (mode === "login" ? "Login" : "Register")}</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md p-0">
-        {authMode === "login" ? (
-          <LoginForm
-            onSuccess={handleSuccess}
-            onRegisterClick={() => handleModeSwitch("register")}
-          />
-        ) : (
-          <RegisterForm
-            onSuccess={handleSuccess}
-            onLoginClick={() => handleModeSwitch("login")}
-          />
-        )}
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-center">
+            {activeTab === "login" ? "Welcome Back" : "Create an Account"}
+          </DialogTitle>
+          <DialogDescription className="text-center">
+            {activeTab === "login" 
+              ? "Sign in to access your account and SEO analysis tools" 
+              : "Register to save your analyses and track your SEO progress"}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "register")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Register</TabsTrigger>
+          </TabsList>
+          <TabsContent value="login">
+            <LoginForm onSuccess={closeDialog} />
+          </TabsContent>
+          <TabsContent value="register">
+            <RegisterForm onSuccess={closeDialog} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

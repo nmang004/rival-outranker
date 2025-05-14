@@ -1,187 +1,172 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useAuth, RegisterCredentials } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ReloadIcon } from '@radix-ui/react-icons';
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
+// Registration schema
 const registerSchema = z.object({
-  username: z.string().min(3, {
-    message: "Username must be at least 3 characters",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address",
-  }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters",
-  }),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email address"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
-type RegisterFormProps = {
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
+interface RegisterFormProps {
   onSuccess?: () => void;
-  onLoginClick?: () => void;
-};
+}
 
-export function RegisterForm({ onSuccess, onLoginClick }: RegisterFormProps) {
+export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const { register, isRegistering, authError } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const form = useForm<RegisterCredentials>({
+  const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       email: "",
-      password: "",
       firstName: "",
       lastName: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: RegisterCredentials) => {
-    setError(null);
-    register(data, {
-      onSuccess: () => {
-        form.reset();
-        onSuccess?.();
-      },
-      onError: (err: any) => {
-        setError(err.message || "Registration failed. Please try again.");
-      },
-    });
+  const onSubmit = async (data: RegisterFormValues) => {
+    setGeneralError(null);
+    try {
+      // Remove confirm password from data sent to API
+      const { confirmPassword, ...registerData } = data;
+      await register(registerData);
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setGeneralError(error.message);
+      } else {
+        setGeneralError("An unexpected error occurred");
+      }
+    }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Create an Account</CardTitle>
-        <CardDescription>
-          Register to track your SEO analyses and save projects
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {(error || authError) && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>
-              {error || authError}
-            </AlertDescription>
-          </Alert>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {(generalError || authError) && (
+          <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">
+            {generalError || authError}
+          </div>
         )}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your first name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your last name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Choose a username" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email" 
-                      placeholder="Enter your email address" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Create a password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={isRegistering}>
-              {isRegistering ? (
-                <>
-                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                "Register"
-              )}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Button
-            variant="link"
-            className="p-0 h-auto"
-            onClick={onLoginClick}
-          >
-            Login
-          </Button>
-        </p>
-      </CardFooter>
-    </Card>
+
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username*</FormLabel>
+              <FormControl>
+                <Input placeholder="username" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email*</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="example@domain.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="First name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Last name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password*</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password*</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full" disabled={isRegistering}>
+          {isRegistering ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            "Register"
+          )}
+        </Button>
+      </form>
+    </Form>
   );
 }

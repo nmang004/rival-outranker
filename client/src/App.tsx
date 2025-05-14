@@ -10,6 +10,7 @@ import DeepContentAnalysisPage from "@/pages/DeepContentAnalysisPage";
 import DeepContentResultsPage from "@/pages/DeepContentResultsPage";
 import CompetitorAnalysisPage from "@/pages/CompetitorAnalysisPage";
 import CompetitorResultsPage from "@/pages/CompetitorResultsPage";
+import ProfilePage from "@/pages/ProfilePage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 
@@ -27,6 +28,8 @@ function Router() {
             <Route path="/deep-content-results" component={DeepContentResultsPage} />
             <Route path="/competitor-analysis" component={CompetitorAnalysisPage} />
             <Route path="/competitor-results" component={CompetitorResultsPage} />
+            <Route path="/profile" component={ProfilePage} />
+            <Route path="/profile/:tab" component={ProfilePage} />
             <Route component={NotFound} />
           </Switch>
         </div>
