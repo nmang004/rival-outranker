@@ -6,13 +6,13 @@ import {
   FileText, 
   Users, 
   History, 
-  Bell, 
   Menu, 
   X,
   LineChart
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 export default function NavBar() {
   const [location] = useLocation();
@@ -24,8 +24,8 @@ export default function NavBar() {
   
   const linkClass = (path: string) => {
     return isActiveLink(path)
-      ? "border-primary text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium"
-      : "border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium transition-colors";
+      ? "border-primary text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium h-full"
+      : "border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium transition-colors h-full";
   };
   
   const mobileLinkClass = (path: string) => {
@@ -38,7 +38,7 @@ export default function NavBar() {
     <nav className="bg-white border-b border-primary/10 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
+          <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/">
                 <div className="flex items-center cursor-pointer">
@@ -49,7 +49,7 @@ export default function NavBar() {
                 </div>
               </Link>
             </div>
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
+            <div className="hidden sm:ml-8 sm:flex h-full">
               <Link href="/">
                 <div className={linkClass("/")}>
                   <BarChart2 className="h-4 w-4 mr-1" /> Dashboard
@@ -73,14 +73,7 @@ export default function NavBar() {
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            <Button 
-              variant="ghost"
-              size="icon"
-              className="ml-3 relative rounded-full text-muted-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50"
-            >
-              <span className="sr-only">View notifications</span>
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationCenter />
             <div className="ml-3 relative">
               <UserAccountButton />
             </div>
@@ -136,10 +129,9 @@ export default function NavBar() {
             {/* Mobile User Account Info */}
             <div className="flex w-full items-center pb-4">
               <UserAccountButton />
-              <button className="ml-auto flex-shrink-0 p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 transition-colors">
-                <span className="sr-only">View notifications</span>
-                <Bell className="h-5 w-5" />
-              </button>
+              <div className="ml-auto flex-shrink-0">
+                <NotificationCenter />
+              </div>
             </div>
           </div>
         </div>
