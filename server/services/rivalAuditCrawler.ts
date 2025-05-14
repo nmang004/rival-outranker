@@ -188,7 +188,7 @@ class RivalAuditCrawler {
       }
       
       // Get internal links from the homepage
-      const internalLinks = [...new Set(homepage.links.internal)].slice(0, this.maxPages);
+      const internalLinks = Array.from(new Set(homepage.links.internal)).slice(0, this.maxPages);
       
       // Crawl internal pages
       for (const link of internalLinks) {
@@ -203,6 +203,8 @@ class RivalAuditCrawler {
           // Categorize the page
           if (this.isContactPage(pageData)) {
             siteStructure.contactPage = pageData;
+          } else if (this.isServiceAreaPage(pageData)) {
+            siteStructure.serviceAreaPages.push(pageData);
           } else if (this.isServicePage(pageData)) {
             siteStructure.servicePages.push(pageData);
           } else if (this.isLocationPage(pageData)) {
@@ -521,25 +523,134 @@ class RivalAuditCrawler {
   }
   
   /**
-   * Determine if a page is a location page
+   * Determine if a page is a service area page (localized service page)
+   * Examples: /sebastian-fl/ac-repair/ or /sebastian-fl-ac-repair/
    */
-  private isLocationPage(page: PageCrawlResult): boolean {
-    const locationTerms = ['location', 'city', 'store', 'branch', 'office'];
+  private isServiceAreaPage(page: PageCrawlResult): boolean {
     const url = page.url.toLowerCase();
     const title = page.title.toLowerCase();
+    const path = new URL(page.url).pathname;
+    const pathSegments = path.split('/').filter(Boolean);
     
-    // Check URL for location terms
-    if (locationTerms.some(term => url.includes(term))) {
+    // Check if URL pattern matches a service area page
+    // Common patterns:
+    // 1. /location/service (e.g., /miami-fl/ac-repair/)
+    // 2. /location-service (e.g., /miami-fl-ac-repair/)
+    
+    if (pathSegments.length >= 2) {
+      // Check first segment for location indicators
+      const firstSegment = pathSegments[0].toLowerCase();
+      
+      // Check if first segment contains location indicators like city names or zip codes
+      const hasLocationIndicator = 
+        /([a-z]+-[a-z]+)/.test(firstSegment) || // city-state format
+        /-fl$/.test(firstSegment) ||           // ends with -fl
+        /-[a-z]{2}$/.test(firstSegment);       // ends with state code
+        
+      // Check if second segment contains service terms
+      const secondSegment = pathSegments.length > 1 ? pathSegments[1].toLowerCase() : '';
+      const hasServiceTerm = 
+        ['repair', 'service', 'installation', 'replacement', 'maintenance', 'ac', 'hvac', 'heat', 'furnace'].some(
+          term => secondSegment.includes(term)
+        );
+        
+      if (hasLocationIndicator && hasServiceTerm) {
+        return true;
+      }
+    }
+    
+    // Check for location-service pattern in a single segment
+    const lastSegment = pathSegments[pathSegments.length - 1] || '';
+    const locationServicePattern = /([a-z]+-[a-z]+)-([a-z-]+)$/; // Example: miami-fl-ac-repair
+    if (locationServicePattern.test(lastSegment)) {
+      const matches = lastSegment.match(locationServicePattern);
+      if (matches && matches[2]) {
+        const servicePart = matches[2];
+        // Check if service part contains service terms
+        const hasServiceTerm = 
+          ['repair', 'service', 'install', 'replacement', 'maintenance', 'ac', 'hvac', 'heat', 'furnace'].some(
+            term => servicePart.includes(term)
+          );
+          
+        if (hasServiceTerm) {
+          return true;
+        }
+      }
+    }
+    
+    // Check title for both location and service indicators
+    const hasLocationInTitle = 
+      ['in', 'near', 'around', 'serving'].some(preposition => title.includes(preposition)) &&
+      page.bodyText.toLowerCase().match(/\b(city|county|area|town|region)\b/);
+    
+    const hasServiceInTitle = 
+      ['repair', 'service', 'installation', 'maintenance', 'ac', 'hvac', 'heating', 'cooling'].some(
+        term => title.includes(term)
+      );
+      
+    if (hasLocationInTitle && hasServiceInTitle) {
       return true;
     }
     
-    // Check title for location terms
-    if (locationTerms.some(term => title.includes(term))) {
+    return false;
+  }
+  
+  /**
+   * Determine if a page is a location page (geo-based page covering the entire area)
+   * Examples: /sebastian-fl/ 
+   */
+  private isLocationPage(page: PageCrawlResult): boolean {
+    const locationTerms = ['location', 'city', 'town', 'county', 'area', 'serving', 'service-area'];
+    const url = page.url.toLowerCase();
+    const title = page.title.toLowerCase();
+    const path = new URL(page.url).pathname;
+    const pathSegments = path.split('/').filter(Boolean);
+    
+    // Check if this is a location-only page (simple location pattern)
+    if (pathSegments.length === 1) {
+      const segment = pathSegments[0].toLowerCase();
+      
+      // Check for city-state format (e.g., miami-fl) or city name with no service terms
+      const isCityStateFormat = 
+        /^([a-z]+(-[a-z]+)?-[a-z]{2})$/.test(segment) || // city-state format like miami-fl
+        /(county|city|area)$/.test(segment);             // ends with location indicator
+      
+      if (isCityStateFormat && 
+          !['repair', 'service', 'installation'].some(term => segment.includes(term))) {
+        return true;
+      }
+    }
+    
+    // Check URL for location terms but no service terms
+    if (locationTerms.some(term => url.includes(term)) && 
+        !['repair', 'service', 'installation'].some(term => url.includes(term))) {
       return true;
     }
     
-    // Check for address and city/state names
-    if (page.hasAddress) {
+    // Check title for location terms but no service terms
+    if (locationTerms.some(term => title.includes(term)) && 
+        !['repair', 'service', 'installation'].some(term => title.includes(term))) {
+      return true;
+    }
+    
+    // Check for address mentions in the content and location indicators in the URL
+    // without service-specific terms
+    if (page.hasAddress && pathSegments.length <= 2 && 
+        !['repair', 'service', 'installation'].some(term => 
+          pathSegments.some(segment => segment.includes(term))
+        )) {
+      return true;
+    }
+    
+    // Check for common location page title patterns
+    const locationTitlePatterns = [
+      /serving\s+([a-z\s]+)/i,
+      /\b(in|near)\s+([a-z\s]+)/i,
+      /areas\s+(we|our company)\s+(serve|cover)/i
+    ];
+    
+    if (locationTitlePatterns.some(pattern => pattern.test(title)) && 
+        !['repair', 'service', 'installation'].some(term => title.includes(term))) {
       return true;
     }
     
@@ -565,34 +676,41 @@ class RivalAuditCrawler {
     // Generate the location pages audit items
     const locationItems = this.generateLocationAuditItems(site);
     
+    // Generate the service area pages audit items
+    const serviceAreaItems = this.generateServiceAreaAuditItems(site);
+    
     // Count totals of each status
     const priorityOfiCount = 
       onPageItems.filter(item => item.status === 'Priority OFI').length +
       structureItems.filter(item => item.status === 'Priority OFI').length +
       contactItems.filter(item => item.status === 'Priority OFI').length +
       serviceItems.filter(item => item.status === 'Priority OFI').length +
-      locationItems.filter(item => item.status === 'Priority OFI').length;
+      locationItems.filter(item => item.status === 'Priority OFI').length +
+      serviceAreaItems.filter(item => item.status === 'Priority OFI').length;
       
     const ofiCount = 
       onPageItems.filter(item => item.status === 'OFI').length +
       structureItems.filter(item => item.status === 'OFI').length +
       contactItems.filter(item => item.status === 'OFI').length +
       serviceItems.filter(item => item.status === 'OFI').length +
-      locationItems.filter(item => item.status === 'OFI').length;
+      locationItems.filter(item => item.status === 'OFI').length +
+      serviceAreaItems.filter(item => item.status === 'OFI').length;
       
     const okCount = 
       onPageItems.filter(item => item.status === 'OK').length +
       structureItems.filter(item => item.status === 'OK').length +
       contactItems.filter(item => item.status === 'OK').length +
       serviceItems.filter(item => item.status === 'OK').length +
-      locationItems.filter(item => item.status === 'OK').length;
+      locationItems.filter(item => item.status === 'OK').length +
+      serviceAreaItems.filter(item => item.status === 'OK').length;
       
     const naCount = 
       onPageItems.filter(item => item.status === 'N/A').length +
       structureItems.filter(item => item.status === 'N/A').length +
       contactItems.filter(item => item.status === 'N/A').length +
       serviceItems.filter(item => item.status === 'N/A').length +
-      locationItems.filter(item => item.status === 'N/A').length;
+      locationItems.filter(item => item.status === 'N/A').length +
+      serviceAreaItems.filter(item => item.status === 'N/A').length;
     
     return {
       url: this.baseUrl,
@@ -602,11 +720,13 @@ class RivalAuditCrawler {
       contactPage: { items: contactItems },
       servicePages: { items: serviceItems },
       locationPages: { items: locationItems },
+      serviceAreaPages: { items: serviceAreaItems },
       summary: {
         priorityOfiCount,
         ofiCount,
         okCount,
-        naCount
+        naCount,
+        total: priorityOfiCount + ofiCount + okCount + naCount
       }
     };
   }
@@ -1305,6 +1425,171 @@ class RivalAuditCrawler {
     }
     
     return items;
+  }
+  
+  /**
+   * Generate the location pages audit items
+   */
+  /**
+   * Generate the service area pages audit items
+   */
+  private generateServiceAreaAuditItems(site: SiteStructure): AuditItem[] {
+    const items: AuditItem[] = [];
+    const serviceAreaPages = site.serviceAreaPages;
+    const hasServiceAreaPages = serviceAreaPages.length > 0;
+    
+    // Check if service area pages exist
+    items.push({
+      name: "Has service area pages?",
+      description: "Service area pages combine location and service information for local SEO",
+      status: hasServiceAreaPages ? 'OK' : 'Priority OFI',
+      importance: 'High',
+      notes: !hasServiceAreaPages 
+        ? "No service area pages found. Service area pages (like /city-name/service-name/) are critical for local SEO to target specific services in specific locations. Examples: /miami/ac-repair/ or /miami-fl-ac-repair/"
+        : `Found ${serviceAreaPages.length} service area pages. Examples: ${serviceAreaPages.slice(0, 3).map(p => new URL(p.url).pathname).join(', ')}`
+    });
+    
+    if (hasServiceAreaPages) {
+      // Check content uniqueness (not duplicate or thin content)
+      const contentUniqueness = this.areServiceAreaPagesUnique(serviceAreaPages);
+      items.push({
+        name: "Service area pages have unique content?",
+        description: "Each service area page should have substantial unique content",
+        status: contentUniqueness ? 'OK' : 'Priority OFI',
+        importance: 'High',
+        notes: !contentUniqueness 
+          ? "Service area pages have similar or duplicate content. Google may see this as thin content, which can lead to rankings issues. Examples: " + 
+            serviceAreaPages.slice(0, 2).map(p => new URL(p.url).pathname).join(', ') +
+            ". Each page should have at least 50% unique content specific to the location and service."
+          : "Service area pages have good content uniqueness"
+      });
+      
+      // Check for location signals in content
+      const locationSignalsCount = serviceAreaPages.filter(page => 
+        page.bodyText.toLowerCase().match(/\b(city|county|area|town|region|located|local)\b/)
+      ).length;
+      
+      const hasGoodLocationSignals = locationSignalsCount / serviceAreaPages.length >= 0.8; // At least 80% have location signals
+      items.push({
+        name: "Location signals in service area pages?",
+        description: "Service area pages should mention the location name and related terms",
+        status: hasGoodLocationSignals ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: !hasGoodLocationSignals 
+          ? `Only ${locationSignalsCount} of ${serviceAreaPages.length} service area pages have strong location signals. Pages should mention the location name multiple times and include phrases like "serving [location]" or "in [location]".`
+          : "Good location signals found in service area pages"
+      });
+      
+      // Check if service area pages have appropriate headings structure
+      const goodHeadingsCount = serviceAreaPages.filter(page => 
+        page.headings.h1.length === 1 && 
+        page.headings.h1[0].toLowerCase().includes(new URL(page.url).pathname.split('/').filter(Boolean)[0].replace(/-/g, ' '))
+      ).length;
+      
+      const hasGoodHeadings = goodHeadingsCount / serviceAreaPages.length >= 0.7; // At least 70% have good headings
+      items.push({
+        name: "Proper heading structure with location?",
+        description: "H1 headings should include both service and location name",
+        status: hasGoodHeadings ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: !hasGoodHeadings 
+          ? `Only ${goodHeadingsCount} of ${serviceAreaPages.length} service area pages have proper H1 headings with location name. Each page should have exactly one H1 that mentions both the service and location. Example problems in: ${serviceAreaPages.filter(p => p.headings.h1.length !== 1).slice(0, 2).map(p => new URL(p.url).pathname).join(', ')}`
+          : "Good heading structure found in service area pages"
+      });
+      
+      // Check for schema markup specific to LocalBusiness
+      const pagesWithLocalBusinessSchema = serviceAreaPages.filter(page => 
+        page.hasSchema && page.schemaTypes.some(type => 
+          type.includes('LocalBusiness') || type.includes('Service')
+        )
+      ).length;
+      
+      const hasLocalBusinessSchema = pagesWithLocalBusinessSchema / serviceAreaPages.length >= 0.5; // At least 50% have schema
+      items.push({
+        name: "LocalBusiness or Service schema markup?",
+        description: "Service area pages should include appropriate schema markup",
+        status: hasLocalBusinessSchema ? 'OK' : 'Priority OFI',
+        importance: 'High',
+        notes: !hasLocalBusinessSchema 
+          ? `Only ${pagesWithLocalBusinessSchema} of ${serviceAreaPages.length} service area pages have LocalBusiness or Service schema markup. This structured data helps search engines understand the relationship between your business, services, and locations. Examples missing schema: ${serviceAreaPages.filter(p => !p.hasSchema).slice(0, 2).map(p => new URL(p.url).pathname).join(', ')}`
+          : "Good schema markup implementation on service area pages"
+      });
+      
+      // Check for internal linking between service area pages
+      const internalLinkingScore = this.checkServiceAreaInternalLinking(serviceAreaPages);
+      items.push({
+        name: "Internal linking between service area pages?",
+        description: "Service area pages should link to related pages",
+        status: internalLinkingScore >= 0.7 ? 'OK' : (internalLinkingScore >= 0.3 ? 'OFI' : 'Priority OFI'),
+        importance: 'Medium',
+        notes: internalLinkingScore < 0.3
+          ? "Poor internal linking between service area pages. Each page should link to related service areas and services. This helps with crawling, indexing, and establishing topic relevance."
+          : (internalLinkingScore < 0.7 
+              ? "Some internal linking between service area pages, but could be improved. Create a more robust internal linking structure."
+              : "Good internal linking structure between service area pages")
+      });
+    }
+    
+    return items;
+  }
+  
+  /**
+   * Check the internal linking between service area pages
+   */
+  private checkServiceAreaInternalLinking(serviceAreaPages: PageCrawlResult[]): number {
+    if (serviceAreaPages.length <= 1) return 1; // Only one page, so internal linking isn't relevant
+    
+    let totalPossibleLinks = serviceAreaPages.length * (serviceAreaPages.length - 1);
+    let actualLinks = 0;
+    
+    // Count links between service area pages
+    for (const page of serviceAreaPages) {
+      for (const link of page.links.internal) {
+        if (serviceAreaPages.some(otherPage => otherPage.url === link && otherPage.url !== page.url)) {
+          actualLinks++;
+        }
+      }
+    }
+    
+    return totalPossibleLinks > 0 ? actualLinks / totalPossibleLinks : 0;
+  }
+  
+  /**
+   * Check if service area pages have sufficiently unique content
+   */
+  private areServiceAreaPagesUnique(serviceAreaPages: PageCrawlResult[]): boolean {
+    if (serviceAreaPages.length <= 1) return true;
+    
+    // Calculate similarity between page content
+    for (let i = 0; i < serviceAreaPages.length; i++) {
+      for (let j = i + 1; j < serviceAreaPages.length; j++) {
+        const page1 = serviceAreaPages[i];
+        const page2 = serviceAreaPages[j];
+        
+        // Simple similarity check - in a real implementation, we'd use a more
+        // sophisticated content similarity algorithm
+        const similarity = this.calculateContentSimilarity(page1.bodyText, page2.bodyText);
+        if (similarity > 0.7) { // If pages are more than 70% similar
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Calculate content similarity between two text strings
+   * This is a simplistic implementation - in production you'd use a more robust algorithm
+   */
+  private calculateContentSimilarity(text1: string, text2: string): number {
+    const words1 = new Set(text1.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+    const words2 = new Set(text2.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+    
+    const intersection = new Set([...words1].filter(x => words2.has(x)));
+    const union = new Set([...words1, ...words2]);
+    
+    return intersection.size / union.size;
   }
   
   /**
