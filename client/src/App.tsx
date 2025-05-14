@@ -12,6 +12,8 @@ import CompetitorAnalysisPage from "@/pages/CompetitorAnalysisPage";
 import CompetitorResultsPage from "@/pages/CompetitorResultsPage";
 import RivalAuditPage from "@/pages/RivalAuditPage";
 import RivalAuditResultsPage from "@/pages/RivalAuditResultsPage";
+import RivalRankTrackerPage from "@/pages/RivalRankTrackerPage";
+import RivalRankTrackerResultsPage from "@/pages/RivalRankTrackerResultsPage";
 import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
 import KeywordsPage from "@/pages/KeywordsPage";
@@ -43,6 +45,8 @@ function Router() {
             <Route path="/keywords" component={KeywordsPage} />
             <Route path="/keywords/:id" component={KeywordDetailsPage} />
             <Route path="/keyword-suggestions" component={KeywordSuggestionsPage} />
+            <Route path="/rival-rank-tracker" component={RivalRankTrackerPage} />
+            <Route path="/rival-rank-tracker-results/:id" component={RivalRankTrackerResultsPage} />
             <Route component={NotFound} />
           </Switch>
         </div>

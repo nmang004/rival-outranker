@@ -9,11 +9,19 @@ import {
   Menu, 
   X,
   LineChart,
-  ClipboardCheck
+  ClipboardCheck,
+  ChevronDown,
+  BarChart
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 export default function NavBar() {
   const [location] = useLocation();
@@ -66,11 +74,37 @@ export default function NavBar() {
                   <Users className="h-4 w-4 mr-1" /> Competitors
                 </button>
               </Link>
-              <Link href="/rival-audit">
-                <button className={linkClass("/rival-audit") + " cursor-pointer"}>
-                  <ClipboardCheck className="h-4 w-4 mr-1" /> Rival Audit
-                </button>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    className={
+                      (location === "/rival-audit" || location === "/rival-rank-tracker") 
+                        ? linkClass("/rival-audit") 
+                        : linkClass("")
+                    }
+                  >
+                    <div className="flex items-center">
+                      <ClipboardCheck className="h-4 w-4 mr-1" /> 
+                      Rival Audit
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  <Link href="/rival-audit">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                      Rival Audit
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/rival-rank-tracker">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <BarChart className="h-4 w-4 mr-2" />
+                      Rival Rank Tracker
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-1" /> History
@@ -126,6 +160,13 @@ export default function NavBar() {
             <button className={mobileLinkClass("/rival-audit") + " w-full text-left cursor-pointer"}>
               <div className="flex items-center">
                 <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
+              </div>
+            </button>
+          </Link>
+          <Link href="/rival-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
+            <button className={mobileLinkClass("/rival-rank-tracker") + " w-full text-left cursor-pointer pl-8"}>
+              <div className="flex items-center">
+                <BarChart className="h-4 w-4 mr-2" /> Rival Rank Tracker
               </div>
             </button>
           </Link>
