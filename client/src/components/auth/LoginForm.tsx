@@ -1,20 +1,6 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
-
-// Login schema
-const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { Loader2, LogIn } from "lucide-react";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -22,80 +8,50 @@ interface LoginFormProps {
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login, isLoggingIn, authError } = useAuth();
-  const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-  });
-
-  const onSubmit = async (data: LoginFormValues) => {
-    setGeneralError(null);
+  const handleLogin = async () => {
     try {
-      await login(data);
+      await login();
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setGeneralError(error.message);
-      } else {
-        setGeneralError("An unexpected error occurred");
-      }
+      console.error("Login error:", error);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {(generalError || authError) && (
-          <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">
-            {generalError || authError}
-          </div>
+    <div className="space-y-4">
+      {authError && (
+        <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md">
+          {authError}
+        </div>
+      )}
+
+      <div className="text-center mb-4">
+        <p className="text-muted-foreground">
+          Quickly and securely log in using your Replit account
+        </p>
+      </div>
+
+      <Button 
+        onClick={handleLogin} 
+        className="w-full py-6" 
+        size="lg" 
+        disabled={isLoggingIn}
+      >
+        {isLoggingIn ? (
+          <>
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            Logging in...
+          </>
+        ) : (
+          <>
+            <LogIn className="mr-2 h-5 w-5" />
+            Continue with Replit
+          </>
         )}
-
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input placeholder="yourname" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" className="w-full" disabled={isLoggingIn}>
-          {isLoggingIn ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Logging in...
-            </>
-          ) : (
-            "Login"
-          )}
-        </Button>
-      </form>
-    </Form>
+      </Button>
+    </div>
   );
 }

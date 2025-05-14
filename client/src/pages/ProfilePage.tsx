@@ -148,10 +148,10 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
             <div className="p-6 md:p-8 flex flex-col sm:flex-row items-start gap-6">
               <div className="flex-shrink-0">
                 <div className="h-24 w-24 rounded-full overflow-hidden bg-primary/10 border-2 border-muted flex items-center justify-center">
-                  {user.profileImage ? (
+                  {(user as any)?.profileImageUrl ? (
                     <img 
-                      src={user.profileImage} 
-                      alt={`${user.firstName || ''} ${user.lastName || ''}`} 
+                      src={(user as any).profileImageUrl} 
+                      alt={`${(user as any).firstName || ''} ${(user as any).lastName || ''}`} 
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -161,28 +161,22 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
               </div>
               <div className="flex-grow">
                 <h2 className="text-2xl font-bold">
-                  {user.firstName && user.lastName 
-                    ? `${user.firstName} ${user.lastName}` 
-                    : user.username}
+                  {(user as any)?.firstName && (user as any)?.lastName 
+                    ? `${(user as any).firstName} ${(user as any).lastName}` 
+                    : (user as any)?.email?.split('@')[0] || 'User'}
                 </h2>
                 <p className="text-muted-foreground">
-                  {user.email}
-                  {user.isEmailVerified && (
-                    <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 hover:bg-green-50">
-                      Verified
-                    </Badge>
-                  )}
+                  {(user as any)?.email}
+                  <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 hover:bg-green-50">
+                    Verified
+                  </Badge>
                 </p>
-                {(user.company || user.jobTitle) && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {user.jobTitle && <span>{user.jobTitle}</span>}
-                    {user.jobTitle && user.company && <span> at </span>}
-                    {user.company && <span className="font-medium">{user.company}</span>}
-                  </p>
-                )}
-                {user.bio && (
-                  <p className="mt-3 text-sm">{user.bio}</p>
-                )}
+                <p className="mt-2 text-sm">
+                  <span className="font-medium text-primary">Replit</span> user
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Account created for SEO analysis tools
+                </p>
               </div>
             </div>
           </div>
