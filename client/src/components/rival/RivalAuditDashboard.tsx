@@ -198,10 +198,10 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
     <div className="space-y-6">
       {/* Overall progress card */}
       <Card>
-        <CardHeader>
-          <CardTitle>Overall SEO Health</CardTitle>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
+          <CardTitle>SEO Health & Performance Dashboard</CardTitle>
           <CardDescription>
-            Overall progress across all audit categories
+            Comprehensive view of website's SEO health with key performance metrics
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -222,7 +222,7 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
               <div className="col-span-1">
-                <div className="text-lg font-semibold mb-2">Issue Distribution</div>
+                <div className="text-lg font-semibold mb-2">SEO Issue Distribution</div>
                 <div className="h-[200px] sm:h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -234,34 +234,61 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
                         outerRadius={80}
                         paddingAngle={2}
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        nameKey="name"
+                        label={({ name, percent }) => 
+                          percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''
+                        }
+                        labelLine={false}
                       >
                         {statusDistributionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={entry.color} name={entry.name} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [`${value} items`, '']} />
+                      <Tooltip 
+                        formatter={(value, name) => {
+                          const total = audit.summary.total || 
+                            (audit.summary.priorityOfiCount + audit.summary.ofiCount + audit.summary.okCount + audit.summary.naCount);
+                          return [`${value} items (${((Number(value)/total) * 100).toFixed(1)}%)`, name];
+                        }}
+                        contentStyle={{ backgroundColor: 'white', borderRadius: '4px', padding: '8px' }}
+                      />
+                      <Legend 
+                        layout="horizontal" 
+                        verticalAlign="bottom" 
+                        align="center"
+                        formatter={(value) => <span className="text-xs font-medium">{value}</span>}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
               <div className="col-span-2">
-                <div className="text-lg font-semibold mb-2">Category Completion</div>
-                <div className="space-y-3">
+                <div className="text-lg font-semibold mb-3">SEO Optimization Status by Category</div>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-lg space-y-4">
                   {completionProgressData.map((item, index) => (
-                    <div key={index} className="space-y-1">
+                    <div key={index} className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          {item.icon}
-                          <span className="ml-2 text-sm">{item.name}</span>
+                          <div className="p-1 rounded-full bg-primary/10 mr-2">
+                            {item.icon}
+                          </div>
+                          <span className="ml-1 text-sm font-medium">{item.name}</span>
                         </div>
-                        <span className="text-sm font-medium">{item.progress}%</span>
+                        <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                          item.progress > 80 ? "bg-green-100 text-green-700" : 
+                          item.progress > 60 ? "bg-emerald-100 text-emerald-700" :
+                          item.progress > 40 ? "bg-yellow-100 text-yellow-700" :
+                          item.progress > 20 ? "bg-orange-100 text-orange-700" :
+                          "bg-red-100 text-red-700"
+                        }`}>{item.progress}%</span>
                       </div>
                       <Progress 
                         value={item.progress} 
-                        className={`h-2 ${
-                          item.progress > 70 ? "bg-green-500/20" : 
+                        className={`h-2.5 ${
+                          item.progress > 80 ? "bg-green-500/20" : 
+                          item.progress > 60 ? "bg-emerald-500/20" : 
                           item.progress > 40 ? "bg-yellow-500/20" :
+                          item.progress > 20 ? "bg-orange-500/20" :
                           "bg-red-500/20"
                         }`}
                       />
@@ -276,10 +303,10 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
 
       {/* Category comparison chart */}
       <Card>
-        <CardHeader>
-          <CardTitle>Category Comparison</CardTitle>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
+          <CardTitle>SEO Category Performance Analysis</CardTitle>
           <CardDescription>
-            Compare status distribution across different audit categories
+            Detailed breakdown of performance across all SEO categories with issue distribution
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -297,12 +324,12 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
                 <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Priority Issues" stackId="a" fill="#ef4444" />
-                <Bar dataKey="Opportunities" stackId="a" fill="#eab308" />
-                <Bar dataKey="Completed" stackId="a" fill="#22c55e" />
-                <Bar dataKey="Not Applicable" stackId="a" fill="#9ca3af" />
+                <Tooltip formatter={(value, name) => [`${value} items`, name]} />
+                <Legend wrapperStyle={{ paddingTop: 10 }} />
+                <Bar dataKey="Priority Issues" stackId="a" fill="#ef4444" name="Priority Issues" />
+                <Bar dataKey="Opportunities" stackId="a" fill="#eab308" name="Opportunities" />
+                <Bar dataKey="Completed" stackId="a" fill="#22c55e" name="Completed" />
+                <Bar dataKey="Not Applicable" stackId="a" fill="#9ca3af" name="Not Applicable" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -311,13 +338,13 @@ export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps)
 
       {/* Critical issues card */}
       <Card>
-        <CardHeader>
+        <CardHeader className="bg-gradient-to-r from-red-50/30 to-pink-50/30 dark:from-red-950/30 dark:to-pink-950/30 border-b">
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
-            <span>Critical Issues Requiring Attention</span>
+            <span>Priority Action Items</span>
           </CardTitle>
           <CardDescription>
-            Priority issues that should be addressed first
+            High-impact SEO issues requiring immediate attention for maximum performance gain
           </CardDescription>
         </CardHeader>
         <CardContent>

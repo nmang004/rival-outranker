@@ -143,10 +143,10 @@ export default function RivalAuditRecommendations({ audit }: RivalAuditRecommend
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
           <div className="flex items-center">
             <Lightbulb className="h-6 w-6 mr-2 text-yellow-500" />
-            <CardTitle>Strategic Recommendations</CardTitle>
+            <CardTitle>Rival Recommendations</CardTitle>
           </div>
           <CardDescription>
-            Based on your audit results, here are our recommendations for improving your SEO performance
+            Based on your audit results, here are our recommended actions for improving SEO performance and outperforming competitors
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
