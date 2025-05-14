@@ -118,6 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Run competitor analysis if requested
+        const includeCompetitorAnalysis = req.body.includeCompetitorAnalysis === true;
         if (includeCompetitorAnalysis) {
           try {
             // Competitor analysis will be processed later in the code
@@ -145,8 +146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sanitizedResult.overallScore = { score: 50, category: 'needs-work' };
         }
         
-        // The competitor analysis will be included in the sanitizedResult when the flag is true
-        // and the analysis is successful. No need to add it manually here.
+        // The competitor analysis is added to sanitizedResult later in the code
+        // after the competitor analysis is performed, if requested
         
         // Store sanitized result
         const analysisData = {
