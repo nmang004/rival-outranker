@@ -398,22 +398,44 @@ export async function getCompetitorRankings(
     console.log(`Fetching competitor rankings for "${keyword}" from DataForSEO...`);
     
     // Request body for SERP API formatted exactly per DataForSEO docs
-    const requestData = {
+    const requestData = [{
       "data": {
         "keyword": keyword,
         "location_code": location,
         "language_code": "en",
         "depth": 100 // Check deeper to find all competitors
       }
-    };
+    }];
+    
+    console.log('DataForSEO SERP request payload:', JSON.stringify(requestData, null, 2));
     
     const serpResponse = await dataForSeoClient.post(
-      'https://api.dataforseo.com/v3/serp/google/organic/live/regular',
-      [requestData]
+      '/serp/google/organic/live/regular',
+      requestData
     );
     
+    console.log('DataForSEO SERP response status:', 
+      serpResponse.data?.status_code,
+      serpResponse.data?.status_message);
+      
+    // Check for valid response from API
+    if (!serpResponse.data || 
+        serpResponse.data.status_code !== 20000 || 
+        !serpResponse.data.tasks || 
+        serpResponse.data.tasks.length === 0) {
+      throw new Error(`Invalid API response: ${JSON.stringify(serpResponse.data)}`);
+    }
+    
+    const task = serpResponse.data.tasks[0];
+    
+    if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
+      throw new Error(`Task error: ${task.status_message || 'No results'}`);
+    }
+    
     // Get organic results
-    const results = serpResponse.data?.tasks?.[0]?.result?.[0]?.items || [];
+    const results = task.result[0]?.items || [];
+    
+    console.log(`Found ${results.length} search results to process`);
     
     // Normalize domains for comparison (removing www., http://, etc.)
     const normalizeDomain = (url: string) => {
@@ -465,10 +487,16 @@ export async function getCompetitorRankings(
       websiteRanking,
       competitorRankings
     };
-  } catch (error) {
-    console.error('Error fetching competitor rankings from DataForSEO:', error);
+  } catch (error: any) {
+    console.error('Error fetching competitor rankings from DataForSEO:', 
+      error.message || error);
     
-    // Return basic structure in case of error
+    // Log specifics for debugging purposes
+    if (error.response?.data) {
+      console.error('API error details:', JSON.stringify(error.response.data));
+    }
+    
+    // Return basic structure to avoid undefined errors in client
     return {
       keyword,
       websiteRanking: { position: 0, url: '' },
@@ -487,64 +515,65 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
   try {
     console.log(`Fetching keyword suggestions for "${keyword}" from DataForSEO...`);
     
-    // Try different endpoints for keyword suggestions
-    let results = [];
-    
-    try {
-      // First try the keywords_for_keywords endpoint
-      const suggestionsResponse = await dataForSeoClient.post(
-        'https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live',
-        [{
-          "data": {
-            "keyword": keyword,
-            "location_code": location,
-            "language_code": "en",
-            "limit": 15
-          }
-        }]
-      );
-      
-      results = suggestionsResponse.data?.tasks?.[0]?.result?.[0]?.keywords || [];
-    } catch (error) {
-      console.log("Keywords for keywords endpoint failed, trying alternative endpoint");
-      
-      try {
-        // Fall back to keyword suggestions endpoint
-        const suggestionsResponse = await dataForSeoClient.post(
-          'https://api.dataforseo.com/v3/keywords_data/google/keyword_suggestions/live',
-          [{
-            "data": {
-              "keyword": keyword,
-              "location_code": location,
-              "language_code": "en",
-              "limit": 15
-            }
-          }]
-        );
-        
-        results = suggestionsResponse.data?.tasks?.[0]?.result || [];
-      } catch (innerError) {
-        console.error("All keyword suggestion endpoints failed:", innerError);
+    // Request data for Google Ads keywords for keywords endpoint
+    const requestData = [{
+      "data": {
+        "keyword": keyword,
+        "location_code": location,
+        "language_code": "en",
+        "limit": 15
       }
+    }];
+    
+    console.log('DataForSEO keyword suggestions request payload:', JSON.stringify(requestData, null, 2));
+    
+    // Use the google_ads endpoint instead of google
+    const suggestionsResponse = await dataForSeoClient.post(
+      '/keywords_data/google_ads/keywords_for_keywords/live',
+      requestData
+    );
+    
+    console.log('DataForSEO suggestions response status:', 
+      suggestionsResponse.data?.status_code,
+      suggestionsResponse.data?.status_message);
+    
+    // Check for valid response from API
+    if (!suggestionsResponse.data || 
+        suggestionsResponse.data.status_code !== 20000 || 
+        !suggestionsResponse.data.tasks || 
+        suggestionsResponse.data.tasks.length === 0) {
+      throw new Error(`Invalid API response: ${JSON.stringify(suggestionsResponse.data)}`);
     }
     
-    if (results.length === 0) {
-      console.log("No results from API, generating fallback suggestions");
-      // Generate fallback suggestions based on the original keyword
-      return generateFallbackSuggestions(keyword);
+    const task = suggestionsResponse.data.tasks[0];
+    
+    if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
+      throw new Error(`Task error: ${task.status_message || 'No results'}`);
     }
+    
+    // Extract the keywords array from the results
+    const keywordsArray = task.result[0]?.keywords || [];
+    
+    if (keywordsArray.length === 0) {
+      console.log("No keywords found in API response");
+      return [];
+    }
+    
+    console.log(`Found ${keywordsArray.length} keyword suggestions`);
     
     // Map the results to the expected format
-    return results.map((item: any, index: number) => ({
+    return keywordsArray.map((item: any, index: number) => ({
       id: index + 1,
       keyword: item.keyword,
       searchVolume: item.search_volume || 0,
       difficulty: Math.round(item.keyword_difficulty || 0),
       cpc: item.cpc ? `$${parseFloat(item.cpc).toFixed(2)}` : '$0.00',
-      relevance: Math.round((1 - (index / Math.min(15, results.length))) * 100) // Higher relevance for earlier results
+      relevance: item.relevance || Math.round((1 - (index / Math.min(15, keywordsArray.length))) * 100) // Use API relevance if available
     }));
-  } catch (error) {
-    console.error('Error fetching keyword suggestions from DataForSEO:', error);
+  } catch (error: any) {
+    console.error('Error fetching keyword suggestions from DataForSEO:', error.message);
+    
+    // Return empty array instead of generated data
     return [];
   }
 }
@@ -555,8 +584,9 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
  */
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    // Attempt to call the Account API to verify credentials and connectivity
-    const response = await dataForSeoClient.get('https://api.dataforseo.com/v3/keywords_data/google/languages');
+    // Attempt to call a simple endpoint to verify credentials and connectivity
+    // Use google_ads endpoints which should be available
+    const response = await dataForSeoClient.get('/keywords_data/google_ads/locations');
     
     // Check if we have a valid response with data
     if (response?.data?.status_code === 20000) {
