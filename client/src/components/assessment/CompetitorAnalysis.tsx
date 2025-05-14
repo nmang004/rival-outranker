@@ -12,12 +12,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface CompetitorAnalysisProps {
   url: string;
-  city: string;
+  city?: string;
+  keyword?: string;
 }
 
-export default function CompetitorAnalysis({ url, city }: CompetitorAnalysisProps) {
+export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAnalysisProps) {
+  // Determine the search location - if city is provided use it, otherwise use a default
+  const searchLocation = city || 'United States';
+  
+  // Determine the search keyword - if keyword is provided use it directly
+  const searchKeyword = keyword || '';
+  
   const { data, isLoading, error } = useQuery<any>({
-    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`],
+    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(searchLocation)}&keyword=${encodeURIComponent(searchKeyword)}`],
     refetchOnWindowFocus: false
   });
   
@@ -65,9 +72,9 @@ export default function CompetitorAnalysis({ url, city }: CompetitorAnalysisProp
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Top Competitors in {city}</h3>
+        <h3 className="text-lg font-semibold">Top Competitors in {searchLocation}</h3>
         <p className="text-sm text-muted-foreground">
-          Based on analysis of search rankings and online presence for your industry in {city}.
+          Based on analysis of search rankings and online presence for your industry in {searchLocation}.
         </p>
       </div>
       
