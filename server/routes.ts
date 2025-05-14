@@ -83,8 +83,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
-        // Check for existing analysis unless deep content analysis is specifically requested
-        if (!runDeepContentAnalysis) {
+        // Check for existing analysis unless deep content analysis or target keyword is specifically requested
+        if (!runDeepContentAnalysis && !targetKeyword) {
           const existingAnalyses = await storage.getAnalysesByUrl(url);
           if (existingAnalyses.length > 0) {
             const latestAnalysis = existingAnalyses[0];
@@ -98,6 +98,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               return;
             }
           }
+        } else if (targetKeyword) {
+          console.log(`Target keyword provided: ${targetKeyword} - forcing fresh analysis`);
         }
         
         // Crawl the webpage
