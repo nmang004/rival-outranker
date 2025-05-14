@@ -251,7 +251,8 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
               // If no competitor analysis data exists, show the competitor analysis component which will fetch new data
               <CompetitorAnalysis 
                 url={data.url} 
-                keyword={data.keywordAnalysis.primaryKeyword} 
+                keyword={data.keywordAnalysis.primaryKeyword}
+                isRequested={data.options?.includeCompetitorAnalysis === true} 
               />
             )}
           </div>

@@ -35,9 +35,10 @@ interface CompetitorAnalysisProps {
   url: string;
   city?: string;
   keyword?: string;
+  isRequested?: boolean; // New prop to track if competitor analysis was explicitly requested
 }
 
-export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAnalysisProps) {
+export default function CompetitorAnalysis({ url, city, keyword, isRequested = false }: CompetitorAnalysisProps) {
   // Determine the search location - if city is provided use it, otherwise use a default
   const searchLocation = city || 'United States';
   
@@ -47,11 +48,30 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
   // Use API endpoint with all parameters for best keyword selection
   const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(searchLocation)}&keyword=${encodeURIComponent(searchKeyword)}`],
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    enabled: isRequested // Only run the query if competitor analysis was requested
   });
   
   // The query's response might include the actual keyword that was used
   const displayKeyword = data?.keyword || searchKeyword || 'Your industry';
+  
+  // If competitor analysis wasn't requested, show a message
+  if (!isRequested) {
+    return (
+      <Card className="p-8">
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <Globe className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-medium">Competitor Analysis Not Requested</h3>
+          <p className="text-muted-foreground">
+            You didn't select competitor analysis when submitting this URL for analysis. 
+            Please run a new analysis with the competitor analysis option checked to see data here.
+          </p>
+        </div>
+      </Card>
+    );
+  }
   
   if (isLoading) {
     return (
