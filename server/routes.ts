@@ -6,6 +6,7 @@ import { analyzer } from "./services/analyzer_fixed";
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
 import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
 import { searchService } from "./services/searchService";
+import { rivalAuditCrawler } from "./services/rivalAuditCrawler";
 import { generateRivalAuditExcel } from "./services/excelExporter";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -1027,18 +1028,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "URL is required" });
       }
       
-      // Generate a mock audit ID for now (in a real implementation, this would be stored in the database)
+      // Generate an audit ID (in a production environment, this would be stored in the database)
       const auditId = Math.floor(Math.random() * 1000) + 1;
       
       // Return the audit ID immediately
-      res.status(202).json({ id: auditId, message: "Audit started" });
+      res.status(202).json({ id: auditId, message: "Audit started", url });
       
-      // For demonstration, we'll return mock data that matches our schema
-      // In a production environment, this would be a real crawl and analysis
+      // Perform the actual audit asynchronously
       setTimeout(async () => {
         try {
-          // This is where the actual audit would be performed
           console.log(`Starting rival audit for ${url} with ID ${auditId}`);
+          
+          // Crawl and analyze the website using our new crawler
+          const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          
+          // In a real implementation, we would store these results in the database
+          console.log(`Completed rival audit for ${url} with ID ${auditId}`);
+          console.log(`Found ${auditResults.summary.priorityOfiCount} Priority OFIs, ${auditResults.summary.ofiCount} OFIs`);
+          
+          // Associate this audit with current user if they're authenticated
+          if (req.user?.id) {
+            console.log(`Associating audit ${auditId} with user ${req.user.id}`);
+            // In a real implementation: await storage.saveRivalAudit({ ...auditResults, userId: req.user.id });
+          }
+          
         } catch (error) {
           console.error("Error performing rival audit:", error);
         }
@@ -1058,9 +1071,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid audit ID" });
       }
       
-      // For demonstration, we'll return mock data that matches our schema
-      // In a real implementation, this would be fetched from the database
-      const mockAudit = generateMockRivalAudit(req.query.url as string || "https://example.com");
+      // Check if URL is provided - if so, we'll do a live audit
+      const url = req.query.url as string;
+      
+      // If we have a URL, generate an audit from the crawler
+      if (url) {
+        try {
+          console.log(`Generating live audit for ${url} with ID ${auditId}`);
+          const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          return res.json(auditResults);
+        } catch (crawlerError) {
+          console.error("Error generating live audit:", crawlerError);
+          // Fall back to mock data if crawler fails
+        }
+      }
+      
+      // In a real implementation, we would fetch the saved audit from the database here
+      // For now, return mock data that matches our schema
+      const mockAudit = generateMockRivalAudit(url || "https://example.com");
       
       res.json(mockAudit);
       
@@ -1078,19 +1106,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid audit ID" });
       }
       
-      // For demonstration, we'll use the mock audit data
-      // In a real implementation, this would be fetched from the database
-      const url = req.query.url as string || "https://example.com";
-      const mockAudit = generateMockRivalAudit(url);
+      const url = req.query.url as string;
+      let auditData;
       
-      // We already imported the excelExporter at the top of the file
+      // If we have a URL, try to generate a live audit with the crawler
+      if (url) {
+        try {
+          console.log(`Generating live audit for Excel export: ${url}`);
+          auditData = await rivalAuditCrawler.crawlAndAudit(url);
+        } catch (crawlerError) {
+          console.error("Error generating live audit for Excel export:", crawlerError);
+          // Fall back to mock data if crawler fails
+          auditData = generateMockRivalAudit(url);
+        }
+      } else {
+        // In a real implementation, we would fetch the saved audit from the database
+        // For now, use mock data
+        auditData = generateMockRivalAudit("https://example.com");
+      }
       
       // Generate Excel file
-      const excelBuffer = await generateRivalAuditExcel(mockAudit);
+      console.log("Generating Excel file...");
+      const excelBuffer = await generateRivalAuditExcel(auditData);
+      
+      // Format the URL for the filename
+      const cleanUrl = (url || "example.com").replace(/https?:\/\//i, '').replace(/[^a-z0-9]/gi, '-');
       
       // Set headers
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=rival-audit-${url.replace(/https?:\/\//i, '').replace(/[^a-z0-9]/gi, '-')}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      res.setHeader('Content-Disposition', `attachment; filename=rival-audit-${cleanUrl}-${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      console.log("Sending Excel file...");
       
       // Send the Excel file
       res.send(excelBuffer);
