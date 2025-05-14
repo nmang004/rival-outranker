@@ -36,23 +36,23 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10" />
+          <Skeleton className="h-10 w-10 xl:h-12 xl:w-12" />
           <div>
-            <Skeleton className="h-6 w-[200px]" />
-            <Skeleton className="h-4 w-[150px] mt-2" />
+            <Skeleton className="h-6 w-[200px] xl:h-8 xl:w-[280px]" />
+            <Skeleton className="h-4 w-[150px] xl:h-5 xl:w-[180px] mt-2" />
           </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-4 xl:gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-5 w-[180px]" />
+              <CardHeader className="pb-2 xl:pb-3">
+                <Skeleton className="h-5 xl:h-7 w-[180px] xl:w-[240px]" />
               </CardHeader>
               <CardContent>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full mt-2" />
-                <Skeleton className="h-4 w-3/4 mt-2" />
+                <Skeleton className="h-4 xl:h-5 w-full" />
+                <Skeleton className="h-4 xl:h-5 w-full mt-2 xl:mt-3" />
+                <Skeleton className="h-4 xl:h-5 w-3/4 mt-2 xl:mt-3" />
               </CardContent>
             </Card>
           ))}
@@ -64,9 +64,9 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
+        <AlertCircle className="h-4 w-4 xl:h-5 xl:w-5" />
+        <AlertTitle className="xl:text-lg">Error</AlertTitle>
+        <AlertDescription className="xl:text-base">
           Failed to load competitor analysis data. Please try again later.
         </AlertDescription>
       </Alert>
@@ -74,27 +74,27 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
   }
   
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 high-res-layout">
       <div className="space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <h3 className="text-lg font-semibold">Top Competitors in {searchLocation}</h3>
+          <h3 className="text-lg font-semibold xl:text-xl 2xl:text-2xl">Top Competitors in {searchLocation}</h3>
           
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Tag className="h-4 w-4 mr-1.5" />
+          <div className="flex items-center text-sm xl:text-base text-muted-foreground">
+            <Tag className="h-4 w-4 xl:h-5 xl:w-5 mr-1.5" />
             <span>Keyword: <span className="font-medium text-foreground">{displayKeyword}</span></span>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="ml-2 h-7 px-2"
+              className="ml-2 h-7 px-2 xl:h-8 xl:px-3"
               onClick={() => refetch()}
             >
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              <RefreshCw className="h-3.5 w-3.5 xl:h-4 xl:w-4 mr-1" />
               Refresh
             </Button>
           </div>
         </div>
         
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm xl:text-base text-muted-foreground">
           Based on analysis of search rankings and online presence for "{displayKeyword}" in {searchLocation}.
         </p>
       </div>
@@ -104,19 +104,19 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
           {data.competitors.map((competitor: any, index: number) => (
             <Card key={index} className="overflow-hidden">
               <div className="flex flex-col md:flex-row">
-                <div className="flex-grow p-6">
+                <div className="flex-grow p-6 xl:p-8">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-lg font-semibold flex items-center">
-                      <Globe className="h-4 w-4 mr-2 text-primary" />
+                    <h4 className="text-lg xl:text-xl font-semibold flex items-center">
+                      <Globe className="h-4 w-4 xl:h-5 xl:w-5 mr-2 text-primary" />
                       {competitor.name || `Competitor ${index + 1}`}
                     </h4>
-                    <Badge variant={index === 0 ? "destructive" : index === 1 ? "default" : "outline"}>
+                    <Badge variant={index === 0 ? "destructive" : index === 1 ? "default" : "outline"} className="xl:text-sm xl:px-3 xl:py-1">
                       {index === 0 ? "Top Competitor" : index === 1 ? "Strong Competitor" : "Competitor"}
                     </Badge>
                   </div>
                   
-                  <p className="text-sm text-muted-foreground mb-4 flex items-center">
-                    <ExternalLink className="h-3 w-3 mr-1 flex-shrink-0" />
+                  <p className="text-sm xl:text-base text-muted-foreground mb-4 flex items-center">
+                    <ExternalLink className="h-3 w-3 xl:h-4 xl:w-4 mr-1 flex-shrink-0" />
                     <a 
                       href={competitor.url} 
                       target="_blank" 
@@ -128,65 +128,65 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
                     </a>
                   </p>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4 xl:gap-6 mt-4">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">SEO Score</p>
+                      <p className="text-xs xl:text-sm text-muted-foreground mb-1">SEO Score</p>
                       <div className="flex items-center">
-                        <div className="bg-primary/10 text-primary font-medium rounded-md px-2 py-1 text-sm">
+                        <div className="bg-primary/10 text-primary font-medium rounded-md px-2 py-1 text-sm xl:text-base xl:px-3">
                           {competitor.score || 'N/A'}/100
                         </div>
                       </div>
                     </div>
                     
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Domain Authority</p>
+                      <p className="text-xs xl:text-sm text-muted-foreground mb-1">Domain Authority</p>
                       <div className="flex items-center">
-                        <Progress value={competitor.domainAuthority || 50} className="h-2 w-24" />
-                        <span className="text-sm ml-2">{competitor.domainAuthority || '-'}</span>
+                        <Progress value={competitor.domainAuthority || 50} className="h-2 xl:h-3 w-24 xl:w-32" />
+                        <span className="text-sm xl:text-base ml-2">{competitor.domainAuthority || '-'}</span>
                       </div>
                     </div>
                     
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Backlinks</p>
+                      <p className="text-xs xl:text-sm text-muted-foreground mb-1">Backlinks</p>
                       <div className="flex items-center">
-                        <span className="text-sm font-medium">{competitor.backlinks || 'N/A'}</span>
+                        <span className="text-sm xl:text-base font-medium">{competitor.backlinks || 'N/A'}</span>
                       </div>
                     </div>
                     
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Keywords</p>
+                      <p className="text-xs xl:text-sm text-muted-foreground mb-1">Keywords</p>
                       <div className="flex items-center">
-                        <span className="text-sm font-medium">{competitor.keywords || 'N/A'}</span>
+                        <span className="text-sm xl:text-base font-medium">{competitor.keywords || 'N/A'}</span>
                       </div>
                     </div>
                     
                     {competitor.contentScore && (
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Content Score</p>
+                        <p className="text-xs xl:text-sm text-muted-foreground mb-1">Content Score</p>
                         <div className="flex items-center">
-                          <span className="text-sm font-medium">{competitor.contentScore}/10</span>
+                          <span className="text-sm xl:text-base font-medium">{competitor.contentScore}/10</span>
                         </div>
                       </div>
                     )}
                     
                     {competitor.loadTime && (
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Load Time</p>
+                        <p className="text-xs xl:text-sm text-muted-foreground mb-1">Load Time</p>
                         <div className="flex items-center">
-                          <span className="text-sm font-medium">{competitor.loadTime}s</span>
+                          <span className="text-sm xl:text-base font-medium">{competitor.loadTime}s</span>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
                 
-                <div className="w-full md:w-1/3 xl:w-1/4 bg-muted p-6 border-t md:border-t-0 md:border-l">
-                  <h5 className="text-sm font-medium mb-2">Key Strengths</h5>
-                  <ul className="space-y-1 text-sm">
+                <div className="w-full md:w-1/3 xl:w-1/4 bg-muted p-6 xl:p-8 border-t md:border-t-0 md:border-l">
+                  <h5 className="text-sm xl:text-base font-medium mb-2">Key Strengths</h5>
+                  <ul className="space-y-1 xl:space-y-2 text-sm xl:text-base">
                     {competitor.strengths && competitor.strengths.length > 0 ? (
                       competitor.strengths.map((strength: string, idx: number) => (
                         <li key={idx} className="flex items-start">
-                          <span className="rounded-full h-4 w-4 bg-green-100 text-green-600 flex items-center justify-center text-xs mr-2 mt-0.5 flex-shrink-0">+</span>
+                          <span className="rounded-full h-4 w-4 xl:h-5 xl:w-5 bg-green-100 text-green-600 flex items-center justify-center text-xs xl:text-sm mr-2 mt-0.5 flex-shrink-0">+</span>
                           <span className="break-words">{strength}</span>
                         </li>
                       ))
@@ -201,20 +201,20 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
         </div>
       ) : (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">No competitors found for this location.</p>
+          <p className="text-muted-foreground xl:text-lg">No competitors found for this location.</p>
         </div>
       )}
       
       <div className="space-y-2 mt-6">
-        <h3 className="text-lg font-semibold">Keyword Gap Analysis</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-lg xl:text-xl 2xl:text-2xl font-semibold">Keyword Gap Analysis</h3>
+        <p className="text-sm xl:text-base text-muted-foreground">
           Keywords your competitors are ranking for that you might be missing.
         </p>
       </div>
       
       {data?.keywordGap && data.keywordGap.length > 0 ? (
         <div className="border rounded-md overflow-hidden">
-          <div className="grid grid-cols-4 gap-4 p-4 font-medium bg-muted text-sm">
+          <div className="grid grid-cols-4 gap-4 p-4 xl:p-6 font-medium bg-muted text-sm xl:text-base">
             <div>Keyword</div>
             <div>Monthly Volume</div>
             <div>Difficulty</div>
@@ -222,7 +222,7 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
           </div>
           <div className="divide-y">
             {data.keywordGap.map((keyword: any, index: number) => (
-              <div key={index} className="grid grid-cols-4 gap-4 p-4 text-sm hover:bg-muted/50">
+              <div key={index} className="grid grid-cols-4 gap-4 p-4 xl:p-6 text-sm xl:text-base hover:bg-muted/50">
                 <div className="font-medium">{keyword.term}</div>
                 <div>{keyword.volume}</div>
                 <div>{keyword.competition}</div>
@@ -232,8 +232,8 @@ export default function CompetitorAnalysis({ url, city, keyword }: CompetitorAna
           </div>
         </div>
       ) : (
-        <div className="text-center py-8 border rounded-md">
-          <p className="text-muted-foreground">No keyword gap data available.</p>
+        <div className="text-center py-8 xl:py-12 border rounded-md">
+          <p className="text-muted-foreground xl:text-lg">No keyword gap data available.</p>
         </div>
       )}
     </div>
