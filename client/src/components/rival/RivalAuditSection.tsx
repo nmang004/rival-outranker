@@ -154,7 +154,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all-statuses">All Statuses</SelectItem>
                 <SelectItem value="Priority OFI">Priority OFI</SelectItem>
                 <SelectItem value="OFI">OFI</SelectItem>
                 <SelectItem value="OK">OK</SelectItem>
@@ -167,7 +167,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                 <SelectValue placeholder="Filter by importance" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Importance</SelectItem>
+                <SelectItem value="all-importance">All Importance</SelectItem>
                 <SelectItem value="High">High</SelectItem>
                 <SelectItem value="Medium">Medium</SelectItem>
                 <SelectItem value="Low">Low</SelectItem>
