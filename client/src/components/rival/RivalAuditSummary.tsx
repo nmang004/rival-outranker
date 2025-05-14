@@ -153,7 +153,7 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
               />
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
               <div className="flex items-center gap-2 bg-destructive/10 p-2 rounded-md">
                 <AlertCircle className="h-5 w-5 text-destructive" />
                 <span className="text-sm font-medium">{audit.summary.priorityOfiCount} Priority Issues</span>
@@ -168,6 +168,9 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
               </div>
               <div className="flex items-center gap-2 bg-gray-500/10 p-2 rounded-md text-gray-600">
                 <span className="text-sm font-medium">{audit.summary.naCount} Not Applicable</span>
+              </div>
+              <div className="flex items-center gap-2 bg-blue-500/10 p-2 rounded-md text-blue-600">
+                <span className="text-sm font-medium">{audit.summary.total || onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total} Total Items</span>
               </div>
             </div>
           </div>

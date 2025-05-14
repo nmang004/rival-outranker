@@ -1324,7 +1324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ofiCount: ofiCount,
         okCount: okCount,
         naCount: naCount,
-        total: priorityCount + ofiCount + okCount + naCount
+        total: onPageItems.length + structureItems.length + contactItems.length + serviceItems.length + locationItems.length + serviceAreaItems.length
       }
     };
   }
