@@ -623,14 +623,21 @@ class RivalAuditCrawler {
   
   /**
    * Determine if a page is a location page (geo-based page covering the entire area)
-   * Examples: /sebastian-fl/ 
+   * Examples: /sebastian-fl/, /cities-served/bel-air-ac/
    */
   private isLocationPage(page: PageCrawlResult): boolean {
-    const locationTerms = ['location', 'city', 'town', 'county', 'area', 'serving', 'service-area'];
+    const locationTerms = ['location', 'city', 'town', 'county', 'area', 'serving', 'service-area', 'cities-served'];
     const url = page.url.toLowerCase();
     const title = page.title.toLowerCase();
     const path = new URL(page.url).pathname;
     const pathSegments = path.split('/').filter(Boolean);
+    
+    // Special case for cities-served directory structure (like /cities-served/bel-air-ac/)
+    if (pathSegments.length >= 1 && pathSegments[0] === 'cities-served') {
+      // This is a location page if it's directly in the cities-served directory
+      // Even if it contains service terms, prioritize as location page
+      return true;
+    }
     
     // Check if this is a location-only page (simple location pattern)
     if (pathSegments.length === 1) {
