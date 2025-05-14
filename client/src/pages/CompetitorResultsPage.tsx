@@ -37,7 +37,7 @@ export default function CompetitorResultsPage() {
   const { toast } = useToast();
   
   // Get the competitor analysis data
-  const { data: competitorData } = useQuery({
+  const { data: competitorData } = useQuery<any>({
     queryKey: [`/api/competitors?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`],
     enabled: !!url && !!city,
   });
@@ -205,8 +205,26 @@ export default function CompetitorResultsPage() {
               <span className="font-medium">Google Custom Search API Usage</span>
               <div className="text-xs mt-1">
                 Competitor analysis powered by Google Custom Search API.
-                <> Usage stats available in analysis results</>
+                {competitorData?.queryCount !== undefined && (
+                  <> Used {competitorData.queryCount} of max 5 queries</>
+                )}
               </div>
+              
+              {/* API Usage Bar */}
+              {competitorData?.queryCount !== undefined && (
+                <div className="mt-2 w-full max-w-[300px]">
+                  <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${competitorData.queryCount >= 5 ? 'bg-amber-500' : 'bg-green-500'}`} 
+                      style={{ width: `${Math.min(competitorData.queryCount / 5 * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs mt-1">
+                    <span>0</span>
+                    <span className="text-amber-600 font-medium">Limit: 5 per analysis</span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex space-x-2">
               <Button variant="ghost" asChild className="text-sm">

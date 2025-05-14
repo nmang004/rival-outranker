@@ -226,11 +226,17 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
             <Tag className="h-3 w-3 mr-1 text-gray-500" />
             <span>Google API Query Usage</span>
           </div>
-          <div>
-            <span className="font-medium">
-              {/* Show actual count from API if available */}
-              {data?.queryCount || "0"} / 100 searches used
-            </span>
+          <div className="flex items-center">
+            <div className="mr-3">
+              <span className="font-medium">
+                {/* Show actual count from API if available */}
+                {data?.queryCount || "0"} / 100 daily limit
+              </span>
+            </div>
+            <div className="py-1 px-2 bg-amber-100 text-amber-800 rounded-md flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              <span className="font-medium">Limited to 5 per analysis</span>
+            </div>
           </div>
         </div>
         
