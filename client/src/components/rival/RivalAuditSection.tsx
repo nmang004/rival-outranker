@@ -102,6 +102,9 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   };
 
   // Filter items based on search term and filters
+  // Add console logs to debug the items
+  console.log("Total items received:", items.length);
+  
   const filteredItems = items.filter(item => {
     const matchesSearch = !searchTerm || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,6 +116,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     
     return matchesSearch && matchesStatus && matchesImportance;
   });
+  
+  console.log("Filtered items:", filteredItems.length);
 
   // Handle edit notes
   const handleEditClick = (item: AuditItem) => {
