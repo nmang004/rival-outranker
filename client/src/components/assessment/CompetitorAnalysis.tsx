@@ -49,10 +49,13 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   const searchKeyword = keyword || '';
   
   // API for competitor data - we don't auto-fetch it initially
+  // But we will fetch it if the competitor analysis was explicitly requested 
+  const competitorQueryKey = `/api/competitors?url=${encodeURIComponent(url)}`;
   const { data, isLoading, error, refetch } = useQuery<any>({
-    queryKey: [`/api/competitors?url=${encodeURIComponent(url)}`],
+    queryKey: [competitorQueryKey],
     refetchOnWindowFocus: false,
-    enabled: false // Never automatically run this query
+    refetchInterval: isRequested ? 3000 : false, // Poll every 3 seconds if analysis was requested
+    enabled: isRequested // Only auto-fetch if competitor analysis was explicitly requested
   });
   
   // The query's response might include the actual keyword that was used
@@ -123,6 +126,10 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
       // Wait for the server to process (3 seconds total)
       await new Promise(resolve => setTimeout(resolve, 3000));
       
+      // Invalidate queries to force fresh data
+      queryClient.invalidateQueries({ queryKey: [competitorQueryKey] });
+      queryClient.invalidateQueries({ queryKey: [`/api/analysis?url=${encodeURIComponent(url)}`] });
+      
       // After POST completes, trigger a refetch of the GET query
       await refetch();
       
@@ -131,6 +138,13 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
         const analysisResponse = await fetch(`/api/analysis?url=${encodeURIComponent(url)}`);
         if (analysisResponse.ok) {
           console.log("Successfully fetched latest analysis after competitor analysis");
+          const analysisData = await analysisResponse.json();
+          console.log("Analysis data fetched:", analysisData);
+          
+          // Trigger another refetch to make sure we have the latest competitor data
+          setTimeout(() => {
+            refetch();
+          }, 1000);
         }
       } catch (err) {
         console.error("Error fetching latest analysis:", err);

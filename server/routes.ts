@@ -861,7 +861,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Finding competitors for keyword: ${queryKeyword} in ${city}`);
             
             // Analyze competitors with the best keyword we could extract
-            await competitorAnalyzer.analyzeCompetitors(url, queryKeyword, city);
+            const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, queryKeyword, city);
+            
+            // Update the existing analysis to include competitor data
+            try {
+              // Find existing analysis
+              const existingAnalyses = await storage.getAnalysesByUrl(url);
+              if (existingAnalyses && existingAnalyses.length > 0) {
+                const mostRecentAnalysis = existingAnalyses[0];
+                
+                // Get the existing analysis data
+                const analysisData = mostRecentAnalysis.results;
+                
+                // Add competitor data to the existing results
+                const updatedResults = {
+                  ...analysisData,
+                  competitors: competitorResults.competitors,
+                  competitorKeyword: queryKeyword
+                };
+                
+                // Update the analysis with new data
+                await storage.updateAnalysisResults(mostRecentAnalysis.id, updatedResults);
+                console.log(`Updated analysis ID ${mostRecentAnalysis.id} with competitor data`);
+              }
+            } catch (updateError) {
+              console.error("Error updating analysis with competitor data:", updateError);
+            }
             
             console.log("Competitor analysis completed for:", url);
           } catch (analysisError) {
