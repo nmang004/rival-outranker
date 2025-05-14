@@ -9,6 +9,79 @@ if (!API_LOGIN || !API_PASSWORD) {
   console.error('DataForSEO API credentials are missing. Make sure DATAFORSEO_API_LOGIN and DATAFORSEO_API_PASSWORD are set correctly in your environment.');
 }
 
+// Create base64 encoded authentication string
+const authString = Buffer.from(`${API_LOGIN || ''}:${API_PASSWORD || ''}`).toString('base64');
+
+// Create axios instance with base configuration for DataForSEO
+const dataForSeoClient = axios.create({
+  baseURL: 'https://api.dataforseo.com/v3',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Basic ${authString}`
+  },
+  // Set longer timeout for API requests
+  timeout: 30000
+});
+
+// Add request/response interceptors for debugging
+dataForSeoClient.interceptors.request.use(
+  (config) => {
+    // Create a copy of the request to log without sensitive data
+    const maskedConfig = { 
+      url: config.url,
+      method: config.method,
+      data: config.data,
+      headers: { 
+        ...config.headers,
+        // Hide the actual auth token for security
+        Authorization: 'Basic ***'
+      }
+    };
+    console.log('DataForSEO request:', maskedConfig);
+    return config;
+  },
+  (error) => {
+    console.error('DataForSEO request failed:', error);
+    return Promise.reject(error);
+  }
+);
+
+dataForSeoClient.interceptors.response.use(
+  (response) => {
+    console.log('DataForSEO response status:', response.status, response.statusText);
+    
+    // Debug response structure for development
+    if (response.data && response.data.tasks) {
+      const firstTask = response.data.tasks[0];
+      console.log('DataForSEO response summary:', {
+        status_code: response.data.status_code,
+        status_message: response.data.status_message,
+        task_count: response.data.tasks_count,
+        task_error: response.data.tasks_error,
+        first_task: firstTask ? {
+          id: firstTask.id,
+          status_code: firstTask.status_code,
+          status_message: firstTask.status_message,
+          result_count: firstTask.result_count
+        } : null
+      });
+    }
+    
+    return response;
+  },
+  (error) => {
+    console.error('DataForSEO request failed:', {
+      message: error.message,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response'
+    });
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Helper function to process DataForSEO API responses consistently
  * @param apiResponse The raw axios response from DataForSEO
@@ -151,52 +224,7 @@ function generateSimulatedTrend(baseVolume: number): number[] {
   });
 }
 
-// Create authenticated axios instance with proper headers
-const dataForSeoClient = axios.create({
-  baseURL: 'https://api.dataforseo.com',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Basic ' + Buffer.from(`${API_LOGIN || ''}:${API_PASSWORD || ''}`).toString('base64')
-  },
-  // Set longer timeout for API requests
-  timeout: 30000,
-  // Allow absolute URLs for flexibility in case the API endpoints change
-  allowAbsoluteUrls: true
-});
-
-// Add request/response interceptors for debugging
-dataForSeoClient.interceptors.request.use(request => {
-  console.log('DataForSEO request:', { 
-    url: request.url,
-    method: request.method,
-    data: typeof request.data === 'string' ? JSON.parse(request.data) : request.data,
-    headers: { 
-      ...request.headers,
-      // Hide the actual auth token for security
-      Authorization: request.headers.Authorization ? 'Basic ***' : undefined
-    }
-  });
-  return request;
-});
-
-dataForSeoClient.interceptors.response.use(
-  response => {
-    console.log('DataForSEO response status:', response.status, response.statusText);
-    console.log('DataForSEO response headers:', response.headers);
-    return response;
-  },
-  error => {
-    console.error('DataForSEO request failed:', {
-      message: error.message,
-      response: error.response ? {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
-      } : 'No response'
-    });
-    return Promise.reject(error);
-  }
-);
+// We've already created the dataForSeoClient above, so we'll remove this duplicate
 
 // Interface for keyword data
 export interface KeywordData {
@@ -229,7 +257,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     console.log(`Fetching keyword data for "${keyword}" from DataForSEO...`);
     
     // Request body for Keywords Data API formatted exactly as per DataForSEO docs
-    const requestData = {
+    const requestData = [{
       "data": {
         "keywords": [keyword],
         "location_code": location,
@@ -237,131 +265,116 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
         "include_serp_info": true,
         "include_trends_info": true
       }
-    };
+    }];
     
+    console.log('DataForSEO search_volume request payload:', JSON.stringify(requestData, null, 2));
+    
+    // Note the use of google_ads instead of google (API endpoint change)
     const keywordDataResponse = await dataForSeoClient.post(
-      'https://api.dataforseo.com/v3/keywords_data/google/search_volume/live',
-      [requestData]
+      '/keywords_data/google_ads/search_volume/live',
+      requestData
     );
     
-    // Process the response with our helper
-    const results = processApiResponse(keywordDataResponse, 'search_volume') || {};
+    console.log('DataForSEO search_volume raw response:', JSON.stringify(keywordDataResponse.data, null, 2));
+    
+    // Direct access to response data structure
+    const data = keywordDataResponse.data;
+    
+    if (!data || data.status_code !== 20000 || !data.tasks || data.tasks.length === 0) {
+      throw new Error(`Invalid API response: ${JSON.stringify(data)}`);
+    }
+    
+    const task = data.tasks[0];
+    
+    if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
+      throw new Error(`Task error: ${task.status_message || 'No results'}`);
+    }
+    
+    // Extract the keyword data from the result
+    const keywordResult = task.result[0];
     
     // Extract trend data (if available)
     let trend: number[] = [];
     
-    // Try to find trend data in different possible locations based on API response structure
-    if (results.monthly_searches && Array.isArray(results.monthly_searches)) {
-      trend = results.monthly_searches.map((month: any) => month.search_volume || 0);
-    } else if (results.items && Array.isArray(results.items)) {
-      // Find our keyword in the items array
-      const matchingItem = results.items.find((item: any) => 
-        item.keyword?.toLowerCase() === keyword.toLowerCase()
-      );
-      if (matchingItem?.monthly_searches) {
-        trend = matchingItem.monthly_searches.map((month: any) => month.search_volume || 0);
-      }
+    if (keywordResult.monthly_searches && Array.isArray(keywordResult.monthly_searches)) {
+      trend = keywordResult.monthly_searches.map((month: any) => month.search_volume || 0);
+    } else if (keywordResult.search_volume_trend && Array.isArray(keywordResult.search_volume_trend)) {
+      trend = keywordResult.search_volume_trend;
     }
     
-    // Gather related keyword data
-    const relatedKeywordsResponse = await dataForSeoClient.post(
-      'https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live',
-      [{
+    // Get difficulty from the keywords_data result
+    const difficultyScore = Math.round(keywordResult.keyword_difficulty || 0);
+    
+    // Format CPC with $ symbol and 2 decimal places if present
+    const formattedCpc = keywordResult.cpc 
+      ? `$${parseFloat(keywordResult.cpc).toFixed(2)}` 
+      : '$0.00';
+    
+    // Try to get related keywords
+    let relatedKeywords: RelatedKeyword[] = [];
+    try {
+      console.log('Fetching related keywords...');
+      
+      const relatedRequestData = [{
         "data": {
           "keyword": keyword,
           "location_code": location,
           "language_code": "en",
           "limit": 10
         }
-      }]
-    );
-    
-    // Process related keywords using our helper
-    const relatedResults = processApiResponse(relatedKeywordsResponse, 'keywords_for_keywords');
-    const relatedKeywords = relatedResults?.keywords?.map((item: any) => ({
-      keyword: item.keyword,
-      searchVolume: item.search_volume || undefined,
-      difficulty: Math.round(item.keyword_difficulty || 0),
-      cpc: item.cpc ? `$${parseFloat(item.cpc).toFixed(2)}` : undefined
-    })) || [];
-
-    // Calculate a difficulty score based on competition data
-    let difficultyScore = 0;
-    
-    try {
-      // First try the separate difficulty endpoint - using search volume endpoint as fallback
-      // since keyword_difficulty endpoint is giving 404 errors
-      const difficultyResponse = await dataForSeoClient.post(
-        'https://api.dataforseo.com/v3/keywords_data/google/search_volume/live',
-        [{
-          "data": {
-            "keywords": [keyword],
-            "location_code": location,
-            "language_code": "en"
-          }
-        }]
+      }];
+      
+      // Use google_ads endpoint for related keywords too
+      const relatedKeywordsResponse = await dataForSeoClient.post(
+        '/keywords_data/google_ads/keywords_for_keywords/live',
+        relatedRequestData
       );
       
-      const difficultyResult = difficultyResponse.data?.tasks?.[0]?.result?.[0] || {};
-      difficultyScore = Math.round(difficultyResult.keyword_difficulty || 0);
-    } catch (error) {
-      console.log("Keyword difficulty endpoint failed, using competition as fallback");
-      // Fall back to competition data if difficulty endpoint fails
-      if (results.competition !== undefined) {
-        // Convert competition (0-1 scale) to difficulty (0-100 scale)
-        difficultyScore = Math.round(results.competition * 100);
-      } else if (results.cpc) {
-        // Higher CPC often correlates with higher difficulty
-        const cpcValue = parseFloat(results.cpc);
-        difficultyScore = Math.min(Math.round(cpcValue * 10), 100);
+      console.log('DataForSEO related keywords response status:', 
+        relatedKeywordsResponse.data?.status_code,
+        relatedKeywordsResponse.data?.status_message);
+      
+      // Direct access to response data
+      if (relatedKeywordsResponse.data?.tasks?.[0]?.result?.[0]?.keywords) {
+        const relatedItems = relatedKeywordsResponse.data.tasks[0].result[0].keywords;
+        
+        relatedKeywords = relatedItems.map((item: any) => ({
+          keyword: item.keyword,
+          searchVolume: item.search_volume || 0,
+          difficulty: Math.round(item.keyword_difficulty || 0),
+          cpc: item.cpc ? `$${parseFloat(item.cpc).toFixed(2)}` : '$0.00',
+          relevance: item.relevance || 0
+        }));
       }
+    } catch (relatedError) {
+      console.error('Error fetching related keywords:', relatedError);
+      // Continue with empty related keywords array if this request fails
     }
     
-    // Extract the result for the specific keyword from the results array
-    let keywordResult = results;
-    
-    // If the result has items array (new API response format), find our keyword
-    if (results?.items && Array.isArray(results.items)) {
-      const matchingItem = results.items.find((item: any) => 
-        item.keyword?.toLowerCase() === keyword.toLowerCase()
-      );
-      if (matchingItem) {
-        keywordResult = matchingItem;
-      }
-    }
-    
-    // Construct the result
-    return {
+    // Construct the final result
+    const result: KeywordData = {
       keyword,
       searchVolume: keywordResult.search_volume || 0,
       difficulty: difficultyScore,
-      cpc: keywordResult.cpc ? `$${parseFloat(keywordResult.cpc).toFixed(2)}` : undefined,
-      competition: keywordResult.competition || 0,
-      trend,
-      relatedKeywords
+      cpc: formattedCpc,
+      competition: keywordResult.competition_index || 0,
+      trend: trend.length > 0 ? trend : Array(12).fill(0),
+      relatedKeywords: relatedKeywords
     };
-  } catch (error) {
-    console.error('Error fetching keyword data from DataForSEO:', error);
     
-    // Generate estimated search volume based on keyword length
-    // Longer keywords typically have less volume
-    const estimatedVolume = Math.max(
-      500 - (keyword.length * 20), 
-      100
-    );
+    console.log('Processed keyword data:', JSON.stringify(result, null, 2));
+    return result;
+  } catch (error: any) {
+    console.error('Error fetching keyword data from DataForSEO:', error.message);
     
-    // Generate simulated trend data with realistic seasonal patterns
-    const trendPattern = generateSimulatedTrend(estimatedVolume);
-    
-    // Return a structured response with reasonable estimated values
-    // These values will be clearly marked as estimates in the UI
+    // Return a clean structure with zeros instead of generating fake data
     return {
       keyword,
-      searchVolume: estimatedVolume,
-      difficulty: 35, // Medium difficulty as default
-      cpc: '$' + ((Math.random() * 3) + 1).toFixed(2), // Random CPC between $1-$4
-      competition: 0.5, // Medium competition as default
-      trend: trendPattern,
+      searchVolume: 0,
+      difficulty: 0,
+      cpc: '$0.00',
+      competition: 0,
+      trend: Array(12).fill(0),
       relatedKeywords: []
     };
   }
