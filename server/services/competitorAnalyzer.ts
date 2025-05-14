@@ -51,11 +51,19 @@ class CompetitorAnalyzer {
       const potentialCompetitors = await this.findPotentialCompetitors(primaryKeyword, location);
       
       // Filter out the original URL from the competitor list
-      const competitorsToAnalyze = potentialCompetitors.filter(c => 
+      // Filter out the original URL from the competitor list
+      const allCompetitors = potentialCompetitors.filter(c => 
         this.normalizeUrl(c) !== this.normalizeUrl(url)
-      ).slice(0, this.MAX_COMPETITORS);
+      );
       
-      // Analyze each competitor
+      // We'll store all competitors for pagination in the results
+      // But only analyze the top ones for detailed metrics
+      const competitorsToAnalyze = allCompetitors.slice(0, this.MAX_COMPETITORS);
+      
+      // Keep all competitor URLs for the full SERP display
+      const allCompetitorUrls = allCompetitors.slice(0, 100); // Store up to 100 for pagination
+      
+      // Analyze each competitor in detail (just the top ones)
       const competitorPromises = competitorsToAnalyze.map(competitorUrl => 
         this.analyzeCompetitorSite(competitorUrl, primaryKeyword)
       );
@@ -70,7 +78,18 @@ class CompetitorAnalyzer {
         keyword: primaryKeyword,
         location: location,
         competitors: validCompetitors,
-        comparisonMetrics
+        comparisonMetrics,
+        // Include full list of competitor URLs for pagination
+        allCompetitorUrls: allCompetitorUrls.map(url => ({ 
+          url, 
+          name: new URL(url).hostname.replace('www.', '') 
+        })),
+        // Meta information about the data
+        meta: {
+          totalResults: allCompetitors.length,
+          analyzedResults: validCompetitors.length,
+          searchQuery: `${primaryKeyword} ${location}`
+        }
       };
     } catch (error) {
       console.error('Error analyzing competitors:', error);
@@ -85,6 +104,13 @@ class CompetitorAnalyzer {
           avgH2Count: 0,
           avgImagesWithAlt: 0,
           topKeywords: []
+        },
+        allCompetitorUrls: [],
+        meta: {
+          totalResults: 0,
+          analyzedResults: 0,
+          searchQuery: `${primaryKeyword} ${location}`,
+          error: error instanceof Error ? error.message : 'Unknown error occurred'
         }
       };
     }

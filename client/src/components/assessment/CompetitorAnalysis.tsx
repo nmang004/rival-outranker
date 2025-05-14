@@ -50,12 +50,13 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
   
   // API for competitor data - we don't auto-fetch it initially
   // But we will fetch it if the competitor analysis was explicitly requested 
-  const competitorQueryKey = `/api/competitors?url=${encodeURIComponent(url)}`;
+  const competitorQueryKey = `/api/competitors?url=${encodeURIComponent(url)}${city ? `&city=${encodeURIComponent(city)}` : ''}`;
   const { data, isLoading, error, refetch } = useQuery<any>({
     queryKey: [competitorQueryKey],
     refetchOnWindowFocus: false,
     refetchInterval: isRequested ? 3000 : false, // Poll every 3 seconds if analysis was requested
-    enabled: isRequested // Only auto-fetch if competitor analysis was explicitly requested
+    enabled: isRequested, // Only auto-fetch if competitor analysis was explicitly requested
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
   
   // The query's response might include the actual keyword that was used

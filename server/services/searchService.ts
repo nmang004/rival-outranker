@@ -85,36 +85,69 @@ class SearchService {
         `${keyword} ${location}` : 
         keyword;
       
-      // Increment the query counter when making a real API call
-      this.queryCounter++;
-      // Save the counter to the environment so it persists across restarts
-      process.env.SEARCH_QUERY_COUNTER = this.queryCounter.toString();
-
-      const response = await axios.get<GoogleCustomSearchResponse>(this.baseUrl, {
-        params: {
-          key: this.apiKey,
-          cx: this.searchEngineId,
-          q: searchQuery,
-          num: Math.min(options.count || 10, 10), // Max 10 results per request
-          start: options.offset || 1, // Google uses 1-based indexing
-          gl: 'us', // Country to search from
-          cr: options.location ? `country${options.location.substring(0, 2).toUpperCase()}` : 'countryUS',
-          dateRestrict: options.dateRestrict,
-        },
-      });
-
-      if (response.data.error) {
-        console.error('Google Custom Search API error:', response.data.error);
-        return this.getFallbackResults(keyword, 5);
+      // Initialize an array to hold all results
+      const allResults: any[] = [];
+      
+      // Determine how many pages to fetch (Google CSE allows max 10 results per page)
+      // We'll fetch up to 100 results (10 pages) to maximize data extraction
+      const maxResults = Math.min(options.count || 20, 100);
+      const maxPages = Math.ceil(maxResults / 10);
+      
+      // Make requests for each page of results
+      for (let page = 0; page < maxPages; page++) {
+        // Increment the query counter for each API call
+        this.queryCounter++;
+        
+        // Calculate the start index for this page (Google uses 1-based indexing)
+        const startIndex = page * 10 + 1;
+        
+        console.log(`Fetching page ${page + 1} of search results (startIndex: ${startIndex})`);
+        
+        const response = await axios.get<GoogleCustomSearchResponse>(this.baseUrl, {
+          params: {
+            key: this.apiKey,
+            cx: this.searchEngineId,
+            q: searchQuery,
+            num: 10, // Max 10 results per request
+            start: startIndex,
+            gl: 'us', // Country to search from
+            cr: options.location ? `country${options.location.substring(0, 2).toUpperCase()}` : 'countryUS',
+            dateRestrict: options.dateRestrict,
+          },
+        });
+        
+        // Save the counter to the environment so it persists across restarts
+        process.env.SEARCH_QUERY_COUNTER = this.queryCounter.toString();
+        
+        if (response.data.error) {
+          console.error(`Google Custom Search API error on page ${page + 1}:`, response.data.error);
+          // Don't fail the whole request; just stop fetching more pages
+          break;
+        }
+        
+        if (!response.data.items || response.data.items.length === 0) {
+          console.warn(`No results from Google Custom Search API on page ${page + 1}`);
+          // No more results; stop fetching more pages
+          break;
+        }
+        
+        // Add items from this page to our results
+        allResults.push(...response.data.items);
+        
+        // Check if there are more pages available
+        if (!response.data.queries?.nextPage) {
+          console.log('No more pages available');
+          break;
+        }
       }
-
-      if (!response.data.items || response.data.items.length === 0) {
+      
+      if (allResults.length === 0) {
         console.warn('No results from Google Custom Search API');
         return this.getFallbackResults(keyword, 5);
       }
-
+      
       // Filter out non-business domains (like Wikipedia, YouTube, etc.)
-      const filteredResults = response.data.items.filter(item => {
+      const filteredResults = allResults.filter(item => {
         const domain = item.displayLink.toLowerCase();
         
         // Skip common non-business domains
@@ -136,8 +169,9 @@ class SearchService {
         
         return true;
       });
-
+      
       // Format the results
+      console.log(`Found ${filteredResults.length} filtered results from Google CSE`);
       return filteredResults.map(item => ({
         name: item.title,
         url: item.link,
