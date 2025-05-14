@@ -64,7 +64,9 @@ interface SiteStructure {
   contactPage?: PageCrawlResult;
   servicePages: PageCrawlResult[];
   locationPages: PageCrawlResult[];
+  serviceAreaPages: PageCrawlResult[];
   otherPages: PageCrawlResult[];
+  hasSitemapXml: boolean;
 }
 
 /**
@@ -102,11 +104,91 @@ class RivalAuditCrawler {
         homepage,
         servicePages: [],
         locationPages: [],
-        otherPages: []
+        serviceAreaPages: [],
+        otherPages: [],
+        hasSitemapXml: false
       };
       
+      // Check for sitemap.xml and sitemap_index.xml
+      try {
+        // Try sitemap.xml first
+        const sitemapUrl = new URL('/sitemap.xml', this.baseUrl).toString();
+        console.log(`Checking for sitemap at ${sitemapUrl}`);
+        const sitemapResponse = await axios.get(sitemapUrl, {
+          headers: {
+            'User-Agent': 'SEO-Best-Practices-Assessment-Tool/1.0'
+          },
+          timeout: 5000
+        });
+        
+        if (sitemapResponse.status === 200) {
+          siteStructure.hasSitemapXml = true;
+          console.log('Found sitemap.xml');
+          
+          // Parse the sitemap to get more links to crawl
+          const $ = load(sitemapResponse.data);
+          const sitemapLinks = $('loc').map((_, el) => $(el).text().trim()).get();
+          
+          // Add sitemap links to internal links for crawling
+          for (const link of sitemapLinks) {
+            if (link.includes(this.baseDomain)) {
+              homepage.links.internal.push(link);
+            }
+          }
+        }
+      } catch (error) {
+        // Try sitemap_index.xml next
+        try {
+          const sitemapIndexUrl = new URL('/sitemap_index.xml', this.baseUrl).toString();
+          console.log(`Checking for sitemap index at ${sitemapIndexUrl}`);
+          const sitemapIndexResponse = await axios.get(sitemapIndexUrl, {
+            headers: {
+              'User-Agent': 'SEO-Best-Practices-Assessment-Tool/1.0'
+            },
+            timeout: 5000
+          });
+          
+          if (sitemapIndexResponse.status === 200) {
+            siteStructure.hasSitemapXml = true;
+            console.log('Found sitemap_index.xml');
+            
+            // Parse the sitemap index to get links to individual sitemaps
+            const $ = load(sitemapIndexResponse.data);
+            const sitemapLinks = $('loc').map((_, el) => $(el).text().trim()).get();
+            
+            // Process the first sitemap file to get some links
+            if (sitemapLinks.length > 0) {
+              try {
+                const firstSitemapResponse = await axios.get(sitemapLinks[0], {
+                  headers: {
+                    'User-Agent': 'SEO-Best-Practices-Assessment-Tool/1.0'
+                  },
+                  timeout: 5000
+                });
+                
+                if (firstSitemapResponse.status === 200) {
+                  const $ = load(firstSitemapResponse.data);
+                  const pageLinks = $('loc').map((_, el) => $(el).text().trim()).get();
+                  
+                  // Add sitemap links to internal links for crawling
+                  for (const link of pageLinks) {
+                    if (link.includes(this.baseDomain)) {
+                      homepage.links.internal.push(link);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.log(`Error fetching individual sitemap: ${error}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.log(`No sitemap or sitemap index found: ${error}`);
+        }
+      }
+      
       // Get internal links from the homepage
-      const internalLinks = homepage.links.internal.slice(0, this.maxPages);
+      const internalLinks = [...new Set(homepage.links.internal)].slice(0, this.maxPages);
       
       // Crawl internal pages
       for (const link of internalLinks) {
