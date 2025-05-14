@@ -15,9 +15,11 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
+import { keywordRouter } from "./routes/keywords";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { keywordService } from "./services/keywordService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware
