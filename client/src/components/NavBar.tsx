@@ -11,7 +11,8 @@ import {
   LineChart,
   ClipboardCheck,
   ChevronDown,
-  BarChart
+  BarChart,
+  Search
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -99,6 +100,12 @@ export default function NavBar() {
                     <DropdownMenuItem className="cursor-pointer">
                       <BarChart className="h-4 w-4 mr-2" />
                       Basic Rank Tracker
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/keyword-research">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Search className="h-4 w-4 mr-2" />
+                      Keyword Research
                     </DropdownMenuItem>
                   </Link>
                 </DropdownMenuContent>
@@ -189,6 +196,19 @@ export default function NavBar() {
               }}>
                 <div className="flex items-center">
                   <BarChart className="h-4 w-4 mr-2" /> Basic Rank Tracker
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="cursor-pointer pl-4">
+            <div className={mobileLinkClass("/keyword-research") + " w-full text-left"}>
+              <div className="flex items-center justify-between" onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "/keyword-research";
+                setMobileMenuOpen(false);
+              }}>
+                <div className="flex items-center">
+                  <Search className="h-4 w-4 mr-2" /> Keyword Research
                 </div>
               </div>
             </div>

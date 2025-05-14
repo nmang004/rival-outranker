@@ -317,11 +317,6 @@ export default function KeywordResearch() {
                             keywordData.difficulty && keywordData.difficulty < 60 ? 'bg-yellow-100' :
                             'bg-red-100'
                           }`}
-                          indicatorClassName={
-                            keywordData.difficulty && keywordData.difficulty < 30 ? 'bg-green-500' :
-                            keywordData.difficulty && keywordData.difficulty < 60 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }
                         />
                       </div>
                       <div className="mt-2 text-xs text-gray-500">0-100 scale (lower is easier to rank)</div>
@@ -461,7 +456,6 @@ export default function KeywordResearch() {
                                   <Progress 
                                     value={kw.relevance} 
                                     className="h-2 w-24 bg-gray-100"
-                                    indicatorClassName="bg-blue-500"
                                   />
                                 ) : 'N/A'}
                               </TableCell>
