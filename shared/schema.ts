@@ -349,6 +349,38 @@ export const seoAnalysisResultSchema = z.object({
   weaknesses: z.array(z.string()),
   recommendations: z.array(z.string()),
   deepContentAnalysis: deepContentAnalysisSchema.optional(),
+  // Optional competitor analysis - included only when requested
+  competitorAnalysis: z.object({
+    keyword: z.string(),
+    location: z.string().optional(),
+    competitors: z.array(z.object({
+      name: z.string(),
+      url: z.string(),
+      score: z.number(),
+      domainAuthority: z.number(),
+      backlinks: z.number(),
+      keywords: z.number(),
+      strengths: z.array(z.string()),
+      weaknesses: z.array(z.string())
+    })),
+    keywordGap: z.array(z.object({
+      term: z.string(),
+      volume: z.number(),
+      competition: z.string(),
+      topCompetitor: z.string()
+    })),
+    marketPosition: z.string(),
+    growthScore: z.string(),
+    domainAuthority: z.number(),
+    localVisibility: z.number(),
+    contentQuality: z.number(),
+    backlinkScore: z.number(),
+    queryCount: z.number(),
+    usingRealSearch: z.boolean(),
+    strengths: z.array(z.string()),
+    weaknesses: z.array(z.string()),
+    recommendations: z.array(z.string())
+  }).optional(),
 });
 
 // Competitor Analysis Types
