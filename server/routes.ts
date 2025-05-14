@@ -21,11 +21,18 @@ import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
 import { 
-  getKeywordData, 
-  getKeywordSuggestions,
+  getKeywordData as getDataForSeoKeywordData, 
+  getKeywordSuggestions as getDataForSeoKeywordSuggestions,
   getCompetitorRankings,
   checkApiHealth 
 } from "./services/dataForSeoService";
+
+import {
+  getKeywordData as getGoogleAdsKeywordData,
+  getKeywordSuggestions as getGoogleAdsKeywordSuggestions,
+  isGoogleAdsApiReady,
+  getRequiredSecrets
+} from "./services/googleAdsService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware
@@ -1695,11 +1702,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Get fresh keyword data from DataForSEO
-      keywordData = await getKeywordData(keyword, locationCode);
+      // Try to use Google Ads API first, fall back to DataForSEO if needed
+      try {
+        // Check if Google Ads API is configured
+        if (isGoogleAdsApiReady()) {
+          console.log(`Using Google Ads API for keyword data: "${keyword}"`);
+          keywordData = await getGoogleAdsKeywordData(keyword, locationCode);
+        } else {
+          // If Google Ads API is not configured, check if we need to ask for API credentials
+          const requiredSecrets = getRequiredSecrets();
+          console.log(`Google Ads API not configured, missing credentials: ${requiredSecrets.join(', ')}`);
+          
+          // Fall back to DataForSEO
+          console.log(`Falling back to DataForSEO for keyword data: "${keyword}"`);
+          keywordData = await getDataForSeoKeywordData(keyword, locationCode);
+        }
+      } catch (apiError) {
+        console.error('Error using Google Ads API, falling back to DataForSEO:', apiError);
+        // If Google Ads API fails, try DataForSEO as fallback
+        keywordData = await getDataForSeoKeywordData(keyword, locationCode);
+      }
       
-      // The related keywords should already be fetched in getKeywordData
-      // We don't need to make a separate call for them, as that would duplicate API requests
+      // Ensure related keywords array exists
       if (!keywordData.relatedKeywords) {
         keywordData.relatedKeywords = [];
       }
