@@ -27,7 +27,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "title",
         priority: "high",
-        icon: "✓",
+        icon: "!",
         title: "Optimize Title Tag and H1 Heading",
         description: "Rewrite your page title to include your primary keyword near the beginning, stay under 60 characters, and create a compelling reason for users to click.",
         current: data?.metaTagsAnalysis?.title || "No title tag found",
@@ -41,7 +41,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "meta-desc",
         priority: "high",
-        icon: "✓",
+        icon: "!",
         title: "Create an Optimized Meta Description",
         description: "Craft a compelling meta description under 160 characters that includes your primary keyword and creates a clear call-to-action for searchers.",
         current: data?.metaTagsAnalysis?.description || "No meta description found",
@@ -287,9 +287,9 @@ export default function ActionPlan({ data }: ActionPlanProps) {
               <div className="flex-shrink-0 bg-muted/50 rounded-full p-1 mr-4">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 text-white text-sm font-medium">
                   {action.icon || (
-                    action.priority === 'high' ? '✓' : 
-                    action.priority === 'medium' ? '★' : 
-                    '○'
+                    action.priority === 'high' ? '!' : 
+                    action.priority === 'medium' ? '↑' : 
+                    '•'
                   )}
                 </span>
               </div>
