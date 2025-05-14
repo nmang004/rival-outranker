@@ -2,6 +2,16 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { PageHeader } from '@/components/PageHeader';
+import { 
+  Area, 
+  AreaChart, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartsTooltip, 
+  ResponsiveContainer,
+  Legend
+} from 'recharts';
 import {
   Card,
   CardContent,
@@ -344,29 +354,95 @@ export default function KeywordResearch() {
                   
                   <div className="mt-6">
                     <h3 className="text-md font-medium mb-2">Search Trend</h3>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100 h-48 flex items-center justify-center">
-                      {keywordData.trend && keywordData.trend.length > 0 ? (
-                        <div className="w-full h-full">
-                          {/* Simplified trend chart */}
-                          <div className="flex items-end justify-between h-36 w-full px-2">
-                            {keywordData.trend.map((value, index) => {
-                              const max = Math.max(...keywordData.trend!);
-                              const height = max > 0 ? (value / max) * 100 : 0;
-                              return (
-                                <div key={index} className="flex flex-col items-center">
-                                  <div className="text-xs text-gray-500 mb-1">{value}</div>
-                                  <div 
-                                    className="bg-blue-500 rounded-sm w-8"
-                                    style={{ height: `${Math.max(5, height)}%` }}
-                                  ></div>
-                                </div>
-                              );
-                            })}
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100 h-80 flex flex-col">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="text-sm font-medium text-gray-700">Monthly Search Volume Trends</div>
+                        {keywordData.trend && keywordData.trend.length > 0 && (
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-600 mr-1">Highest volume:</span>
+                            <span className="text-xs font-semibold text-blue-700">{Math.max(...keywordData.trend)}</span>
                           </div>
-                          <div className="text-xs text-center text-gray-500 mt-2">Monthly search volume trend (past 12 months)</div>
+                        )}
+                      </div>
+                      
+                      {keywordData.trend && keywordData.trend.length > 0 ? (
+                        <div className="w-full h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart
+                              data={keywordData.trend.map((value, index) => {
+                                // Calculate month names for the last 12 months
+                                const date = new Date();
+                                date.setMonth(date.getMonth() - (keywordData.trend!.length - 1 - index));
+                                return {
+                                  month: date.toLocaleString('default', { month: 'short' }),
+                                  fullMonth: date.toLocaleString('default', { month: 'long', year: 'numeric' }),
+                                  value: value
+                                };
+                              })}
+                              margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                            >
+                              <defs>
+                                <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+                              <XAxis 
+                                dataKey="month" 
+                                tickLine={false}
+                                axisLine={{ stroke: '#E5E7EB' }}
+                                tick={{ fontSize: 11, fill: '#6B7280' }}
+                              />
+                              <YAxis 
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fontSize: 11, fill: '#6B7280' }}
+                                tickFormatter={(value) => value}
+                              />
+                              <RechartsTooltip 
+                                labelFormatter={(label, payload) => {
+                                  if (payload && payload.length > 0) {
+                                    return payload[0].payload.fullMonth;
+                                  }
+                                  return label;
+                                }}
+                                formatter={(value) => [`${value} searches`, 'Volume']}
+                                contentStyle={{ 
+                                  backgroundColor: 'white', 
+                                  border: '1px solid #E5E7EB',
+                                  borderRadius: '6px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                              />
+                              <Area 
+                                type="monotone" 
+                                dataKey="value" 
+                                stroke="#3b82f6" 
+                                strokeWidth={2.5}
+                                fillOpacity={1} 
+                                fill="url(#colorTrend)" 
+                                activeDot={{ r: 6, strokeWidth: 1, stroke: '#fff' }}
+                              />
+                              <Legend 
+                                verticalAlign="top" 
+                                height={36}
+                                formatter={() => `Search volume for "${keywordData.keyword}"`}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                          <div className="text-xs text-center text-gray-500 mt-1">Monthly search volume (past 12 months)</div>
                         </div>
                       ) : (
-                        <div className="text-gray-400">No trend data available</div>
+                        <div className="flex items-center justify-center h-64 text-gray-400">
+                          <div className="text-center">
+                            <svg className="h-8 w-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <div>No trend data available</div>
+                            <p className="text-xs mt-1">Try another keyword to see search trends</p>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
