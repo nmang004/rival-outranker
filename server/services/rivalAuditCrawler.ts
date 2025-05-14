@@ -711,6 +711,9 @@ class RivalAuditCrawler {
       serviceItems.filter(item => item.status === 'N/A').length +
       locationItems.filter(item => item.status === 'N/A').length +
       serviceAreaItems.filter(item => item.status === 'N/A').length;
+      
+    // Calculate total number of checks
+    const total = priorityOfiCount + ofiCount + okCount + naCount;
     
     return {
       url: this.baseUrl,
@@ -738,9 +741,13 @@ class RivalAuditCrawler {
     const items: AuditItem[] = [];
     const homepage = site.homepage;
     
+    // ==========================================
+    // On-Page UX/CTA Factors from PDF
+    // ==========================================
+    
     // Check if site design is modern
     items.push({
-      name: "Is the website appealing? Modern?",
+      name: "Is the website appealing? Modern? (i.e. does not look out-of-date)",
       description: "The website should have a modern, professional design",
       // Using schema markup, social tags, and viewport as proxies for modern design
       status: (homepage.hasSchema && homepage.hasSocialTags && homepage.mobileFriendly) ? 'OK' : 'OFI',
@@ -765,7 +772,7 @@ class RivalAuditCrawler {
       name: "Is the copy readable? Not keyword stuffed. Clear.",
       description: "Content should be user-friendly and readable",
       status: (homepage.wordCount >= 400 && homepage.wordCount <= 2000 && homepage.readabilityScore > 50) ? 'OK' : 'OFI',
-      importance: 'Medium',
+      importance: 'High',
       notes: homepage.wordCount < 400 ? "Content may be too thin" : 
              homepage.wordCount > 2000 ? "Content may be too dense" : 
              homepage.readabilityScore < 50 ? "Content readability score is low" :
@@ -781,18 +788,18 @@ class RivalAuditCrawler {
       name: "Pages are easy to read? No typos/spelling errors? Sufficiently long?",
       description: "Content should be error-free and comprehensive",
       status: averageWordCount >= 400 ? 'OK' : 'OFI',
-      importance: 'Medium',
+      importance: 'High',
       notes: averageWordCount < 400 ? `Average word count per page (${Math.round(averageWordCount)}) is low` : undefined
     });
     
     // Check for user intent
     items.push({
-      name: "Does the site answer user intent?",
+      name: "Does the site answer user intent? (E.g. want to buy vs. want information)",
       description: "Content should match what users are searching for",
       status: (homepage.headings.h1.length > 0 && 
                homepage.metaDescription.length > 80 && 
                homepage.contentStructure.hasFAQs) ? 'OK' : 'OFI',
-      importance: 'High',
+      importance: 'Medium',
       notes: homepage.headings.h1.length === 0 ? "Missing H1 heading" : 
              homepage.metaDescription.length < 80 ? "Meta description is too short or missing" : 
              !homepage.contentStructure.hasFAQs ? "Consider adding FAQ content to address user questions" : 
@@ -815,6 +822,398 @@ class RivalAuditCrawler {
       notes: !hasReviews ? "No evidence of customer reviews or testimonials found" : undefined
     });
     
+    // Check homepage CTA
+    const hasCTA = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('call') || 
+      site.homepage.bodyText.toLowerCase().includes('contact') || 
+      site.homepage.bodyText.toLowerCase().includes('schedule') ||
+      site.homepage.bodyText.toLowerCase().includes('book') ||
+      site.homepage.bodyText.toLowerCase().includes('request') ||
+      site.homepage.links.internal.some(link => 
+        link.toLowerCase().includes('contact') || 
+        link.toLowerCase().includes('quote') ||
+        link.toLowerCase().includes('book'))
+    );
+    
+    items.push({
+      name: "Strong call to action on homepage?",
+      description: "Homepage should have clear call to action buttons/elements",
+      status: hasCTA ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasCTA ? "No clear call to action found on homepage" : undefined
+    });
+    
+    // Check CTA on location pages
+    let locationPagesCTA = true;
+    if (site.locationPages.length > 0) {
+      for (const page of site.locationPages) {
+        if (!page.bodyText || !(
+          page.bodyText.toLowerCase().includes('call') || 
+          page.bodyText.toLowerCase().includes('contact') || 
+          page.bodyText.toLowerCase().includes('schedule') ||
+          page.bodyText.toLowerCase().includes('book') ||
+          page.bodyText.toLowerCase().includes('request')
+        )) {
+          locationPagesCTA = false;
+          break;
+        }
+      }
+      
+      items.push({
+        name: "Strong call to action on top locations pages? (if they exist)",
+        description: "Location pages should have clear calls to action",
+        status: locationPagesCTA ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: !locationPagesCTA ? "One or more location pages missing clear calls to action" : undefined
+      });
+    } else {
+      items.push({
+        name: "Strong call to action on top locations pages? (if they exist)",
+        description: "Location pages should have clear calls to action",
+        status: 'N/A',
+        importance: 'High',
+        notes: "No location pages found to assess"
+      });
+    }
+    
+    // Check CTA on landing pages (assuming service pages are landing pages)
+    let landingPagesCTA = true;
+    if (site.servicePages.length > 0) {
+      for (const page of site.servicePages) {
+        if (!page.bodyText || !(
+          page.bodyText.toLowerCase().includes('call') || 
+          page.bodyText.toLowerCase().includes('contact') || 
+          page.bodyText.toLowerCase().includes('schedule') ||
+          page.bodyText.toLowerCase().includes('book') ||
+          page.bodyText.toLowerCase().includes('request')
+        )) {
+          landingPagesCTA = false;
+          break;
+        }
+      }
+      
+      items.push({
+        name: "Strong call to action on top landing pages?",
+        description: "Landing pages should have clear calls to action",
+        status: landingPagesCTA ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: !landingPagesCTA ? "One or more service pages missing clear calls to action" : undefined
+      });
+    } else {
+      items.push({
+        name: "Strong call to action on top landing pages?",
+        description: "Landing pages should have clear calls to action", 
+        status: 'N/A',
+        importance: 'High',
+        notes: "No service/landing pages found to assess"
+      });
+    }
+    
+    // Check contact info findability
+    const contactPageExists = site.contactPage !== undefined;
+    const contactInfoInHomepage = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('contact') ||
+      site.homepage.bodyText.toLowerCase().includes('phone') ||
+      site.homepage.bodyText.toLowerCase().includes('call us') ||
+      site.homepage.bodyText.toLowerCase().includes('email')
+    );
+    
+    items.push({
+      name: "Can I find contact information?",
+      description: "Contact information should be easy to find",
+      status: (contactPageExists || contactInfoInHomepage) ? 'OK' : 'Priority OFI',
+      importance: 'High',
+      notes: !contactPageExists && !contactInfoInHomepage ? "Contact information is difficult to find" : undefined
+    });
+    
+    // Check phone number visibility
+    const phoneRegex = /(\+?1?[ -]?)?\(?[0-9]{3}\)?[ -]?[0-9]{3}[ -]?[0-9]{4}/;
+    const hasVisiblePhone = site.homepage.bodyText && phoneRegex.test(site.homepage.bodyText);
+    
+    items.push({
+      name: "Phone number highly visible / high contrast and clickable?",
+      description: "Phone number should be easy to see and tap/click",
+      status: hasVisiblePhone ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasVisiblePhone ? "Phone number not prominently displayed on homepage" : undefined
+    });
+    
+    // Check for disruptive popups
+    const hasPopups = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('popup') ||
+      site.homepage.bodyText.toLowerCase().includes('pop-up') ||
+      site.homepage.bodyText.toLowerCase().includes('modal')
+    );
+    
+    items.push({
+      name: "Are there disruptive pop-ups?",
+      description: "Pop-ups can harm user experience and SEO",
+      status: !hasPopups ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: hasPopups ? "Potentially disruptive pop-ups detected" : undefined
+    });
+    
+    // Check favicon
+    const hasFavicon = site.homepage.hasIcon;
+    
+    items.push({
+      name: "Clear favicon?",
+      description: "Website should have a favicon for branding",
+      status: hasFavicon ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasFavicon ? "No favicon detected" : undefined
+    });
+    
+    // Check for text emphasis
+    const hasEmphasis = site.homepage.contentStructure.hasEmphasis;
+    
+    items.push({
+      name: "Uses bold and/or large text for emphasis? (i.e. better UX)",
+      description: "Text emphasis improves readability and UX",
+      status: hasEmphasis ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: !hasEmphasis ? "Limited use of text emphasis (bold, larger font sizes) detected" : undefined
+    });
+    
+    // ==========================================
+    // On-Page Factors from PDF
+    // ==========================================
+    
+    // Check for localized content
+    const hasLocalizedContent = (
+      site.homepage.bodyText && (
+        site.homepage.bodyText.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) // City, State pattern
+      )
+    );
+    
+    items.push({
+      name: "\"Localized\" content? (i.e. Contains <relevant keyword> + <target city>,<state>)",
+      description: "Content should be localized for the target area",
+      status: hasLocalizedContent ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasLocalizedContent ? "No clear localization pattern (City, State) found" : undefined
+    });
+    
+    // Check top products/services links on homepage
+    const hasServiceLinksOnHome = site.homepage.links.internal.some(link => 
+      link.toLowerCase().includes('service') || 
+      link.toLowerCase().includes('product') ||
+      link.toLowerCase().includes('repair') ||
+      link.toLowerCase().includes('installation')
+    );
+    
+    items.push({
+      name: "Are top products/services linked from the body of the home page?",
+      description: "Key services should be linked from homepage content",
+      status: hasServiceLinksOnHome ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasServiceLinksOnHome ? "Services/products not clearly linked from homepage body content" : undefined
+    });
+    
+    // Check location links on homepage
+    const hasLocationLinksOnHome = site.homepage.links.internal.some(link => 
+      link.toLowerCase().includes('location') || 
+      link.toLowerCase().includes('office') ||
+      link.toLowerCase().includes('store') ||
+      link.toLowerCase().includes('find us')
+    );
+    
+    items.push({
+      name: "Are locations pages (i.e. physical locations) linked from body of home page?",
+      description: "Location pages should be linked from homepage",
+      status: hasLocationLinksOnHome ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasLocationLinksOnHome ? "Location pages not clearly linked from homepage body content" : undefined
+    });
+    
+    // Check service area links on homepage
+    const hasServiceAreaLinksOnHome = site.homepage.links.internal.some(link => 
+      link.toLowerCase().includes('area') || 
+      link.toLowerCase().includes('region') ||
+      link.toLowerCase().includes('serve')
+    );
+    
+    items.push({
+      name: "Are service area pages (i.e. city pages) linked from body of the home page?",
+      description: "Service area pages should be linked from homepage",
+      status: hasServiceAreaLinksOnHome ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasServiceAreaLinksOnHome ? "Service area pages not clearly linked from homepage body content" : undefined
+    });
+    
+    // ==========================================
+    // Footer section from PDF
+    // ==========================================
+    
+    // Check NAP in footer
+    const hasNAP = site.homepage.hasNAP;
+    
+    items.push({
+      name: "Contains NAP? (NAP = Name, Address, Phone)",
+      description: "Footer should contain business NAP information",
+      status: hasNAP ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasNAP ? "NAP (Name, Address, Phone) not found in footer" : undefined
+    });
+    
+    // Check hours in footer
+    const hasHours = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('hours') ||
+      site.homepage.bodyText.toLowerCase().includes('open') ||
+      site.homepage.bodyText.match(/mon|tue|wed|thu|fri|sat|sun/i)
+    );
+    
+    items.push({
+      name: "Contains hours?",
+      description: "Footer should contain business hours",
+      status: hasHours ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasHours ? "Business hours not found in footer" : undefined
+    });
+    
+    // Check email in footer
+    const hasEmail = site.homepage.bodyText && (
+      site.homepage.bodyText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i) ||
+      site.homepage.links.internal.some(link => link.toLowerCase().includes('mailto:'))
+    );
+    
+    items.push({
+      name: "Includes clickable email link?",
+      description: "Footer should contain clickable email",
+      status: hasEmail ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: !hasEmail ? "Clickable email link not found in footer" : undefined
+    });
+    
+    // Check phone link in footer
+    const hasClickablePhone = site.homepage.links.internal.some(link => 
+      link.toLowerCase().includes('tel:')
+    );
+    
+    items.push({
+      name: "Includes clickable phone number?",
+      description: "Footer should contain clickable phone number",
+      status: hasClickablePhone ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasClickablePhone ? "Clickable phone number not found in footer" : undefined
+    });
+    
+    // Check for useful footer navigation
+    const hasFooterNav = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('sitemap') ||
+      site.homepage.bodyText.toLowerCase().includes('privacy') ||
+      site.homepage.bodyText.toLowerCase().includes('terms') ||
+      site.homepage.bodyText.toLowerCase().includes('about us')
+    );
+    
+    items.push({
+      name: "Contains important site links? (i.e. Useful bottom nav?)",
+      description: "Footer should contain important site navigation",
+      status: hasFooterNav ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasFooterNav ? "Footer navigation appears limited or missing" : undefined
+    });
+    
+    // ==========================================
+    // Content section from PDF
+    // ==========================================
+    
+    // Content readability already checked above
+    
+    // Check page length for stubby pages - duplicates earlier check but with more specific language
+    items.push({
+      name: "Pages contain more than ~300 words? No stubs!",
+      description: "Pages should have sufficient content depth",
+      status: averageWordCount >= 300 ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: averageWordCount < 300 ? `Average word count per page (${Math.round(averageWordCount)}) is low - pages may be stubs` : undefined
+    });
+    
+    // Check for page for every service
+    const servicePageCount = site.servicePages.length;
+    
+    items.push({
+      name: "A page for every service?",
+      description: "Each service should have a dedicated page",
+      status: servicePageCount >= 3 ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: servicePageCount < 3 ? `Only ${servicePageCount} service pages detected - may not cover all services` : undefined
+    });
+    
+    // Check for brand pages
+    const hasBrandPages = site.otherPages.some(page => 
+      page.title.toLowerCase().includes('brand') ||
+      page.metaDescription.toLowerCase().includes('brand')
+    );
+    
+    items.push({
+      name: "A page for each brand carried?",
+      description: "Each major brand should have a dedicated page",
+      status: hasBrandPages ? 'OK' : 'OFI',
+      importance: 'Low',
+      notes: !hasBrandPages ? "No dedicated brand pages detected" : undefined
+    });
+    
+    // Check for internal linking
+    const hasInternalLinking = site.otherPages.every(page => page.links.internal.length > 2);
+    
+    items.push({
+      name: "Strong use of internal page linking? Short, descriptive anchor text?",
+      description: "Pages should link to other relevant pages",
+      status: hasInternalLinking ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasInternalLinking ? "Weak internal linking detected - pages should link to other relevant content" : undefined
+    });
+    
+    // Check for link styling
+    const hasLinkStyling = true; // Hard to detect without visual inspection
+    
+    items.push({
+      name: "Links are styled to be clearly identifiable as links?",
+      description: "Links should be visually distinct from regular text",
+      status: 'N/A', // Hard to programmatically determine
+      importance: 'Medium',
+      notes: "Link styling requires visual inspection"
+    });
+    
+    // Check content relevance
+    const hasRelevantContent = site.otherPages.every(page => 
+      page.title.length > 0 && page.metaDescription.length > 0
+    );
+    
+    items.push({
+      name: "Is the content relevant for each page?",
+      description: "Content should be relevant to the page topic",
+      status: hasRelevantContent ? 'OK' : 'OFI', 
+      importance: 'High',
+      notes: !hasRelevantContent ? "Some pages may have irrelevant or thin content" : undefined
+    });
+    
+    // Check blog recency - get pages that seem to be blog posts
+    const blogPages = site.otherPages.filter(page => 
+      page.url.includes('blog') ||
+      page.url.includes('news') ||
+      page.url.includes('article') ||
+      page.title.toLowerCase().includes('blog')
+    );
+    
+    // Check if any blog pages have dates in their content
+    const hasDatedBlog = blogPages.some(page => 
+      page.bodyText && page.bodyText.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\b\s+\d{1,2},\s+\d{4}\b/i)
+    );
+    
+    items.push({
+      name: "Is the Blog recently update and does it display a date?",
+      description: "Blog should be regularly updated with visible dates",
+      status: blogPages.length > 0 ? (hasDatedBlog ? 'OK' : 'OFI') : 'N/A',
+      importance: 'High',
+      notes: blogPages.length > 0 ? (hasDatedBlog ? undefined : "Blog exists but posts don't display dates") : "No blog detected"
+    });
+    
+    // ==========================================
+    // Check technical & other factors
+    // ==========================================
+    
     // Check SSL (HTTPS)
     items.push({
       name: "Has SSL?",
@@ -833,15 +1232,163 @@ class RivalAuditCrawler {
       notes: !homepage.mobileFriendly ? "No mobile viewport meta tag found" : undefined
     });
     
+    // Check content not hidden behind tabs/clicks
+    const hasNoHiddenContent = true; // Hard to detect automatically
+    
+    items.push({
+      name: "Content not hidden behind tabs or clicks?",
+      description: "Content should be directly accessible",
+      status: 'N/A', // Hard to programmatically determine
+      importance: 'Medium',
+      notes: "Hidden content requires visual inspection"
+    });
+    
+    // Check for reviews and testimonials
+    items.push({
+      name: "Good use of reviews and/or testimonials? First-party reviews?",
+      description: "Site should leverage customer reviews",
+      status: hasReviews ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasReviews ? "Limited or no use of reviews/testimonials detected" : undefined
+    });
+    
+    // Check for EEAT signals
+    const hasEEAT = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('expert') ||
+      site.homepage.bodyText.toLowerCase().includes('experience') ||
+      site.homepage.bodyText.toLowerCase().includes('certif') ||
+      site.homepage.bodyText.toLowerCase().includes('licens') ||
+      site.homepage.bodyText.toLowerCase().includes('award') ||
+      site.homepage.bodyText.toLowerCase().includes('trust')
+    );
+    
+    items.push({
+      name: "Do they demonstrate EEAT?",
+      description: "Site should showcase Experience, Expertise, Authoritativeness, Trustworthiness",
+      status: hasEEAT ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasEEAT ? "Limited signals of Experience, Expertise, Authoritativeness, Trustworthiness" : undefined
+    });
+    
+    // Check for "near me" optimization
+    const hasNearMeOptimization = site.homepage.bodyText && (
+      site.homepage.bodyText.toLowerCase().includes('near me') ||
+      site.homepage.bodyText.toLowerCase().includes('nearby') ||
+      site.homepage.bodyText.toLowerCase().includes('in your area') ||
+      site.homepage.bodyText.toLowerCase().includes('local')
+    );
+    
+    items.push({
+      name: "Optimized for near me searches?",
+      description: "Site should be optimized for local 'near me' searches",
+      status: hasNearMeOptimization ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasNearMeOptimization ? "Limited optimization for 'near me' searches detected" : undefined
+    });
+    
+    // Check for mobile link parity
+    const hasMobileLinkParity = homepage.mobileFriendly; // Best proxy without actual mobile testing
+    
+    items.push({
+      name: "Mobile link parity?",
+      description: "Mobile version should have the same links as desktop",
+      status: hasMobileLinkParity ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasMobileLinkParity ? "Mobile viewport not detected, may indicate mobile issues" : undefined
+    });
+    
+    // Check for topic clustering
+    const hasTopicClustering = site.servicePages.length >= 3 && site.servicePages.some(page => 
+      page.links.internal.filter(link => link.includes('service')).length > 1
+    );
+    
+    items.push({
+      name: "Topics are clustered?",
+      description: "Related topics should be grouped and interlinked",
+      status: hasTopicClustering ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasTopicClustering ? "Limited evidence of topic clustering detected" : undefined
+    });
+    
+    // ==========================================
+    // Other Factors from PDF
+    // ==========================================
+    
+    // Check URL, title, H1 alignment
+    const titleH1Alignment = site.otherPages.every(page => 
+      page.headings.h1.length > 0 && page.title.length > 0 && 
+      (page.headings.h1[0].includes(page.title) || page.title.includes(page.headings.h1[0]))
+    );
+    
+    items.push({
+      name: "Keyword & city, state alignment of URLs, <title>, <h1>?",
+      description: "URLs, titles, and headings should align for SEO",
+      status: titleH1Alignment ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !titleH1Alignment ? "Some pages have misaligned URL, title, and H1 elements" : undefined
+    });
+    
+    // Check for NAP on every page
+    const hasNAPOnEveryPage = site.otherPages.every(page => 
+      page.hasNAP
+    );
+    
+    items.push({
+      name: "NAP on every page of site? (For 3 or fewer locations)",
+      description: "NAP should appear on every page",
+      status: hasNAPOnEveryPage ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasNAPOnEveryPage ? "Some pages missing NAP (Name, Address, Phone)" : undefined
+    });
+    
+    // Check NAP consistency
+    items.push({
+      name: "NAP is correct? (i.e. Works on Maps? Matches GBP?)",
+      description: "NAP should be consistent across the web",
+      status: hasNAP ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasNAP ? "NAP (Name, Address, Phone) not found or potentially inconsistent" : undefined
+    });
+    
+    // Check for localized alt text
+    const hasLocalizedAltText = site.homepage.images.withAlt > 0 && site.homepage.images.altTexts.some(alt => 
+      alt.match(/[A-Z][a-z]+,\s*[A-Z]{2}/) // City, State pattern
+    );
+    
+    items.push({
+      name: "<city>,<state> + <relevant keyword> in <img alt>?",
+      description: "Image alt text should include localization",
+      status: hasLocalizedAltText ? 'OK' : 'OFI',
+      importance: 'Medium',
+      notes: !hasLocalizedAltText ? "No localized (City, State) image alt text found" : undefined
+    });
+    
+    // ==========================================
+    // Schema (partial from PDF - more in schema section)
+    // ==========================================
+    
     // Check for schema markup
     items.push({
-      name: "Has schema markup?",
-      description: "Structured data helps search engines understand content",
+      name: "Unique schema on each page?",
+      description: "Each page should have appropriate schema",
       status: homepage.hasSchema ? 'OK' : 'OFI',
-      importance: 'Medium',
+      importance: 'High',
       notes: homepage.hasSchema ? 
         `Schema types: ${homepage.schemaTypes.length > 0 ? homepage.schemaTypes.join(', ') : 'Unknown'}` : 
-        "No schema markup detected"
+        "Limited or no schema markup detected"
+    });
+    
+    // Check for localBusiness schema
+    const hasLocalBusinessSchema = homepage.hasSchema && homepage.schemaTypes.some(type => 
+      type.toLowerCase().includes('local') || type.toLowerCase().includes('business')
+    );
+    
+    items.push({
+      name: "Uses localBusiness schema, or something even more granular, if feasible?",
+      description: "LocalBusiness schema helps with local SEO",
+      status: hasLocalBusinessSchema ? 'OK' : 'OFI',
+      importance: 'High',
+      notes: !hasLocalBusinessSchema ? "No LocalBusiness schema detected" : undefined
     });
     
     // Check for image optimization

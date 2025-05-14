@@ -15,11 +15,17 @@ export async function generateRivalAuditExcel(audit: RivalAudit): Promise<any> {
   // Add a summary worksheet
   const summarySheet = workbook.addWorksheet('Summary');
   
-  // Format the title
+  // Format the title with the actual queried URL (removing http/https prefix for cleaner display)
   summarySheet.mergeCells('A1:F1');
-  summarySheet.getCell('A1').value = `SEO Audit Report: ${audit.url}`;
-  summarySheet.getCell('A1').font = { size: 16, bold: true };
+  const displayUrl = audit.url.replace(/^https?:\/\//, '');
+  summarySheet.getCell('A1').value = `Comprehensive SEO Audit for ${displayUrl}`;
+  summarySheet.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF2D5699' } };
   summarySheet.getCell('A1').alignment = { horizontal: 'center' };
+  summarySheet.getCell('A1').fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE7EEF6' }
+  };
   
   // Add generated date
   summarySheet.mergeCells('A2:F2');
