@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Analysis } from "@shared/schema";
 import { formatDate } from "@/lib/formatters";
-import BingApiUsage from "@/components/assessment/BingApiUsage";
+import SearchApiUsage from "@/components/assessment/SearchApiUsage";
 
 export default function History() {
   const [, setLocation] = useLocation();
@@ -76,7 +76,7 @@ export default function History() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="md:col-span-1">
-          <BingApiUsage />
+          <SearchApiUsage />
         </div>
       </div>
     

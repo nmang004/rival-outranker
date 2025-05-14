@@ -10,17 +10,14 @@ import {
   TooltipTrigger 
 } from '@/components/ui/tooltip';
 
-/**
- * @deprecated Use SearchApiUsage instead. This component is kept for backward compatibility.
- */
-export default function BingApiUsage() {
+export default function SearchApiUsage() {
   const { data, isLoading, error } = useQuery<{
     queryCount: number;
     count?: number;
     limit?: number;
     remaining?: number;
   }>({
-    queryKey: ['/api/search-query-count'], // Updated to use new endpoint
+    queryKey: ['/api/search-query-count'],
     refetchOnWindowFocus: false,
     refetchInterval: 60000 // Refresh every minute
   });
@@ -59,7 +56,7 @@ export default function BingApiUsage() {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium flex items-center">
-          Bing Search API Usage
+          Google Search API Usage
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
