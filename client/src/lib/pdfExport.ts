@@ -297,7 +297,7 @@ function addKeywordAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: numbe
     ['URL Includes Keyword', analysis.keywordAnalysis.urlPresent ? 'Yes' : 'No'],
   ];
   
-  autoTable(pdf, {
+  const tableResult = autoTable(pdf, {
     startY: yPos,
     head: [['Metric', 'Value']],
     body: keywordData,
@@ -318,7 +318,7 @@ function addKeywordAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: numbe
     margin: { left: 14, right: 14 },
   });
   
-  return pdf.lastAutoTable?.finalY || yPos + 50;
+  return tableResult.finalY || yPos + 50;
 }
 
 /**
@@ -343,7 +343,7 @@ function addContentAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: numbe
     ['Multimedia Content', analysis.contentAnalysis.hasMultimedia ? 'Yes' : 'No'],
   ];
   
-  autoTable(pdf, {
+  const tableResult = autoTable(pdf, {
     startY: yPos,
     head: [['Metric', 'Value']],
     body: contentData,
@@ -364,7 +364,7 @@ function addContentAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: numbe
     margin: { left: 14, right: 14 },
   });
   
-  return pdf.lastAutoTable?.finalY || yPos + 50;
+  return tableResult.finalY || yPos + 50;
 }
 
 /**
@@ -388,7 +388,7 @@ function addTechnicalAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: num
     ['Page Speed Score', analysis.pageSpeedAnalysis.score.toString()],
   ];
   
-  autoTable(pdf, {
+  const tableResult = autoTable(pdf, {
     startY: yPos,
     head: [['Metric', 'Value']],
     body: technicalData,
@@ -409,7 +409,7 @@ function addTechnicalAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: num
     margin: { left: 14, right: 14 },
   });
   
-  return pdf.lastAutoTable?.finalY || yPos + 50;
+  return tableResult.finalY || yPos + 50;
 }
 
 /**
@@ -443,7 +443,7 @@ function addCompetitorAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: nu
     competitor.score.toString(),
   ]);
   
-  autoTable(pdf, {
+  const tableResult = autoTable(pdf, {
     startY: yPos,
     head: [['#', 'Competitor', 'URL', 'Score']],
     body: competitorTableData,
@@ -466,7 +466,7 @@ function addCompetitorAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: nu
     margin: { left: 14, right: 14 },
   });
   
-  return pdf.lastAutoTable?.finalY || yPos + 50;
+  return tableResult.finalY || yPos + 50;
 }
 
 /**
@@ -522,9 +522,10 @@ function addActionPlan(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: number, sh
     return priorityOrder[a[2] as keyof typeof priorityOrder] - priorityOrder[b[2] as keyof typeof priorityOrder];
   });
   
+  let tableResult;
   // Create table with or without priority column
   if (showPriority) {
-    autoTable(pdf, {
+    tableResult = autoTable(pdf, {
       startY: yPos,
       head: [['Category', 'Recommendation', 'Priority']],
       body: actionItems,
@@ -561,7 +562,7 @@ function addActionPlan(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: number, sh
     });
   } else {
     // Without priority column
-    autoTable(pdf, {
+    tableResult = autoTable(pdf, {
       startY: yPos,
       head: [['Category', 'Recommendation']],
       body: actionItems.map(item => [item[0], item[1]]),
@@ -583,7 +584,7 @@ function addActionPlan(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: number, sh
     });
   }
   
-  return pdf.lastAutoTable?.finalY || yPos + 50;
+  return tableResult.finalY || yPos + 50;
 }
 
 // Helper functions

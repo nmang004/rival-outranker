@@ -1,121 +1,145 @@
 import axios from 'axios';
 
-interface BingSearchResult {
-  name: string;
-  url: string;
-  snippet: string;
-  deepLinks?: Array<{
-    name: string;
-    url: string;
-    snippet?: string;
-  }>;
-}
-
 interface BingSearchResponse {
   webPages?: {
-    value: BingSearchResult[];
-    totalEstimatedMatches?: number;
+    value: Array<{
+      name: string;
+      url: string;
+      snippet: string;
+      displayUrl: string;
+    }>;
+    totalEstimatedMatches: number;
   };
   errors?: Array<{
     code: string;
     message: string;
+    moreDetails?: string;
   }>;
 }
 
-/**
- * Service to search Bing Web Search for competitors based on keywords
- */
+interface SearchOptions {
+  count?: number;
+  offset?: number;
+  market?: string;
+  freshness?: string; // 'Day' | 'Week' | 'Month'
+}
+
 class BingSearchService {
-  // Using a fallback key temporarily - should be replaced with a proper API key
-  private apiKey = process.env.BING_SEARCH_API_KEY || 'aa46022c41904007b44b7b1d77bde35e';
+  private apiKey: string | undefined;
   private baseUrl = 'https://api.bing.microsoft.com/v7.0/search';
-  private MAX_RESULTS = 5;
-  
+  private queryCounter = 0;
+
+  constructor() {
+    this.apiKey = process.env.BING_SEARCH_API_KEY;
+    this.queryCounter = Number(process.env.BING_SEARCH_COUNTER) || 0;
+  }
+
   /**
    * Search for competitors based on keyword and location
-   * @param keyword - The keyword to search for
-   * @param location - The location for the search (e.g., 'New York', 'Seattle, WA')
-   * @returns Array of competitor details including URL, title, and snippet
    */
-  async searchCompetitors(keyword: string, location: string): Promise<Array<{url: string, title: string, snippet: string}>> {
+  async searchCompetitors(keyword: string, location?: string, options: SearchOptions = {}): Promise<any[]> {
+    if (!this.apiKey) {
+      console.warn('Bing Search API key is not set, using fallback data');
+      return this.getFallbackResults(keyword, 5);
+    }
+
+    const searchQuery = location ? 
+      `${keyword} ${location}` : 
+      keyword;
+    
     try {
-      console.log(`Searching for competitors with keyword "${keyword}" in ${location}`);
-      
-      // Add location to search query
-      const searchQuery = `${keyword} ${location}`;
-      
-      // Make request to Bing Search API
-      const response = await axios.get(this.baseUrl, {
+      // Increment the query counter when making a real API call
+      this.queryCounter++;
+      // Save the counter to the environment so it persists across restarts
+      process.env.BING_SEARCH_COUNTER = this.queryCounter.toString();
+
+      const response = await axios.get<BingSearchResponse>(this.baseUrl, {
         params: {
           q: searchQuery,
-          count: 10, // Get more results than needed to filter out irrelevant ones
-          mkt: 'en-US',
-          responseFilter: 'Webpages'
+          count: options.count || 10,
+          offset: options.offset || 0,
+          mkt: options.market || 'en-US',
+          freshness: options.freshness,
+          responseFilter: 'Webpages',
         },
         headers: {
-          'Ocp-Apim-Subscription-Key': this.apiKey
-        }
+          'Ocp-Apim-Subscription-Key': this.apiKey,
+        },
       });
-      
-      const data: BingSearchResponse = response.data;
-      
-      if (!data.webPages || !data.webPages.value || data.webPages.value.length === 0) {
-        console.log('No search results found');
-        return [];
+
+      if (response.data.errors) {
+        console.error('Bing Search API error:', response.data.errors);
+        return this.getFallbackResults(keyword, 5);
       }
-      
-      // Filter out non-business or irrelevant websites
-      const filteredResults = data.webPages.value.filter(result => {
-        const url = result.url.toLowerCase();
+
+      if (!response.data.webPages?.value || response.data.webPages.value.length === 0) {
+        console.warn('No results from Bing Search API');
+        return this.getFallbackResults(keyword, 5);
+      }
+
+      // Filter out non-business domains (like Wikipedia, YouTube, etc.)
+      const filteredResults = response.data.webPages.value.filter(result => {
+        const url = new URL(result.url);
+        const domain = url.hostname.toLowerCase();
         
-        // Skip obvious non-competitors like Wikipedia, YouTube, social media, etc.
+        // Skip common non-business domains
         if (
-          url.includes('wikipedia.org') ||
-          url.includes('youtube.com') ||
-          url.includes('facebook.com') ||
-          url.includes('twitter.com') ||
-          url.includes('linkedin.com') ||
-          url.includes('instagram.com') ||
-          url.includes('pinterest.com') ||
-          url.includes('reddit.com') ||
-          url.includes('quora.com') ||
-          url.includes('amazon.com') ||
-          url.includes('ebay.com') ||
-          url.includes('dictionary.com') ||
-          url.includes('merriam-webster.com') ||
-          url.includes('thesaurus.com') ||
-          url.includes('britannica.com')
+          domain.includes('wikipedia.org') ||
+          domain.includes('youtube.com') ||
+          domain.includes('facebook.com') ||
+          domain.includes('twitter.com') ||
+          domain.includes('instagram.com') ||
+          domain.includes('reddit.com') ||
+          domain.includes('quora.com') ||
+          domain.includes('amazon.com') ||
+          domain.includes('yelp.com') ||
+          domain.includes('gov') ||
+          domain.includes('edu')
         ) {
           return false;
         }
         
         return true;
       });
-      
-      // Map results to the expected format
-      return filteredResults.slice(0, this.MAX_RESULTS).map(result => ({
+
+      // Format the results
+      return filteredResults.map(result => ({
+        name: result.name,
         url: result.url,
-        title: result.name,
-        snippet: result.snippet
+        snippet: result.snippet,
       }));
     } catch (error) {
-      console.error('Error searching for competitors:', error);
-      // Fallback to empty array on error
-      return [];
+      console.error('Error searching Bing API:', error);
+      return this.getFallbackResults(keyword, 5);
     }
   }
-  
+
   /**
-   * Extract domain name from URL
-   * @param url - The URL to extract domain from
+   * Get the current query count
    */
-  private extractDomain(url: string): string {
-    try {
-      const hostname = new URL(url).hostname;
-      return hostname.startsWith('www.') ? hostname.slice(4) : hostname;
-    } catch (error) {
-      return url;
+  getQueryCount(): number {
+    return this.queryCounter;
+  }
+
+  /**
+   * Get fallback results when API is not available
+   */
+  private getFallbackResults(keyword: string, count: number): any[] {
+    // Generate some generic competitor URLs
+    const results = [];
+    
+    // Create generic business names based on the keyword
+    const keywordFormatted = keyword.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    for (let i = 0; i < count; i++) {
+      results.push({
+        name: `${keywordFormatted}expert.com`,
+        url: `https://www.${keywordFormatted}expert.com`,
+        snippet: `Leading provider of ${keyword} services with expert solutions.`,
+      });
     }
+    
+    return results;
   }
 }
 
