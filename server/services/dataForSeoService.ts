@@ -117,6 +117,40 @@ const dataForSeoClient = axios.create({
   allowAbsoluteUrls: true
 });
 
+// Add request/response interceptors for debugging
+dataForSeoClient.interceptors.request.use(request => {
+  console.log('DataForSEO request:', { 
+    url: request.url,
+    method: request.method,
+    data: typeof request.data === 'string' ? JSON.parse(request.data) : request.data,
+    headers: { 
+      ...request.headers,
+      // Hide the actual auth token for security
+      Authorization: request.headers.Authorization ? 'Basic ***' : undefined
+    }
+  });
+  return request;
+});
+
+dataForSeoClient.interceptors.response.use(
+  response => {
+    console.log('DataForSEO response status:', response.status, response.statusText);
+    console.log('DataForSEO response headers:', response.headers);
+    return response;
+  },
+  error => {
+    console.error('DataForSEO request failed:', {
+      message: error.message,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : 'No response'
+    });
+    return Promise.reject(error);
+  }
+);
+
 // Interface for keyword data
 export interface KeywordData {
   keyword: string;
@@ -147,14 +181,15 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
   try {
     console.log(`Fetching keyword data for "${keyword}" from DataForSEO...`);
     
-    // Request body for Keywords Data API
+    // Request body for Keywords Data API formatted exactly as per DataForSEO docs
     const requestData = {
-      "keyword": keyword,
-      "location_code": location,
-      "language_code": "en",
-      "include_serp_info": true,
-      "include_trends_info": true,
-      "depth": 10
+      "data": {
+        "keyword": keyword,
+        "location_code": location,
+        "language_code": "en",
+        "include_serp_info": true,
+        "include_trends_info": true
+      }
     };
     
     const keywordDataResponse = await dataForSeoClient.post(
@@ -280,12 +315,14 @@ export async function getCompetitorRankings(
   try {
     console.log(`Fetching competitor rankings for "${keyword}" from DataForSEO...`);
     
-    // Request body for SERP API
+    // Request body for SERP API formatted exactly per DataForSEO docs
     const requestData = {
-      "keyword": keyword,
-      "location_code": location,
-      "language_code": "en",
-      "depth": 100 // Check deeper to find all competitors
+      "data": {
+        "keyword": keyword,
+        "location_code": location,
+        "language_code": "en",
+        "depth": 100 // Check deeper to find all competitors
+      }
     };
     
     const serpResponse = await dataForSeoClient.post(
@@ -376,10 +413,12 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
       const suggestionsResponse = await dataForSeoClient.post(
         'https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live',
         [{
-          "keyword": keyword,
-          "location_code": location,
-          "language_code": "en",
-          "limit": 15
+          "data": {
+            "keyword": keyword,
+            "location_code": location,
+            "language_code": "en",
+            "limit": 15
+          }
         }]
       );
       
