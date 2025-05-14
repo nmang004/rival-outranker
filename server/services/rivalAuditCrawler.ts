@@ -82,9 +82,10 @@ interface SiteStructure {
  */
 class RivalAuditCrawler {
   private visited: Set<string> = new Set();
-  private maxPages: number = 50; // Increased from 25 to 50
+  private maxPages: number = 100; // Increased to 100 pages for comprehensive coverage
   private baseUrl: string = '';
   private baseDomain: string = '';
+  private requestDelay: number = 500; // Add a 500ms delay between requests
   
   // Store crawler state for continued crawls
   private pendingLinks: string[] = [];
@@ -245,14 +246,22 @@ class RivalAuditCrawler {
       // Ensure we don't exceed max pages
       const linksToVisit = prioritizedLinks.slice(0, this.maxPages);
       
-      // Crawl the prioritized pages
+      // Function to delay between requests
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      
+      // Crawl the prioritized pages with delay between requests
       for (const link of linksToVisit) {
         if (this.visited.size >= this.maxPages) {
           console.log(`Reached max page limit (${this.maxPages}), stopping crawl`);
+          // Store remaining links for potential continued crawl
+          this.pendingLinks = linksToVisit.slice(linksToVisit.indexOf(link));
           break;
         }
         
         try {
+          // Add delay before request to be respectful to the website
+          await delay(this.requestDelay);
+          
           const pageData = await this.crawlPage(link);
           
           // Categorize the page
@@ -273,6 +282,9 @@ class RivalAuditCrawler {
       }
       
       console.log(`Crawl completed. Visited ${this.visited.size} pages.`);
+      
+      // Store the site structure for potential continuation
+      this.siteStructure = siteStructure;
       
       // Generate the audit based on the crawled site structure
       return this.generateAudit(siteStructure);
@@ -3519,6 +3531,61 @@ class RivalAuditCrawler {
       console.error("Error normalizing URL:", error);
       return url;
     }
+  }
+  
+  /**
+   * Continue crawling from where it left off
+   * 
+   * @param url The original URL that was crawled
+   * @returns Updated RivalAudit data
+   */
+  async continueCrawl(url: string): Promise<RivalAudit> {
+    // Verify we have state to continue from
+    if (!this.siteStructure || this.pendingLinks.length === 0) {
+      console.log("No previous crawl state to continue from, starting new crawl");
+      return this.crawlAndAudit(url);
+    }
+    
+    console.log(`Continuing crawl of ${url} with ${this.pendingLinks.length} pending links`);
+    this.isContinuation = true;
+    
+    // Function to delay between requests
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    // Continue crawling the remaining links with delay
+    for (const link of this.pendingLinks) {
+      if (this.visited.size >= this.maxPages * 2) { // Allow doubling the max pages for continued crawls
+        console.log(`Reached extended max page limit (${this.maxPages * 2}), stopping crawl`);
+        break;
+      }
+      
+      try {
+        // Add delay before request to be respectful to the website
+        await delay(this.requestDelay);
+        
+        const pageData = await this.crawlPage(link);
+        
+        // Categorize the page
+        if (this.isContactPage(pageData)) {
+          this.siteStructure.contactPage = pageData;
+        } else if (this.isServiceAreaPage(pageData)) {
+          this.siteStructure.serviceAreaPages.push(pageData);
+        } else if (this.isServicePage(pageData)) {
+          this.siteStructure.servicePages.push(pageData);
+        } else if (this.isLocationPage(pageData)) {
+          this.siteStructure.locationPages.push(pageData);
+        } else {
+          this.siteStructure.otherPages.push(pageData);
+        }
+      } catch (error) {
+        console.error(`Error crawling ${link}:`, error);
+      }
+    }
+    
+    console.log(`Continued crawl completed. Total visited ${this.visited.size} pages.`);
+    
+    // Generate the audit based on the updated site structure
+    return this.generateAudit(this.siteStructure);
   }
 }
 
