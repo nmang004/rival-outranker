@@ -1698,14 +1698,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get fresh keyword data from DataForSEO
       keywordData = await getKeywordData(keyword, locationCode);
       
-      // Get related keywords in the same request to avoid duplicate API calls
-      try {
-        console.log('Fetching related keywords...');
-        const relatedKeywords = await getKeywordSuggestions(keyword, locationCode);
-        keywordData.relatedKeywords = relatedKeywords;
-      } catch (relatedError) {
-        console.error('Error fetching related keywords:', relatedError);
-        // Continue even if we can't get related keywords
+      // The related keywords should already be fetched in getKeywordData
+      // We don't need to make a separate call for them, as that would duplicate API requests
+      if (!keywordData.relatedKeywords) {
         keywordData.relatedKeywords = [];
       }
       
