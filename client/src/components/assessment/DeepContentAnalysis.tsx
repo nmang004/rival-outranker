@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -35,8 +35,16 @@ interface DeepContentAnalysisProps {
 }
 
 export default function DeepContentAnalysis({ url, isRequested = false }: DeepContentAnalysisProps) {
-  // If isRequested is true, automatically start analysis
-  const [isAnalyzing, setIsAnalyzing] = useState(isRequested);
+  // Only start analysis if it was explicitly requested
+  // We don't auto-start unless isRequested is true
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // On component mount, set isAnalyzing if it was requested
+  useEffect(() => {
+    if (isRequested) {
+      setIsAnalyzing(true);
+    }
+  }, [isRequested]);
   
   const { data, isLoading, error } = useQuery<any>({
     queryKey: [`/api/deep-content?url=${encodeURIComponent(url)}`],
