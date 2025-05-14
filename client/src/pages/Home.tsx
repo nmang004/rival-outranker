@@ -27,6 +27,11 @@ export default function Home() {
 
   const analyzeMutation = useMutation({
     mutationFn: async (url: string) => {
+      // First check if the URL is our own API endpoint or Replit domain
+      if (url.includes('/api/') || url.includes('replit.dev') || url.includes('replit.app')) {
+        throw new Error('Cannot analyze our own API endpoints or Replit domains');
+      }
+      
       const response = await apiRequest('/api/analyze', {
         method: 'POST',
         data: { url }
@@ -43,11 +48,21 @@ export default function Home() {
       pollForResults(data.url);
     },
     onError: (error: any) => {
+      const errorMessage = error.message || "There was an error analyzing the URL. Please try again.";
+      
+      // Show a more specific message for API endpoint attempts
+      const toastMessage = errorMessage.includes('API endpoints') 
+        ? "Cannot analyze our own API endpoints or Replit domains. Please enter a regular website URL."
+        : errorMessage;
+      
       toast({
         title: "Analysis failed",
-        description: error.message || "There was an error analyzing the URL. Please try again.",
+        description: toastMessage,
         variant: "destructive",
       });
+      
+      setIsSubmitting(false);
+      setAnalysisProgress(0);
     }
   });
 
@@ -222,6 +237,11 @@ export default function Home() {
     try {
       urlFormSchema.parse({ url });
       
+      // Check if the URL is our own API endpoint or Replit domain
+      if (url.includes('/api/') || url.includes('replit.dev') || url.includes('replit.app')) {
+        throw new Error('Cannot analyze our own API endpoints or Replit domains');
+      }
+      
       // If deep content analysis is selected, redirect to that page
       if (useDeepContentAnalysis) {
         // Navigate directly to deep content analysis page
@@ -234,11 +254,21 @@ export default function Home() {
     } catch (error) {
       setIsSubmitting(false);
       setAnalysisProgress(0);
-      toast({
-        title: "Invalid URL",
-        description: "Please enter a valid URL including http:// or https://",
-        variant: "destructive",
-      });
+      
+      // Show specific error for API endpoint attempts
+      if ((error as Error).message.includes('our own API endpoints')) {
+        toast({
+          title: "Invalid URL",
+          description: "Cannot analyze our own API endpoints or Replit domains. Please enter a regular website URL.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Invalid URL",
+          description: "Please enter a valid URL including http:// or https://",
+          variant: "destructive",
+        });
+      }
     }
   };
 
