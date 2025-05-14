@@ -310,8 +310,8 @@ export default function RivalRankTrackerResultsPage() {
   }
 
   // Create data for the ranking chart
-  const rankingChartData = analysis.keywords.map((keyword: any) => {
-    const competitors = analysis.competitors || [];
+  const rankingChartData = analysisData.keywords.map((keyword: any) => {
+    const competitors = analysisData.competitors || [];
     const data: any = {
       keyword: keyword.text,
       "Your Website": keyword.currentRanking?.position || 100,
@@ -329,17 +329,17 @@ export default function RivalRankTrackerResultsPage() {
   });
 
   // Data for summary stats
-  const topRankedKeywords = analysis.keywords.filter((k: any) => 
+  const topRankedKeywords = analysisData.keywords.filter((k: any) => 
     (k.currentRanking?.position || 101) <= 10
   ).length;
   
-  const keywordsWithDifficulty = analysis.keywords.filter((k: any) => k.metrics?.difficulty).length;
+  const keywordsWithDifficulty = analysisData.keywords.filter((k: any) => k.metrics?.difficulty).length;
   const avgDifficulty = keywordsWithDifficulty > 0 
-    ? analysis.keywords.reduce((acc: number, k: any) => 
+    ? analysisData.keywords.reduce((acc: number, k: any) => 
         acc + (k.metrics?.difficulty || 0), 0) / keywordsWithDifficulty
     : 0;
   
-  const totalSearchVolume = analysis.keywords.reduce(
+  const totalSearchVolume = analysisData.keywords.reduce(
     (acc: number, k: any) => acc + (k.metrics?.volume || 0), 0
   );
 
@@ -477,7 +477,7 @@ export default function RivalRankTrackerResultsPage() {
                       fill="#4f46e5" 
                       radius={[0, 4, 4, 0]}
                     />
-                    {analysis.competitors && analysis.competitors.map((competitor: any, index: number) => (
+                    {analysisData.competitors && analysisData.competitors.map((competitor: any, index: number) => (
                       <Bar 
                         key={competitor.url}
                         dataKey={competitor.url}
@@ -502,7 +502,7 @@ export default function RivalRankTrackerResultsPage() {
               <div className="h-[400px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsLineChart
-                    data={analysis.keywords.map((keyword: any) => ({
+                    data={analysisData.keywords.map((keyword: any) => ({
                       keyword: keyword.text,
                       volume: keyword.metrics?.volume || 0,
                       difficulty: keyword.metrics?.difficulty || 0,
@@ -528,7 +528,7 @@ export default function RivalRankTrackerResultsPage() {
                         return [value, name];
                       }}
                       labelFormatter={(label) => {
-                        const item = analysis.keywords.find((k: any) => 
+                        const item = analysisData.keywords.find((k: any) => 
                           (k.metrics?.difficulty || 0) === label
                         );
                         return item ? item.text : '';
