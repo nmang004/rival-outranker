@@ -516,7 +516,7 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
     
     // Request data for Google Ads keywords for keywords endpoint
     const requestData = [{
-      "keyword": keyword,
+      "keywords": [keyword],
       "location_name": "United States",
       "language_code": "en"
     }];
