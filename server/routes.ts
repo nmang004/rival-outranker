@@ -629,7 +629,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   } else {
                     // Check for keywords in meta description and content
                     const metaDesc = pageData.meta.description || '';
-                    const bodyContent = pageData.content || '';
+                    const bodyContent = typeof pageData.content === 'string' 
+                      ? pageData.content 
+                      : (pageData.content?.text || '');
                     
                     // First try to find industry-related terms in content
                     const industryTerms = ['logistics', 'shipping', 'transport', 'freight', 'forwarding', 
