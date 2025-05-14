@@ -5,6 +5,7 @@ import { crawler } from "./services/crawler";
 import { analyzer } from "./services/analyzer_fixed";
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
 import { deepContentAnalyzer } from "./services/deepContentAnalyzer";
+import { bingSearchService } from "./services/bingSearchService";
 import { urlFormSchema, insertAnalysisSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -693,6 +694,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in deep content analysis request:", error);
       res.status(500).json({ error: "Failed to analyze content" });
+    }
+  });
+  
+  // API endpoint to get Bing Search API query count
+  app.get("/api/bing-query-count", (_req: Request, res: Response) => {
+    try {
+      const queryCount = bingSearchService.getQueryCount();
+      return res.json({ queryCount });
+    } catch (error) {
+      console.error("Error getting Bing query count:", error);
+      res.status(500).json({ error: "Failed to get query count" });
     }
   });
   
