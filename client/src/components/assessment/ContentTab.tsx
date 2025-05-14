@@ -186,7 +186,7 @@ export default function ContentTab({
         <div className="bg-gray-50 rounded-lg p-4">
           <h5 className="text-sm font-medium text-gray-700 mb-3">Heading Structure</h5>
           
-          {contentData.headingStructure || contentData.h1Count !== undefined ? (
+          {contentData?.headingStructure || contentData?.h1Count !== undefined ? (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">H1 Headings</span>
