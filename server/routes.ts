@@ -484,45 +484,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Perform the actual analysis asynchronously
         (async () => {
           try {
-            // Crawl the page to extract keywords
-            const pageData = await crawler.crawlPage(url);
+            // First - Check if we have an existing analysis for this URL
+            const normalizedUrl = url.toLowerCase().trim()
+              .replace(/^https?:\/\//, '')
+              .replace(/^www\./, '')
+              .replace(/\/$/, '');
             
-            // Extract primary keyword by analyzing title and content more intelligently
+            // Try to get existing analyses for this URL which may already have the primary keyword
+            const existingAnalyses = await storage.getAnalysesByUrl(url);
+            
             let primaryKeyword = '';
             
-            // Extract from title and combine with location
-            const title = pageData.title || '';
-            const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+            // If we have existing analyses with a defined keyword, use that
+            if (existingAnalyses.length > 0 && existingAnalyses[0].results) {
+              // Try to parse the results JSON to extract the primary keyword
+              try {
+                const results = typeof existingAnalyses[0].results === 'string' 
+                  ? JSON.parse(existingAnalyses[0].results) 
+                  : existingAnalyses[0].results;
+                
+                if (results && results.keywordAnalysis && results.keywordAnalysis.primaryKeyword) {
+                  primaryKeyword = results.keywordAnalysis.primaryKeyword;
+                  console.log(`Using existing primary keyword from analysis: ${primaryKeyword}`);
+                }
+              } catch (e) {
+                console.error("Error parsing analysis results:", e);
+              }
+            } 
             
-            // Try to extract a business category from title or h1
-            const businessTypes = [
-              'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
-              'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
-              'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
-              'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
-              'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy'
-            ];
-            
-            // Look for business types in the title and h1
-            let businessType = '';
-            for (const type of businessTypes) {
-              if (title.toLowerCase().includes(type.toLowerCase()) || 
-                  h1Text.toLowerCase().includes(type.toLowerCase())) {
-                businessType = type;
-                break;
+            // If no existing keyword, crawl and analyze to get one
+            if (!primaryKeyword) {
+              // Crawl the page to extract keywords
+              const pageData = await crawler.crawlPage(url);
+              
+              // Get a proper SEO analysis to extract the most accurate keyword
+              const keywordAnalysisResult = await analyzer.analyzePage(url, pageData);
+              primaryKeyword = keywordAnalysisResult.keywordAnalysis.primaryKeyword;
+              
+              console.log(`Analyzed and extracted primary keyword: ${primaryKeyword}`);
+              
+              // If still no primary keyword, use title-based approach as fallback
+              if (!primaryKeyword) {
+                const title = pageData.title || '';
+                const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+                
+                // Try to extract a business category from title or h1
+                const businessTypes = [
+                  'HVAC', 'plumbing', 'electrician', 'roofing', 'contractor', 'repair',
+                  'restaurant', 'cafe', 'dentist', 'doctor', 'attorney', 'lawyer',
+                  'salon', 'spa', 'fitness', 'gym', 'accounting', 'real estate', 'insurance',
+                  'cleaning', 'landscaping', 'construction', 'photography', 'bakery',
+                  'automotive', 'veterinary', 'pharmacy', 'clinic', 'wellness', 'therapy'
+                ];
+                
+                // Look for business types in the title and h1
+                let businessType = '';
+                for (const type of businessTypes) {
+                  if (title.toLowerCase().includes(type.toLowerCase()) || 
+                      h1Text.toLowerCase().includes(type.toLowerCase())) {
+                    businessType = type;
+                    break;
+                  }
+                }
+                
+                // Combine business type with location for a targeted keyword
+                if (businessType) {
+                  primaryKeyword = `${businessType} in ${city}`;
+                } else {
+                  // Fallback to a simple extraction from title
+                  primaryKeyword = title.split(' ').slice(0, 3).join(' ');
+                }
+                
+                console.log(`Using fallback keyword generation: ${primaryKeyword}`);
               }
             }
             
-            // Combine business type with location for a targeted keyword
-            if (businessType) {
-              primaryKeyword = `${businessType} in ${city}`;
-            } else {
-              // Fallback to a simple extraction of the first few words from title
-              primaryKeyword = `${title.split(' ').slice(0, 2).join(' ')} in ${city}`;
-            }
+            // Format the keyword to be used with the location for competitive search
+            const queryKeyword = primaryKeyword.toLowerCase().includes(city.toLowerCase()) 
+              ? primaryKeyword  // Already contains location
+              : `${primaryKeyword} in ${city}`; // Add location context
             
-            // Analyze competitors
-            await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, city);
+            console.log(`Finding competitors for keyword: ${queryKeyword} in ${city}`);
+            
+            // Analyze competitors with the best keyword we could extract
+            await competitorAnalyzer.analyzeCompetitors(url, queryKeyword, city);
             
             console.log("Competitor analysis completed for:", url);
           } catch (analysisError) {

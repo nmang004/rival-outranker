@@ -787,22 +787,36 @@ export default function DeepContentResultsPage() {
                     
                     {analysisData.annotatedContent.introduction.annotations.length > 0 ? (
                       <div className="space-y-4">
-                        {analysisData.annotatedContent.introduction.annotations.map((annotation, index) => (
-                          <div key={index} className="border-l-2 border-primary pl-4 py-1">
-                            <div className="flex items-center mb-1">
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
-                                annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
-                                annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-blue-100 text-blue-700'
-                              }`}>
-                                {annotation.severity.toUpperCase()}
-                              </span>
-                              <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                        {/* Deduplicate annotations by suggestion text */}
+                        {(() => {
+                          const uniqueAnnotations: any[] = [];
+                          const seenSuggestions = new Set();
+                          
+                          for (const annotation of analysisData.annotatedContent.introduction.annotations) {
+                            if (!seenSuggestions.has(annotation.suggestion)) {
+                              uniqueAnnotations.push(annotation);
+                              seenSuggestions.add(annotation.suggestion);
+                            }
+                          }
+                          
+                          return uniqueAnnotations.map((annotation, index) => (
+                            <div key={index} className="border-l-2 border-primary pl-4 py-1">
+                              <div className="flex items-center mb-1">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
+                                  annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                  annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {annotation.severity.toUpperCase()}
+                                </span>
+                                <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                              </div>
+                              <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
+                              <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
+                              <p className="text-xs text-muted-foreground mt-1 italic">Found in: {annotation.content.substring(0, 60)}...</p>
                             </div>
-                            <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
-                            <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground italic">No issues found in the introduction.</p>
@@ -825,22 +839,35 @@ export default function DeepContentResultsPage() {
                       
                       {section.annotations.length > 0 ? (
                         <div className="space-y-4">
-                          {section.annotations.map((annotation, annotationIndex) => (
-                            <div key={annotationIndex} className="border-l-2 border-primary pl-4 py-1">
-                              <div className="flex items-center mb-1">
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
-                                  annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
-                                  annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-blue-100 text-blue-700'
-                                }`}>
-                                  {annotation.severity.toUpperCase()}
-                                </span>
-                                <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                          {(() => {
+                            const uniqueAnnotations: any[] = [];
+                            const seenSuggestions = new Set();
+                            
+                            for (const annotation of section.annotations) {
+                              if (!seenSuggestions.has(annotation.suggestion)) {
+                                uniqueAnnotations.push(annotation);
+                                seenSuggestions.add(annotation.suggestion);
+                              }
+                            }
+                            
+                            return uniqueAnnotations.map((annotation, annotationIndex) => (
+                              <div key={annotationIndex} className="border-l-2 border-primary pl-4 py-1">
+                                <div className="flex items-center mb-1">
+                                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
+                                    annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                    annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {annotation.severity.toUpperCase()}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                                </div>
+                                <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
+                                <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
+                                <p className="text-xs text-muted-foreground mt-1 italic">Found in: {annotation.content.substring(0, 60)}...</p>
                               </div>
-                              <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
-                              <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
-                            </div>
-                          ))}
+                            ));
+                          })()}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground italic">No issues found in this section.</p>
@@ -863,22 +890,35 @@ export default function DeepContentResultsPage() {
                     
                     {analysisData.annotatedContent.conclusion.annotations.length > 0 ? (
                       <div className="space-y-4">
-                        {analysisData.annotatedContent.conclusion.annotations.map((annotation, index) => (
-                          <div key={index} className="border-l-2 border-primary pl-4 py-1">
-                            <div className="flex items-center mb-1">
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
-                                annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
-                                annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-blue-100 text-blue-700'
-                              }`}>
-                                {annotation.severity.toUpperCase()}
-                              </span>
-                              <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                        {(() => {
+                          const uniqueAnnotations: any[] = [];
+                          const seenSuggestions = new Set();
+                          
+                          for (const annotation of analysisData.annotatedContent.conclusion.annotations) {
+                            if (!seenSuggestions.has(annotation.suggestion)) {
+                              uniqueAnnotations.push(annotation);
+                              seenSuggestions.add(annotation.suggestion);
+                            }
+                          }
+                          
+                          return uniqueAnnotations.map((annotation, index) => (
+                            <div key={index} className="border-l-2 border-primary pl-4 py-1">
+                              <div className="flex items-center mb-1">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
+                                  annotation.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                  annotation.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {annotation.severity.toUpperCase()}
+                                </span>
+                                <span className="text-sm text-muted-foreground">{annotation.type.charAt(0).toUpperCase() + annotation.type.slice(1)} Issue</span>
+                              </div>
+                              <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
+                              <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
+                              <p className="text-xs text-muted-foreground mt-1 italic">Found in: {annotation.content.substring(0, 60)}...</p>
                             </div>
-                            <p className="text-sm font-medium text-foreground mb-1">{annotation.issue}</p>
-                            <p className="text-sm text-muted-foreground">{annotation.suggestion}</p>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground italic">No issues found in the conclusion.</p>
