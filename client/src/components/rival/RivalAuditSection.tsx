@@ -267,8 +267,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
+        <div className="space-y-4 mb-6">
+          <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -278,9 +278,9 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex flex-col md:flex-row gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Select value={statusFilter || ""} onValueChange={(value) => setStatusFilter(value || null)}>
-              <SelectTrigger className="w-full md:w-[150px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -293,7 +293,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
             </Select>
             
             <Select value={importanceFilter || ""} onValueChange={(value) => setImportanceFilter(value || null)}>
-              <SelectTrigger className="w-full md:w-[150px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Filter by importance" />
               </SelectTrigger>
               <SelectContent>
@@ -305,7 +305,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
             </Select>
             
             <Select value={sortField} onValueChange={(value: "name" | "status" | "importance") => toggleSort(value)}>
-              <SelectTrigger className="w-full md:w-[150px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -320,35 +320,47 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         {currentView === "list" ? (
           // List view
           <div className="border rounded-md">
-            <div className="bg-muted px-4 py-2 rounded-t-md grid grid-cols-12 gap-4 font-medium text-sm">
-              <div className="col-span-5 flex items-center cursor-pointer" onClick={() => toggleSort("name")}>
+            <div className="bg-muted px-2 sm:px-4 py-2 rounded-t-md grid grid-cols-12 gap-2 sm:gap-4 font-medium text-xs sm:text-sm">
+              <div className="col-span-12 sm:col-span-5 flex items-center cursor-pointer" onClick={() => toggleSort("name")}>
                 Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex ml-auto space-x-2 sm:hidden text-[10px]">
+                  <span className="px-2" onClick={(e) => { e.stopPropagation(); toggleSort("status"); }}>
+                    Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
+                  </span>
+                  <span className="px-2" onClick={(e) => { e.stopPropagation(); toggleSort("importance"); }}>
+                    Imp. {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}
+                  </span>
+                </div>
               </div>
-              <div className="col-span-2 flex items-center cursor-pointer" onClick={() => toggleSort("status")}>
+              <div className="hidden sm:flex col-span-2 items-center cursor-pointer" onClick={() => toggleSort("status")}>
                 Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
               </div>
-              <div className="col-span-2 flex items-center cursor-pointer" onClick={() => toggleSort("importance")}>
+              <div className="hidden sm:flex col-span-2 items-center cursor-pointer" onClick={() => toggleSort("importance")}>
                 Importance {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}
               </div>
-              <div className="col-span-3">Notes</div>
+              <div className="hidden sm:block col-span-3">Notes</div>
             </div>
             
             <Accordion type="multiple" className="rounded-b-md">
               {filteredItems.length > 0 ? (
                 filteredItems.map((item, index) => (
                   <AccordionItem key={`list-${index}`} value={`item-${index}`}>
-                    <AccordionTrigger className="grid grid-cols-12 gap-4 px-4 py-3 hover:no-underline">
-                      <div className="col-span-5 font-medium flex items-center">
+                    <AccordionTrigger className="grid grid-cols-12 gap-2 sm:gap-4 px-2 sm:px-4 py-3 hover:no-underline text-sm sm:text-base">
+                      <div className="col-span-12 sm:col-span-5 font-medium flex flex-wrap items-center">
                         {getStatusIcon(item.status)}
-                        <span className="ml-2 text-left">{item.name}</span>
+                        <span className="ml-2 text-left truncate">{item.name}</span>
+                        <div className="flex space-x-2 mt-1 sm:hidden w-full ml-6">
+                          {getStatusBadge(item.status)}
+                          {getImportanceBadge(item.importance)}
+                        </div>
                       </div>
-                      <div className="col-span-2">
+                      <div className="hidden sm:block col-span-2">
                         {getStatusBadge(item.status)}
                       </div>
-                      <div className="col-span-2">
+                      <div className="hidden sm:block col-span-2">
                         {getImportanceBadge(item.importance)}
                       </div>
-                      <div className="col-span-3 truncate text-muted-foreground">
+                      <div className="hidden sm:block col-span-3 truncate text-muted-foreground">
                         {item.notes ? item.notes.substring(0, 50) + (item.notes.length > 50 ? "..." : "") : "No notes"}
                       </div>
                     </AccordionTrigger>

@@ -259,29 +259,31 @@ export default function RivalAuditResultsPage() {
 
         {/* Tabs for different audit sections */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 md:grid-cols-7 mb-6">
-            <TabsTrigger value="summary" className="flex items-center">
-              <BarChart3 className="h-4 w-4 mr-2" /> Summary
-            </TabsTrigger>
-            <TabsTrigger value="onPage" className="flex items-center">
-              <FileText className="h-4 w-4 mr-2" /> On-Page
-            </TabsTrigger>
-            <TabsTrigger value="structure" className="flex items-center">
-              <ClipboardCheck className="h-4 w-4 mr-2" /> Structure
-            </TabsTrigger>
-            <TabsTrigger value="contactPage" className="flex items-center">
-              <Phone className="h-4 w-4 mr-2" /> Contact
-            </TabsTrigger>
-            <TabsTrigger value="servicePages" className="flex items-center">
-              <Briefcase className="h-4 w-4 mr-2" /> Services
-            </TabsTrigger>
-            <TabsTrigger value="locationPages" className="flex items-center">
-              <MapPin className="h-4 w-4 mr-2" /> Locations
-            </TabsTrigger>
-            <TabsTrigger value="serviceAreaPages" className="flex items-center" disabled={!audit.serviceAreaPages}>
-              <Globe className="h-4 w-4 mr-2" /> Areas
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-1">
+            <TabsList className="flex mb-6 w-max sm:w-full sm:grid sm:grid-cols-7">
+              <TabsTrigger value="summary" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Summary</span>
+              </TabsTrigger>
+              <TabsTrigger value="onPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                <FileText className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">On-Page</span>
+              </TabsTrigger>
+              <TabsTrigger value="structure" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                <ClipboardCheck className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Structure</span>
+              </TabsTrigger>
+              <TabsTrigger value="contactPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                <Phone className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Contact</span>
+              </TabsTrigger>
+              <TabsTrigger value="servicePages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                <Briefcase className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Services</span>
+              </TabsTrigger>
+              <TabsTrigger value="locationPages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
+                <MapPin className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Locations</span>
+              </TabsTrigger>
+              <TabsTrigger value="serviceAreaPages" className="flex items-center whitespace-nowrap px-3 sm:px-0" disabled={!audit.serviceAreaPages}>
+                <Globe className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Areas</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="summary" className="mt-0">
             <RivalAuditSummary audit={audit} />
