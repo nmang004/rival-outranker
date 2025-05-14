@@ -10,7 +10,7 @@ import * as z from 'zod';
 import { Check, ChevronRight, Globe, MapPin, Search, BarChart3, LineChart, PieChart, TrendingUp, Trophy, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { Combobox } from '@/components/ui/combobox';
+import { Combobox } from '../components/ui/combobox';
 import { US_CITIES } from '@shared/us-cities';
 import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
