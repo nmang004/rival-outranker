@@ -74,37 +74,31 @@ export default function NavBar() {
                   <Users className="h-4 w-4 mr-1" /> Competitors
                 </button>
               </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    className={
-                      (location === "/rival-audit" || location === "/rival-rank-tracker") 
-                        ? linkClass("/rival-audit") 
-                        : linkClass("")
-                    }
-                  >
-                    <div className="flex items-center">
-                      <ClipboardCheck className="h-4 w-4 mr-1" /> 
-                      Rival Audit
-                      <ChevronDown className="h-3 w-3 ml-1" />
-                    </div>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center">
-                  <Link href="/rival-audit">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <ClipboardCheck className="h-4 w-4 mr-2" />
-                      Rival Audit
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/rival-rank-tracker">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <BarChart className="h-4 w-4 mr-2" />
-                      Rival Rank Tracker
-                    </DropdownMenuItem>
-                  </Link>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center group relative">
+                <Link href="/rival-audit">
+                  <div className={linkClass("/rival-audit")}>
+                    <ClipboardCheck className="h-4 w-4 mr-1" /> 
+                    Rival Audit
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </div>
+                </Link>
+                <div className="absolute top-full left-0 hidden group-hover:block z-50 bg-white shadow-lg rounded-md border border-gray-200 mt-1 w-60">
+                  <div className="py-1">
+                    <Link href="/rival-audit">
+                      <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                        <ClipboardCheck className="h-4 w-4 mr-2" />
+                        Rival Audit
+                      </div>
+                    </Link>
+                    <Link href="/rival-rank-tracker">
+                      <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                        <BarChart className="h-4 w-4 mr-2" />
+                        Rival Rank Tracker
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-1" /> History

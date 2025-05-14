@@ -1,267 +1,261 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useParams } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+import { useParams, Link, useLocation } from "wouter";
+import { BarChart, ArrowLeft, LineChart, SearchCheck, ArrowUpRight, Clock, Layers, BarChart2 } from "lucide-react";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
 } from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ArrowLeft,
-  RefreshCw,
-  BarChart,
-  LineChart,
-  Users,
-  Calendar,
-  TrendingUp,
-  TrendingDown,
-  ChevronUp,
-  ChevronDown,
-  Minus,
-  AlertCircle,
-  Download,
-  ExternalLink,
-} from "lucide-react";
-
-// Import recharts components for beautiful graphs
-import {
-  LineChart as ReLineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
+import { 
+  AreaChart, 
+  Area, 
+  BarChart as RechartsBarChart,
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
   Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart as ReBarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
+  LineChart as RechartsLineChart,
+  Line
 } from "recharts";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/PageHeader";
+import { useAuth } from "@/hooks/useAuth";
+import { LoginButton } from "@/components/auth/LoginButton";
+
+// Helper function to format search volume
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+};
+
+// Helper function to get color based on ranking position
+const getRankingColor = (position: number): string => {
+  if (position <= 3) return "text-green-600";
+  if (position <= 10) return "text-emerald-500";
+  if (position <= 20) return "text-amber-500";
+  if (position <= 50) return "text-orange-500";
+  return "text-rose-500";
+};
+
+// Helper function to get badge variant based on difficulty
+const getDifficultyVariant = (difficulty: number): "default" | "outline" | "secondary" | "destructive" => {
+  if (difficulty < 30) return "default";
+  if (difficulty < 50) return "secondary";
+  if (difficulty < 70) return "outline";
+  return "destructive";
+};
+
+// Helper function to convert keyword competition to descriptive text
+const getDifficultyText = (difficulty: number): string => {
+  if (difficulty < 30) return "Easy";
+  if (difficulty < 50) return "Moderate";
+  if (difficulty < 70) return "Difficult";
+  return "Very Difficult";
+};
 
 export default function RivalRankTrackerResultsPage() {
   const { id } = useParams();
-  const keywordId = parseInt(id);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const [checkingRanking, setCheckingRanking] = useState(false);
-  const [updatingMetrics, setUpdatingMetrics] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  // Redirect if not logged in
-  React.useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate("/api/login");
-    }
-  }, [authLoading, isAuthenticated, navigate]);
-
-  // Fetch keyword data
-  const { data: keyword, isLoading: keywordLoading } = useQuery({
-    queryKey: [`/api/keywords/${keywordId}`],
-    enabled: isAuthenticated && !isNaN(keywordId),
+  // Fetch keyword tracking analysis
+  const { data: analysis, isLoading, error } = useQuery({
+    queryKey: ["/api/rival-rank-tracker", id],
+    retry: false,
+    refetchInterval: (data) => {
+      // If the analysis is still processing, poll every 5 seconds
+      return data?.status === "processing" ? 5000 : false;
+    },
   });
 
-  // Fetch keyword metrics
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: [`/api/keywords/${keywordId}/metrics`],
-    enabled: isAuthenticated && !isNaN(keywordId),
-  });
-
-  // Fetch ranking history
-  const { data: rankings, isLoading: rankingsLoading } = useQuery({
-    queryKey: [`/api/keywords/${keywordId}/rankings`],
-    enabled: isAuthenticated && !isNaN(keywordId),
-  });
-
-  // Fetch competitor rankings
-  const { data: competitors, isLoading: competitorsLoading } = useQuery({
-    queryKey: [`/api/keywords/${keywordId}/competitors`],
-    enabled: isAuthenticated && !isNaN(keywordId),
-  });
-
-  // Function to check keyword ranking
-  const checkRanking = async () => {
-    try {
-      setCheckingRanking(true);
-      const response = await fetch(`/api/keywords/${keywordId}/check-ranking`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to check keyword ranking");
-      }
-
-      const data = await response.json();
-      
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: [`/api/keywords/${keywordId}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/keywords/${keywordId}/rankings`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/keywords/${keywordId}/competitors`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/keywords/${keywordId}/metrics`] });
-      
-      toast({
-        title: "Ranking Checked",
-        description: data.rank 
-          ? `Current ranking position: ${data.rank}` 
-          : "Not found in top search results",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to check keyword ranking",
-        variant: "destructive",
-      });
-    } finally {
-      setCheckingRanking(false);
-    }
-  };
-
-  // Function to update keyword metrics
-  const updateMetrics = async () => {
-    try {
-      setUpdatingMetrics(true);
-      const response = await fetch(`/api/keywords/${keywordId}/update-metrics`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update keyword metrics");
-      }
-
-      // Invalidate metrics query to refresh data
-      queryClient.invalidateQueries({ queryKey: [`/api/keywords/${keywordId}/metrics`] });
-      
-      toast({
-        title: "Metrics Updated",
-        description: "Keyword metrics have been refreshed",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update metrics",
-        variant: "destructive",
-      });
-    } finally {
-      setUpdatingMetrics(false);
-    }
-  };
-
-  // Generate chart data for ranking history
-  const getRankingChartData = () => {
-    if (!rankings || rankings.length === 0) return [];
-    
-    return rankings.map(rank => ({
-      date: new Date(rank.rankDate).toLocaleDateString(),
-      position: rank.rank,
-      url: rank.rankingUrl,
-    })).reverse();
-  };
-
-  // Generate chart data for competitor comparison
-  const getCompetitorChartData = () => {
-    if (!competitors || competitors.length === 0) return [];
-
-    // Group by URL and get latest ranking for each
-    const latestByUrl = {};
-    competitors.forEach(comp => {
-      const hostname = new URL(comp.competitorUrl).hostname;
-      if (!latestByUrl[hostname] || new Date(comp.rankDate) > new Date(latestByUrl[hostname].rankDate)) {
-        latestByUrl[hostname] = comp;
-      }
-    });
-
-    return Object.values(latestByUrl).map(comp => ({
-      name: new URL(comp.competitorUrl).hostname,
-      position: comp.rank,
-    }));
-  };
-
-  // Loading state
-  if (authLoading || keywordLoading) {
+  if (authLoading) {
     return (
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <Button 
-          variant="ghost" 
-          className="mb-4"
-          onClick={() => navigate("/rival-rank-tracker")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Rank Tracker
-        </Button>
-        <div className="animate-pulse space-y-8">
-          <div className="h-10 bg-slate-200 rounded w-1/2"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 h-64 bg-slate-200 rounded"></div>
-            <div className="h-64 bg-slate-200 rounded"></div>
-          </div>
-          <div className="h-80 bg-slate-200 rounded"></div>
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       </div>
     );
   }
 
-  // Not found state
-  if (!keyword) {
+  if (!isAuthenticated) {
     return (
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <Button 
-          variant="ghost" 
-          className="mb-4"
-          onClick={() => navigate("/rival-rank-tracker")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Rank Tracker
-        </Button>
+      <div className="container mx-auto py-8 max-w-4xl">
+        <PageHeader
+          title="Rival Rank Tracker"
+          description="Track your keyword rankings against competitors over time"
+          icon={<BarChart className="h-6 w-6 mr-2" />}
+        />
+        
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Authentication Required</CardTitle>
+              <CardDescription>
+                You need to be logged in to view tracking results.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-center">
+                <LoginButton />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 max-w-6xl">
+        <div className="flex items-center mb-4">
+          <Button variant="ghost" className="mr-2" onClick={() => navigate("/rival-rank-tracker")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <Skeleton className="h-8 w-64" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
         <Card>
           <CardHeader>
-            <CardTitle>Keyword Not Found</CardTitle>
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-5 w-64" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[300px] w-full" />
+          </CardContent>
+        </Card>
+        
+        <Card className="mt-6">
+          <CardHeader>
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-5 w-64" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex gap-4">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-8 max-w-4xl">
+        <PageHeader
+          title="Error Loading Results"
+          description="We couldn't load the tracking results"
+          icon={<BarChart className="h-6 w-6 mr-2" />}
+        />
+        
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Analysis Not Found</CardTitle>
             <CardDescription>
-              The keyword you're looking for does not exist or you don't have permission to view it.
+              We couldn't find the keyword tracking analysis you're looking for.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <AlertCircle className="h-16 w-16 text-orange-500" />
-              <p className="text-lg text-center">
-                We couldn't find this keyword in our database.
-              </p>
-              <Button onClick={() => navigate("/rival-rank-tracker")}>
-                Track a New Keyword
-              </Button>
+            <p className="text-red-500">
+              {(error as Error).message || "An unknown error occurred"}
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => navigate("/rival-rank-tracker")}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Keyword Tracker
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  if (analysis?.status === "processing") {
+    return (
+      <div className="container mx-auto py-8 max-w-4xl">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" className="mr-2" onClick={() => navigate("/rival-rank-tracker")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <h1 className="text-2xl font-bold">Keyword Tracking Analysis</h1>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Clock className="h-5 w-5 mr-2 text-blue-500 animate-pulse" />
+              Processing Your Analysis
+            </CardTitle>
+            <CardDescription>
+              Please wait while we track your keywords and generate insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pb-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-full max-w-md mx-auto">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full animate-progress"></div>
+                </div>
+                <div className="mt-8 text-center">
+                  <p className="text-lg font-medium">Checking keyword rankings...</p>
+                  <p className="text-gray-500 mt-2">
+                    This process may take a few minutes depending on the number of keywords.
+                  </p>
+                </div>
+                <div className="mt-6 flex justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -269,744 +263,644 @@ export default function RivalRankTrackerResultsPage() {
     );
   }
 
-  const rankingChartData = getRankingChartData();
-  const competitorChartData = getCompetitorChartData();
+  if (!analysis?.keywords?.length) {
+    return (
+      <div className="container mx-auto py-8 max-w-4xl">
+        <PageHeader
+          title="No Keywords Found"
+          description="Your analysis doesn't contain any keywords"
+          icon={<BarChart className="h-6 w-6 mr-2" />}
+        />
+        
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>No Keywords Found</CardTitle>
+            <CardDescription>
+              We couldn't find any keywords in this analysis.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>
+              This could be because the keywords weren't tracked properly or there was an error
+              during processing.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => navigate("/rival-rank-tracker")}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Keyword Tracker
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Create data for the ranking chart
+  const rankingChartData = analysis.keywords.map((keyword: any) => {
+    const competitors = analysis.competitors || [];
+    const data: any = {
+      keyword: keyword.text,
+      "Your Website": keyword.currentRanking?.position || 100,
+    };
+    
+    // Add competitor data to chart
+    competitors.forEach((competitor: any) => {
+      const competitorRanking = keyword.competitorRankings?.find(
+        (r: any) => r.competitorUrl === competitor.url
+      );
+      data[competitor.url] = competitorRanking?.position || 100;
+    });
+    
+    return data;
+  });
+
+  // Data for summary stats
+  const topRankedKeywords = analysis.keywords.filter((k: any) => 
+    (k.currentRanking?.position || 101) <= 10
+  ).length;
+  
+  const keywordsWithDifficulty = analysis.keywords.filter((k: any) => k.metrics?.difficulty).length;
+  const avgDifficulty = keywordsWithDifficulty > 0 
+    ? analysis.keywords.reduce((acc: number, k: any) => 
+        acc + (k.metrics?.difficulty || 0), 0) / keywordsWithDifficulty
+    : 0;
+  
+  const totalSearchVolume = analysis.keywords.reduce(
+    (acc: number, k: any) => acc + (k.metrics?.volume || 0), 0
+  );
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <Button 
-        variant="ghost" 
-        className="mb-4"
-        onClick={() => navigate("/rival-rank-tracker")}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Rank Tracker
-      </Button>
-
-      {/* Header Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-          {keyword.keyword}
-        </h1>
-        <div className="mt-2 flex flex-col sm:flex-row sm:items-center">
-          <span className="text-gray-500 font-mono text-sm mr-4">
-            {keyword.targetUrl}
-          </span>
-          <a 
-            href={keyword.targetUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="mt-2 sm:mt-0 text-primary hover:text-primary/80 text-sm inline-flex items-center"
-          >
-            Visit <ExternalLink className="h-3 w-3 ml-1" />
-          </a>
+    <div className="container mx-auto py-8 max-w-6xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" className="mr-2" onClick={() => navigate("/rival-rank-tracker")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <PageHeader 
+            title={analysis.website}
+            description="Keyword Ranking Analysis"
+            icon={<BarChart className="h-6 w-6 mr-2" />}
+          />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => window.print()}>
+            Export as PDF
+          </Button>
         </div>
       </div>
-
-      {/* Actions Bar */}
-      <div className="mb-6 flex flex-wrap gap-3">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={checkRanking}
-          disabled={checkingRanking}
-        >
-          {checkingRanking ? (
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Check Ranking
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={updateMetrics}
-          disabled={updatingMetrics}
-        >
-          {updatingMetrics ? (
-            <BarChart className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <BarChart className="h-4 w-4 mr-2" />
-          )}
-          Update Metrics
-        </Button>
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Export Data
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="rounded-full p-2 bg-blue-50 mr-4">
-                <LineChart className="h-6 w-6 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Current Rank</p>
-                <h3 className="text-2xl font-bold">{keyword.latestRanking?.rank || "Not Ranked"}</h3>
-              </div>
-            </div>
+      
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Keywords Tracked</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analysis.keywords.length}</div>
+            <p className="text-sm text-muted-foreground">
+              {topRankedKeywords} in top 10 positions
+            </p>
           </CardContent>
         </Card>
-        <Card className="bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="rounded-full p-2 bg-green-50 mr-4">
-                <TrendingUp className="h-6 w-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Search Volume</p>
-                <h3 className="text-2xl font-bold">{metrics?.searchVolume?.toLocaleString() || "-"}</h3>
-              </div>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Average Difficulty</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {avgDifficulty.toFixed(1)}%
             </div>
+            <p className="text-sm text-muted-foreground">
+              {getDifficultyText(avgDifficulty)}
+            </p>
           </CardContent>
         </Card>
-        <Card className="bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="rounded-full p-2 bg-purple-50 mr-4">
-                <BarChart className="h-6 w-6 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Keyword Difficulty</p>
-                <div className="flex items-center">
-                  <h3 className="text-2xl font-bold mr-2">{metrics?.keywordDifficulty || "-"}</h3>
-                  {metrics?.keywordDifficulty && (
-                    <KeywordDifficultyBadge difficulty={metrics.keywordDifficulty} />
-                  )}
-                </div>
-              </div>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Search Volume</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatNumber(totalSearchVolume)}/mo
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="rounded-full p-2 bg-amber-50 mr-4">
-                <Calendar className="h-6 w-6 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Last Updated</p>
-                <h3 className="text-lg font-bold">
-                  {keyword.latestRanking 
-                    ? new Date(keyword.latestRanking.rankDate).toLocaleDateString() 
-                    : "Never"}
-                </h3>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Estimated monthly searches
+            </p>
           </CardContent>
         </Card>
       </div>
-
-      {/* Main Content Area with Tabs */}
-      <Tabs defaultValue="overview" className="w-full mt-6">
-        <TabsList className="grid w-full max-w-md grid-cols-4">
+      
+      {/* Tabs for different analysis views */}
+      <Tabs 
+        defaultValue="overview" 
+        value={activeTab} 
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="rankings">Rankings</TabsTrigger>
           <TabsTrigger value="competitors">Competitors</TabsTrigger>
-          <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>
-
+        
         {/* Overview Tab */}
-        <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="md:col-span-2 border-primary/10">
-              <CardHeader className="pb-2">
-                <CardTitle>Ranking Progress</CardTitle>
-                <CardDescription>How your keyword position has changed over time</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                {rankingsLoading ? (
-                  <div className="h-full flex items-center justify-center">
-                    <Skeleton className="h-[300px] w-full" />
-                  </div>
-                ) : rankingChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={rankingChartData}
-                      margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis reversed domain={[1, 'dataMax']} />
-                      <Tooltip 
-                        formatter={(value) => [`Position: ${value}`, 'Ranking']}
-                        labelFormatter={(label) => `Date: ${label}`}
-                      />
-                      <Legend />
-                      <defs>
-                        <linearGradient id="colorRank" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                        </linearGradient>
-                      </defs>
-                      <Area 
-                        type="monotone" 
-                        dataKey="position" 
-                        stroke="#3b82f6" 
-                        fillOpacity={1} 
-                        fill="url(#colorRank)"
-                        name="Ranking"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                    <LineChart className="h-12 w-12 mb-2 text-slate-300" />
-                    <p>No ranking data available yet</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-4"
-                      onClick={checkRanking}
-                      disabled={checkingRanking}
-                    >
-                      Check Ranking Now
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-primary/10">
-              <CardHeader className="pb-2">
-                <CardTitle>Competitors</CardTitle>
-                <CardDescription>Top competitors for this keyword</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[350px]">
-                {competitorsLoading ? (
-                  <div className="h-full flex items-center justify-center">
-                    <Skeleton className="h-[300px] w-full" />
-                  </div>
-                ) : competitorChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ReBarChart
-                      data={competitorChartData}
-                      margin={{ top: 20, right: 10, left: 10, bottom: 60 }}
-                      layout="vertical"
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" domain={[1, 'dataMax']} />
-                      <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
-                      <Tooltip 
-                        formatter={(value) => [`Position: ${value}`, 'Ranking']}
-                      />
-                      <Legend />
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Keyword Rankings</CardTitle>
+              <CardDescription>
+                How your website ranks compared to competitors for each keyword
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart
+                    data={rankingChartData}
+                    layout="vertical"
+                    margin={{ top: 20, right: 30, left: 40, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis 
+                      type="number" 
+                      domain={[1, 100]} 
+                      reversed={true}
+                      label={{ value: 'Position', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis 
+                      dataKey="keyword" 
+                      type="category" 
+                      width={120} 
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [
+                        value > 100 ? 'Not ranked' : `Position ${value}`, 
+                        'Ranking'
+                      ]}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="Your Website" 
+                      fill="#4f46e5" 
+                      radius={[0, 4, 4, 0]}
+                    />
+                    {analysis.competitors && analysis.competitors.map((competitor: any, index: number) => (
                       <Bar 
-                        dataKey="position" 
-                        name="Ranking Position" 
-                        fill="#8884d8"
+                        key={competitor.url}
+                        dataKey={competitor.url}
+                        fill={`hsl(${index * 60}, 70%, 60%)`}
                         radius={[0, 4, 4, 0]}
                       />
-                    </ReBarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                    <Users className="h-12 w-12 mb-2 text-slate-300" />
-                    <p>No competitor data available yet</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="mt-4"
-                      onClick={checkRanking}
-                      disabled={checkingRanking}
-                    >
-                      Check Competitors Now
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {metrics && (
-            <Card className="mt-6 border-primary/10">
-              <CardHeader className="pb-2">
-                <CardTitle>Keyword Insights</CardTitle>
-                <CardDescription>Key metrics and insights about this keyword</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-gray-500">Search Volume</h4>
-                    <div className="flex items-center">
-                      <div className="text-2xl font-bold mr-2">
-                        {metrics.searchVolume?.toLocaleString() || "-"}
-                      </div>
-                      <Badge variant="outline" className="ml-auto">
-                        US
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      Monthly searches in the United States
-                    </p>
-                    
-                    <h4 className="text-sm font-medium text-gray-500 mt-6">Global Volume</h4>
-                    <div className="text-2xl font-bold">
-                      {metrics.globalSearchVolume?.toLocaleString() || "-"}
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      Estimated monthly searches globally
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-gray-500">Competition Level</h4>
-                    <div className="flex items-center">
-                      <div className="text-2xl font-bold mr-2">
-                        {metrics.competition 
-                          ? (metrics.competition * 100).toFixed(0) + "%" 
-                          : "-"}
-                      </div>
-                      <CompetitionLevelBadge level={metrics.competition} />
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      How competitive this keyword is
-                    </p>
-                    
-                    {metrics.cpc && (
-                      <>
-                        <h4 className="text-sm font-medium text-gray-500 mt-6">CPC (Cost Per Click)</h4>
-                        <div className="text-2xl font-bold">
-                          ${metrics.cpc.toFixed(2)}
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          Average cost per click for ads
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-gray-500">Keyword Difficulty</h4>
-                    <div className="flex items-center">
-                      <div className="text-2xl font-bold mr-2">
-                        {metrics.keywordDifficulty || "-"}
-                      </div>
-                      <KeywordDifficultyBadge difficulty={metrics.keywordDifficulty} />
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      How hard it is to rank for this term
-                    </p>
-                    
-                    <KeywordDifficultyMeter difficulty={metrics.keywordDifficulty} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                    ))}
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Search Volume vs. Difficulty</CardTitle>
+              <CardDescription>
+                Keyword difficulty compared to monthly search volume
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsLineChart
+                    data={analysis.keywords.map((keyword: any) => ({
+                      keyword: keyword.text,
+                      volume: keyword.metrics?.volume || 0,
+                      difficulty: keyword.metrics?.difficulty || 0,
+                      position: keyword.currentRanking?.position || 100
+                    }))}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="difficulty" 
+                      type="number" 
+                      name="Difficulty" 
+                      domain={[0, 100]}
+                      label={{ value: 'Difficulty (%)', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis 
+                      label={{ value: 'Search Volume', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      formatter={(value, name, props) => {
+                        if (name === "volume") return [formatNumber(value as number), "Search Volume"];
+                        if (name === "difficulty") return [`${value}%`, "Difficulty"];
+                        return [value, name];
+                      }}
+                      labelFormatter={(label) => {
+                        const item = analysis.keywords.find((k: any) => 
+                          (k.metrics?.difficulty || 0) === label
+                        );
+                        return item ? item.text : '';
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="volume" 
+                      name="Search Volume"
+                      stroke="#4f46e5" 
+                      dot={{ 
+                        r: 5, 
+                        stroke: '#4f46e5',
+                        strokeWidth: 1,
+                        fill: 'white' 
+                      }}
+                    />
+                  </RechartsLineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
-
+        
         {/* Rankings Tab */}
-        <TabsContent value="rankings" className="mt-6">
-          <Card className="border-primary/10">
+        <TabsContent value="rankings">
+          <Card>
             <CardHeader>
-              <CardTitle>Ranking History</CardTitle>
-              <CardDescription>Historical rankings for this keyword</CardDescription>
+              <CardTitle>Keyword Rankings</CardTitle>
+              <CardDescription>
+                Current rankings for all tracked keywords
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {rankingsLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              ) : rankings && rankings.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Position</TableHead>
-                        <TableHead>Change</TableHead>
-                        <TableHead>URL</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rankings.map((ranking) => (
-                        <TableRow key={ranking.id}>
-                          <TableCell className="font-medium">
-                            {new Date(ranking.rankDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>{ranking.rank || "-"}</TableCell>
-                          <TableCell>
-                            {ranking.previousRank ? (
-                              <RankChange current={ranking.rank} previous={ranking.previousRank} />
-                            ) : (
-                              <Badge variant="outline">New</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate font-mono text-xs">
-                            {ranking.rankingUrl ? (
-                              <a 
-                                href={ranking.rankingUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline flex items-center"
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">Keyword</TableHead>
+                    <TableHead>Position</TableHead>
+                    <TableHead>Search Volume</TableHead>
+                    <TableHead>Difficulty</TableHead>
+                    <TableHead>Trend</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {analysis.keywords.sort((a: any, b: any) => {
+                    // Sort by position (unranked at the bottom)
+                    const posA = a.currentRanking?.position || 101;
+                    const posB = b.currentRanking?.position || 101;
+                    return posA - posB;
+                  }).map((keyword: any) => (
+                    <TableRow key={keyword.id}>
+                      <TableCell className="font-medium">{keyword.text}</TableCell>
+                      <TableCell className={getRankingColor(keyword.currentRanking?.position || 101)}>
+                        {keyword.currentRanking?.position 
+                          ? `#${keyword.currentRanking.position}` 
+                          : "Not ranked"}
+                      </TableCell>
+                      <TableCell>
+                        {keyword.metrics?.volume
+                          ? `${formatNumber(keyword.metrics.volume)}/mo`
+                          : "Unknown"}
+                      </TableCell>
+                      <TableCell>
+                        {keyword.metrics?.difficulty !== undefined ? (
+                          <Badge variant={getDifficultyVariant(keyword.metrics.difficulty)}>
+                            {keyword.metrics.difficulty}% - {getDifficultyText(keyword.metrics.difficulty)}
+                          </Badge>
+                        ) : (
+                          "Unknown"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {keyword.metrics?.trend ? (
+                          <div className="w-32 h-10">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart
+                                data={keyword.metrics.trend.map((point: number, i: number) => ({
+                                  date: i,
+                                  value: point
+                                }))}
                               >
-                                {new URL(ranking.rankingUrl).hostname}
-                                <ExternalLink className="h-3 w-3 ml-1 inline" />
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                  <LineChart className="h-12 w-12 mb-2 text-slate-300" />
-                  <p className="mb-4">No ranking history available for this keyword</p>
-                  <Button 
-                    variant="outline" 
-                    onClick={checkRanking}
-                    disabled={checkingRanking}
-                  >
-                    {checkingRanking ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Check Ranking Now
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Competitors Tab */}
-        <TabsContent value="competitors" className="mt-6">
-          <Card className="border-primary/10">
-            <CardHeader>
-              <CardTitle>Competitor Rankings</CardTitle>
-              <CardDescription>How your competitors rank for this keyword</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {competitorsLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              ) : competitors && competitors.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Competitor</TableHead>
-                        <TableHead>Position</TableHead>
-                        <TableHead>Last Checked</TableHead>
-                        <TableHead>URL</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {competitors.map((competitor) => (
-                        <TableRow key={competitor.id}>
-                          <TableCell className="font-medium">
-                            {new URL(competitor.competitorUrl).hostname}
-                          </TableCell>
-                          <TableCell>{competitor.rank}</TableCell>
-                          <TableCell>{new Date(competitor.rankDate).toLocaleDateString()}</TableCell>
-                          <TableCell className="max-w-[200px] truncate font-mono text-xs">
-                            <a 
-                              href={competitor.competitorUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline flex items-center"
-                            >
-                              {competitor.competitorUrl}
-                              <ExternalLink className="h-3 w-3 ml-1 inline" />
-                            </a>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                  <Users className="h-12 w-12 mb-2 text-slate-300" />
-                  <p className="mb-4">No competitor data available for this keyword</p>
-                  <Button 
-                    variant="outline" 
-                    onClick={checkRanking}
-                    disabled={checkingRanking}
-                  >
-                    {checkingRanking ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Check Competitors Now
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Metrics Tab */}
-        <TabsContent value="metrics" className="mt-6">
-          <Card className="border-primary/10">
-            <CardHeader>
-              <CardTitle>Keyword Metrics</CardTitle>
-              <CardDescription>Detailed metrics for this keyword</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {metricsLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                </div>
-              ) : metrics ? (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Search Trends</h3>
-                      {metrics.trendsData ? (
-                        <div className="h-[300px]">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <ReLineChart
-                              data={metrics.trendsData.months.map((month, index) => ({
-                                month,
-                                volume: metrics.trendsData.values[index]
-                              }))}
-                              margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="month" />
-                              <YAxis />
-                              <Tooltip formatter={(value) => [`${value.toLocaleString()}`, 'Search Volume']} />
-                              <Legend />
-                              <Line 
-                                type="monotone" 
-                                dataKey="volume" 
-                                stroke="#8884d8" 
-                                activeDot={{ r: 8 }}
-                                name="Search Volume"
-                              />
-                            </ReLineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center py-8 text-slate-500">
-                          No trend data available
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Related Keywords</h3>
-                      {metrics.relatedKeywords && metrics.relatedKeywords.length > 0 ? (
-                        <div className="rounded-md border p-4 h-[300px] overflow-y-auto">
-                          <div className="flex flex-wrap gap-2">
-                            {metrics.relatedKeywords.map((keyword, index) => (
-                              <div key={index} className="flex items-center">
-                                <Badge 
-                                  variant="outline" 
-                                  className="px-3 py-1 text-sm mb-2"
-                                >
-                                  {keyword.keyword}
-                                  <span className="ml-2 text-xs opacity-60">
-                                    {keyword.source === 'related' ? 'related' : 'question'}
-                                  </span>
-                                </Badge>
-                              </div>
-                            ))}
+                                <Area
+                                  type="monotone"
+                                  dataKey="value"
+                                  stroke="#4f46e5"
+                                  fill="#4f46e580"
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center py-8 text-slate-500 border rounded-md h-[300px]">
-                          No related keywords available
-                        </div>
-                      )}
-                    </div>
+                        ) : (
+                          "No data"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Competitors Tab */}
+        <TabsContent value="competitors">
+          <Card>
+            <CardHeader>
+              <CardTitle>Competitor Analysis</CardTitle>
+              <CardDescription>
+                How your website compares to competitors
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysis.competitors && analysis.competitors.length > 0 ? (
+                <div className="space-y-8">
+                  <div className="h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsBarChart
+                        data={analysis.keywords.map((k: any) => {
+                          const data: any = {
+                            keyword: k.text,
+                            "Your Website": k.currentRanking?.position 
+                              ? 100 - Math.min(k.currentRanking.position, 100) 
+                              : 0,
+                          };
+                          
+                          analysis.competitors.forEach((c: any) => {
+                            const ranking = k.competitorRankings?.find(
+                              (r: any) => r.competitorUrl === c.url
+                            );
+                            data[c.url] = ranking?.position 
+                              ? 100 - Math.min(ranking.position, 100) 
+                              : 0;
+                          });
+                          
+                          return data;
+                        })}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="keyword" 
+                          tick={{ angle: -45, textAnchor: 'end', fontSize: 12 }}
+                          height={70}
+                        />
+                        <YAxis 
+                          domain={[0, 100]}
+                          label={{ 
+                            value: 'Ranking Score (higher is better)', 
+                            angle: -90, 
+                            position: 'insideLeft' 
+                          }}
+                        />
+                        <Tooltip formatter={(value) => [`${value}%`, 'Score']} />
+                        <Legend />
+                        <Bar 
+                          dataKey="Your Website" 
+                          fill="#4f46e5" 
+                        />
+                        {analysis.competitors.map((competitor: any, index: number) => (
+                          <Bar 
+                            key={competitor.url}
+                            dataKey={competitor.url}
+                            fill={`hsl(${index * 60}, 70%, 60%)`}
+                          />
+                        ))}
+                      </RechartsBarChart>
+                    </ResponsiveContainer>
                   </div>
-                  
-                  <Separator />
                   
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Additional Metrics</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Card className="bg-white shadow-sm">
-                        <CardContent className="pt-6">
-                          <div className="text-sm text-gray-500">Search Volume</div>
-                          <div className="text-2xl font-bold">{metrics.searchVolume?.toLocaleString() || "-"}</div>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-white shadow-sm">
-                        <CardContent className="pt-6">
-                          <div className="text-sm text-gray-500">Global Volume</div>
-                          <div className="text-2xl font-bold">{metrics.globalSearchVolume?.toLocaleString() || "-"}</div>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-white shadow-sm">
-                        <CardContent className="pt-6">
-                          <div className="text-sm text-gray-500">Difficulty</div>
-                          <div className="flex items-center">
-                            <div className="text-2xl font-bold mr-2">{metrics.keywordDifficulty || "-"}</div>
-                            {metrics.keywordDifficulty && (
-                              <KeywordDifficultyBadge difficulty={metrics.keywordDifficulty} small />
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-white shadow-sm">
-                        <CardContent className="pt-6">
-                          <div className="text-sm text-gray-500">CPC</div>
-                          <div className="text-2xl font-bold">${metrics.cpc?.toFixed(2) || "-"}</div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    <h3 className="text-lg font-medium mb-3">Competitor Rankings</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Website</TableHead>
+                          <TableHead>Avg. Position</TableHead>
+                          <TableHead>Top 10 Keywords</TableHead>
+                          <TableHead>Keywords Ranked</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            {analysis.website}
+                            <Badge variant="outline" className="ml-2">Your Website</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {analysis.avgPosition ? `#${analysis.avgPosition.toFixed(1)}` : "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            {topRankedKeywords} of {analysis.keywords.length}
+                          </TableCell>
+                          <TableCell>
+                            {analysis.keywords.filter((k: any) => k.currentRanking?.position).length} of {analysis.keywords.length}
+                          </TableCell>
+                        </TableRow>
+                        
+                        {analysis.competitors.map((competitor: any) => {
+                          const competitorRankings = analysis.keywords
+                            .flatMap((k: any) => k.competitorRankings || [])
+                            .filter((r: any) => r.competitorUrl === competitor.url);
+                          
+                          const avgPosition = competitorRankings.length
+                            ? competitorRankings.reduce((acc: number, r: any) => 
+                                acc + (r.position || 0), 0) / competitorRankings.length
+                            : null;
+                          
+                          const top10Count = competitorRankings.filter(
+                            (r: any) => (r.position || 101) <= 10
+                          ).length;
+                          
+                          return (
+                            <TableRow key={competitor.url}>
+                              <TableCell className="font-medium">
+                                <a 
+                                  href={competitor.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center hover:underline"
+                                >
+                                  {competitor.url.replace(/^https?:\/\/(www\.)?/, '')}
+                                  <ArrowUpRight className="h-3 w-3 ml-1" />
+                                </a>
+                              </TableCell>
+                              <TableCell>
+                                {avgPosition ? `#${avgPosition.toFixed(1)}` : "N/A"}
+                              </TableCell>
+                              <TableCell>
+                                {top10Count} of {analysis.keywords.length}
+                              </TableCell>
+                              <TableCell>
+                                {competitorRankings.filter(r => r.position).length} of {analysis.keywords.length}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                  <BarChart className="h-12 w-12 mb-2 text-slate-300" />
-                  <p className="mb-4">No metrics available for this keyword</p>
-                  <Button 
-                    variant="outline" 
-                    onClick={updateMetrics}
-                    disabled={updatingMetrics}
-                  >
-                    {updatingMetrics ? (
-                      <BarChart className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <BarChart className="h-4 w-4 mr-2" />
-                    )}
-                    Generate Metrics
-                  </Button>
+                <div className="py-12 text-center">
+                  <Layers className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium">No competitors data</h3>
+                  <p className="text-gray-500 mt-2">
+                    No competitor data was provided for this analysis.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Trends Tab */}
+        <TabsContent value="trends">
+          <Card>
+            <CardHeader>
+              <CardTitle>Keyword Trends</CardTitle>
+              <CardDescription>
+                Search volume trends for your tracked keywords
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analysis.keywords.some((k: any) => k.metrics?.trend?.length > 0) ? (
+                <div className="space-y-8">
+                  <div className="h-[400px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsLineChart
+                        data={Array.from({ length: 12 }, (_, i) => ({
+                          month: i,
+                          ...analysis.keywords.reduce((acc: any, keyword: any) => {
+                            if (keyword.metrics?.trend && keyword.metrics.trend[i] !== undefined) {
+                              acc[keyword.text] = keyword.metrics.trend[i];
+                            }
+                            return acc;
+                          }, {})
+                        }))}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="month" 
+                          tickFormatter={(value) => {
+                            const date = new Date();
+                            date.setMonth(date.getMonth() - (11 - value));
+                            return format(date, 'MMM');
+                          }}
+                        />
+                        <YAxis />
+                        <Tooltip 
+                          labelFormatter={(label) => {
+                            const date = new Date();
+                            date.setMonth(date.getMonth() - (11 - Number(label)));
+                            return format(date, 'MMMM yyyy');
+                          }}
+                        />
+                        <Legend />
+                        {analysis.keywords
+                          .filter((k: any) => k.metrics?.trend?.length > 0)
+                          .slice(0, 5) // Limit to 5 keywords for readability
+                          .map((keyword: any, index: number) => (
+                            <Line
+                              key={keyword.id}
+                              type="monotone"
+                              dataKey={keyword.text}
+                              stroke={`hsl(${index * 50}, 70%, 50%)`}
+                              activeDot={{ r: 8 }}
+                            />
+                          ))}
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Search Volume by Keyword</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Keyword</TableHead>
+                          <TableHead>Current Volume</TableHead>
+                          <TableHead>Year Trend</TableHead>
+                          <TableHead>Change</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {analysis.keywords
+                          .filter((k: any) => k.metrics?.volume)
+                          .sort((a: any, b: any) => 
+                            (b.metrics?.volume || 0) - (a.metrics?.volume || 0)
+                          )
+                          .map((keyword: any) => {
+                            const trend = keyword.metrics?.trend || [];
+                            const startVolume = trend[0] || 0;
+                            const endVolume = trend[trend.length - 1] || keyword.metrics?.volume || 0;
+                            const change = startVolume > 0 
+                              ? ((endVolume - startVolume) / startVolume) * 100 
+                              : 0;
+                              
+                            return (
+                              <TableRow key={keyword.id}>
+                                <TableCell className="font-medium">{keyword.text}</TableCell>
+                                <TableCell>{formatNumber(keyword.metrics?.volume || 0)}/mo</TableCell>
+                                <TableCell>
+                                  {trend.length > 0 ? (
+                                    <div className="w-32 h-10">
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={trend.map((v: number, i: number) => ({ date: i, value: v }))}>
+                                          <Area
+                                            type="monotone"
+                                            dataKey="value"
+                                            stroke={change >= 0 ? "#10b981" : "#ef4444"}
+                                            fill={change >= 0 ? "#10b98180" : "#ef444480"}
+                                          />
+                                        </AreaChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                  ) : (
+                                    "No data"
+                                  )}
+                                </TableCell>
+                                <TableCell 
+                                  className={
+                                    change > 0 
+                                      ? "text-green-600" 
+                                      : change < 0 
+                                        ? "text-red-600" 
+                                        : ""
+                                  }
+                                >
+                                  {change !== 0 ? (
+                                    <>
+                                      {change > 0 ? "+" : ""}
+                                      {change.toFixed(1)}%
+                                    </>
+                                  ) : (
+                                    "No change"
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <LineChart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium">No trend data available</h3>
+                  <p className="text-gray-500 mt-2">
+                    We don't have trend data for these keywords yet.
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-// Helper component for showing rank changes
-function RankChange({ current, previous }: { current: number; previous: number }) {
-  const diff = previous - current;
-  
-  if (diff > 0) {
-    return (
-      <div className="flex items-center text-green-600">
-        <ChevronUp className="h-4 w-4 mr-1" />
-        <span>+{diff}</span>
-      </div>
-    );
-  } else if (diff < 0) {
-    return (
-      <div className="flex items-center text-red-600">
-        <ChevronDown className="h-4 w-4 mr-1" />
-        <span>{diff}</span>
-      </div>
-    );
-  } else {
-    return (
-      <div className="flex items-center text-gray-600">
-        <Minus className="h-4 w-4 mr-1" />
-        <span>0</span>
-      </div>
-    );
-  }
-}
-
-// Helper component for difficulty badge
-function KeywordDifficultyBadge({ difficulty, small = false }: { difficulty: number; small?: boolean }) {
-  let color = "bg-green-100 text-green-800";
-  let label = "Easy";
-  
-  if (difficulty >= 80) {
-    color = "bg-red-100 text-red-800";
-    label = "Very Hard";
-  } else if (difficulty >= 60) {
-    color = "bg-orange-100 text-orange-800";
-    label = "Hard";
-  } else if (difficulty >= 40) {
-    color = "bg-yellow-100 text-yellow-800";
-    label = "Medium";
-  } else if (difficulty >= 20) {
-    color = "bg-blue-100 text-blue-800";
-    label = "Moderate";
-  }
-  
-  return (
-    <span className={`inline-flex items-center ${small ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-0.5 text-sm'} font-medium rounded-full ${color}`}>
-      {label}
-    </span>
-  );
-}
-
-// Helper component for competition level badge
-function CompetitionLevelBadge({ level }: { level: number }) {
-  let color = "bg-green-100 text-green-800";
-  let label = "Low";
-  
-  if (level >= 0.8) {
-    color = "bg-red-100 text-red-800";
-    label = "Very High";
-  } else if (level >= 0.6) {
-    color = "bg-orange-100 text-orange-800";
-    label = "High";
-  } else if (level >= 0.4) {
-    color = "bg-yellow-100 text-yellow-800";
-    label = "Medium";
-  } else if (level >= 0.2) {
-    color = "bg-blue-100 text-blue-800";
-    label = "Moderate";
-  }
-  
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 text-sm font-medium rounded-full ${color}`}>
-      {label}
-    </span>
-  );
-}
-
-// Helper component for keyword difficulty meter
-function KeywordDifficultyMeter({ difficulty }: { difficulty: number }) {
-  if (!difficulty) return null;
-  
-  const COLORS = ["#4ade80", "#22d3ee", "#60a5fa", "#f97316", "#ef4444"];
-  const getColor = (value: number) => {
-    if (value < 20) return COLORS[0];
-    if (value < 40) return COLORS[1];
-    if (value < 60) return COLORS[2];
-    if (value < 80) return COLORS[3];
-    return COLORS[4];
-  };
-  
-  return (
-    <div className="mt-4">
-      <div className="w-full bg-slate-100 rounded-full h-2.5">
-        <div 
-          className="h-2.5 rounded-full transition-all duration-500" 
-          style={{ 
-            width: `${difficulty}%`,
-            backgroundColor: getColor(difficulty)
-          }} 
-        />
-      </div>
-      <div className="flex justify-between text-xs text-slate-500 mt-1">
-        <span>Easy</span>
-        <span>Medium</span>
-        <span>Hard</span>
-      </div>
     </div>
   );
 }
