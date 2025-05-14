@@ -499,8 +499,8 @@ export const competitorAnalysisResultSchema = z.object({
     topKeywords: z.array(z.string())
   }),
   // New fields for advanced competitor analysis with pagination
-  allCompetitorUrls: z.array(competitorUrlSchema),
-  meta: competitorMetaSchema,
+  allCompetitorUrls: z.array(competitorUrlSchema).optional(),
+  meta: competitorMetaSchema.optional(),
   queryCount: z.number().optional(),
   usingRealSearch: z.boolean().optional(),
   keywordGap: z.array(z.object({
