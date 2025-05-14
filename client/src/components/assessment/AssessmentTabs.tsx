@@ -248,11 +248,10 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
                 )}
               </div>
             ) : (
-              // If no competitor analysis data exists, show the competitor analysis component which will fetch new data
               <CompetitorAnalysis 
                 url={data.url} 
                 keyword={data.keywordAnalysis.primaryKeyword}
-                isRequested={data.competitorAnalysis !== undefined} 
+                isRequested={data.competitorAnalysis !== null && data.competitorAnalysis !== undefined} 
               />
             )}
           </div>
@@ -262,7 +261,7 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
           <div className="p-4 sm:p-6">
             <DeepContentAnalysis 
               url={data.url} 
-              isRequested={data.deepContentAnalysis !== undefined} 
+              isRequested={data.deepContentAnalysis !== null && data.deepContentAnalysis !== undefined} 
             />
           </div>
         </TabsContent>

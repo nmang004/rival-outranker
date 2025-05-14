@@ -146,6 +146,17 @@ export default function ResultsPage() {
       h6Count: 0
     };
   }
+  
+  // Add empty competitorAnalysis and deepContentAnalysis if not present (rather than undefined)
+  // This will explicitly mark them as not requested, rather than as loading states
+  if (!data.competitorAnalysis) {
+    data.competitorAnalysis = null;
+  }
+  
+  // Make sure deepContentAnalysis is set to null if not requested
+  if (!data.deepContentAnalysis) {
+    data.deepContentAnalysis = null;
+  }
 
   useEffect(() => {
     if (isError) {
