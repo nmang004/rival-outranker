@@ -188,6 +188,20 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
           )}
         </button>
         
+        {/* Google API Query Count Information */}
+        <div className="mt-4 text-xs text-muted-foreground flex items-center justify-between border-t pt-3">
+          <div className="flex items-center">
+            <Tag className="h-3 w-3 mr-1 text-gray-500" />
+            <span>Google API Query Usage</span>
+          </div>
+          <div>
+            <span className="font-medium">
+              {/* Show actual count from API if available */}
+              {data?.queryCount || "0"} / 100 searches used
+            </span>
+          </div>
+        </div>
+        
         {/* Location selection modal */}
         {showLocationModal && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
