@@ -1392,22 +1392,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       { name: "Other GBP categories appear in copy of website?", description: "Content should include other Google Business Profile categories", status: getStatus(80), importance: "Medium" }
     ];
     
-    // Contact Page audit items
+    // Contact Page audit items based on the provided CSV
     const contactItems = [
-      { name: "Has a contact page?", description: "A dedicated contact page is important", status: getStatus(12), importance: getImportance(12) },
-      { name: "Business name appears in the copy?", description: "Business name should be prominently displayed", status: getStatus(13), importance: getImportance(13) },
-      { name: "Address appears in the copy?", description: "Physical address should be visible", status: getStatus(14), importance: getImportance(14) },
-      { name: "Phone number appears in the copy?", description: "Phone number should be easy to find", status: getStatus(15), importance: getImportance(15) },
-      { name: "Phone number is clickable?", description: "Phone numbers should be clickable for mobile users", status: getStatus(16), importance: getImportance(16) }
+      { name: "Has a contact page?", description: "A dedicated contact page is important", status: getStatus(100), importance: "High" },
+      { name: "Business name appears in the copy?", description: "Business name should be prominently displayed", status: getStatus(101), importance: "High" },
+      { name: "Address appears in the copy?", description: "Physical address should be visible", status: getStatus(102), importance: "High" },
+      { name: "Phone number appears in the copy?", description: "Phone number should be easy to find", status: getStatus(103), importance: "High" },
+      { name: "Phone number is clickable?", description: "Phone numbers should be clickable for mobile users", status: getStatus(104), importance: "Medium" },
+      { name: "Has a welcome message?", description: "Contact page should include a friendly welcome message", status: getStatus(105), importance: "Medium" },
+      { name: "Has an email form?", description: "Contact page should have a form for email submissions", status: getStatus(106), importance: "High" },
+      { name: "Has a bare (clickable) email address?", description: "Email address should be visible and clickable", status: getStatus(107), importance: "Medium" },
+      { name: "Lists hours of operation?", description: "Business hours should be clearly displayed", status: getStatus(108), importance: "High" },
+      { name: "Embedded Google map?", description: "Page should include an embedded map for directions", status: getStatus(109), importance: "Medium" }
     ];
     
-    // Service Pages audit items
+    // Service Pages audit items based on the provided CSV
     const serviceItems = [
-      { name: "Has a single Service Page for each primary service?", description: "Each main service should have its own page", status: getStatus(17), importance: getImportance(17) },
-      { name: "Service Pages are written for the audience, not the business owner?", description: "Content should focus on customer needs", status: getStatus(18), importance: getImportance(18) },
-      { name: "Avoids heavy use of industry jargon?", description: "Content should be understandable to the average user", status: getStatus(19), importance: getImportance(19) },
-      { name: "Service Pages are sufficiently detailed?", description: "Pages should provide comprehensive information", status: getStatus(20), importance: getImportance(20) },
-      { name: "Strong and clear Call To Action (CTA)?", description: "Each page should have a clear next step for users", status: getStatus(21), importance: getImportance(21) }
+      { name: "Has a single Service Page for each primary service?", description: "Each main service should have its own page", status: getStatus(120), importance: "High" },
+      { name: "Service Pages are written for the audience, not the business owner?", description: "Content should focus on customer needs", status: getStatus(121), importance: "Medium" },
+      { name: "Avoids heavy use of industry jargon?", description: "Content should be understandable to the average user", status: getStatus(122), importance: "Medium" },
+      { name: "Service Pages are sufficiently detailed?", description: "Pages should provide comprehensive information", status: getStatus(123), importance: "Medium" },
+      { name: "Long Service Pages start with a summary?", description: "Lengthy content should begin with a concise overview", status: getStatus(124), importance: "High" },
+      { name: "Pages are well structured with <h2> subsections?", description: "Content should be organized with clear subheadings", status: getStatus(125), importance: "High" },
+      { name: "Keyword rich (without stuffing) including synonyms and other related terms?", description: "Content should use varied keyword terminology naturally", status: getStatus(126), importance: "High" },
+      { name: "Describes location/service area for that service?", description: "Pages should specify where service is available", status: getStatus(127), importance: "High" },
+      { name: "Strong and clear Call To Action (CTA)?", description: "Each page should have a clear next step for users", status: getStatus(128), importance: "High" },
+      { name: "Includes \"Our Process\" type content?", description: "Pages should explain how service is delivered", status: getStatus(129), importance: "Medium" },
+      { name: "Includes an FAQ?", description: "Frequently asked questions help users and SEO", status: getStatus(130), importance: "Low" },
+      { name: "Includes FAQ schema?", description: "FAQ schema markup helps with rich results", status: getStatus(131), importance: "Low" },
+      { name: "Leverages reviews/testimonials? (Specific to that service?)", description: "Service-specific testimonials build trust", status: getStatus(132), importance: "Low" },
+      { name: "Media-rich? (video, before/after photos)", description: "Visual content improves engagement", status: getStatus(133), importance: "Low" },
+      { name: "Includes or links to bios of people at the business providing that service?", description: "Staff information builds trust and expertise", status: getStatus(134), importance: "Low" },
+      { name: "Links to case studies?", description: "Case studies demonstrate real results", status: getStatus(135), importance: "Low" },
+      { name: "Links to other Service Pages and/or spin-off pages?", description: "Internal linking improves site structure", status: getStatus(136), importance: "Medium" }
     ];
     
     // Location Pages audit items

@@ -2159,24 +2159,72 @@ class RivalAuditCrawler {
         notes: !hasTelLink && contactPage.hasPhoneNumber ? "Phone number exists but is not clickable" : undefined
       });
       
-      // Check if the page has a contact form
+      // Check if it has a welcome message (approximation - look for welcome-like text)
+      const welcomePatterns = [
+        /welcome/i, /thank you/i, /thanks for/i, /get in touch/i, /contact us/i, /reach out/i
+      ];
+      const hasWelcomeMessage = contactPage.bodyText && welcomePatterns.some(pattern => pattern.test(contactPage.bodyText));
+      
       items.push({
-        name: "Has a contact form?",
-        description: "Page should have a working contact form",
-        status: contactPage.hasContactForm ? 'OK' : 'OFI',
+        name: "Has a welcome message?",
+        description: "Contact page should include a friendly welcome message",
+        status: hasWelcomeMessage ? 'OK' : 'OFI',
         importance: 'Medium',
-        notes: !contactPage.hasContactForm ? "No contact form found on contact page" : undefined
+        notes: !hasWelcomeMessage ? "No welcome message found on contact page" : undefined
       });
       
-      // Check if the contact page has schema markup
+      // Check if it has an email form (same as contact form)
       items.push({
-        name: "Has schema markup?",
-        description: "Contact page should have LocalBusiness schema",
-        status: contactPage.hasSchema ? 'OK' : 'OFI',
+        name: "Has an email form?",
+        description: "Contact page should have a form for email submissions",
+        status: contactPage.hasContactForm ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: !contactPage.hasContactForm ? "No email form found on contact page" : undefined
+      });
+      
+      // Check for bare email address
+      const hasEmailLink = contactPage.links.internal.some(link => link.startsWith('mailto:')) || 
+                          contactPage.links.external.some(link => link.startsWith('mailto:'));
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+      const hasEmailInText = contactPage.bodyText && emailRegex.test(contactPage.bodyText);
+      
+      items.push({
+        name: "Has a bare (clickable) email address?",
+        description: "Email address should be visible and clickable",
+        status: hasEmailLink ? 'OK' : hasEmailInText ? 'OFI' : 'Priority OFI',
         importance: 'Medium',
-        notes: contactPage.hasSchema ? 
-          `Found schema types: ${contactPage.schemaTypes.length > 0 ? contactPage.schemaTypes.join(', ') : 'Unknown'}` : 
-          "No schema markup found on contact page"
+        notes: !hasEmailLink && !hasEmailInText ? "No email address found on contact page" : 
+               !hasEmailLink && hasEmailInText ? "Email address found but not clickable" : undefined
+      });
+      
+      // Check for hours of operation
+      const hoursPatterns = [
+        /hours/i, /open.*?:/i, /mon.*?-.*?fri/i, /monday.*?friday/i, 
+        /\b\d{1,2}:\d{2}\s*(am|pm)\b.*?\b\d{1,2}:\d{2}\s*(am|pm)\b/i
+      ];
+      const hasHoursListed = contactPage.bodyText && hoursPatterns.some(pattern => pattern.test(contactPage.bodyText));
+      
+      items.push({
+        name: "Lists hours of operation?",
+        description: "Business hours should be clearly displayed",
+        status: hasHoursListed ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: !hasHoursListed ? "No business hours found on contact page" : undefined
+      });
+      
+      // Check for embedded Google map (approximation)
+      const hasIframe = contactPage.bodyText && contactPage.bodyText.includes('<iframe');
+      const hasGoogleMapsLink = contactPage.links.external.some(link => 
+        link.includes('google.com/maps') || link.includes('maps.google.com')
+      );
+      
+      items.push({
+        name: "Embedded Google map?",
+        description: "Page should include an embedded map for directions",
+        status: hasIframe ? 'OK' : hasGoogleMapsLink ? 'OFI' : 'OFI',
+        importance: 'Medium',
+        notes: !hasIframe && !hasGoogleMapsLink ? "No Google map or map link found" : 
+               !hasIframe && hasGoogleMapsLink ? "Has Google Maps link but no embedded map" : undefined
       });
       
       // Check for map or location embedding
@@ -2317,48 +2365,121 @@ class RivalAuditCrawler {
           `Good content length (average ${Math.round(averageServiceWordCount)} words)`
       });
       
-      // Check for detail level
+      // Check if the service pages are sufficiently detailed
       items.push({
         name: "Service Pages are sufficiently detailed?",
         description: "Pages should provide comprehensive information",
         status: averageServiceWordCount >= 800 ? 'OK' : 'OFI',
-        importance: 'High',
+        importance: 'Medium',
         notes: averageServiceWordCount < 800 ? 
-          "Service pages need more detail for comprehensive coverage" : 
-          "Service pages have good level of detail"
+          `Service pages need more detail (avg. ${Math.round(averageServiceWordCount)} words)` : 
+          `Good detail level (avg. ${Math.round(averageServiceWordCount)} words)`
       });
       
-      // Check for proper headings structure
-      const hasProperHeadings = servicePages.every(page => 
-        page.headings.h1.length === 1 && page.headings.h2.length >= 2
-      );
+      // Check if long service pages start with a summary
+      const longServicePages = servicePages.filter(page => page.wordCount > 800);
       
-      items.push({
-        name: "Proper heading structure?",
-        description: "Each page should have one H1 and multiple H2 headings",
-        status: hasProperHeadings ? 'OK' : 'OFI',
-        importance: 'Medium',
-        notes: !hasProperHeadings ? 
-          "Some service pages have improper heading structure" :
-          "Good heading structure on service pages"
+      // Check for summary sections (approximation - first paragraph before first H2)
+      const pagesWithSummary = longServicePages.filter(page => {
+        if (page.bodyText && page.headings.h2.length > 0) {
+          const firstParagraphMatch = page.bodyText.match(/<p>(.*?)<\/p>/);
+          return firstParagraphMatch && firstParagraphMatch[1].length > 100;
+        }
+        return false;
       });
       
-      // Check for schema markup
-      const pagesWithSchema = servicePages.filter(page => page.hasSchema).length;
-      const schemaPercentage = (pagesWithSchema / servicePages.length) * 100;
+      const hasSummaryPercentage = longServicePages.length > 0 ? 
+        (pagesWithSummary.length / longServicePages.length) * 100 : 100;
       
       items.push({
-        name: "Service pages have schema markup?",
-        description: "Pages should have structured data for better SEO",
-        status: schemaPercentage >= 50 ? 'OK' : 'OFI',
-        importance: 'Medium',
-        notes: schemaPercentage < 50 ? 
-          `Only ${Math.round(schemaPercentage)}% of service pages have schema markup` : 
-          `${Math.round(schemaPercentage)}% of service pages have schema markup`
+        name: "Long Service Pages start with a summary?",
+        description: "Lengthy content should begin with a concise overview",
+        status: hasSummaryPercentage >= 70 ? 'OK' : longServicePages.length > 0 ? 'OFI' : 'N/A',
+        importance: 'High',
+        notes: longServicePages.length === 0 ? "No long service pages found" :
+               hasSummaryPercentage < 70 ? "Long service pages often lack initial summaries" :
+               "Long service pages include good introductory summaries"
+      });
+      
+      // Check if pages are well structured with H2 subsections
+      const wellStructuredPages = servicePages.filter(page => page.headings.h2.length >= 2);
+      const structuredPercentage = (wellStructuredPages.length / servicePages.length) * 100;
+      
+      items.push({
+        name: "Pages are well structured with <h2> subsections?",
+        description: "Content should be organized with clear subheadings",
+        status: structuredPercentage >= 80 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: structuredPercentage < 80 ? 
+          "Many service pages lack proper H2 section structure" :
+          "Service pages have good heading structure with H2 sections"
+      });
+      
+      // Check for keyword richness
+      const keywordRichPages = servicePages.filter(page => {
+        if (!page.bodyText) return false;
+        
+        // Get service-related keywords from title
+        const title = page.title.toLowerCase();
+        const titleWords = title.split(/\s+/).filter(word => word.length > 3);
+        
+        // Count keyword occurrences in body
+        let keywordMatches = 0;
+        titleWords.forEach(word => {
+          const regex = new RegExp(`\\b${word}\\b`, 'gi');
+          const matches = page.bodyText.match(regex);
+          if (matches) keywordMatches += matches.length;
+        });
+        
+        // Check keyword density (0.5% - 2% is good)
+        const totalWords = page.wordCount;
+        const keywordDensity = totalWords > 0 ? (keywordMatches / totalWords) * 100 : 0;
+        
+        return keywordDensity >= 0.5 && keywordDensity <= 3;
+      }).length;
+      
+      const keywordRichPercentage = (keywordRichPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Keyword rich (without stuffing) including synonyms and other related terms?",
+        description: "Content should use varied keyword terminology naturally",
+        status: keywordRichPercentage >= 70 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: keywordRichPercentage < 70 ? 
+          "Service pages need better keyword optimization" :
+          "Service pages have good keyword usage"
+      });
+      
+      // Check if service area is described
+      const locationMentioningPages = servicePages.filter(page => {
+        if (!page.bodyText) return false;
+        
+        // Common patterns that indicate location/service area mention
+        const locationPatterns = [
+          /serving/i, /service area/i, /locations/i, /areas we serve/i,
+          /in [A-Z][a-z]+/i, /near [A-Z][a-z]+/i,
+          /throughout/i, /across/i, /region/i, /county/i, /counties/i
+        ];
+        
+        return locationPatterns.some(pattern => pattern.test(page.bodyText));
+      }).length;
+      
+      const locationMentionPercentage = (locationMentioningPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Describes location/service area for that service?",
+        description: "Pages should specify where service is available",
+        status: locationMentionPercentage >= 50 ? 'OK' : 'OFI',
+        importance: 'High',
+        notes: locationMentionPercentage < 50 ? 
+          "Many service pages don't specify service areas" :
+          "Service pages properly describe location coverage"
       });
       
       // Check for CTAs
       const pagesWithCTAs = servicePages.filter(page => {
+        if (!page.bodyText) return false;
+        
         const pageText = [
           ...page.headings.h1,
           ...page.headings.h2,
@@ -2367,7 +2488,10 @@ class RivalAuditCrawler {
         ].join(' ').toLowerCase();
         
         // Look for common CTA phrases
-        const ctaPhrases = ['call', 'contact', 'get a quote', 'free quote', 'book', 'schedule', 'learn more'];
+        const ctaPhrases = [
+          'call', 'contact', 'get a quote', 'free quote', 'book', 'schedule', 
+          'learn more', 'request', 'estimate', 'consultation', 'assessment'
+        ];
         return ctaPhrases.some(phrase => pageText.includes(phrase));
       }).length;
       
@@ -2379,80 +2503,188 @@ class RivalAuditCrawler {
         status: ctaPercentage >= 80 ? 'OK' : 'OFI',
         importance: 'High',
         notes: ctaPercentage < 80 ? 
-          `Only ${Math.round(ctaPercentage)}% of service pages have clear CTAs` : 
-          `${Math.round(ctaPercentage)}% of service pages have clear CTAs`
+          "Many service pages lack clear call-to-action elements" : 
+          "Service pages have good CTAs"
       });
       
-      // Check for internal linking
-      const pagesWithInternalLinks = servicePages.filter(page => 
-        page.links.internal.length >= 3
-      ).length;
-      
-      const internalLinkPercentage = (pagesWithInternalLinks / servicePages.length) * 100;
-      
-      items.push({
-        name: "Good internal linking?",
-        description: "Service pages should link to related content",
-        status: internalLinkPercentage >= 70 ? 'OK' : 'OFI',
-        importance: 'Medium',
-        notes: internalLinkPercentage < 70 ? 
-          `Only ${Math.round(internalLinkPercentage)}% of service pages have good internal linking` : 
-          `${Math.round(internalLinkPercentage)}% of service pages have good internal linking`
-      });
-      
-      // Check for image usage
-      const pagesWithImages = servicePages.filter(page => 
-        page.images.total >= 1
-      ).length;
-      
-      const imagesPercentage = (pagesWithImages / servicePages.length) * 100;
-      
-      items.push({
-        name: "Uses images or visual elements?",
-        description: "Service pages should include relevant visuals",
-        status: imagesPercentage >= 80 ? 'OK' : 'OFI',
-        importance: 'Medium',
-        notes: imagesPercentage < 80 ? 
-          `Only ${Math.round(imagesPercentage)}% of service pages use images` : 
-          `Good image usage on service pages`
-      });
-      
-      // Check for descriptive URLs
-      const descriptiveUrlCount = servicePages.filter(page => {
-        const url = page.url.toLowerCase();
-        const title = page.title.toLowerCase();
+      // Check for "Our Process" content
+      const processContentPages = servicePages.filter(page => {
+        if (!page.bodyText) return false;
         
-        // Get main keywords from title (words with 4+ chars)
-        const titleKeywords = title.split(/\s+/).filter(word => word.length >= 4);
-        
-        // Check if at least one keyword is in the URL
-        return titleKeywords.some(keyword => url.includes(keyword));
+        const processPatterns = [
+          /process/i, /how we/i, /steps/i, /procedure/i, 
+          /what to expect/i, /our approach/i, /we begin by/i
+        ];
+        return processPatterns.some(pattern => pattern.test(page.bodyText));
       }).length;
       
-      const descriptiveUrlPercentage = (descriptiveUrlCount / servicePages.length) * 100;
+      const processContentPercentage = (processContentPages / servicePages.length) * 100;
       
       items.push({
-        name: "Service pages have descriptive URLs?",
-        description: "URLs should include service keywords",
-        status: descriptiveUrlPercentage >= 80 ? 'OK' : 'OFI',
+        name: "Includes \"Our Process\" type content?",
+        description: "Pages should explain how service is delivered",
+        status: processContentPercentage >= 50 ? 'OK' : 'OFI',
         importance: 'Medium',
-        notes: descriptiveUrlPercentage < 80 ? 
-          `Only ${Math.round(descriptiveUrlPercentage)}% of service pages have descriptive URLs` : 
-          `Good URL structure for service pages`
+        notes: processContentPercentage < 50 ? 
+          "Many service pages don't explain the service process" :
+          "Service pages include process information"
       });
       
-      // Check for mobile-friendliness
-      const mobileFriendlyPages = servicePages.filter(page => page.mobileFriendly).length;
-      const mobileFriendlyPercentage = (mobileFriendlyPages / servicePages.length) * 100;
+      // Check for FAQs
+      const faqPages = servicePages.filter(page => {
+        if (!page.bodyText) return false;
+        
+        const faqPatterns = [/faq/i, /frequently asked/i, /questions/i];
+        return faqPatterns.some(pattern => pattern.test(page.bodyText));
+      }).length;
+      
+      const faqPercentage = (faqPages / servicePages.length) * 100;
       
       items.push({
-        name: "Mobile-friendly service pages?",
-        description: "Pages should be optimized for mobile devices",
-        status: mobileFriendlyPercentage >= 90 ? 'OK' : mobileFriendlyPercentage >= 70 ? 'OFI' : 'Priority OFI',
-        importance: 'High',
-        notes: mobileFriendlyPercentage < 90 ? 
-          `Only ${Math.round(mobileFriendlyPercentage)}% of service pages are mobile-friendly` : 
-          `All service pages are mobile-friendly`
+        name: "Includes an FAQ?",
+        description: "Frequently asked questions help users and SEO",
+        status: faqPercentage >= 30 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: faqPercentage < 30 ? 
+          "Most service pages don't include FAQ sections" :
+          "Good use of FAQ sections on service pages"
+      });
+      
+      // Check for FAQ schema
+      const faqSchemaPages = servicePages.filter(page => 
+        page.hasSchema && page.schemaTypes.some(type => 
+          type.toLowerCase().includes('faq')
+        )
+      ).length;
+      
+      const faqSchemaPercentage = (faqSchemaPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Includes FAQ schema?",
+        description: "FAQ schema markup helps with rich results",
+        status: faqSchemaPercentage >= 30 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: faqSchemaPercentage < 30 ? 
+          "Few service pages use FAQ schema markup" :
+          "Good implementation of FAQ schema"
+      });
+      
+      // Check for testimonials
+      const testimonialPages = servicePages.filter(page => {
+        if (!page.bodyText) return false;
+        
+        const testimonialPatterns = [
+          /testimonial/i, /review/i, /what our customers/i, 
+          /client feedback/i, /said about/i, /stars\b/i
+        ];
+        return testimonialPatterns.some(pattern => pattern.test(page.bodyText));
+      }).length;
+      
+      const testimonialPercentage = (testimonialPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Leverages reviews/testimonials? (Specific to that service?)",
+        description: "Service-specific testimonials build trust",
+        status: testimonialPercentage >= 30 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: testimonialPercentage < 30 ? 
+          "Few service pages include testimonials" :
+          "Good use of testimonials on service pages"
+      });
+      
+      // Check for image/video usage
+      const pagesWithMedia = servicePages.filter(page => 
+        page.images.total >= 2 || page.bodyText.includes('<video') || page.bodyText.includes('youtube.com')
+      ).length;
+      
+      const mediaPercentage = (pagesWithMedia / servicePages.length) * 100;
+      
+      items.push({
+        name: "Media-rich? (video, before/after photos)",
+        description: "Visual content improves engagement",
+        status: mediaPercentage >= 40 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: mediaPercentage < 40 ? 
+          "Service pages could use more visual content" :
+          "Good use of visual media on service pages"
+      });
+      
+      // Check for staff bio links
+      const bioLinkPages = servicePages.filter(page => {
+        if (!page.links) return false;
+        
+        const bioLinkPatterns = [
+          /about.*?team/i, /staff/i, /our team/i, /technicians/i, 
+          /professionals/i, /experts/i, /specialists/i
+        ];
+        
+        return page.links.internal.some(link => 
+          bioLinkPatterns.some(pattern => pattern.test(link))
+        );
+      }).length;
+      
+      const bioLinkPercentage = (bioLinkPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Includes or links to bios of people at the business providing that service?",
+        description: "Staff information builds trust and expertise",
+        status: bioLinkPercentage >= 20 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: bioLinkPercentage < 20 ? 
+          "Few service pages link to staff information" :
+          "Good connection between services and staff expertise"
+      });
+      
+      // Check for case study links
+      const caseStudyPages = servicePages.filter(page => {
+        if (!page.links) return false;
+        
+        const caseStudyPatterns = [
+          /case.?stud/i, /project/i, /portfolio/i, /gallery/i, 
+          /examples/i, /our work/i
+        ];
+        
+        return page.links.internal.some(link => 
+          caseStudyPatterns.some(pattern => pattern.test(link))
+        );
+      }).length;
+      
+      const caseStudyPercentage = (caseStudyPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Links to case studies?",
+        description: "Case studies demonstrate real results",
+        status: caseStudyPercentage >= 20 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: caseStudyPercentage < 20 ? 
+          "Few service pages link to case studies or examples" :
+          "Good use of case studies to support service pages"
+      });
+      
+      // Check for internal linking between services
+      const serviceInternalLinkPages = servicePages.filter(page => {
+        if (!page.links) return false;
+        
+        // Check if this page links to other service pages
+        const otherServiceUrls = servicePages
+          .filter(p => p.url !== page.url)
+          .map(p => p.url);
+        
+        return page.links.internal.some(link => 
+          otherServiceUrls.includes(link)
+        );
+      }).length;
+      
+      const serviceInternalLinkPercentage = (serviceInternalLinkPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Links to other Service Pages and/or spin-off pages?",
+        description: "Internal linking improves site structure",
+        status: serviceInternalLinkPercentage >= 50 ? 'OK' : 'OFI',
+        importance: 'Medium',
+        notes: serviceInternalLinkPercentage < 50 ? 
+          "Poor internal linking between service pages" :
+          "Good internal linking structure between service pages"
       });
       
     } else {
