@@ -62,14 +62,14 @@ export default function NavBar() {
                 </div>
               </Link>
               <Link href="/competitor-analysis">
-                <div className={linkClass("/competitor-analysis")}>
+                <button className={linkClass("/competitor-analysis") + " cursor-pointer"}>
                   <Users className="h-4 w-4 mr-1" /> Competitors
-                </div>
+                </button>
               </Link>
               <Link href="/rival-audit">
-                <div className={linkClass("/rival-audit")}>
+                <button className={linkClass("/rival-audit") + " cursor-pointer"}>
                   <ClipboardCheck className="h-4 w-4 mr-1" /> Rival Audit
-                </div>
+                </button>
               </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
@@ -116,18 +116,18 @@ export default function NavBar() {
             </div>
           </Link>
           <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
-            <div className={mobileLinkClass("/competitor-analysis")}>
+            <button className={mobileLinkClass("/competitor-analysis") + " w-full text-left cursor-pointer"}>
               <div className="flex items-center">
                 <Users className="h-4 w-4 mr-2" /> Competitor Analysis
               </div>
-            </div>
+            </button>
           </Link>
           <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
-            <div className={mobileLinkClass("/rival-audit")}>
+            <button className={mobileLinkClass("/rival-audit") + " w-full text-left cursor-pointer"}>
               <div className="flex items-center">
                 <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
               </div>
-            </div>
+            </button>
           </Link>
           <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/history")}>

@@ -149,11 +149,11 @@ export default function RivalAuditResultsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-6">
-            <Skeleton className="h-12 w-3/4 mb-4" />
-            <Skeleton className="h-6 w-1/2" />
+          <div className="mb-4 sm:mb-6">
+            <Skeleton className="h-10 sm:h-12 w-3/4 mb-3 sm:mb-4" />
+            <Skeleton className="h-5 sm:h-6 w-1/2" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Skeleton className="h-28 rounded-lg" />
@@ -169,9 +169,9 @@ export default function RivalAuditResultsPage() {
 
   if (isError || !audit) {
     return (
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive" className="mb-4 sm:mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
@@ -187,11 +187,11 @@ export default function RivalAuditResultsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col mb-6">
-          <div className="mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold gradient-heading mb-2">Rival SEO Audit</h1>
+        <div className="flex flex-col mb-4 sm:mb-6">
+          <div className="mb-3 sm:mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold gradient-heading mb-1 sm:mb-2">Rival SEO Audit</h1>
             <p className="text-muted-foreground text-sm sm:text-base">
               Comprehensive SEO audit for <span className="font-medium break-all">{audit.url}</span>
             </p>
