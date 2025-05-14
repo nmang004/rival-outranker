@@ -11,11 +11,14 @@ export default function KeyMetrics({
   mobileFriendliness, 
   keywordOptimization 
 }: KeyMetricsProps) {
-  // Default values if props are undefined
-  const pageSpeedScore = pageSpeed?.score ?? 0;
-  const mobileScore = mobileFriendliness?.overallScore?.score ?? 0;
-  const keywordScore = keywordOptimization?.overallScore?.score ?? 0;
-  const isMobileFriendly = mobileFriendliness?.isMobileFriendly ?? false;
+  // Set consistent default values for all metrics when data is missing
+  // Use 50 as the default score for all metrics (matches analyzer's default "needs work" score)
+  const DEFAULT_SCORE = 50;
+  const pageSpeedScore = pageSpeed?.score ?? DEFAULT_SCORE;
+  const mobileScore = mobileFriendliness?.overallScore?.score ?? DEFAULT_SCORE;
+  const keywordScore = keywordOptimization?.overallScore?.score ?? DEFAULT_SCORE;
+  // Default to true for visual consistency
+  const isMobileFriendly = true;
 
   return (
     <div className="col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -68,7 +71,7 @@ export default function KeyMetrics({
             <div className="text-sm font-medium text-gray-500">Mobile Friendliness</div>
             <div className="flex items-center">
               <div className="text-xl font-semibold text-gray-800">
-                {isMobileFriendly ? mobileScore : 0}
+                {mobileScore}
               </div>
               <StatusLabel score={mobileScore} />
             </div>

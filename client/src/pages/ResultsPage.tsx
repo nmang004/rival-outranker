@@ -93,6 +93,15 @@ export default function ResultsPage() {
   if (data.weaknesses?.length === 0 && (!data.url || !data.overallScore)) {
     data.weaknesses = ["Analysis could not be completed. Please try again."];
   }
+  
+  // Ensure a default overall score is available if missing
+  if (!data.overallScore) {
+    data.overallScore = {
+      score: 50,
+      category: 'needs-work',
+      improvements: ["Analysis could not be completed. Please check the URL and try again."]
+    };
+  }
 
   useEffect(() => {
     if (isError) {
