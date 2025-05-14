@@ -470,6 +470,7 @@ export const rivalAuditSchema = z.object({
   servicePages: servicePagesAuditSchema,
   locationPages: locationPagesAuditSchema,
   serviceAreaPages: serviceAreaPagesAuditSchema.optional(),
+  reachedMaxPages: z.boolean().optional(), // Flag to indicate if crawler reached page limit
   summary: z.object({
     priorityOfiCount: z.number(),
     ofiCount: z.number(),

@@ -75,6 +75,7 @@ interface SiteStructure {
   serviceAreaPages: PageCrawlResult[];
   otherPages: PageCrawlResult[];
   hasSitemapXml: boolean;
+  reachedMaxPages?: boolean; // Flag to indicate if the crawler reached max page limit
 }
 
 /**
@@ -85,7 +86,7 @@ class RivalAuditCrawler {
   private maxPages: number = 100; // Increased to 100 pages for comprehensive coverage
   private baseUrl: string = '';
   private baseDomain: string = '';
-  private requestDelay: number = 500; // Add a 500ms delay between requests
+  private requestDelay: number = 300; // Use 300ms delay between requests for better speed while still being respectful
   
   // Store crawler state for continued crawls
   private pendingLinks: string[] = [];
@@ -281,10 +282,14 @@ class RivalAuditCrawler {
         }
       }
       
-      console.log(`Crawl completed. Visited ${this.visited.size} pages.`);
+      const reachedMaxPages = this.visited.size >= this.maxPages;
+      console.log(`Crawl completed. Visited ${this.visited.size} pages. ${reachedMaxPages ? 'Reached maximum page limit.' : ''}`);
       
       // Store the site structure for potential continuation
       this.siteStructure = siteStructure;
+      
+      // Add flag to indicate if max pages were reached for UI to show continue button
+      siteStructure.reachedMaxPages = reachedMaxPages;
       
       // Generate the audit based on the crawled site structure
       return this.generateAudit(siteStructure);
