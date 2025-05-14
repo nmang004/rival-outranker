@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   timestamp: new Date(),
                   queryCount: searchService.getQueryCount()
                 }
-              : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
+              : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location) as any;
             
             // Transform the competitor analysis results into the expected format for the frontend
             competitors = competitorResults.competitors.map((competitor, index) => {
@@ -636,10 +636,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Analyze competitors with the keyword and location
-      const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location);
+      // Use type assertion to fix TypeScript type issues
+      const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location) as any;
       
       // Transform the competitor analysis results into a format for the frontend
-      const competitors = competitorResults.competitors.map((competitor, index) => {
+      const competitors = competitorResults.competitors.map((competitor: any, index: number) => {
         return {
           name: competitor.title || `Competitor ${index + 1}`,
           url: competitor.url,
@@ -878,7 +879,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Finding competitors for keyword: ${queryKeyword} in ${city}`);
             
             // Analyze competitors with the best keyword we could extract
-            const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, queryKeyword, city);
+            // Use type assertion to fix TypeScript type issues
+            const competitorResults = await competitorAnalyzer.analyzeCompetitors(url, queryKeyword, city) as any;
             
             // Update the existing analysis to include competitor data
             try {
@@ -904,16 +906,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 };
                 
                 // Add optional properties if they exist in competitorResults
-                if (competitorResults.queryCount !== undefined) {
-                  updatedResults.competitorAnalysis.queryCount = competitorResults.queryCount;
+                // Use any type assertion to help TypeScript understand the structure
+                const anyResults = competitorResults as any;
+                
+                if (anyResults.queryCount !== undefined) {
+                  updatedResults.competitorAnalysis.queryCount = anyResults.queryCount;
                 }
                 
-                if (competitorResults.usingRealSearch !== undefined) {
-                  updatedResults.competitorAnalysis.usingRealSearch = competitorResults.usingRealSearch;
+                if (anyResults.usingRealSearch !== undefined) {
+                  updatedResults.competitorAnalysis.usingRealSearch = anyResults.usingRealSearch;
                 }
                 
-                if (competitorResults.keywordGap) {
-                  updatedResults.competitorAnalysis.keywordGap = competitorResults.keywordGap;
+                if (anyResults.keywordGap) {
+                  updatedResults.competitorAnalysis.keywordGap = anyResults.keywordGap;
                 }
                 
                 // Update the analysis with new data
