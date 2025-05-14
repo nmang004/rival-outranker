@@ -186,6 +186,7 @@ class Crawler {
           missingHeadings: this.checkMissingHeadings($),
           robots: responseHeaders['x-robots-tag'] || $('meta[name="robots"]').attr('content')
         },
+        html: response.data, // Add html field for the analyzer
         rawHtml: response.data // Store raw HTML for deep content analysis
       };
       
@@ -260,6 +261,7 @@ class Crawler {
         robots: null
       },
       error: errorMessage,
+      html: `<html><body><h1>${title}</h1><p>${errorMessage}</p></body></html>`,
       rawHtml: `<html><body><h1>${title}</h1><p>${errorMessage}</p></body></html>`
     };
   }
