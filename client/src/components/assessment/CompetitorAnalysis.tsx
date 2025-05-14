@@ -1,14 +1,35 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Globe, Search, BarChart2, Loader2, AlertCircle, Tag, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// FeatureCard component for the competitor analysis display
+function FeatureCard({ 
+  title, 
+  description, 
+  icon 
+}: { 
+  title: string; 
+  description: string; 
+  icon: React.ReactNode 
+}) {
+  return (
+    <div className="bg-white p-4 rounded-lg border shadow-sm">
+      <div className="flex items-center mb-2">
+        <div className="rounded-full p-1.5 bg-primary/10 mr-2">
+          {icon}
+        </div>
+        <h4 className="font-medium">{title}</h4>
+      </div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+  );
+}
 
 interface CompetitorAnalysisProps {
   url: string;
