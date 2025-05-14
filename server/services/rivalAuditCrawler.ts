@@ -111,9 +111,9 @@ class RivalAuditCrawler {
       // Generate the audit based on the crawled site structure
       return this.generateAudit(siteStructure);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in crawlAndAudit:", error);
-      throw new Error(`Failed to crawl and audit the website: ${error.message}`);
+      throw new Error(`Failed to crawl and audit the website: ${error?.message || String(error)}`);
     }
   }
   
@@ -152,7 +152,7 @@ class RivalAuditCrawler {
       // Extract page data
       const title = $('title').text().trim();
       const metaDescription = $('meta[name="description"]').attr('content') || '';
-      const bodyText = $('body').text().trim();
+      const fullBodyText = $('body').text().trim();
       
       // Extract headings
       const h1s = $('h1').map((_, el) => $(el).text().trim()).get();
@@ -192,14 +192,14 @@ class RivalAuditCrawler {
       
       // Check for phone number
       const phoneRegex = /(\+?1?[-\s\.]?\(?\d{3}\)?[-\s\.]?\d{3}[-\s\.]?\d{4})/;
-      const hasPhoneNumber = phoneRegex.test(bodyText);
+      const hasPhoneNumber = phoneRegex.test(fullBodyText);
       
       // Check for address
       const addressPatterns = [
         /\d+\s+[A-Za-z\s,]+,\s*[A-Za-z\s]+,\s*[A-Z]{2}\s*\d{5}/,  // US format
         /\d+\s+[A-Za-z\s,]+Street|Road|Avenue|Lane|Drive|Boulevard|Court/i  // Simple street pattern
       ];
-      const hasAddress = addressPatterns.some(pattern => pattern.test(bodyText));
+      const hasAddress = addressPatterns.some(pattern => pattern.test(fullBodyText));
       
       // Check images
       const allImages = $('img');
@@ -214,13 +214,13 @@ class RivalAuditCrawler {
       const hasMobileViewport = $('meta[name="viewport"]').length > 0;
       
       // Word count (basic estimation)
-      const wordCount = bodyText.split(/\s+/).filter(Boolean).length;
+      const wordCount = fullBodyText.split(/\s+/).filter(Boolean).length;
       
       return {
         url: normalizedUrl,
         title,
         metaDescription,
-        bodyText,
+        bodyText: fullBodyText,
         headings: {
           h1: h1s,
           h2: h2s,
@@ -447,9 +447,10 @@ class RivalAuditCrawler {
     
     // Check for reviews
     const hasReviews = site.homepage.bodyText && (
-      site.homepage.bodyText.includes('review') || 
-      site.homepage.bodyText.includes('testimonial') || 
-      site.homepage.bodyText.includes('rating')
+      site.homepage.bodyText.toLowerCase().includes('review') || 
+      site.homepage.bodyText.toLowerCase().includes('testimonial') || 
+      site.homepage.bodyText.toLowerCase().includes('rating') ||
+      site.homepage.bodyText.toLowerCase().includes('stars')
     );
     
     items.push({
