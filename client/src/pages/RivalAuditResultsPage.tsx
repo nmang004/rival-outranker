@@ -31,7 +31,8 @@ import {
   MapPin,
   ListFilter,
   LineChart,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from "lucide-react";
 import { RivalAudit, AuditItem, AuditStatus } from "@shared/schema";
 
@@ -128,41 +129,131 @@ export default function RivalAuditResultsPage() {
       // Trigger download
       document.body.appendChild(a);
       a.click();
+      
+      // Cleanup
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       toast({
-        title: "Export Successful",
-        description: "The audit report has been exported to Excel format.",
+        title: "Export successful",
+        description: "Audit data has been exported to Excel",
       });
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       toast({
-        variant: "destructive",
-        title: "Export Failed",
-        description: "Failed to export the audit report. Please try again.",
+        title: "Export failed",
+        description: "Could not export the audit data. Please try again.",
+        variant: "destructive"
       });
     }
   };
-
+  
+  // Handle continue crawl to find more pages
+  const handleContinueCrawl = async () => {
+    if (!websiteUrl) {
+      toast({
+        title: "Cannot continue audit",
+        description: "Missing website URL",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsContinuing(true);
+    
+    try {
+      toast({
+        title: "Continuing audit",
+        description: "Crawling more pages to get a more comprehensive audit...",
+      });
+      
+      // Create a new audit with continueCrawl flag
+      const response = await fetch("/api/rival-audit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          url: websiteUrl,
+          continueCrawl: true 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      // Navigate to the new audit ID
+      navigate(`/rival-audit-results?id=${data.id}&url=${encodeURIComponent(websiteUrl)}`);
+    } catch (error) {
+      console.error("Error continuing rival audit:", error);
+      toast({
+        title: "Continue failed",
+        description: "Could not continue the audit. Please try again.",
+        variant: "destructive"
+      });
+      setIsContinuing(false);
+    }
+  };
+  
+  // Handle export to CSV
+  const handleExportToCSV = async () => {
+    if (!audit) return;
+    
+    try {
+      const response = await fetch(`/api/rival-audit/${auditId}/export?format=csv`);
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `rival-audit-${audit.url.replace(/https?:\/\//i, '')}-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export successful",
+        description: "Audit data has been exported to CSV",
+      });
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      toast({
+        title: "Export failed",
+        description: "Could not export the audit data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Go back to the audit page
   const goBack = () => {
-    navigate("/rival-audit");
+    navigate('/rival-audit');
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6">
+      <div className="container mx-auto py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-4 sm:mb-6">
-            <Skeleton className="h-10 sm:h-12 w-3/4 mb-3 sm:mb-4" />
-            <Skeleton className="h-5 sm:h-6 w-1/2" />
+          <div className="mb-6 flex flex-col">
+            <h1 className="text-3xl font-bold mb-2">Loading Rival Audit Results...</h1>
+            <p className="text-muted-foreground">Please wait while we load your audit results</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Skeleton className="h-28 rounded-lg" />
-            <Skeleton className="h-28 rounded-lg" />
-            <Skeleton className="h-28 rounded-lg" />
-            <Skeleton className="h-28 rounded-lg" />
+          <div className="grid gap-6">
+            <Skeleton className="h-[300px] w-full" />
+            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <Skeleton className="h-[120px]" />
+              <Skeleton className="h-[120px]" />
+              <Skeleton className="h-[120px]" />
+              <Skeleton className="h-[120px]" />
+            </div>
+            <Skeleton className="h-[500px] w-full" />
           </div>
-          <Skeleton className="h-96 rounded-lg" />
         </div>
       </div>
     );
@@ -170,18 +261,25 @@ export default function RivalAuditResultsPage() {
 
   if (isError || !audit) {
     return (
-      <div className="container mx-auto py-6 sm:py-8 px-4 sm:px-6">
+      <div className="container mx-auto py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
-          <Alert variant="destructive" className="mb-4 sm:mb-6">
+          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
-              Failed to load audit results. The audit may still be in progress or an error occurred.
+              Failed to load audit results. Please try again or create a new audit.
             </AlertDescription>
           </Alert>
-          <Button variant="outline" onClick={goBack}>
-            <ChevronLeft className="mr-2 h-4 w-4" /> Go Back
-          </Button>
+          <div className="flex gap-4">
+            <Button onClick={goBack} variant="outline">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Go Back
+            </Button>
+            {websiteUrl && (
+              <Button onClick={() => refetch()}>
+                Try Again
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -228,115 +326,113 @@ export default function RivalAuditResultsPage() {
               </div>
             </div>
             
-            <div className="flex flex-wrap gap-2">
-              {websiteUrl && (
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefreshAudit}
-                  disabled={isRefreshing}
-                  className="text-xs sm:text-sm"
-                >
-                  <svg className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  {isRefreshing ? 'Refreshing...' : 'Refresh Audit'}
-                </Button>
-              )}
-              <Button size="sm" onClick={handleExportToExcel} className="text-xs sm:text-sm">
-                <FileDown className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Export to Excel
+            <div className="flex-1 flex gap-2 flex-wrap justify-end">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshAudit} 
+                disabled={isRefreshing}
+                className="text-xs sm:text-sm h-8"
+              >
+                {isRefreshing ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Refreshing...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <svg className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 2v6h-6"></path>
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                      <path d="M3 22v-6h6"></path>
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                    </svg>
+                    Refresh
+                  </span>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleContinueCrawl} 
+                disabled={isContinuing}
+                className="text-xs sm:text-sm h-8"
+              >
+                {isContinuing ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Continuing...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Continue Crawl
+                  </span>
+                )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportToExcel}
+                className="text-xs sm:text-sm h-8"
+              >
+                <FileDown className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Export Excel
               </Button>
             </div>
           </div>
         </div>
-
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
-          <Card className="bg-red-500/10 border border-red-500/20">
-            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
-              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
-                <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 mr-1 sm:mr-2" />
-                Priority Issues
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
-              <div className="text-xl sm:text-2xl font-bold">{audit.summary.priorityOfiCount}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Critical findings requiring action</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-yellow-500/10 border border-yellow-500/20">
-            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
-              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
-                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 mr-1 sm:mr-2" />
-                Opportunities
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
-              <div className="text-xl sm:text-2xl font-bold">{audit.summary.ofiCount}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Areas for improvement</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-green-500/10 border border-green-500/20">
-            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
-              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
-                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mr-1 sm:mr-2" />
-                Completed
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
-              <div className="text-xl sm:text-2xl font-bold">{audit.summary.okCount}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">No issues found</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gray-500/10 border border-gray-500/20">
-            <CardHeader className="py-2 px-3 sm:py-3 sm:px-4">
-              <CardTitle className="text-xs sm:text-sm font-medium flex items-center">
-                <CircleHelp className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 mr-1 sm:mr-2" />
-                Not Applicable
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="py-2 px-3 sm:py-3 sm:px-4">
-              <div className="text-xl sm:text-2xl font-bold">{audit.summary.naCount}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Items not relevant</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs for different audit sections */}
+        
         {viewMode === "dashboard" ? (
-          <div className="mb-6">
-            <RivalAuditDashboard audit={audit} />
-          </div>
+          <RivalAuditDashboard audit={audit} />
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
-            <div className="overflow-x-auto pb-1">
-              <TabsList className="flex mb-6 w-max sm:w-full sm:grid sm:grid-cols-7">
-                <TabsTrigger value="summary" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                  <BarChart3 className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Summary</span>
+          <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid sm:grid-cols-6 mb-4 h-auto p-1">
+              <TabsTrigger value="summary" className="text-xs sm:text-sm py-2">
+                <LineChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Summary</span>
+                <span className="sm:hidden">Sum</span>
+              </TabsTrigger>
+              <TabsTrigger value="onPage" className="text-xs sm:text-sm py-2">
+                <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">On-Page</span>
+                <span className="sm:hidden">Page</span>
+              </TabsTrigger>
+              <TabsTrigger value="structure" className="text-xs sm:text-sm py-2">
+                <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Structure</span>
+                <span className="sm:hidden">Struct</span>
+              </TabsTrigger>
+              <TabsTrigger value="contactPage" className="text-xs sm:text-sm py-2">
+                <Phone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Contact</span>
+                <span className="sm:hidden">Cont</span>
+              </TabsTrigger>
+              <TabsTrigger value="servicePages" className="text-xs sm:text-sm py-2">
+                <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Services</span>
+                <span className="sm:hidden">Serv</span>
+              </TabsTrigger>
+              <TabsTrigger value="locationPages" className="text-xs sm:text-sm py-2">
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Locations</span>
+                <span className="sm:hidden">Loc</span>
+              </TabsTrigger>
+              {audit.serviceAreaPages && (
+                <TabsTrigger value="serviceAreaPages" className="text-xs sm:text-sm py-2">
+                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Service Areas</span>
+                  <span className="sm:hidden">S.Areas</span>
                 </TabsTrigger>
-                <TabsTrigger value="onPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                  <FileText className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">On-Page</span>
-                </TabsTrigger>
-                <TabsTrigger value="structure" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                  <ClipboardCheck className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Structure</span>
-                </TabsTrigger>
-                <TabsTrigger value="contactPage" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                  <Phone className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Contact</span>
-                </TabsTrigger>
-                <TabsTrigger value="servicePages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                  <Briefcase className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Services</span>
-                </TabsTrigger>
-                <TabsTrigger value="locationPages" className="flex items-center whitespace-nowrap px-3 sm:px-0">
-                  <MapPin className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Locations</span>
-                </TabsTrigger>
-                <TabsTrigger value="serviceAreaPages" className="flex items-center whitespace-nowrap px-3 sm:px-0" disabled={!audit.serviceAreaPages}>
-                  <Globe className="h-4 w-4 mr-1 sm:mr-2" /> <span className="block sm:inline">Areas</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
+              )}
+            </TabsList>
             
             <TabsContent value="summary" className="mt-0">
               <RivalAuditSummary audit={audit} />
@@ -345,7 +441,7 @@ export default function RivalAuditResultsPage() {
             <TabsContent value="onPage" className="mt-0">
               <RivalAuditSection 
                 title="On-Page SEO Audit" 
-                description="Analysis of user experience, content quality, readability, and calls to action"
+                description="Analysis of meta tags, headings, content, and technical issues"
                 items={audit.onPage.items}
               />
             </TabsContent>
