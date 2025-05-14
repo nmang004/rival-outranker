@@ -82,7 +82,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "paragraph-structure",
         priority: "medium",
-        icon: "★",
+        icon: "↑",
         title: "Improve Text Readability and Structure",
         description: "Restructure your content with shorter paragraphs, clear headings, and better visual hierarchy to improve readability and user engagement.",
         current: `Avg paragraph length: ~${Math.round(data?.contentAnalysis?.wordCount / data?.contentAnalysis?.paragraphCount)} words`,
@@ -96,7 +96,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "internal-links",
         priority: "medium",
-        icon: "★",
+        icon: "↑",
         title: "Implement Strategic Internal Linking",
         description: "Create a comprehensive internal linking strategy that connects related content and helps both users and search engines navigate your site effectively.",
         current: `Current internal links: ${data?.internalLinksAnalysis?.count}`,
@@ -110,7 +110,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "topic-clusters",
         priority: "medium",
-        icon: "★",
+        icon: "↑",
         title: "Create Topic Clusters for Content Authority",
         description: "Develop a comprehensive topic cluster with this page as the pillar content, linked to supporting cluster pages that cover subtopics in detail.",
         suggestion: "Create 5-7 related articles that cover specific aspects of your main topic in detail. Link them to this main 'pillar' page and to each other where relevant.",
@@ -123,7 +123,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "schema",
         priority: "medium",
-        icon: "★",
+        icon: "↑",
         title: "Implement Structured Data Markup",
         description: "Add schema markup to help search engines understand your content and potentially earn rich snippets in search results.",
         suggestion: `Implement ${url.includes('/blog') || url.includes('/article') ? 'Article' : url.includes('/product') ? 'Product' : 'WebPage'} schema with all required and recommended properties.`,
@@ -150,7 +150,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "author-info",
         priority: "medium",
-        icon: "★",
+        icon: "↑",
         title: "Enhance E-E-A-T Signals and Credibility",
         description: "Strengthen Experience, Expertise, Authoritativeness, and Trustworthiness signals to align with Google's quality guidelines.",
         suggestion: "Add author biography with credentials, cite authoritative sources, include case studies or statistics, and demonstrate first-hand expertise.",
@@ -162,7 +162,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
     actionItems.push({
       id: "multimedia",
       priority: "medium",
-      icon: "★",
+      icon: "↑",
       title: "Diversify Content with Rich Media",
       description: "Enhance user engagement and dwell time by incorporating various multimedia elements that supplement your written content.",
       suggestion: `Add a combination of images, videos, infographics, or interactive elements related to ${primaryKeyword} to improve user experience and engagement metrics.`,
@@ -195,7 +195,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
     actionItems.push({
       id: "semantic-relevance",
       priority: "medium",
-      icon: "★",
+      icon: "↑",
       title: "Enhance Semantic Relevance",
       description: "Improve topic comprehensiveness by incorporating semantically related terms and concepts that search engines associate with your primary keyword.",
       suggestion: `Research related concepts and terminology for ${primaryKeyword} through Google's related searches, "People Also Ask" boxes, and competitor content analysis.`,
