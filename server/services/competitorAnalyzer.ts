@@ -249,7 +249,14 @@ class CompetitorAnalyzer {
       }
       
       // Make URLs unique and take random selection
-      const uniqueCompetitors = [...new Set(competitors)];
+      const uniqueCompetitors: string[] = [];
+      for (const competitor of competitors) {
+        if (!uniqueCompetitors.includes(competitor)) {
+          uniqueCompetitors.push(competitor);
+        }
+      }
+      
+      // Shuffle the array
       const shuffled = uniqueCompetitors.sort(() => 0.5 - Math.random());
       return shuffled.slice(0, this.MAX_COMPETITORS);
     } catch (error) {
