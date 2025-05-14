@@ -10,6 +10,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -106,32 +107,13 @@ export default function RivalRankTrackerResultsPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto py-8 max-w-4xl">
-        <PageHeader
-          title="Rival Rank Tracker"
-          description="Track your keyword rankings against competitors over time"
-          icon={<BarChart className="h-6 w-6 mr-2" />}
-        />
-        
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Authentication Required</CardTitle>
-              <CardDescription>
-                You need to be logged in to view tracking results.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <LoginButton />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+  // Allow viewing results in demo mode (no authentication required)
+  if (!isAuthenticated && !isLoading) {
+    // Continue with the rest of the component flow
+    // The authentication check is bypassed, but we'll show a banner
+    const demoMode = true;
+    
+    // Let the loading check below handle the rest of the component rendering
   }
 
   if (isLoading) {
@@ -330,8 +312,22 @@ export default function RivalRankTrackerResultsPage() {
     (acc: number, k: any) => acc + (k.metrics?.volume || 0), 0
   );
 
+  // Create a demoMode variable to track if user is in demo mode
+  const demoMode = !isAuthenticated;
+  
   return (
     <div className="container mx-auto py-8 max-w-6xl">
+      {demoMode && (
+        <Alert className="mb-6 border-amber-500">
+          <SearchCheck className="h-4 w-4 text-amber-500" />
+          <AlertTitle className="text-amber-500">Demo Mode</AlertTitle>
+          <AlertDescription className="flex justify-between items-center">
+            <span>You're viewing example data. Log in to save your results and track real rankings.</span>
+            <LoginButton />
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center">
           <Button variant="ghost" className="mr-2" onClick={() => navigate("/rival-rank-tracker")}>

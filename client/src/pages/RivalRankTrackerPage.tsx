@@ -145,17 +145,120 @@ export default function RivalRankTrackerPage() {
         />
         
         <div className="mt-8">
-          <Alert>
+          <Alert className="mb-8">
             <SearchCheck className="h-4 w-4" />
-            <AlertTitle>Authentication Required</AlertTitle>
+            <AlertTitle>Demo Mode</AlertTitle>
             <AlertDescription>
-              You need to be logged in to use the Rival Rank Tracker feature.
+              You're using Rival Rank Tracker in demo mode. Log in to save your results.
             </AlertDescription>
           </Alert>
           
-          <div className="flex justify-center mt-8">
+          {/* Show both login button and the form */}
+          <div className="flex justify-end mb-4">
             <LoginButton />
           </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Track Keywords & Competitors</CardTitle>
+              <CardDescription>
+                Enter the keywords you want to track, your website, and optionally your competitors
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent>
+              <Tabs defaultValue="keywords" className="w-full">
+                <TabsList className="grid w-full grid-cols-1">
+                  <TabsTrigger value="keywords">Keywords & Competitors</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="keywords" className="mt-4">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="keywords"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Keywords</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter keywords (one per line or comma-separated)"
+                                {...field}
+                                rows={5}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Enter the keywords you want to track, one per line or comma-separated
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="website"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Your Website</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://yourwebsite.com"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Enter your website URL including https://
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="competitors"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Competitors (Optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter competitor websites (one per line or comma-separated)"
+                                {...field}
+                                rows={3}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Optionally add competitor websites to compare rankings
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <CardFooter className="px-0 pb-0">
+                        <Button 
+                          type="submit" 
+                          className="w-full md:w-auto" 
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <span className="animate-spin mr-2">⟳</span>
+                              Processing...
+                            </>
+                          ) : (
+                            <>Start Tracking</>
+                          )}
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  </Form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
