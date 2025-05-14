@@ -36,7 +36,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PaperclipIcon, CopyIcon, TrendingUpIcon, SearchIcon, SaveIcon, ChevronDown, ChevronUp, DownloadIcon, ArrowRightIcon, InfoIcon } from 'lucide-react';
+import { PaperclipIcon, CopyIcon, TrendingUpIcon, SearchIcon, SaveIcon, ChevronDown, ChevronUp, DownloadIcon, ArrowRightIcon, InfoIcon, RefreshCw } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 
@@ -62,6 +63,7 @@ interface RelatedKeyword {
 
 export default function KeywordResearch() {
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [keyword, setKeyword] = useState('');
   const [keywordData, setKeywordData] = useState<KeywordData | null>(null);
   const [relatedKeywords, setRelatedKeywords] = useState<RelatedKeyword[]>([]);
@@ -314,12 +316,31 @@ export default function KeywordResearch() {
             <TabsContent value="overview" className="space-y-4 mt-4">
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
                 <CardHeader>
-                  <CardTitle className="text-2xl font-bold text-blue-800">
-                    {keywordData.keyword}
-                  </CardTitle>
-                  <CardDescription>
-                    Keyword metrics and search insights
-                  </CardDescription>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-2xl font-bold text-blue-800">
+                        {keywordData.keyword}
+                      </CardTitle>
+                      <CardDescription>
+                        Keyword metrics and search insights
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="text-blue-700 hover:text-blue-800 hover:bg-blue-50 border-blue-200"
+                        onClick={handleRefresh}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-1" /> Refresh Data
+                      </Button>
+                      {keywordData.lastUpdated && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Last updated: {new Date(keywordData.lastUpdated).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
