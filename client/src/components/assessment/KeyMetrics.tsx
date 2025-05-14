@@ -1,4 +1,8 @@
 import { PageSpeedAnalysis, MobileAnalysis, KeywordAnalysis } from "@shared/schema";
+import { PerformanceIndicator } from "@/components/ui/performance-indicator";
+import { scoreToCategory } from "@/lib/colorUtils";
+import { Zap, Smartphone, Crosshair } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface KeyMetricsProps {
   pageSpeed?: PageSpeedAnalysis;
@@ -20,30 +24,43 @@ export default function KeyMetrics({
   const mobileScore = mobileFriendliness?.overallScore?.score || DEFAULT_SCORE;
   const keywordScore = keywordOptimization?.overallScore?.score || DEFAULT_SCORE;
 
+  // Get performance categories
+  const pageSpeedCategory = pageSpeed?.overallScore?.category || scoreToCategory(pageSpeedScore);
+  const mobileCategory = mobileFriendliness?.overallScore?.category || scoreToCategory(mobileScore);
+  const keywordCategory = keywordOptimization?.overallScore?.category || scoreToCategory(keywordScore);
+
   return (
     <div className="col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
       {/* Page Speed Metric */}
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-center">
-          <div className="flex-shrink-0 bg-success-50 rounded-md p-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-success-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
+          <div className={cn("flex-shrink-0 rounded-md p-2", 
+            pageSpeedCategory === 'excellent' ? "bg-emerald-50" : 
+            pageSpeedCategory === 'good' ? "bg-blue-50" : 
+            pageSpeedCategory === 'needs-work' ? "bg-amber-50" : 
+            "bg-red-50")}>
+            <Zap className={cn("h-5 w-5", 
+              pageSpeedCategory === 'excellent' ? "text-emerald-500" : 
+              pageSpeedCategory === 'good' ? "text-blue-500" : 
+              pageSpeedCategory === 'needs-work' ? "text-amber-500" : 
+              "text-red-500")} />
           </div>
           <div className="ml-3">
             <div className="text-sm font-medium text-gray-500">Page Speed</div>
             <div className="flex items-center">
               <div className="text-xl font-semibold text-gray-800">{pageSpeedScore}</div>
-              <StatusLabel score={pageSpeedScore} />
+              <div className="ml-2">
+                <PerformanceIndicator 
+                  category={pageSpeedCategory}
+                  size="sm"
+                  variant="badge"
+                  showText={true}
+                  label={pageSpeedCategory === 'excellent' ? 'Blazing Fast' : 
+                          pageSpeedCategory === 'good' ? 'Fast' : 
+                          pageSpeedCategory === 'needs-work' ? 'Average' : 'Slow'}
+                  tooltipText="Page loading performance impacts user experience and SEO"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -52,20 +69,16 @@ export default function KeyMetrics({
       {/* Mobile Friendliness Metric */}
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-center">
-          <div className="flex-shrink-0 bg-primary-50 rounded-md p-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-primary-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-              <line x1="12" y1="18" x2="12" y2="18" />
-            </svg>
+          <div className={cn("flex-shrink-0 rounded-md p-2", 
+            mobileCategory === 'excellent' ? "bg-emerald-50" : 
+            mobileCategory === 'good' ? "bg-blue-50" : 
+            mobileCategory === 'needs-work' ? "bg-amber-50" : 
+            "bg-red-50")}>
+            <Smartphone className={cn("h-5 w-5", 
+              mobileCategory === 'excellent' ? "text-emerald-500" : 
+              mobileCategory === 'good' ? "text-blue-500" : 
+              mobileCategory === 'needs-work' ? "text-amber-500" : 
+              "text-red-500")} />
           </div>
           <div className="ml-3">
             <div className="text-sm font-medium text-gray-500">Mobile Friendliness</div>
@@ -73,7 +86,18 @@ export default function KeyMetrics({
               <div className="text-xl font-semibold text-gray-800">
                 {mobileScore}
               </div>
-              <StatusLabel score={mobileScore} />
+              <div className="ml-2">
+                <PerformanceIndicator 
+                  category={mobileCategory}
+                  size="sm"
+                  variant="badge"
+                  showText={true}
+                  label={mobileCategory === 'excellent' ? 'Perfect' : 
+                          mobileCategory === 'good' ? 'Good' : 
+                          mobileCategory === 'needs-work' ? 'Needs Work' : 'Poor'}
+                  tooltipText="Mobile optimization is crucial for rankings in Google's mobile-first index"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -82,106 +106,37 @@ export default function KeyMetrics({
       {/* Keyword Optimization Metric */}
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-center">
-          <div className="flex-shrink-0 bg-warning-50 rounded-md p-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-warning-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
+          <div className={cn("flex-shrink-0 rounded-md p-2", 
+            keywordCategory === 'excellent' ? "bg-emerald-50" : 
+            keywordCategory === 'good' ? "bg-blue-50" : 
+            keywordCategory === 'needs-work' ? "bg-amber-50" : 
+            "bg-red-50")}>
+            <Crosshair className={cn("h-5 w-5", 
+              keywordCategory === 'excellent' ? "text-emerald-500" : 
+              keywordCategory === 'good' ? "text-blue-500" : 
+              keywordCategory === 'needs-work' ? "text-amber-500" : 
+              "text-red-500")} />
           </div>
           <div className="ml-3">
             <div className="text-sm font-medium text-gray-500">Keyword Optimization</div>
             <div className="flex items-center">
               <div className="text-xl font-semibold text-gray-800">{keywordScore}</div>
-              <StatusLabel score={keywordScore} />
+              <div className="ml-2">
+                <PerformanceIndicator 
+                  category={keywordCategory}
+                  size="sm"
+                  variant="badge"
+                  showText={true}
+                  label={keywordCategory === 'excellent' ? 'Optimized' : 
+                          keywordCategory === 'good' ? 'Good' : 
+                          keywordCategory === 'needs-work' ? 'Needs Work' : 'Insufficient'}
+                  tooltipText="Keyword optimization helps search engines understand your content"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-interface StatusLabelProps {
-  score: number;
-}
-
-function StatusLabel({ score }: StatusLabelProps) {
-  if (score >= 90) {
-    return <div className="ml-1 text-xs text-success-500">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-3 w-3 inline mr-0.5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      Excellent
-    </div>;
-  } else if (score >= 70) {
-    return <div className="ml-1 text-xs text-success-500">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-3 w-3 inline mr-0.5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      Fast
-    </div>;
-  } else if (score >= 50) {
-    return <div className="ml-1 text-xs text-warning-500">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-3 w-3 inline mr-0.5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-      Needs Work
-    </div>;
-  } else {
-    return <div className="ml-1 text-xs text-danger-500">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-3 w-3 inline mr-0.5"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="15" y1="9" x2="9" y2="15"></line>
-        <line x1="9" y1="9" x2="15" y2="15"></line>
-      </svg>
-      Poor
-    </div>;
-  }
 }
