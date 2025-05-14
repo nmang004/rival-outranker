@@ -1304,10 +1304,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Service Area Pages audit items
     const serviceAreaItems = [
-      { name: "Service area pages are optimized for local search?", description: "Pages should target local search queries", status: getStatus(42), importance: "High" },
-      { name: "Service area pages have unique content?", description: "Each page should have unique, non-duplicated content", status: getStatus(43), importance: "High" },
-      { name: "Service area pages have localized title tags?", description: "Title tags should include location and service keywords", status: getStatus(44), importance: "High" },
-      { name: "Service area pages have local NAP information?", description: "NAP should be relevant to the service area", status: getStatus(45), importance: "Medium" }
+      { name: "Service area pages are optimized for local search?", description: "Pages should target local search queries", status: getStatus(42), importance: getImportance(42) },
+      { name: "Service area pages have unique content?", description: "Each page should have unique, non-duplicated content", status: getStatus(43), importance: getImportance(43) },
+      { name: "Service area pages have localized title tags?", description: "Title tags should include location and service keywords", status: getStatus(44), importance: getImportance(44) },
+      { name: "Service area pages have local NAP information?", description: "NAP should be relevant to the service area", status: getStatus(45), importance: getImportance(45) }
     ];
     
     return {
