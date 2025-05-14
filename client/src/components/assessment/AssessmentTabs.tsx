@@ -252,7 +252,7 @@ export default function AssessmentTabs({ data }: AssessmentTabsProps) {
               <CompetitorAnalysis 
                 url={data.url} 
                 keyword={data.keywordAnalysis.primaryKeyword}
-                isRequested={data.options?.includeCompetitorAnalysis === true} 
+                isRequested={data.competitorAnalysis !== undefined} 
               />
             )}
           </div>
