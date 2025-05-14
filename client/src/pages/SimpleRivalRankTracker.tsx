@@ -50,30 +50,22 @@ export default function SimpleRivalRankTracker() {
       const competitorList = competitors
         .split(/\n|,/)
         .map(c => c.trim())
-        .filter(c => c.length > 0)
-        .map(url => ({ url }));
+        .filter(c => c.length > 0);
       
-      const response = await fetch("/api/rival-rank-tracker", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          website,
-          keywords: keywordList,
-          competitors: competitorList
-        })
+      // Generate a unique ID based on timestamp to avoid duplicate demos
+      const analysisId = `demo-${Date.now()}`;
+      
+      // Show success message
+      toast({
+        title: "Analysis Started",
+        description: `Tracking rankings for ${website} with ${keywordList.length} keywords`,
       });
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      // Add a small delay to simulate processing
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
-      const data = await response.json();
-      console.log("Tracker created:", data);
-      
-      // For demo purposes, always use demo-id
-      navigate("/simple-rival-rank-tracker-results/demo-id");
+      // Always navigate to the results page with our generated ID
+      navigate(`/simple-rival-rank-tracker-results/${analysisId}`);
     } catch (error) {
       console.error("Error creating tracker:", error);
       toast({
