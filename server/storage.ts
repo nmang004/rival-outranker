@@ -27,6 +27,7 @@ export interface IStorage {
   getAnalysesByUserId(userId: number): Promise<Analysis[]>;
   getLatestAnalyses(limit: number): Promise<Analysis[]>;
   getAllAnalyses(): Promise<Analysis[]>;
+  updateAnalysisResults(id: number, results: any): Promise<Analysis>;
   
   // Project operations
   createProject(project: InsertProject): Promise<Project>;
@@ -251,6 +252,20 @@ export class DatabaseStorage implements IStorage {
       .from(analyses)
       .where(inArray(analyses.id, analysisIds))
       .orderBy(desc(analyses.timestamp));
+  }
+  
+  async updateAnalysisResults(id: number, results: any): Promise<Analysis> {
+    // Update the analysis results
+    const [updatedAnalysis] = await db
+      .update(analyses)
+      .set({
+        results: results,
+        timestamp: new Date() // Use timestamp instead of updatedAt
+      })
+      .where(eq(analyses.id, id))
+      .returning();
+    
+    return updatedAnalysis;
   }
 }
 

@@ -82,172 +82,25 @@ export default function Home() {
   });
 
   const pollForResults = async (url: string, isDeepContentAnalysis: boolean = false) => {
-    let attempts = 0;
-    const maxAttempts = 15; // 15 seconds total polling time
-    const minWaitTime = 5; // Minimum wait time in seconds to show analysis progress
-    const startTime = Date.now();
+    console.log("Skipping polling and redirecting directly to results page");
     
-    // For URL normalization purposes - sometimes trailing slashes or missing protocols can cause mismatches
-    const normalizeUrl = (inputUrl: string) => {
-      // Convert URL to lowercase
-      let normalizedUrl = inputUrl.toLowerCase();
-      
-      // If there's no protocol, add https://
-      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-        normalizedUrl = 'https://' + normalizedUrl;
-      }
-      
-      // Attempt to create URL object to handle other normalizations
-      try {
-        const urlObj = new URL(normalizedUrl);
-        
-        // Remove trailing slash from pathname if it exists (except for root path)
-        if (urlObj.pathname.length > 1 && urlObj.pathname.endsWith('/')) {
-          urlObj.pathname = urlObj.pathname.slice(0, -1);
-        }
-        
-        return urlObj.toString();
-      } catch {
-        // If URL parsing fails, return the original with basic normalization
-        return normalizedUrl;
-      }
-    };
+    // Start analysis progress animation
+    setAnalysisProgress(10);
     
-    const normalizedUrl = normalizeUrl(url);
-    
-    const checkResults = async () => {
-      try {
-        // Try both normalized and original URL in our requests
-        const response = await fetch(`/api/analysis?url=${encodeURIComponent(normalizedUrl)}`);
-        
-        if (response.ok) {
-          const result = await response.json();
-          
-          // Check if the result has actual analysis data
-          if (result && typeof result.overallScore === 'number' && result.results) {
-            // Calculate elapsed time since we started polling
-            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-            
-            // If we haven't waited the minimum time, don't redirect yet
-            if (elapsedSeconds < minWaitTime) {
-              console.log(`Results ready but waiting for minimum display time (${elapsedSeconds}/${minWaitTime}s)`);
-              return false; // Keep polling until minimum time elapsed
-            }
-            
-            // Always redirect to the main results page - never to deep content results
-            console.log('Redirecting to main results page');
-            setLocation(`/results?url=${encodeURIComponent(url)}`);
-            return true;
-          }
-        }
-        
-        // If the normalized URL failed, try the original as fallback
-        if (normalizedUrl !== url) {
-          const fallbackResponse = await fetch(`/api/analysis?url=${encodeURIComponent(url)}`);
-          if (fallbackResponse.ok) {
-            const fallbackResult = await fallbackResponse.json();
-            if (fallbackResult && typeof fallbackResult.overallScore === 'number' && fallbackResult.results) {
-              const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-              if (elapsedSeconds < minWaitTime) {
-                return false;
-              }
-              
-              // Always redirect to main results page
-              setLocation(`/results?url=${encodeURIComponent(url)}`);
-              return true;
-            }
-          }
-        }
-        
-        // If we've made enough attempts, but a result might exist (just not at the expected URL),
-        // check the latest analyses as a fallback
-        if (attempts >= 10) {
-          const latestResponse = await fetch('/api/analyses');
-          if (latestResponse.ok) {
-            const analyses = await latestResponse.json();
-            // Check if any recent analyses match our URL or normalized URL
-            const matchingAnalysis = analyses.find((analysis: any) => {
-              const analysisUrl = analysis.url.toLowerCase();
-              const targetUrl = url.toLowerCase();
-              return (
-                analysisUrl === targetUrl || 
-                analysisUrl === normalizedUrl.toLowerCase() ||
-                // Also check for partial matches (domain only)
-                (new URL(analysisUrl)).hostname === (new URL(targetUrl)).hostname
-              );
-            });
-            
-            if (matchingAnalysis) {
-              const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-              if (elapsedSeconds < minWaitTime) {
-                return false;
-              }
-              
-              // Always redirect to the main results page to show all analysis tabs
-              setLocation(`/results?url=${encodeURIComponent(matchingAnalysis.url)}`);
-              return true;
-            }
-          }
-        }
-        
-        return false;
-      } catch (error) {
-        console.error("Error checking results:", error);
-        return false;
-      }
-    };
-    
-    const poll = async () => {
-      attempts++;
+    // Show a small animation for user experience
+    setTimeout(() => {
+      setAnalysisProgress(50);
       
-      // Update the progress percentage based on the minimum wait time
-      // Progress goes from 0 to 90% during the minimum wait period
-      // The last 10% is reserved for when actual results come in
-      const progressPerAttempt = 90 / minWaitTime;
-      const newProgress = Math.min(90, progressPerAttempt * attempts);
-      setAnalysisProgress(newProgress);
-      
-      // Add artificial delay to first few attempts to allow server to process
-      if (attempts <= 3) {
-        await new Promise(resolve => setTimeout(resolve, 1000));  
-      }
-      
-      const hasResults = await checkResults();
-      
-      if (hasResults) {
-        // Set to 100% when complete
+      // After a small delay, redirect directly to results page
+      setTimeout(() => {
         setAnalysisProgress(100);
-        return;
-      }
-      
-      if (attempts < maxAttempts) {
-        setTimeout(poll, 1000); // Poll every second
-      } else {
-        // If max attempts reached but we're near the end of polling,
-        // just redirect to results anyway and let the results page handle any missing data
-        if (attempts >= maxAttempts - 2) {
-          setAnalysisProgress(100);
-          // Always redirect to the main results page
-          // This ensures deep content analysis appears in the regular assessment tabs
-          setLocation(`/results?url=${encodeURIComponent(url)}`);
-          // We don't need separate page handling for deep content analysis anymore
-          return;
-        }
         
-        // Otherwise show error state
-        setError("Analysis timed out. Please try again.");
-        setIsSubmitting(false);
-        setAnalysisProgress(0);
-        
-        toast({
-          title: "Analysis timed out",
-          description: "The analysis is taking longer than expected. Please try again.",
-          variant: "destructive",
-        });
-      }
-    };
-    
-    poll();
+        // Directly redirect to the results page without polling
+        // This avoids the additional confirmation/submission screen
+        console.log('Redirecting immediately to results page');
+        setLocation(`/results?url=${encodeURIComponent(url)}`);
+      }, 500);
+    }, 300);
   };
 
   const handleSubmit = async (url: string) => {
