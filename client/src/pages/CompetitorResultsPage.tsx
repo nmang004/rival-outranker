@@ -148,7 +148,7 @@ export default function CompetitorResultsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CompetitorAnalysis url={url} city={city} />
+          <CompetitorAnalysis url={url} city={city} isRequested={true} keyword="" />
         </CardContent>
       </Card>
       
