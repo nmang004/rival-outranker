@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link, useLocation } from "wouter";
 import { BarChart, ArrowLeft, LineChart, SearchCheck, ArrowUpRight, Clock, Layers, BarChart2 } from "lucide-react";
@@ -86,18 +86,51 @@ export default function RivalRankTrackerResultsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Fetch keyword tracking analysis
-  const { data: analysis, isLoading, error } = useQuery({
+  // For tracking direct fetch state
+  const [manualLoading, setManualLoading] = useState(true);
+  const [manualError, setManualError] = useState<Error | null>(null);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  
+  // Direct fetch implementation to bypass React Query caching issues
+  useEffect(() => {
+    const fetchAnalysis = async () => {
+      try {
+        setManualLoading(true);
+        console.log("Manually fetching analysis with ID:", id);
+        
+        // Make direct fetch request
+        const response = await fetch(`/api/rival-rank-tracker/${id}`, {
+          credentials: "include",
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch analysis: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log("Successfully fetched analysis:", data);
+        setAnalysisData(data);
+        
+        // If still processing, poll again after 5 seconds
+        if (data.status === "processing") {
+          setTimeout(() => fetchAnalysis(), 5000);
+        }
+      } catch (err) {
+        console.error("Error fetching analysis:", err);
+        setManualError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        setManualLoading(false);
+      }
+    };
+    
+    fetchAnalysis();
+  }, [id]);
+  
+  // Keeping useQuery for future reference, but not using its output
+  const { data: _analysis, isLoading: _isLoading, error: _error } = useQuery({
     queryKey: ["/api/rival-rank-tracker", id],
     retry: 3,
-    refetchOnMount: true,
-    staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache the data
-    refetchInterval: (data) => {
-      console.log("Checking analysis status:", data?.status);
-      // If the analysis is still processing, poll every 5 seconds
-      return data?.status === "processing" ? 5000 : false;
-    },
+    enabled: false, // Not using the React Query fetch
   });
 
   if (authLoading) {
@@ -114,7 +147,7 @@ export default function RivalRankTrackerResultsPage() {
   // Demo mode is handled by simply setting demoMode = !isAuthenticated
   // The rest of the component flow continues regardless of authentication
 
-  if (isLoading) {
+  if (manualLoading) {
     return (
       <div className="container mx-auto py-8 max-w-6xl">
         <div className="flex items-center mb-4">
@@ -170,7 +203,7 @@ export default function RivalRankTrackerResultsPage() {
     );
   }
 
-  if (error) {
+  if (manualError) {
     return (
       <div className="container mx-auto py-8 max-w-4xl">
         <PageHeader
@@ -188,7 +221,7 @@ export default function RivalRankTrackerResultsPage() {
           </CardHeader>
           <CardContent>
             <p className="text-red-500">
-              {(error as Error).message || "An unknown error occurred"}
+              {manualError.message || "An unknown error occurred"}
             </p>
           </CardContent>
           <CardFooter>
@@ -201,7 +234,7 @@ export default function RivalRankTrackerResultsPage() {
     );
   }
 
-  if (analysis?.status === "processing") {
+  if (analysisData?.status === "processing") {
     return (
       <div className="container mx-auto py-8 max-w-4xl">
         <div className="flex items-center mb-6">
@@ -244,7 +277,7 @@ export default function RivalRankTrackerResultsPage() {
     );
   }
 
-  if (!analysis?.keywords?.length) {
+  if (!analysisData?.keywords?.length) {
     return (
       <div className="container mx-auto py-8 max-w-4xl">
         <PageHeader
