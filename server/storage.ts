@@ -424,17 +424,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getKeywordRankings(keywordId: number, limit?: number): Promise<KeywordRanking[]> {
-    let query = db
-      .select()
-      .from(keywordRankings)
-      .where(eq(keywordRankings.keywordId, keywordId))
-      .orderBy(desc(keywordRankings.rankDate));
-    
     if (limit) {
-      query = query.limit(limit);
+      return await db
+        .select()
+        .from(keywordRankings)
+        .where(eq(keywordRankings.keywordId, keywordId))
+        .orderBy(desc(keywordRankings.rankDate))
+        .limit(limit);
+    } else {
+      return await db
+        .select()
+        .from(keywordRankings)
+        .where(eq(keywordRankings.keywordId, keywordId))
+        .orderBy(desc(keywordRankings.rankDate));
     }
-    
-    return await query;
   }
 
   async getLatestKeywordRanking(keywordId: number): Promise<KeywordRanking | undefined> {
