@@ -90,6 +90,9 @@ export default function RivalRankTrackerResultsPage() {
   const { data: analysis, isLoading, error } = useQuery({
     queryKey: ["/api/rival-rank-tracker", id],
     retry: 3,
+    refetchOnMount: true,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache the data
     refetchInterval: (data) => {
       console.log("Checking analysis status:", data?.status);
       // If the analysis is still processing, poll every 5 seconds
@@ -108,13 +111,8 @@ export default function RivalRankTrackerResultsPage() {
   }
 
   // Allow viewing results in demo mode (no authentication required)
-  if (!isAuthenticated && !isLoading) {
-    // Continue with the rest of the component flow
-    // The authentication check is bypassed, but we'll show a banner
-    const demoMode = true;
-    
-    // Let the loading check below handle the rest of the component rendering
-  }
+  // Demo mode is handled by simply setting demoMode = !isAuthenticated
+  // The rest of the component flow continues regardless of authentication
 
   if (isLoading) {
     return (
