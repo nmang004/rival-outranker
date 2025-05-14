@@ -99,16 +99,15 @@ function generateSimulatedTrend(baseVolume: number): number[] {
   });
 }
 
-// Create authenticated axios instance
+// Create authenticated axios instance with proper headers
 const dataForSeoClient = axios.create({
   baseURL: 'https://api.dataforseo.com',
-  auth: {
-    username: API_LOGIN || '',
-    password: API_PASSWORD || ''
-  },
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': 'Basic ' + Buffer.from(`${API_LOGIN || ''}:${API_PASSWORD || ''}`).toString('base64')
   },
+  // Set longer timeout for API requests
+  timeout: 30000,
   // Allow absolute URLs for flexibility in case the API endpoints change
   allowAbsoluteUrls: true
 });
@@ -154,7 +153,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     };
     
     const keywordDataResponse = await dataForSeoClient.post(
-      '/v3/keywords_data/google/search_volume/live',
+      'https://api.dataforseo.com/v3/keywords_data/google/search_volume/live',
       [requestData]
     );
     
@@ -166,7 +165,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     
     // Gather related keyword data
     const relatedKeywordsResponse = await dataForSeoClient.post(
-      '/v3/keywords_data/google/keywords_for_keywords/live',
+      'https://api.dataforseo.com/v3/keywords_data/google/keywords_for_keywords/live',
       [{
         "keyword": keyword,
         "location_code": location,
@@ -190,7 +189,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     try {
       // First try the separate difficulty endpoint
       const difficultyResponse = await dataForSeoClient.post(
-        '/v3/keywords_data/google/keyword_difficulty/live',
+        'https://api.dataforseo.com/v3/keywords_data/google/keyword_difficulty/live',
         [{
           "keywords": [keyword],
           "location_code": location,
@@ -276,7 +275,7 @@ export async function getCompetitorRankings(
     };
     
     const serpResponse = await dataForSeoClient.post(
-      '/v3/serp/google/organic/live/regular',
+      'https://api.dataforseo.com/v3/serp/google/organic/live/regular',
       [requestData]
     );
     
@@ -414,15 +413,24 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
 }
 
 /**
- * Check API health
- * Returns true if the API is functioning
+ * Check API health and authentication
+ * Returns true if the API is functioning and credentials are valid
  */
 export async function checkApiHealth(): Promise<boolean> {
   try {
-    const response = await dataForSeoClient.get('/v3/merchant/api_status');
-    return response.status === 200;
-  } catch (error) {
-    console.error('DataForSEO API health check failed:', error);
+    // Attempt to call the Account API to verify credentials and connectivity
+    const response = await dataForSeoClient.get('https://api.dataforseo.com/v3/keywords_data/google/languages');
+    
+    // Check if we have a valid response with data
+    if (response?.data?.status_code === 20000) {
+      console.log("DataForSEO API is healthy and credentials are valid");
+      return true;
+    } else {
+      console.error("DataForSEO API returned an invalid response:", response?.data);
+      return false;
+    }
+  } catch (error: any) {
+    console.error("DataForSEO API health check failed:", error?.response?.data || error.message);
     return false;
   }
 }
