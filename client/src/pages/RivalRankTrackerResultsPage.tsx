@@ -108,23 +108,43 @@ export default function RivalRankTrackerResultsPage() {
         }
         
         const data = await response.json();
-        console.log("Successfully fetched analysis:", data);
-        setAnalysisData(data);
+        console.log("Successfully fetched analysis data:", data);
+        
+        // Validate data structure to ensure it has the necessary fields
+        if (!data || !data.keywords || !Array.isArray(data.keywords)) {
+          console.error("Invalid data structure received:", data);
+          throw new Error("The data received is not in the expected format");
+        }
+        
+        console.log(`Analysis contains ${data.keywords.length} keywords and ${data.competitors?.length || 0} competitors`);
+        
+        // Set the data and ensure it's a full copy, not a reference
+        setAnalysisData({...data});
         
         // If still processing, poll again after 5 seconds
         if (data.status === "processing") {
+          console.log("Analysis still processing, will poll again in 5 seconds");
           setTimeout(() => fetchAnalysis(), 5000);
+        } else {
+          console.log("Analysis is complete, no need to poll again");
         }
       } catch (err) {
         console.error("Error fetching analysis:", err);
         setManualError(err instanceof Error ? err : new Error(String(err)));
+        toast({
+          title: "Error loading analysis",
+          description: err instanceof Error ? err.message : String(err),
+          variant: "destructive"
+        });
       } finally {
         setManualLoading(false);
       }
     };
     
+    // Clear any previous errors and set loading state before fetching
+    setManualError(null);
     fetchAnalysis();
-  }, [id]);
+  }, [id, toast]);
   
   // Keeping useQuery for future reference, but not using its output
   const { data: _analysis, isLoading: _isLoading, error: _error } = useQuery({

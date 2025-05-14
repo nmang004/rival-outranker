@@ -1808,24 +1808,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Fetching analysis ID:", id);
-      console.log("Available analyses:", global.rivalRankTrackerResults ? Object.keys(global.rivalRankTrackerResults) : "None");
       
       // Initialize the global variable if it doesn't exist
-      if (!global.rivalRankTrackerResults) {
+      if (typeof global.rivalRankTrackerResults === 'undefined') {
+        console.log("Initializing global rivalRankTrackerResults object");
         global.rivalRankTrackerResults = {};
       }
       
+      console.log("Available analyses:", Object.keys(global.rivalRankTrackerResults).length > 0 
+        ? Object.keys(global.rivalRankTrackerResults)
+        : "None");
+      
       // In a real implementation, you would fetch from the database
-      const analysis = global.rivalRankTrackerResults[id];
+      let analysis = global.rivalRankTrackerResults[id];
       
       if (!analysis) {
         // If analysis is not found, create a demo completed state
         // This is only for demo purposes - in a real app you'd check the database
-        console.log("Analysis not found, returning a completed demo example");
+        console.log("Analysis not found for ID:", id, "returning a demo example");
         
         // Generate a demo analysis with sample data for the UI
         const demoAnalysis = {
-          id: id,
+          id,
           status: "completed",
           website: "yourwebsite.com",
           keywords: [
@@ -1908,10 +1912,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Store the demo analysis for future retrievals
         global.rivalRankTrackerResults[id] = demoAnalysis;
         
+        console.log(`Returning demo analysis for ID ${id} with ${demoAnalysis.keywords.length} keywords`);
         return res.json(demoAnalysis);
       }
       
-      console.log("Returning analysis:", analysis.status);
+      // Validate the analysis data structure before returning
+      if (!analysis.keywords || !Array.isArray(analysis.keywords)) {
+        console.error("Invalid analysis data structure:", analysis);
+        // If invalid structure, return a fresh demo analysis
+        const demoAnalysis = generateDemoRankTrackerAnalysis(id);
+        global.rivalRankTrackerResults[id] = demoAnalysis;
+        
+        console.log(`Returning new demo analysis for ID ${id} due to invalid data structure`);
+        return res.json(demoAnalysis);
+      }
+      
+      console.log(`Returning analysis ${id}:`, analysis.status, 
+        `with ${analysis.keywords.length} keywords and ${analysis.competitors?.length || 0} competitors`);
       return res.json(analysis);
     } catch (error) {
       console.error("Error fetching rank tracker analysis:", error);
