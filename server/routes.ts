@@ -198,11 +198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Generate keyword gap data based on competitors
             const keywordGap = [
-              { keyword: "local services", volume: Math.round(100 + Math.random() * 900), difficulty: Math.round(20 + Math.random() * 60) },
-              { keyword: "best providers", volume: Math.round(100 + Math.random() * 600), difficulty: Math.round(30 + Math.random() * 40) },
-              { keyword: "affordable options", volume: Math.round(100 + Math.random() * 400), difficulty: Math.round(10 + Math.random() * 30) },
-              { keyword: "near me", volume: Math.round(500 + Math.random() * 1500), difficulty: Math.round(50 + Math.random() * 30) },
-              { keyword: "top rated", volume: Math.round(200 + Math.random() * 800), difficulty: Math.round(40 + Math.random() * 40) }
+              { term: "local services", volume: Math.round(100 + Math.random() * 900), competition: Math.round(20 + Math.random() * 60), topCompetitor: competitors[0]?.name || "Unknown" },
+              { term: "best providers", volume: Math.round(100 + Math.random() * 600), competition: Math.round(30 + Math.random() * 40), topCompetitor: competitors[1]?.name || competitors[0]?.name || "Unknown" },
+              { term: "affordable options", volume: Math.round(100 + Math.random() * 400), competition: Math.round(10 + Math.random() * 30), topCompetitor: competitors[2]?.name || competitors[0]?.name || "Unknown" },
+              { term: "near me", volume: Math.round(500 + Math.random() * 1500), competition: Math.round(50 + Math.random() * 30), topCompetitor: competitors[0]?.name || "Unknown" },
+              { term: "top rated", volume: Math.round(200 + Math.random() * 800), competition: Math.round(40 + Math.random() * 40), topCompetitor: competitors[1]?.name || competitors[0]?.name || "Unknown" }
             ];
             
             // Clean up the keyword for display (remove location if present at the end)
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Add competitor analysis to the sanitizedResult
             sanitizedResult.competitorAnalysis = competitorAnalysis;
-            console.log("Added competitor analysis to results");
+            console.log("Added competitor analysis to results with", competitors.length, "competitors");
           } catch (competitorError) {
             console.error("Error during competitor analysis:", competitorError);
             // Create an empty competitor analysis object if analysis fails
@@ -259,6 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
             sanitizedResult.competitorAnalysis = competitorAnalysis;
           }
+        } else {
+          // Add explicit log message when competitor analysis is skipped
+          console.log("Skipping competitor analysis - not requested by user");
         }
         
         // Store sanitized result
