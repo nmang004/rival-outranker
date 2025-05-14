@@ -2,20 +2,51 @@ import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define schema for user accounts with enhanced profile information
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImage: text("profile_image"),
+  company: text("company"),
+  jobTitle: text("job_title"),
+  bio: text("bio"),
+  websiteUrl: text("website_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastLoginAt: timestamp("last_login_at"),
+  isEmailVerified: boolean("is_email_verified").default(false),
+});
+
 // Define the schema for storing user analysis history
 export const analyses = pgTable("analyses", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),
+  userId: integer("user_id").references(() => users.id),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   overallScore: integer("overall_score").notNull(),
   results: jsonb("results").notNull(),
 });
 
-// Define schema for user accounts (minimal for now)
-export const users = pgTable("users", {
+// User projects to organize saved analyses
+export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Many-to-many relationship between projects and analyses
+export const projectAnalyses = pgTable("project_analyses", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id),
+  analysisId: integer("analysis_id").notNull().references(() => analyses.id),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
 });
 
 // Insert schemas
@@ -24,16 +55,56 @@ export const insertAnalysisSchema = createInsertSchema(analyses).omit({
   timestamp: true,
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastLoginAt: true,
+});
+
+export const updateUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
   password: true,
+  username: true,
+  email: true,
+  isEmailVerified: true,
+});
+
+export const loginUserSchema = z.object({
+  username: z.string().min(3).max(50),
+  password: z.string().min(6),
+});
+
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
+export const insertProjectAnalysisSchema = createInsertSchema(projectAnalyses).omit({
+  id: true,
+  addedAt: true,
 });
 
 // Types
 export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 export type Analysis = typeof analyses.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
+export type LoginCredentials = z.infer<typeof loginUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type UpdateProject = z.infer<typeof updateProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+export type InsertProjectAnalysis = z.infer<typeof insertProjectAnalysisSchema>;
+export type ProjectAnalysis = typeof projectAnalyses.$inferSelect;
 
 // Custom types for SEO analysis results
 export const urlFormSchema = z.object({
