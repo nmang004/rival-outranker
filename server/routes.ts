@@ -1017,6 +1017,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rival Audit routes
+  app.post("/api/rival-audit", async (req: Request, res: Response) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: "URL is required" });
+      }
+      
+      // Generate a mock audit ID for now (in a real implementation, this would be stored in the database)
+      const auditId = Math.floor(Math.random() * 1000) + 1;
+      
+      // Return the audit ID immediately
+      res.status(202).json({ id: auditId, message: "Audit started" });
+      
+      // For demonstration, we'll return mock data that matches our schema
+      // In a production environment, this would be a real crawl and analysis
+      setTimeout(async () => {
+        try {
+          // This is where the actual audit would be performed
+          console.log(`Starting rival audit for ${url} with ID ${auditId}`);
+        } catch (error) {
+          console.error("Error performing rival audit:", error);
+        }
+      }, 0);
+      
+    } catch (error) {
+      console.error("Error starting rival audit:", error);
+      res.status(500).json({ error: "Failed to start rival audit" });
+    }
+  });
+  
+  app.get("/api/rival-audit/:id", async (req: Request, res: Response) => {
+    try {
+      const auditId = parseInt(req.params.id);
+      
+      if (isNaN(auditId)) {
+        return res.status(400).json({ error: "Invalid audit ID" });
+      }
+      
+      // For demonstration, we'll return mock data that matches our schema
+      // In a real implementation, this would be fetched from the database
+      const mockAudit = generateMockRivalAudit(req.query.url as string || "https://example.com");
+      
+      res.json(mockAudit);
+      
+    } catch (error) {
+      console.error("Error fetching rival audit:", error);
+      res.status(500).json({ error: "Failed to fetch rival audit" });
+    }
+  });
+  
+  app.get("/api/rival-audit/:id/export", async (req: Request, res: Response) => {
+    try {
+      const auditId = parseInt(req.params.id);
+      
+      if (isNaN(auditId)) {
+        return res.status(400).json({ error: "Invalid audit ID" });
+      }
+      
+      // For demonstration purposes
+      res.status(501).json({ message: "Excel export not implemented yet" });
+      
+    } catch (error) {
+      console.error("Error exporting rival audit:", error);
+      res.status(500).json({ error: "Failed to export rival audit" });
+    }
+  });
+  
+  // Helper function to generate mock audit data for demonstration
+  function generateMockRivalAudit(url: string) {
+    // Use a consistent seed based on URL to get the same results for the same URL
+    const seed = url.length;
+    const rand = (max: number) => Math.floor((seed * 13) % max);
+    
+    // Generate random counts with some variance but consistency
+    const priorityCount = rand(3);
+    const ofiCount = rand(5) + 2;
+    const okCount = rand(10) + 5;
+    const naCount = rand(3);
+    
+    // Generate mock status for items based on the seed
+    const getStatus = (index: number) => {
+      const val = (seed + index) % 4;
+      if (val === 0) return 'Priority OFI';
+      if (val === 1) return 'OFI';
+      if (val === 2) return 'OK';
+      return 'N/A';
+    };
+    
+    // Generate mock importance
+    const getImportance = (index: number) => {
+      const val = (seed + index) % 3;
+      if (val === 0) return 'High';
+      if (val === 1) return 'Medium';
+      return 'Low';
+    };
+    
+    // On-Page audit items
+    const onPageItems = [
+      { name: "Is the website appealing? Modern?", description: "The website should have a modern, professional design", status: getStatus(1), importance: getImportance(1), notes: "Design is outdated compared to competitors" },
+      { name: "Is the website intuitive? Usable?", description: "Users should be able to easily navigate the site", status: getStatus(2), importance: getImportance(2), notes: "Navigation is confusing" },
+      { name: "Is the copy readable? Not keyword stuffed. Clear.", description: "Content should be user-friendly and readable", status: getStatus(3), importance: getImportance(3) },
+      { name: "Pages are easy to read? No typos/spelling errors? Sufficiently long?", description: "Content should be error-free and comprehensive", status: getStatus(4), importance: getImportance(4) },
+      { name: "Does the site answer user intent?", description: "Content should match what users are searching for", status: getStatus(5), importance: getImportance(5) },
+      { name: "Leverages reviews on website?", description: "Reviews build trust and credibility", status: getStatus(6), importance: getImportance(6) }
+    ];
+    
+    // Structure & Navigation audit items
+    const structureItems = [
+      { name: "Human-readable? Simple? Informative?", description: "URLs should be user-friendly", status: getStatus(7), importance: getImportance(7) },
+      { name: "Localized?", description: "URLs should include location information where relevant", status: getStatus(8), importance: getImportance(8) },
+      { name: "Keyword-rich?", description: "URLs should contain relevant keywords", status: getStatus(9), importance: getImportance(9) },
+      { name: "Do the urls include categories or services found on their GBP page?", description: "URLs should align with Google Business Profile categories", status: getStatus(10), importance: getImportance(10) },
+      { name: "Navigation labels aligned with page <title>?", description: "Navigation labels should match page titles", status: getStatus(11), importance: getImportance(11) }
+    ];
+    
+    // Contact Page audit items
+    const contactItems = [
+      { name: "Has a contact page?", description: "A dedicated contact page is important", status: getStatus(12), importance: getImportance(12) },
+      { name: "Business name appears in the copy?", description: "Business name should be prominently displayed", status: getStatus(13), importance: getImportance(13) },
+      { name: "Address appears in the copy?", description: "Physical address should be visible", status: getStatus(14), importance: getImportance(14) },
+      { name: "Phone number appears in the copy?", description: "Phone number should be easy to find", status: getStatus(15), importance: getImportance(15) },
+      { name: "Phone number is clickable?", description: "Phone numbers should be clickable for mobile users", status: getStatus(16), importance: getImportance(16) }
+    ];
+    
+    // Service Pages audit items
+    const serviceItems = [
+      { name: "Has a single Service Page for each primary service?", description: "Each main service should have its own page", status: getStatus(17), importance: getImportance(17) },
+      { name: "Service Pages are written for the audience, not the business owner?", description: "Content should focus on customer needs", status: getStatus(18), importance: getImportance(18) },
+      { name: "Avoids heavy use of industry jargon?", description: "Content should be understandable to the average user", status: getStatus(19), importance: getImportance(19) },
+      { name: "Service Pages are sufficiently detailed?", description: "Pages should provide comprehensive information", status: getStatus(20), importance: getImportance(20) },
+      { name: "Strong and clear Call To Action (CTA)?", description: "Each page should have a clear next step for users", status: getStatus(21), importance: getImportance(21) }
+    ];
+    
+    // Location Pages audit items
+    const locationItems = [
+      { name: "Site uses location pages? (For single location business, this tab is not needed)", description: "Multi-location businesses should have dedicated pages", status: getStatus(22), importance: getImportance(22) },
+      { name: "Location pages are unique?", description: "Each location page should have unique content", status: getStatus(23), importance: getImportance(23) },
+      { name: "Mobile-first (or at least, mobile-friendly) design?", description: "Pages should work well on mobile devices", status: getStatus(24), importance: getImportance(24) },
+      { name: "Are location pages getting traffic?", description: "Pages should be attracting visitors", status: getStatus(25), importance: getImportance(25) },
+      { name: "NAP: Business (N)ame appears in the copy?", description: "Name, Address, Phone information should be present", status: getStatus(26), importance: getImportance(26) }
+    ];
+    
+    return {
+      url,
+      timestamp: new Date(),
+      onPage: { items: onPageItems },
+      structureNavigation: { items: structureItems },
+      contactPage: { items: contactItems },
+      servicePages: { items: serviceItems },
+      locationPages: { items: locationItems },
+      summary: {
+        priorityOfiCount: priorityCount,
+        ofiCount: ofiCount,
+        okCount: okCount,
+        naCount: naCount
+      }
+    };
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }

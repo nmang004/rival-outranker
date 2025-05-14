@@ -330,12 +330,11 @@ export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
               </div>
               <Progress 
                 value={getCategoryProgress(locationTotals)} 
-                className="h-2"
-                indicatorClassName={
-                  getCategoryStatus(locationTotals) === "good" ? "bg-green-500" : 
-                  getCategoryStatus(locationTotals) === "needs-improvement" ? "bg-yellow-500" :
-                  "bg-red-500"
-                }
+                className={`h-2 ${
+                  getCategoryStatus(locationTotals) === "good" ? "bg-green-500/20" : 
+                  getCategoryStatus(locationTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                  "bg-red-500/20"
+                }`}
               />
               <div className="grid grid-cols-4 gap-2 text-xs mt-2">
                 <div className="text-center">
