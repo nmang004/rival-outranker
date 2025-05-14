@@ -206,22 +206,25 @@ export default function CompetitorResultsPage() {
               <div className="text-xs mt-1">
                 Competitor analysis powered by Google Custom Search API.
                 {competitorData?.queryCount !== undefined && (
-                  <> Used {competitorData.queryCount} of max 5 queries</>
+                  <> Total API Usage: {competitorData.queryCount}/100 daily queries</>
                 )}
               </div>
               
-              {/* API Usage Bar */}
+              {/* API Usage Bar - Total Site Usage */}
               {competitorData?.queryCount !== undefined && (
                 <div className="mt-2 w-full max-w-[300px]">
                   <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                     <div 
-                      className={`h-full ${competitorData.queryCount >= 5 ? 'bg-amber-500' : 'bg-green-500'}`} 
-                      style={{ width: `${Math.min(competitorData.queryCount / 5 * 100, 100)}%` }}
+                      className={`h-full ${competitorData.queryCount >= 80 ? 'bg-red-500' : competitorData.queryCount >= 50 ? 'bg-amber-500' : 'bg-green-500'}`} 
+                      style={{ width: `${Math.min(competitorData.queryCount / 100 * 100, 100)}%` }}
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs mt-1">
                     <span>0</span>
-                    <span className="text-amber-600 font-medium">Limit: 5 per analysis</span>
+                    <div className="flex items-center">
+                      <span>{competitorData.queryCount}/100 daily queries used</span>
+                      <span className="ml-2 text-amber-600 font-medium">(5 max per analysis)</span>
+                    </div>
                   </div>
                 </div>
               )}

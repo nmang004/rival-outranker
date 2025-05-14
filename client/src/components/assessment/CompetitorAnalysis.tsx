@@ -221,21 +221,33 @@ export default function CompetitorAnalysis({ url, city, keyword, isRequested = f
         </button>
         
         {/* Google API Query Count Information */}
-        <div className="mt-4 text-xs text-muted-foreground flex items-center justify-between border-t pt-3">
-          <div className="flex items-center">
-            <Tag className="h-3 w-3 mr-1 text-gray-500" />
-            <span>Google API Query Usage</span>
-          </div>
-          <div className="flex items-center">
-            <div className="mr-3">
-              <span className="font-medium">
-                {/* Show actual count from API if available */}
-                {data?.queryCount || "0"} / 100 daily limit
-              </span>
+        <div className="mt-4 text-xs text-muted-foreground flex flex-col border-t pt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Tag className="h-3 w-3 mr-1 text-gray-500" />
+              <span>Google API Query Usage</span>
             </div>
-            <div className="py-1 px-2 bg-amber-100 text-amber-800 rounded-md flex items-center">
-              <AlertCircle className="h-3 w-3 mr-1" />
-              <span className="font-medium">Limited to 5 per analysis</span>
+            <div className="flex items-center">
+              <div className="mr-3">
+                <span className="font-medium">
+                  {/* Show actual count from API if available */}
+                  {data?.queryCount || "0"} / 100 daily limit
+                </span>
+              </div>
+              <div className="py-1 px-2 bg-amber-100 text-amber-800 rounded-md flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                <span className="font-medium">Limited to 5 per analysis</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* API Usage Progress Bar */}
+          <div className="mt-2 w-full">
+            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${(data?.queryCount || 0) >= 80 ? 'bg-red-500' : (data?.queryCount || 0) >= 50 ? 'bg-amber-500' : 'bg-green-500'}`} 
+                style={{ width: `${Math.min((data?.queryCount || 0) / 100 * 100, 100)}%` }}
+              ></div>
             </div>
           </div>
         </div>
