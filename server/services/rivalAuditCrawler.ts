@@ -550,72 +550,121 @@ class RivalAuditCrawler {
   
   /**
    * Determine if a page is a service area page (localized service page)
-   * Examples: /sebastian-fl/ac-repair/ or /sebastian-fl-ac-repair/
+   * Various examples:
+   * 1. /sebastian-fl/ac-repair/
+   * 2. /sebastian-fl-ac-repair/
+   * 3. /locations/sebastian-fl/ac-repair/
+   * 4. /service-areas/sebastian/air-conditioning/
+   * 5. /areas-we-serve/miami/furnace-repair/
    */
   private isServiceAreaPage(page: PageCrawlResult): boolean {
     const url = page.url.toLowerCase();
     const title = page.title.toLowerCase();
-    const path = new URL(page.url).pathname;
+    const path = new URL(page.url).pathname.toLowerCase();
     const pathSegments = path.split('/').filter(Boolean);
     
-    // Check if URL pattern matches a service area page
-    // Common patterns:
-    // 1. /location/service (e.g., /miami-fl/ac-repair/)
-    // 2. /location-service (e.g., /miami-fl-ac-repair/)
+    // Define comprehensive lists of location and service indicators for robust detection
+    const locationIndicators = [
+      // Common location directories
+      'areas-we-serve', 'service-areas', 'service-area', 'locations', 'service-locations',
+      // Individual cities or regions - patterns
+      /(^[a-z]+(-[a-z]+)?(-[a-z]{2})?)$/, // city or city-state format
+      /\d{5}/, // zip code
+      /(north|south|east|west|central)(-[a-z]+)/, // directional prefixes with location
+      /(county|parish|township|village)$/  // location type suffixes
+    ];
     
-    if (pathSegments.length >= 2) {
-      // Check first segment for location indicators
-      const firstSegment = pathSegments[0].toLowerCase();
+    const serviceTerms = [
+      'repair', 'service', 'installation', 'install', 'replacement', 'replace',
+      'maintenance', 'tune-up', 'tune', 'inspection', 'cleaning',
+      'ac', 'a/c', 'hvac', 'heat', 'heater', 'furnace', 'boiler', 'duct', 'thermostat',
+      'cooling', 'heating', 'air-conditioning', 'air-conditioner', 'conditioning',
+      'emergency'
+    ];
+    
+    // Pattern 1: Location directory pattern with location and service subpaths
+    // Example: /service-areas/orlando/ac-repair/
+    if (pathSegments.length >= 3) {
+      const isLocationDirectory = ['service-areas', 'service-area', 'areas-we-serve', 'locations', 'service-locations'].includes(pathSegments[0]);
       
-      // Check if first segment contains location indicators like city names or zip codes
-      const hasLocationIndicator = 
-        /([a-z]+-[a-z]+)/.test(firstSegment) || // city-state format
-        /-fl$/.test(firstSegment) ||           // ends with -fl
-        /-[a-z]{2}$/.test(firstSegment);       // ends with state code
-        
-      // Check if second segment contains service terms
-      const secondSegment = pathSegments.length > 1 ? pathSegments[1].toLowerCase() : '';
-      const hasServiceTerm = 
-        ['repair', 'service', 'installation', 'replacement', 'maintenance', 'ac', 'hvac', 'heat', 'furnace'].some(
-          term => secondSegment.includes(term)
+      if (isLocationDirectory) {
+        // Check if third segment contains service terms
+        const hasServiceInThirdSegment = serviceTerms.some(term => 
+          pathSegments.length > 2 && pathSegments[2].includes(term)
         );
         
-      if (hasLocationIndicator && hasServiceTerm) {
-        return true;
-      }
-    }
-    
-    // Check for location-service pattern in a single segment
-    const lastSegment = pathSegments[pathSegments.length - 1] || '';
-    const locationServicePattern = /([a-z]+-[a-z]+)-([a-z-]+)$/; // Example: miami-fl-ac-repair
-    if (locationServicePattern.test(lastSegment)) {
-      const matches = lastSegment.match(locationServicePattern);
-      if (matches && matches[2]) {
-        const servicePart = matches[2];
-        // Check if service part contains service terms
-        const hasServiceTerm = 
-          ['repair', 'service', 'install', 'replacement', 'maintenance', 'ac', 'hvac', 'heat', 'furnace'].some(
-            term => servicePart.includes(term)
-          );
-          
-        if (hasServiceTerm) {
+        if (hasServiceInThirdSegment) {
           return true;
         }
       }
     }
     
-    // Check title for both location and service indicators
-    const hasLocationInTitle = 
-      ['in', 'near', 'around', 'serving'].some(preposition => title.includes(preposition)) &&
-      page.bodyText.toLowerCase().match(/\b(city|county|area|town|region)\b/);
-    
-    const hasServiceInTitle = 
-      ['repair', 'service', 'installation', 'maintenance', 'ac', 'hvac', 'heating', 'cooling'].some(
-        term => title.includes(term)
-      );
+    // Pattern 2: Direct /location/service pattern
+    // Example: /orlando-fl/ac-repair/
+    if (pathSegments.length >= 2) {
+      const firstSegment = pathSegments[0];
+      const secondSegment = pathSegments[1];
       
-    if (hasLocationInTitle && hasServiceInTitle) {
+      // Check if first segment is a location (city-state format, or known location patterns)
+      const hasLocationIndicator = 
+        /([a-z]+-[a-z]+)/.test(firstSegment) || // city-state format like miami-fl
+        /-[a-z]{2}$/.test(firstSegment) ||     // ends with state code like -fl, -ca
+        /^(north|south|east|west|central)/.test(firstSegment) || // starts with direction
+        /(county|ville|town|city|burg|field)$/.test(firstSegment); // ends with location suffix
+      
+      // Check if second segment contains service terms
+      const hasServiceTerm = serviceTerms.some(term => secondSegment.includes(term));
+      
+      if (hasLocationIndicator && hasServiceTerm) {
+        return true;
+      }
+    }
+    
+    // Pattern 3: Combined location-service in a single segment
+    // Example: /miami-fl-ac-repair/ or /orlando-heating-service/
+    if (pathSegments.length >= 1) {
+      const segment = pathSegments[pathSegments.length - 1]; // Use last segment
+      
+      // Check for both location and service indicators in the same segment
+      const locationPatterns = [
+        /[a-z]+-[a-z]{2}/, // city-state (miami-fl)
+        /[a-z]+-county/,   // county name (orange-county)
+        /(north|south|east|west)-[a-z]+/ // directional area (north-dallas)
+      ];
+      
+      const hasLocationInSegment = locationPatterns.some(pattern => pattern.test(segment));
+      const hasServiceInSegment = serviceTerms.some(term => segment.includes(term));
+      
+      if (hasLocationInSegment && hasServiceInSegment) {
+        return true;
+      }
+    }
+    
+    // Pattern 4: Check page title and content for both location and service indicators
+    // This is a more liberal check for cases where the URL isn't following standard patterns
+    const locationTermsInTitle = [
+      'in', 'near', 'around', 'serving', 'for residents of', 'for homes in',
+      'for customers in', 'servicing', 'service in', 'repairs in'
+    ];
+    
+    const hasLocationInTitle = locationTermsInTitle.some(term => title.includes(term));
+    const hasServiceInTitle = serviceTerms.some(term => title.includes(term));
+    
+    if (hasLocationInTitle && hasServiceInTitle && 
+        page.bodyText.toLowerCase().match(/\b(city|county|area|town|region|neighborhood|community)\b/)) {
       return true;
+    }
+    
+    // Pattern 5: Special cases for industry-specific patterns
+    // Check for hybrid pages that AREN'T in the cities-served directory
+    if (!path.includes('cities-served') && 
+        path.includes('services') && path.match(/(\/(ac|hvac|heating)(-|\/)[a-z-]+)\/?$/i)) {
+      
+      // Check if page title or content contains location keywords
+      const locationWords = ['area', 'local', 'city', 'town', 'county', 'community', 'neighborhood'];
+      if (locationWords.some(word => title.includes(word) || page.bodyText.toLowerCase().includes(word))) {
+        return true;
+      }
     }
     
     return false;
@@ -623,68 +672,124 @@ class RivalAuditCrawler {
   
   /**
    * Determine if a page is a location page (geo-based page covering the entire area)
-   * Examples: /sebastian-fl/, /cities-served/bel-air-ac/
+   * Various examples:
+   * 1. /sebastian-fl/
+   * 2. /cities-served/bel-air-ac/
+   * 3. /service-areas/orlando/
+   * 4. /locations/maryland/baltimore/
+   * 5. /areas-we-serve/broward-county/
+   * 6. /service-area/naperville/
+   * 7. /zip-codes/90210/
    */
   private isLocationPage(page: PageCrawlResult): boolean {
-    const locationTerms = ['location', 'city', 'town', 'county', 'area', 'serving', 'service-area', 'cities-served'];
     const url = page.url.toLowerCase();
     const title = page.title.toLowerCase();
-    const path = new URL(page.url).pathname;
+    const path = new URL(page.url).pathname.toLowerCase();
     const pathSegments = path.split('/').filter(Boolean);
     
-    // Special case for cities-served directory structure (like /cities-served/bel-air-ac/)
-    if (pathSegments.length >= 1 && pathSegments[0] === 'cities-served') {
-      // This is a location page if it's directly in the cities-served directory
-      // Even if it contains service terms, prioritize as location page
-      return true;
-    }
+    // Define comprehensive service terms for exclusion
+    const serviceTerms = [
+      'repair', 'service', 'installation', 'install', 'replacement', 'replace',
+      'maintenance', 'tune-up', 'inspection', 'cleaning', 'emergency',
+      'ac', 'a/c', 'hvac', 'heat', 'heater', 'furnace', 'boiler', 'duct', 'thermostat'
+    ];
     
-    // Check if this is a location-only page (simple location pattern)
-    if (pathSegments.length === 1) {
-      const segment = pathSegments[0].toLowerCase();
+    // Define comprehensive location indicators
+    const locationDirectories = [
+      'cities-served', 'service-areas', 'service-area', 'locations', 'areas-we-serve',
+      'cities', 'counties', 'communities', 'zip-codes', 'territories', 'regions', 'towns'
+    ];
+    
+    const locationWords = [
+      'location', 'city', 'town', 'county', 'area', 'serving', 'service-area', 'community',
+      'neighborhood', 'region', 'territory', 'zone', 'district', 'metropolitan', 'zip',
+      'postal', 'locale', 'places', 'borough'
+    ];
+    
+    // Pattern 1: Special case for known location directories
+    // Example: /cities-served/*, /service-areas/*, etc.
+    if (pathSegments.length >= 1 && locationDirectories.includes(pathSegments[0])) {
+      // If only one more segment deep (e.g., /cities-served/bel-air/)
+      if (pathSegments.length <= 2) {
+        return true;
+      }
       
-      // Check for city-state format (e.g., miami-fl) or city name with no service terms
-      const isCityStateFormat = 
-        /^([a-z]+(-[a-z]+)?-[a-z]{2})$/.test(segment) || // city-state format like miami-fl
-        /(county|city|area)$/.test(segment);             // ends with location indicator
-      
-      if (isCityStateFormat && 
-          !['repair', 'service', 'installation'].some(term => segment.includes(term))) {
+      // If deeper but the next level doesn't contain service terms
+      // (e.g., /service-areas/maryland/baltimore/ is a location page)
+      if (pathSegments.length > 2 && 
+          !serviceTerms.some(term => pathSegments[2].includes(term))) {
         return true;
       }
     }
     
-    // Check URL for location terms but no service terms
-    if (locationTerms.some(term => url.includes(term)) && 
-        !['repair', 'service', 'installation'].some(term => url.includes(term))) {
+    // Pattern 2: Direct location pages with city/state format
+    // Example: /miami-fl/, /chicago/, /new-york/
+    if (pathSegments.length === 1) {
+      const segment = pathSegments[0];
+      
+      // City-state format or just city name
+      const locationFormats = [
+        /^([a-z]+(-[a-z]+)?-[a-z]{2})$/,  // city-state (miami-fl)
+        /^([a-z]+(-[a-z]+)?)$/,           // city or city-with-hyphen
+        /^([a-z]+)-(county)$/,            // county name
+        /^(north|south|east|west)-([a-z]+)$/, // directional-city
+        /^(\d{5})$/                       // zip code
+      ];
+      
+      if (locationFormats.some(pattern => pattern.test(segment)) && 
+          !serviceTerms.some(term => segment.includes(term))) {
+        return true;
+      }
+    }
+    
+    // Pattern 3: Content-based detection for pages that don't follow URL patterns
+    // Look for strong location focus in content
+    
+    // a) Title clearly indicates it's a location page
+    const locationTitlePatterns = [
+      /\b(serving|service area|areas we serve|areas served|we serve|our service areas)\b/i,
+      /\b(where we serve|locations we serve|cities we serve|counties we serve)\b/i,
+      /\b(service territory|service locations|our locations|find us|our office|our offices)\b/i,
+      /\b(communities|neighborhoods|regions|territories|towns|municipalities)\b/i,
+      /\b(coverage map|service map|location map|areas covered)\b/i
+    ];
+    
+    if (locationTitlePatterns.some(pattern => pattern.test(title)) && 
+        !serviceTerms.some(term => title.includes(term))) {
       return true;
     }
     
-    // Check title for location terms but no service terms
-    if (locationTerms.some(term => title.includes(term)) && 
-        !['repair', 'service', 'installation'].some(term => title.includes(term))) {
-      return true;
-    }
-    
-    // Check for address mentions in the content and location indicators in the URL
-    // without service-specific terms
-    if (page.hasAddress && pathSegments.length <= 2 && 
-        !['repair', 'service', 'installation'].some(term => 
-          pathSegments.some(segment => segment.includes(term))
+    // b) URL contains location terms but no service terms
+    if (locationWords.some(word => url.includes(word)) && 
+        !serviceTerms.some(term => 
+          // Check if the URL contains service terms that aren't part of a city name
+          // e.g., "Service City" shouldn't be excluded just because it has "service" in it
+          url.includes(term) && 
+          !new RegExp(`${term}-(city|county|area|town)`, 'i').test(url)
         )) {
       return true;
     }
     
-    // Check for common location page title patterns
-    const locationTitlePatterns = [
-      /serving\s+([a-z\s]+)/i,
-      /\b(in|near)\s+([a-z\s]+)/i,
-      /areas\s+(we|our company)\s+(serve|cover)/i
-    ];
-    
-    if (locationTitlePatterns.some(pattern => pattern.test(title)) && 
-        !['repair', 'service', 'installation'].some(term => title.includes(term))) {
+    // c) Check for address list patterns (pages that list multiple service locations)
+    if (page.hasAddress && 
+        (title.includes('locations') || title.includes('offices') || title.includes('branches')) && 
+        !serviceTerms.some(term => title.includes(term))) {
       return true;
+    }
+    
+    // Pattern 4: Special location detection for geographic coverage lists
+    // Pages like "/areas" that list service areas
+    if ((pathSegments.length === 1 && ['areas', 'locations', 'cities', 'service-area'].includes(pathSegments[0])) || 
+        title.match(/\b(list of|our|serving|service) (areas|cities|communities|locations|towns)\b/i)) {
+      
+      // Check if the page lists multiple locations (look for geographic patterns in content)
+      const hasMultipleLocations = 
+        (page.bodyText.match(/\b[A-Z][a-z]+,\s*[A-Z]{2}\b/g)?.length || 0) > 2 || // City, ST format occurs multiple times
+        (page.bodyText.match(/\b(north|south|east|west|central)\s+[a-z]+\b/ig)?.length || 0) > 2; // Directional areas
+      
+      if (hasMultipleLocations) {
+        return true;
+      }
     }
     
     return false;
