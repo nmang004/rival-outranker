@@ -174,6 +174,7 @@ export const US_CITIES: USCity[] = [
   { city: "Santa Barbara", state: "CA" },
   { city: "Santa Fe", state: "NM" },
   { city: "Sarasota", state: "FL" },
+  { city: "Vero Beach", state: "FL" },
   { city: "Savannah", state: "GA" },
   { city: "Spokane", state: "WA" },
   { city: "Syracuse", state: "NY" },
