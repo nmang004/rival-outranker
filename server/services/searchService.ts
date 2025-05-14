@@ -1,37 +1,48 @@
 import axios from 'axios';
 
-interface BingSearchResponse {
-  webPages?: {
-    value: Array<{
-      name: string;
-      url: string;
-      snippet: string;
-      displayUrl: string;
-    }>;
-    totalEstimatedMatches: number;
+interface SerpApiResponse {
+  search_metadata?: {
+    id: string;
+    status: string;
+    json_endpoint: string;
+    created_at: string;
+    processed_at: string;
+    google_url: string;
+    raw_html_file: string;
+    total_time_taken: number;
   };
-  errors?: Array<{
-    code: string;
-    message: string;
-    moreDetails?: string;
+  search_parameters?: {
+    engine: string;
+    q: string;
+    location: string;
+  };
+  organic_results?: Array<{
+    position: number;
+    title: string;
+    link: string;
+    snippet: string;
+    domain: string;
   }>;
+  error?: string;
 }
 
 interface SearchOptions {
   count?: number;
   offset?: number;
-  market?: string;
-  freshness?: string; // 'Day' | 'Week' | 'Month'
+  location?: string;
+  timeframe?: string; // 'day' | 'week' | 'month'
 }
 
-class BingSearchService {
+class SearchService {
   private apiKey: string | undefined;
-  private baseUrl = 'https://api.bing.microsoft.com/v7.0/search';
+  private baseUrl = 'https://serpapi.com/search';
   private queryCounter = 0;
+  // Default daily limit for SerpAPI - can be adjusted based on your plan
+  private queryLimit = 100;
 
   constructor() {
-    this.apiKey = process.env.BING_SEARCH_API_KEY;
-    this.queryCounter = Number(process.env.BING_SEARCH_COUNTER) || 0;
+    this.apiKey = process.env.SERPAPI_KEY;
+    this.queryCounter = Number(process.env.SEARCH_QUERY_COUNTER) || 0;
   }
 
   /**
@@ -39,48 +50,42 @@ class BingSearchService {
    */
   async searchCompetitors(keyword: string, location?: string, options: SearchOptions = {}): Promise<any[]> {
     if (!this.apiKey) {
-      console.warn('Bing Search API key is not set, using fallback data');
+      console.warn('SerpAPI key is not set, using fallback data');
       return this.getFallbackResults(keyword, 5);
     }
 
-    const searchQuery = location ? 
-      `${keyword} ${location}` : 
-      keyword;
-    
     try {
       // Increment the query counter when making a real API call
       this.queryCounter++;
       // Save the counter to the environment so it persists across restarts
-      process.env.BING_SEARCH_COUNTER = this.queryCounter.toString();
+      process.env.SEARCH_QUERY_COUNTER = this.queryCounter.toString();
 
-      const response = await axios.get<BingSearchResponse>(this.baseUrl, {
+      const response = await axios.get<SerpApiResponse>(this.baseUrl, {
         params: {
-          q: searchQuery,
-          count: options.count || 10,
-          offset: options.offset || 0,
-          mkt: options.market || 'en-US',
-          freshness: options.freshness,
-          responseFilter: 'Webpages',
-        },
-        headers: {
-          'Ocp-Apim-Subscription-Key': this.apiKey,
+          api_key: this.apiKey,
+          engine: 'google',
+          q: keyword,
+          location: location || 'United States',
+          num: options.count || 10,
+          start: options.offset || 0,
+          tbm: 'nws',
+          time_period: options.timeframe,
         },
       });
 
-      if (response.data.errors) {
-        console.error('Bing Search API error:', response.data.errors);
+      if (response.data.error) {
+        console.error('SerpAPI error:', response.data.error);
         return this.getFallbackResults(keyword, 5);
       }
 
-      if (!response.data.webPages?.value || response.data.webPages.value.length === 0) {
-        console.warn('No results from Bing Search API');
+      if (!response.data.organic_results || response.data.organic_results.length === 0) {
+        console.warn('No results from SerpAPI');
         return this.getFallbackResults(keyword, 5);
       }
 
       // Filter out non-business domains (like Wikipedia, YouTube, etc.)
-      const filteredResults = response.data.webPages.value.filter(result => {
-        const url = new URL(result.url);
-        const domain = url.hostname.toLowerCase();
+      const filteredResults = response.data.organic_results.filter(result => {
+        const domain = result.domain.toLowerCase();
         
         // Skip common non-business domains
         if (
@@ -104,12 +109,12 @@ class BingSearchService {
 
       // Format the results
       return filteredResults.map(result => ({
-        name: result.name,
-        url: result.url,
+        name: result.title,
+        url: result.link,
         snippet: result.snippet,
       }));
     } catch (error) {
-      console.error('Error searching Bing API:', error);
+      console.error('Error searching SerpAPI:', error);
       return this.getFallbackResults(keyword, 5);
     }
   }
@@ -119,6 +124,20 @@ class BingSearchService {
    */
   getQueryCount(): number {
     return this.queryCounter;
+  }
+
+  /**
+   * Get the query limit
+   */
+  getQueryLimit(): number {
+    return this.queryLimit;
+  }
+
+  /**
+   * Get remaining queries
+   */
+  getRemainingQueries(): number {
+    return Math.max(0, this.queryLimit - this.queryCounter);
   }
 
   /**
@@ -143,4 +162,4 @@ class BingSearchService {
   }
 }
 
-export const bingSearchService = new BingSearchService();
+export const bingSearchService = new SearchService();

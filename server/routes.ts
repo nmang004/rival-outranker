@@ -726,8 +726,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint to get Bing Search API query count
   app.get("/api/bing-query-count", (_req: Request, res: Response) => {
     try {
-      const queryCount = bingSearchService.getQueryCount();
-      return res.json({ queryCount });
+      const count = bingSearchService.getQueryCount();
+      const limit = 1000; // Default API limit, can be adjusted if needed
+      const remaining = Math.max(0, limit - count);
+      
+      return res.json({ 
+        count, 
+        limit, 
+        remaining,
+        queryCount: count // For backward compatibility
+      });
     } catch (error) {
       console.error("Error getting Bing query count:", error);
       res.status(500).json({ error: "Failed to get query count" });
