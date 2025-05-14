@@ -290,9 +290,20 @@ export default function KeywordResearch() {
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
                       <div className="text-sm font-medium text-gray-500 mb-1">Search Volume</div>
                       <div className="text-3xl font-bold text-blue-700">
-                        {formatNumber(keywordData.searchVolume || 0)}
+                        {keywordData.searchVolume === 0 ? (
+                          <span className="text-amber-500">N/A</span>
+                        ) : (
+                          formatNumber(keywordData.searchVolume)
+                        )}
                       </div>
-                      <div className="mt-2 text-xs text-gray-500">Average monthly searches</div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Average monthly searches
+                        {keywordData.searchVolume === 0 && (
+                          <div className="text-xs text-amber-500 font-medium mt-1">
+                            No data available from API
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
