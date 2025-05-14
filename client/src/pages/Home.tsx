@@ -100,7 +100,14 @@ export default function Home() {
         // Directly redirect to the results page without polling
         // This avoids the additional confirmation/submission screen
         console.log('Redirecting immediately to results page');
-        setLocation(`/results?url=${encodeURIComponent(url)}`);
+        
+        // Include target keyword in the URL if provided
+        const targetKeyword = document.getElementById('targetKeyword') as HTMLInputElement;
+        const keywordParam = targetKeyword && targetKeyword.value.trim() 
+          ? `&targetKeyword=${encodeURIComponent(targetKeyword.value.trim())}` 
+          : '';
+          
+        setLocation(`/results?url=${encodeURIComponent(url)}${keywordParam}`);
       }, 500);
     }, 300);
   };

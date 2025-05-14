@@ -338,9 +338,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analysis", async (req: Request, res: Response) => {
     try {
       const rawUrl = req.query.url as string;
+      const targetKeyword = req.query.targetKeyword as string | undefined;
       
       // For debugging
-      console.log("GET /api/analysis requested with URL:", rawUrl);
+      console.log("GET /api/analysis requested with URL:", rawUrl, targetKeyword ? `with target keyword: ${targetKeyword}` : '');
+      
+      // If a target keyword is provided, always perform a fresh analysis
+      if (targetKeyword && targetKeyword.trim() !== '') {
+        console.log(`Target keyword provided in GET request: ${targetKeyword} - redirecting to analyze endpoint`);
+        // Redirect to the analyze endpoint to get a fresh analysis
+        try {
+          const pageData = await crawler.crawlPage(rawUrl);
+          const analysisResult = await analyzer.analyzePage(rawUrl, pageData, { forcedPrimaryKeyword: targetKeyword });
+          
+          // Store sanitized result
+          const analysisData = {
+            url: rawUrl,
+            overallScore: analysisResult.overallScore.score,
+            results: analysisResult
+          };
+          
+          // Validate and save to storage
+          const validatedData = insertAnalysisSchema.parse(analysisData);
+          await storage.createAnalysis(validatedData);
+          
+          // Return the fresh analysis
+          return res.json({
+            id: 0, // This will be replaced by the actual ID from storage
+            url: rawUrl,
+            overallScore: analysisResult.overallScore.score,
+            results: analysisResult
+          });
+        } catch (error) {
+          console.error("Error during fresh analysis with target keyword:", error);
+          // Continue with normal flow to return existing analysis if available
+        }
+      }
       
       if (!rawUrl) {
         // If no URL is provided, return the latest analyses
