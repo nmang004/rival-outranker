@@ -1,12 +1,25 @@
+import { useState } from "react";
 import { KeywordAnalysis } from "@shared/schema";
 import KeywordChart from "@/components/report/KeywordChart";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Edit, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface KeywordTabProps {
   data?: KeywordAnalysis;
+  analysisId?: number;
+  url?: string;
 }
 
-export default function KeywordTab({ data }: KeywordTabProps) {
+export default function KeywordTab({ data, analysisId, url }: KeywordTabProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newKeyword, setNewKeyword] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   // Return placeholder if data is undefined
   if (!data) {
     return (
@@ -19,6 +32,64 @@ export default function KeywordTab({ data }: KeywordTabProps) {
   }
 
   const primaryKeyword = data.primaryKeyword || "N/A";
+  
+  const handleEditClick = () => {
+    setNewKeyword(primaryKeyword);
+    setIsEditing(true);
+  };
+  
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+  
+  const handleUpdateKeyword = async () => {
+    if (!analysisId || !url || !newKeyword.trim()) {
+      toast({
+        title: "Error",
+        description: "Missing required information to update the keyword.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUpdating(true);
+    
+    try {
+      const response = await fetch(`/api/analysis/${analysisId}/update-keyword`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          keyword: newKeyword.trim(),
+          url: url
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update primary keyword");
+      }
+      
+      // Invalidate the analysis query to refresh data
+      queryClient.invalidateQueries(["/api/analysis"]);
+      
+      toast({
+        title: "Success",
+        description: "Primary keyword updated and analysis refreshed.",
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating keyword:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update the primary keyword. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
   
   const keywordElements = [
     { 
