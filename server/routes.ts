@@ -1806,13 +1806,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Analysis ID is required" });
       }
       
-      // In a real implementation, you would fetch from the database
-      const analysis = global.rivalRankTrackerResults && global.rivalRankTrackerResults[id];
+      console.log("Fetching analysis ID:", id);
+      console.log("Available analyses:", global.rivalRankTrackerResults ? Object.keys(global.rivalRankTrackerResults) : "None");
       
-      if (!analysis) {
-        return res.status(404).json({ error: "Analysis not found" });
+      // Initialize the global variable if it doesn't exist
+      if (!global.rivalRankTrackerResults) {
+        global.rivalRankTrackerResults = {};
       }
       
+      // In a real implementation, you would fetch from the database
+      const analysis = global.rivalRankTrackerResults[id];
+      
+      if (!analysis) {
+        // If analysis is not found, create a mock processing state
+        // This is only for demo purposes - in a real app you'd check the database
+        console.log("Analysis not found, returning a processing placeholder");
+        return res.json({
+          id: id,
+          status: "processing",
+          website: "example.com",
+          keywords: [],
+          competitors: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
+      console.log("Returning analysis:", analysis.status);
       return res.json(analysis);
     } catch (error) {
       console.error("Error fetching rank tracker analysis:", error);
