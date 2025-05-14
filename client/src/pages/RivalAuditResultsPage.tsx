@@ -189,49 +189,9 @@ export default function RivalAuditResultsPage() {
   };
   
   // Handle continue crawl to find more pages
+  // This function is now deprecated - using handleContinueAudit instead
   const handleContinueCrawl = async () => {
-    if (!websiteUrl) {
-      toast({
-        title: "Cannot continue audit",
-        description: "Missing website URL",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsContinuing(true);
-    
-    try {
-      toast({
-        title: "Continuing audit",
-        description: "Crawling more pages to get a more comprehensive audit...",
-      });
-      
-      // Create a new audit with continueCrawl flag
-      const response = await fetch("/api/rival-audit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          url: websiteUrl,
-          continueCrawl: true 
-        }),
-      });
-      
-      const data = await response.json();
-      
-      // Navigate to the new audit ID
-      navigate(`/rival-audit-results?id=${data.id}&url=${encodeURIComponent(websiteUrl)}`);
-    } catch (error) {
-      console.error("Error continuing rival audit:", error);
-      toast({
-        title: "Continue failed",
-        description: "Could not continue the audit. Please try again.",
-        variant: "destructive"
-      });
-      setIsContinuing(false);
-    }
+    return handleContinueAudit();
   };
   
   // Handle export to CSV
@@ -276,25 +236,29 @@ export default function RivalAuditResultsPage() {
     navigate('/rival-audit');
   };
 
-  if (isLoading) {
+  if (isLoading || isRefreshing || isContinuing) {
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-6 flex flex-col">
-            <h1 className="text-3xl font-bold mb-2">Loading Rival Audit Results...</h1>
-            <p className="text-muted-foreground">Please wait while we load your audit results</p>
-          </div>
-          <div className="grid gap-6">
-            <Skeleton className="h-[300px] w-full" />
-            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <Skeleton className="h-[120px]" />
-              <Skeleton className="h-[120px]" />
-              <Skeleton className="h-[120px]" />
-              <Skeleton className="h-[120px]" />
+        {websiteUrl ? (
+          <RivalAuditLoadingScreen url={websiteUrl} />
+        ) : (
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 flex flex-col">
+              <h1 className="text-3xl font-bold mb-2">Loading Rival Audit Results...</h1>
+              <p className="text-muted-foreground">Please wait while we load your audit results</p>
             </div>
-            <Skeleton className="h-[500px] w-full" />
+            <div className="grid gap-6">
+              <Skeleton className="h-[300px] w-full" />
+              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <Skeleton className="h-[120px]" />
+                <Skeleton className="h-[120px]" />
+                <Skeleton className="h-[120px]" />
+                <Skeleton className="h-[120px]" />
+              </div>
+              <Skeleton className="h-[500px] w-full" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -395,28 +359,30 @@ export default function RivalAuditResultsPage() {
                 )}
               </Button>
               
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleContinueCrawl} 
-                disabled={isContinuing}
-                className="text-xs sm:text-sm h-8"
-              >
-                {isContinuing ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Continuing...
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    Continue Crawl
-                  </span>
-                )}
-              </Button>
+              {audit.reachedMaxPages && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleContinueAudit} 
+                  disabled={isContinuing}
+                  className="text-xs sm:text-sm h-8"
+                >
+                  {isContinuing ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Continuing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      Continue Crawl
+                    </span>
+                  )}
+                </Button>
+              )}
               
               <Button 
                 variant="outline" 
