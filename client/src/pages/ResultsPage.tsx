@@ -27,9 +27,10 @@ export default function ResultsPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Extract URL from search params
+  // Extract URL and tab from search params
   const params = new URLSearchParams(search);
   const url = params.get("url");
+  const initialTab = params.get("tab") || "keyword";
   
   // State for selected URL
   const [selectedUrl, setSelectedUrl] = useState<string | null>(url);
@@ -319,7 +320,7 @@ export default function ResultsPage() {
       
       {/* Detailed Assessment Sections */}
       <div className="mb-6">
-        <AssessmentTabs data={data} />
+        <AssessmentTabs data={data} initialTab={initialTab} />
       </div>
       
       {/* Action Plan Section */}

@@ -77,9 +77,9 @@ export default function CompetitorAnalysisPage() {
         },
       });
       
-      // Navigate to the main results page instead of a separate competitor results page
-      // This ensures all analysis data is shown in one place
-      navigate(`/results?url=${encodeURIComponent(values.url)}`);
+      // Navigate to the main results page but add a tab parameter to open the competitor tab
+      // This ensures the user sees the competitor analysis tab when they arrive
+      navigate(`/results?url=${encodeURIComponent(values.url)}&tab=competitors`);
     } catch (error) {
       console.error('Error submitting form:', error);
       form.setError('root', { 

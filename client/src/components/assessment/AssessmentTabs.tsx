@@ -15,10 +15,11 @@ import { SeoAnalysisResult } from "@shared/schema";
 
 interface AssessmentTabsProps {
   data: SeoAnalysisResult;
+  initialTab?: string; // Add prop for initial tab selection
 }
 
-export default function AssessmentTabs({ data }: AssessmentTabsProps) {
-  const [activeTab, setActiveTab] = useState("keyword");
+export default function AssessmentTabs({ data, initialTab = "keyword" }: AssessmentTabsProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   return (
     <div className="bg-white shadow sm:rounded-md">
