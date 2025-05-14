@@ -77,11 +77,13 @@ class Analyzer {
         eatAnalysis.overallScore
       ]);
       
-      // Generate strengths and weaknesses lists
+      // Generate strengths and weaknesses lists, incorporating enhanced analysis
       const strengths = this.identifyStrengths({
         keywordAnalysis,
         metaTagsAnalysis,
         contentAnalysis,
+        enhancedContentAnalysis,
+        technicalAnalysis,
         internalLinksAnalysis,
         imageAnalysis,
         schemaMarkupAnalysis,
@@ -95,6 +97,8 @@ class Analyzer {
         keywordAnalysis,
         metaTagsAnalysis,
         contentAnalysis,
+        enhancedContentAnalysis,
+        technicalAnalysis,
         internalLinksAnalysis,
         imageAnalysis,
         schemaMarkupAnalysis,
@@ -104,8 +108,12 @@ class Analyzer {
         eatAnalysis
       });
       
-      // Generate recommendations
-      const recommendations = this.generateRecommendations({
+      // Combine recommendations from enhanced analyzers with standard recommendations
+      const contentRecommendations = enhancedContentAnalysis.recommendations || [];
+      const technicalRecommendations = technicalAnalysis.recommendations || [];
+      
+      // Generate standard recommendations
+      const standardRecommendations = this.generateRecommendations({
         keywordAnalysis,
         metaTagsAnalysis,
         contentAnalysis,
@@ -118,7 +126,14 @@ class Analyzer {
         eatAnalysis
       });
       
-      // Return the final analysis result
+      // Merge all recommendations, filtering out duplicates
+      const recommendations = Array.from(new Set([
+        ...standardRecommendations,
+        ...contentRecommendations,
+        ...technicalRecommendations
+      ]));
+      
+      // Return the final analysis result with enhanced analyses
       return {
         url,
         timestamp: new Date(),
@@ -126,6 +141,8 @@ class Analyzer {
         keywordAnalysis,
         metaTagsAnalysis,
         contentAnalysis,
+        enhancedContentAnalysis,
+        technicalSeoAnalysis: technicalAnalysis,
         internalLinksAnalysis,
         imageAnalysis,
         schemaMarkupAnalysis,
@@ -669,7 +686,42 @@ class Analyzer {
       }
     }
     
-    // Content strengths
+    // Enhanced content analysis strengths
+    if (analysis.enhancedContentAnalysis && analysis.enhancedContentAnalysis.score >= 80) {
+      strengths.push(`Excellent content optimization (${analysis.enhancedContentAnalysis.assessment})`);
+      
+      // Add specific content strengths from enhanced analysis
+      if (analysis.enhancedContentAnalysis.readability && analysis.enhancedContentAnalysis.readability.score >= 80) {
+        strengths.push(`High readability score: ${analysis.enhancedContentAnalysis.readability.grade}`);
+      }
+      
+      if (analysis.enhancedContentAnalysis.keywordAnalysis && 
+          analysis.enhancedContentAnalysis.keywordAnalysis.density && 
+          parseFloat(analysis.enhancedContentAnalysis.keywordAnalysis.density) >= 0.5 && 
+          parseFloat(analysis.enhancedContentAnalysis.keywordAnalysis.density) <= 2.5) {
+        strengths.push('Optimal keyword density in content');
+      }
+    }
+    
+    // Technical SEO strengths
+    if (analysis.technicalAnalysis && analysis.technicalAnalysis.score >= 80) {
+      strengths.push(`Strong technical SEO foundation (${analysis.technicalAnalysis.assessment})`);
+      
+      // Add specific technical strengths
+      if (analysis.technicalAnalysis.security && analysis.technicalAnalysis.security.usesHttps) {
+        strengths.push('Secure HTTPS implementation');
+      }
+      
+      if (analysis.technicalAnalysis.performance && analysis.technicalAnalysis.performance.performanceScore >= 80) {
+        strengths.push('Fast page loading with optimized resources');
+      }
+      
+      if (analysis.technicalAnalysis.structuredData && analysis.technicalAnalysis.structuredData.hasStructuredData) {
+        strengths.push('Implementation of structured data for rich snippets');
+      }
+    }
+    
+    // Content strengths (original analyzer)
     if (analysis.contentAnalysis.overallScore.score >= 80) {
       strengths.push('High-quality content with good structure');
     } else {
@@ -718,8 +770,8 @@ class Analyzer {
       strengths.push('Good internal linking structure with descriptive anchor text');
     }
     
-    // Return a maximum of 5 strengths
-    return strengths.slice(0, 5);
+    // Return a maximum of 8 strengths to accommodate new analyzers
+    return strengths.slice(0, 8);
   }
 
   /**
@@ -727,6 +779,60 @@ class Analyzer {
    */
   private identifyWeaknesses(analysis: any): string[] {
     const weaknesses: string[] = [];
+    
+    // Enhanced technical SEO weaknesses
+    if (analysis.technicalAnalysis) {
+      // Security issues
+      if (analysis.technicalAnalysis.security && !analysis.technicalAnalysis.security.usesHttps) {
+        weaknesses.push('Page not served over secure HTTPS');
+      }
+      
+      if (analysis.technicalAnalysis.security && analysis.technicalAnalysis.security.hasMixedContent) {
+        weaknesses.push('Mixed content issues (HTTP resources on HTTPS page)');
+      }
+      
+      // Performance issues
+      if (analysis.technicalAnalysis.performance && analysis.technicalAnalysis.performance.performanceScore < 50) {
+        weaknesses.push('Poor page performance and slow loading time');
+      }
+      
+      // Structured data issues
+      if (analysis.technicalAnalysis.structuredData && !analysis.technicalAnalysis.structuredData.hasStructuredData) {
+        weaknesses.push('Missing structured data/schema markup');
+      }
+      
+      // Indexability issues
+      if (analysis.technicalAnalysis.indexability && !analysis.technicalAnalysis.indexability.isIndexable) {
+        weaknesses.push('Page not indexable due to robots directives');
+      }
+      
+      // Mobile compatibility issues
+      if (analysis.technicalAnalysis.mobileFriendliness && !analysis.technicalAnalysis.mobileFriendliness.hasMobileViewport) {
+        weaknesses.push('Missing mobile viewport configuration');
+      }
+      
+      // Server issues
+      if (analysis.technicalAnalysis.serverConfiguration && !analysis.technicalAnalysis.serverConfiguration.hasCompression) {
+        weaknesses.push('Server not using compression for faster page loading');
+      }
+    }
+    
+    // Enhanced content analysis weaknesses
+    if (analysis.enhancedContentAnalysis) {
+      if (analysis.enhancedContentAnalysis.wordCount < 300) {
+        weaknesses.push('Thin content with insufficient word count');
+      }
+      
+      if (analysis.enhancedContentAnalysis.issues && analysis.enhancedContentAnalysis.issues.length > 0) {
+        // Add up to 3 content-specific issues from enhanced analysis
+        const contentIssues = analysis.enhancedContentAnalysis.issues.slice(0, 3);
+        weaknesses.push(...contentIssues);
+      }
+      
+      if (analysis.enhancedContentAnalysis.readability && analysis.enhancedContentAnalysis.readability.score < 50) {
+        weaknesses.push(`Poor content readability (${analysis.enhancedContentAnalysis.readability.grade})`);
+      }
+    }
     
     // Keyword optimization weaknesses
     if (analysis.keywordAnalysis.overallScore.score < 50) {
@@ -751,7 +857,7 @@ class Analyzer {
       weaknesses.push('Meta description missing or not optimal length (70-160 characters)');
     }
     
-    // Content weaknesses
+    // Content weaknesses (from original analysis)
     if (analysis.contentAnalysis.wordCount < 300) {
       weaknesses.push('Content is too thin (less than 300 words)');
     }
@@ -800,8 +906,8 @@ class Analyzer {
       weaknesses.push('No external citations or references');
     }
     
-    // Return a maximum of 5 weaknesses
-    return weaknesses.slice(0, 5);
+    // Return a maximum of 8 weaknesses to accommodate enhanced analyses
+    return weaknesses.slice(0, 8);
   }
 
   /**

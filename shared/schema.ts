@@ -231,6 +231,85 @@ export const contentSectionSchema = z.object({
   annotations: z.array(contentAnnotationSchema).optional(),
 });
 
+// Enhanced content analysis schema for more comprehensive content checks
+export const enhancedContentAnalysisSchema = z.object({
+  score: z.number().min(0).max(100),
+  assessment: z.string(),
+  wordCount: z.number(),
+  readability: z.object({
+    score: z.number(),
+    grade: z.string(),
+    averageWordsPerSentence: z.string().or(z.number()).optional(),
+    complexWordPercentage: z.string().or(z.number()).optional(),
+    fleschKincaidGrade: z.string().or(z.number()).optional()
+  }),
+  issues: z.array(z.string()).optional(),
+  recommendations: z.array(z.string()).optional(),
+  keywordAnalysis: z.object({
+    keyword: z.string().optional(),
+    inTitle: z.boolean().optional(),
+    inDescription: z.boolean().optional(),
+    inH1: z.boolean().optional(),
+    inH2: z.boolean().optional(),
+    inUrl: z.boolean().optional(),
+    inFirstParagraph: z.boolean().optional(),
+    occurrences: z.record(z.string(), z.number()).optional(),
+    density: z.string().optional(),
+    totalCount: z.number().optional()
+  }).optional()
+});
+
+// Technical SEO analysis schema for server-side and technical checks
+export const technicalSeoAnalysisSchema = z.object({
+  score: z.number().min(0).max(100),
+  assessment: z.string(),
+  pageStatus: z.object({
+    code: z.number(),
+    message: z.string()
+  }),
+  security: z.object({
+    usesHttps: z.boolean(),
+    hasMixedContent: z.boolean(),
+    hasSecurityHeaders: z.boolean(),
+    securityScore: z.number()
+  }).optional(),
+  indexability: z.object({
+    isIndexable: z.boolean(),
+    hasRobotsDirective: z.boolean().optional(),
+    robotsContent: z.string().nullable().optional()
+  }).optional(),
+  mobileFriendliness: z.object({
+    hasMobileViewport: z.boolean(),
+    viewportContent: z.string().optional(),
+    responsiveScore: z.number().optional()
+  }).optional(),
+  structuredData: z.object({
+    hasStructuredData: z.boolean(),
+    schemaTypes: z.array(z.string()).optional(),
+    count: z.number().optional()
+  }).optional(),
+  canonicalization: z.object({
+    hasCanonical: z.boolean().optional(),
+    canonicalUrl: z.string().nullable().optional(),
+    isSelfCanonical: z.boolean().optional()
+  }).optional(),
+  performance: z.object({
+    loadTime: z.number().optional(),
+    resourceCount: z.number().optional(),
+    resourceSize: z.number().optional(),
+    performanceScore: z.number().optional()
+  }).optional(),
+  serverConfiguration: z.object({
+    domain: z.string().optional(),
+    hasCookies: z.boolean().optional(),
+    hasCDN: z.boolean().optional(),
+    hasCompression: z.boolean().optional(),
+    serverInfo: z.string().optional()
+  }).optional(),
+  issues: z.array(z.string()),
+  recommendations: z.array(z.string())
+});
+
 export const deepContentAnalysisSchema = z.object({
   url: z.string(),
   timestamp: z.date().optional(),
@@ -253,6 +332,10 @@ export const seoAnalysisResultSchema = z.object({
   keywordAnalysis: keywordAnalysisSchema,
   metaTagsAnalysis: metaTagsAnalysisSchema,
   contentAnalysis: contentAnalysisSchema,
+  // New enhanced analyzers
+  enhancedContentAnalysis: enhancedContentAnalysisSchema.optional(),
+  technicalSeoAnalysis: technicalSeoAnalysisSchema.optional(),
+  // Original analyzers
   internalLinksAnalysis: internalLinksAnalysisSchema,
   imageAnalysis: imageAnalysisSchema,
   schemaMarkupAnalysis: schemaMarkupAnalysisSchema,
@@ -260,6 +343,7 @@ export const seoAnalysisResultSchema = z.object({
   pageSpeedAnalysis: pageSpeedAnalysisSchema,
   userEngagementAnalysis: userEngagementAnalysisSchema,
   eatAnalysis: eatAnalysisSchema,
+  // Results
   strengths: z.array(z.string()),
   weaknesses: z.array(z.string()),
   recommendations: z.array(z.string()),
