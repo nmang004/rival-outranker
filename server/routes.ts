@@ -138,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Add competitor analysis to the sanitizedResult if it was performed
-        if (runCompetitorAnalysis && result.competitorAnalysis) {
-          sanitizedResult.competitorAnalysis = result.competitorAnalysis;
+        if (includeCompetitorAnalysis && competitorAnalysis) {
+          sanitizedResult.competitorAnalysis = competitorAnalysis;
         }
         
         // Store sanitized result

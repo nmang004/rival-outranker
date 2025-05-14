@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ExternalLink, Globe, Search, Tag } from "lucide-react";
 import KeywordTab from "./KeywordTab";
 import MetaTagsTab from "./MetaTagsTab";
 import ContentTab from "./ContentTab";
