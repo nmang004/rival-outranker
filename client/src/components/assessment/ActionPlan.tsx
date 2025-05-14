@@ -55,7 +55,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "img-alt",
         priority: "high",
-        icon: "✓",
+        icon: "!",
         title: "Add Descriptive Alt Text to Images",
         description: `Add descriptive alt text to ${data?.imageAnalysis?.withoutAltCount} image(s) that includes relevant keywords while accurately describing the image content for accessibility.`,
         example: `<img src="seo-analysis-tool.jpg" alt="SEO analysis dashboard showing ${primaryKeyword} performance metrics">`,
@@ -68,7 +68,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "content-depth",
         priority: "high",
-        icon: "✓",
+        icon: "!",
         title: "Expand Content Depth and Expertise",
         description: "Significantly expand your content with comprehensive information to demonstrate expertise, authoritativeness, and trustworthiness (E-E-A-T).",
         current: `Current word count: ${data?.contentAnalysis?.wordCount} words`,
@@ -173,7 +173,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
     actionItems.push({
       id: "faq-section",
       priority: "medium",
-      icon: "★",
+      icon: "↑",
       title: "Add Structured FAQ Section with Schema",
       description: "Create a comprehensive FAQ section that answers common user questions while implementing proper FAQ schema markup to target featured snippets.",
       suggestion: `Research questions users frequently ask about ${primaryKeyword} through Google's "People Also Ask" feature, Answer The Public, or customer support inquiries.`,
@@ -184,7 +184,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
     actionItems.push({
       id: "content-freshness",
       priority: "low",
-      icon: "○",
+      icon: "•",
       title: "Implement Content Freshness Strategy",
       description: "Establish a regular content update schedule to maintain relevance, accuracy, and demonstrate ongoing expertise in your field.",
       suggestion: "Add a visible 'Last Updated' date at the top of your content. Schedule quarterly content reviews to update statistics, examples, and recommendations based on industry changes.",
@@ -207,7 +207,7 @@ export default function ActionPlan({ data }: ActionPlanProps) {
       actionItems.push({
         id: "mobile-optimization",
         priority: "high",
-        icon: "✓",
+        icon: "!",
         title: "Optimize for Mobile Experience",
         description: "Improve your site's mobile experience to meet Google's mobile-first indexing requirements and provide better usability for mobile users.",
         suggestion: "Ensure responsive design, readable text without zooming, adequate tap target sizes, and fast mobile loading speeds.",
