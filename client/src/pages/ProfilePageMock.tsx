@@ -197,7 +197,12 @@ function ProjectCard({ project }: { project: any }) {
           <div className="text-xs text-muted-foreground">
             Last updated: {project.updated.toLocaleDateString()}
           </div>
-          <Button variant="outline" size="sm" className="h-7">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7"
+            onClick={() => window.location.href = `/project/${project.id}`}
+          >
             View Details
           </Button>
         </div>
@@ -271,9 +276,19 @@ function ProjectTableRow({ project }: { project: any }) {
         </div>
       </td>
       <td className="py-3 pr-4">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 mr-1"
+            onClick={() => window.location.href = `/project/${project.id}`}
+          >
+            View Details
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
       </td>
     </tr>
   );

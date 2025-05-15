@@ -21,6 +21,7 @@ import KeywordResearch from "@/pages/KeywordResearch";
 import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProfilePageMock from "@/pages/ProfilePageMock";
+import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import KeywordsPage from "@/pages/KeywordsPage";
 import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
 import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
@@ -47,6 +48,7 @@ function Router() {
             <Route path="/test-export" component={TestExportPage} />
             <Route path="/profile" component={ProfilePageMock} />
             <Route path="/profile/:tab" component={ProfilePageMock} />
+            <Route path="/project/:id" component={ProjectDetailPage} />
             <Route path="/keywords" component={KeywordsPage} />
             <Route path="/keywords/:id" component={KeywordDetailsPage} />
             <Route path="/keyword-suggestions" component={KeywordSuggestionsPage} />
