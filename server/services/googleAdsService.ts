@@ -62,10 +62,30 @@ try {
     console.log('API client created, now initializing customer...');
 
     // Then create the customer instance
-    customer = googleAdsClient.Customer({
-      customer_id: CUSTOMER_ID,
-      refresh_token: REFRESH_TOKEN,
-    });
+    try {
+      // Try without dashes first (the format we're already using)
+      customer = googleAdsClient.Customer({
+        customer_id: CUSTOMER_ID,
+        refresh_token: REFRESH_TOKEN,
+      });
+      console.log(`Successfully created customer with ID format: ${CUSTOMER_ID} (no dashes)`);
+    } catch (custError) {
+      console.error(`Failed to create customer with ID format: ${CUSTOMER_ID} (no dashes)`);
+      
+      // Try with dashes as fallback (xxx-xxx-xxxx format)
+      try {
+        const dashedId = CUSTOMER_ID.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+        console.log(`Trying alternative format with dashes: ${dashedId}`);
+        customer = googleAdsClient.Customer({
+          customer_id: dashedId,
+          refresh_token: REFRESH_TOKEN,
+        });
+        console.log(`Successfully created customer with ID format: ${dashedId} (with dashes)`);
+      } catch (dashedError) {
+        console.error(`Failed to create customer with dashed ID format as well`);
+        throw custError; // Throw the original error
+      }
+    }
 
     console.log('Google Ads API client initialized successfully');
     
@@ -73,22 +93,97 @@ try {
     const testConnection = async () => {
       try {
         console.log('Testing Google Ads API connection...');
-        const keywordPlanIdeaService = customer?.keywordPlanIdeaService;
         
-        const test = await keywordPlanIdeaService?.generateKeywordIdeas({
-          keywordSeed: {
-            keywords: ["test"],
-          },
-          geoTargetConstants: [`geoTargetConstants/2840`], // United States
-          keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
-        });
-        
-        console.log(`Connection test result: ${test ? 'Successful' : 'Failed'}`);
-        if (test && test.results) {
-          console.log(`Found ${test.results.length} results in connection test`);
+        // First check if our customer/client is properly initialized
+        if (!customer) {
+          console.error('Customer object is not properly initialized');
+          return;
         }
-      } catch (testError) {
-        console.error('Google Ads API connection test failed:', testError);
+        
+        // Log available properties on customer object to debug
+        console.log('Available properties on customer object:');
+        for (const prop in customer) {
+          console.log(` - ${prop}`);
+        }
+        
+        // The REST beta version might have a different structure
+        // Let's try to find services in a different way
+        let keywordPlanIdeaService;
+        
+        if (typeof customer.keywordPlanIdeaService === 'function') {
+          console.log('keywordPlanIdeaService is a function, calling it');
+          keywordPlanIdeaService = customer.keywordPlanIdeaService();
+        } else if (customer.keywordPlanIdeaService) {
+          console.log('keywordPlanIdeaService is a property, using directly');
+          keywordPlanIdeaService = customer.keywordPlanIdeaService;
+        } else if (typeof customer.getService === 'function') {
+          console.log('Using customer.getService() to get keywordPlanIdeaService');
+          try {
+            keywordPlanIdeaService = customer.getService('KeywordPlanIdeaService');
+          } catch (serviceError) {
+            console.error('Error getting service via getService():', serviceError);
+          }
+        } else {
+          console.error('keywordPlanIdeaService not available on customer');
+          console.error('REST beta API may have a different structure than expected');
+          return;
+        }
+        
+        console.log('Using test keywords:', JSON.stringify(TEST_KEYWORDS));
+        
+        try {
+          console.log('Trying API test with simple keyword "test"...');
+          const simpleTest = await keywordPlanIdeaService.generateKeywordIdeas({
+            keywordSeed: {
+              keywords: ["test"],
+            },
+            geoTargetConstants: [`geoTargetConstants/2840`], // United States
+            keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
+          });
+          
+          console.log(`Simple test result: ${simpleTest ? 'Successful' : 'Failed'}`);
+          if (simpleTest && simpleTest.results) {
+            console.log(`Found ${simpleTest.results.length} results in simple test`);
+            return;
+          }
+        } catch (simpleError) {
+          console.error('Simple test with "test" keyword failed:', simpleError);
+        }
+        
+        // Try with more keywords if the first test failed
+        try {
+          console.log('Trying API test with multiple test keywords...');
+          const test = await keywordPlanIdeaService.generateKeywordIdeas({
+            keywordSeed: {
+              keywords: TEST_KEYWORDS,
+            },
+            geoTargetConstants: [`geoTargetConstants/2840`], // United States
+            keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
+          });
+          
+          console.log(`Connection test result: ${test ? 'Successful' : 'Failed'}`);
+          if (test && test.results) {
+            console.log(`Found ${test.results.length} results in connection test`);
+          }
+        } catch (testError) {
+          console.error('Multiple keyword test failed:');
+          if (testError instanceof Error) {
+            console.error(`- Error name: ${testError.name}`);
+            console.error(`- Error message: ${testError.message}`);
+            console.error(`- Stack trace: ${testError.stack}`);
+          } else {
+            console.error(JSON.stringify(testError, null, 2));
+          }
+        }
+      } catch (outerError) {
+        console.error('Google Ads API connection test failed completely:');
+        if (outerError instanceof Error) {
+          console.error(`- Error name: ${outerError.name}`);
+          console.error(`- Error message: ${outerError.message}`);
+          console.error(`- Stack trace: ${outerError.stack}`);
+        } else {
+          console.error(JSON.stringify(outerError, null, 2));
+        }
       }
     };
     
@@ -337,23 +432,37 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     } catch (apiError) {
       console.error('Error calling Google Ads API:', apiError);
       
-      // As a last resort, try with a very general keyword that should return results
-      console.log('Attempting with test keywords only as fallback...');
-      const fallbackResponse = await keywordPlanIdeaService?.generateKeywordIdeas({
-        keywordSeed: {
-          keywords: TEST_KEYWORDS,
-        },
-        geoTargetConstants: [`geoTargetConstants/${locationCriterionId}`],
-        keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
-      });
-      
-      if (!fallbackResponse || !fallbackResponse.results || fallbackResponse.results.length === 0) {
-        console.error('No results even with test keywords, API might not be working properly');
-        throw new Error('Google Ads API failed even with test keywords - check credentials');
+      // Log more details about the first error
+      if (apiError instanceof Error) {
+        console.error(`- API Error name: ${apiError.name}`);
+        console.error(`- API Error message: ${apiError.message}`);
+        console.error(`- API Error stack: ${apiError.stack}`);
+      } else {
+        console.error('- Unknown API error format:', JSON.stringify(apiError, null, 2));
       }
       
-      console.log(`Found ${fallbackResponse.results.length} results with test keywords`);
-      return processKeywordResults(keyword, fallbackResponse);
+      // As a last resort, try with a very general keyword that should return results
+      console.log('Attempting with test keywords only as fallback...');
+      try {
+        const fallbackResponse = await keywordPlanIdeaService?.generateKeywordIdeas({
+          keywordSeed: {
+            keywords: TEST_KEYWORDS,
+          },
+          geoTargetConstants: [`geoTargetConstants/${locationCriterionId}`],
+          keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
+        });
+      
+        if (!fallbackResponse || !fallbackResponse.results || fallbackResponse.results.length === 0) {
+          console.error('No results even with test keywords, API might not be working properly');
+          throw new Error('Google Ads API failed even with test keywords - check credentials');
+        }
+        
+        console.log(`Found ${fallbackResponse.results.length} results with test keywords`);
+        return processKeywordResults(keyword, fallbackResponse);
+      } catch (fallbackError) {
+        console.error('Error in fallback attempt:', fallbackError);
+        throw new Error('Google Ads API connection failed completely - check credentials');
+      }
     }
   } catch (error: any) {
     console.error('Error fetching keyword data from Google Ads API:', error);
