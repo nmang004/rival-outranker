@@ -302,7 +302,7 @@ const PdfAnalyzerPage: React.FC = () => {
         hasLabels: potentialLabels.length > 0,
         hasTimeSeries: datePatterns.length > 0,
         extractedValues: numericValues.slice(0, 10), // First 10 values for analysis
-        extractedLabels: [...new Set(potentialLabels)].slice(0, 10) // Deduplicated, first 10
+        extractedLabels: Array.from(new Set(potentialLabels)).slice(0, 10) // Deduplicated, first 10
       };
     };
 
@@ -557,7 +557,7 @@ const PdfAnalyzerPage: React.FC = () => {
                     {fileType === 'pdf' ? (
                       <File className="h-16 w-16 text-primary" />
                     ) : (
-                      <Image className="h-16 w-16 text-primary" />
+                      <ImageIcon className="h-16 w-16 text-primary" />
                     )}
                   </div>
                   <div>
@@ -841,7 +841,7 @@ const PdfAnalyzerPage: React.FC = () => {
                 <div className="mb-4">
                   <p className="font-medium mb-2">Detected Labels</p>
                   <div className="flex flex-wrap gap-2">
-                    {summary.chartData.sampleLabels.map((label, index) => (
+                    {summary.chartData.sampleLabels.map((label: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-blue-50">
                         {label}
                       </Badge>
@@ -854,7 +854,7 @@ const PdfAnalyzerPage: React.FC = () => {
                 <div>
                   <p className="font-medium mb-2">Detected Values</p>
                   <div className="flex flex-wrap gap-2">
-                    {summary.chartData.sampleValues.map((value, index) => (
+                    {summary.chartData.sampleValues.map((value: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-green-50">
                         {value}
                       </Badge>
