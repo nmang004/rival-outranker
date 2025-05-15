@@ -80,8 +80,9 @@ function MiniChart({ data, isPositive }: MiniChartProps) {
 
 export default function ProfilePage(props: { params?: { tab?: string } }) {
   const { isAuthenticated, user, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState(props.params?.tab || "profile");
+  const [activeTab, setActiveTab] = useState(props.params?.tab || "projects");
   const [location, setLocation] = useLocation();
+  const [dashboardView, setDashboardView] = useState<"grid" | "table">("grid");
   
   // Update URL when tab changes
   const handleTabChange = (tab: string) => {
@@ -246,15 +247,60 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
                 value={activeTab}
                 onChange={(e) => handleTabChange(e.target.value)}
               >
-                <option value="profile">Profile</option>
-                <option value="security">Password</option>
+                <option value="projects">Projects & Domains</option>
                 <option value="analyses">My Analyses</option>
-                <option value="projects">My Projects</option>
+                <option value="profile">Profile Settings</option>
+                <option value="security">Security</option>
               </select>
+              {activeTab === "projects" && (
+                <div className="flex justify-end mt-3">
+                  <div className="flex bg-muted rounded-md p-0.5">
+                    <Button 
+                      size="sm" 
+                      variant={dashboardView === "grid" ? "default" : "ghost"} 
+                      className="rounded-sm h-8 px-2"
+                      onClick={() => setDashboardView("grid")}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="7" height="7" x="3" y="3" rx="1" />
+                        <rect width="7" height="7" x="14" y="3" rx="1" />
+                        <rect width="7" height="7" x="14" y="14" rx="1" />
+                        <rect width="7" height="7" x="3" y="14" rx="1" />
+                      </svg>
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant={dashboardView === "table" ? "default" : "ghost"} 
+                      className="rounded-sm h-8 px-2"
+                      onClick={() => setDashboardView("table")}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 7h18" />
+                        <path d="M3 12h18" />
+                        <path d="M3 17h18" />
+                      </svg>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="hidden sm:block border-b">
-              <div className="px-6">
+              <div className="px-6 flex justify-between items-center">
                 <TabsList className="h-14 bg-transparent space-x-8 -mb-px">
+                  <TabsTrigger
+                    value="projects"
+                    className="py-4 px-1 whitespace-nowrap data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
+                  >
+                    <ListChecks className="h-5 w-5 mr-2" />
+                    Projects & Domains
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="analyses"
+                    className="py-4 px-1 whitespace-nowrap data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
+                  >
+                    <LineChart className="h-5 w-5 mr-2" />
+                    My Analyses
+                  </TabsTrigger>
                   <TabsTrigger
                     value="profile"
                     className="py-4 px-1 whitespace-nowrap data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
@@ -269,21 +315,40 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
                     <KeyRound className="h-5 w-5 mr-2" />
                     Security
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="analyses"
-                    className="py-4 px-1 whitespace-nowrap data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
-                  >
-                    <LineChart className="h-5 w-5 mr-2" />
-                    My Analyses
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="projects"
-                    className="py-4 px-1 whitespace-nowrap data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary"
-                  >
-                    <ListChecks className="h-5 w-5 mr-2" />
-                    My Projects
-                  </TabsTrigger>
                 </TabsList>
+                <div className="flex items-center gap-2">
+                  {activeTab === "projects" && (
+                    <div className="flex bg-muted rounded-md p-0.5">
+                      <Button 
+                        size="sm" 
+                        variant={dashboardView === "grid" ? "default" : "ghost"} 
+                        className="rounded-sm h-8 px-2.5"
+                        onClick={() => setDashboardView("grid")}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                          <rect width="7" height="7" x="3" y="3" rx="1" />
+                          <rect width="7" height="7" x="14" y="3" rx="1" />
+                          <rect width="7" height="7" x="14" y="14" rx="1" />
+                          <rect width="7" height="7" x="3" y="14" rx="1" />
+                        </svg>
+                        Grid
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant={dashboardView === "table" ? "default" : "ghost"} 
+                        className="rounded-sm h-8 px-2.5"
+                        onClick={() => setDashboardView("table")}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                          <path d="M3 7h18" />
+                          <path d="M3 12h18" />
+                          <path d="M3 17h18" />
+                        </svg>
+                        Table
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -417,6 +482,8 @@ function UserProjectsList() {
     queryKey: ['/api/user/projects'],
     retry: false,
   });
+  const [dashboardView, setDashboardView] = useState<"grid" | "table">("grid");
+  const [filterValue, setFilterValue] = useState("");
 
   if (isLoading) {
     return (
@@ -428,18 +495,69 @@ function UserProjectsList() {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-muted">
-        <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-          <ListChecks className="h-6 w-6 text-muted-foreground" />
+      <div className="space-y-6">
+        {/* Dashboard summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+                <h3 className="text-3xl font-bold mt-1">0</h3>
+              </div>
+              <div className="p-2 bg-primary/10 rounded-full">
+                <ListChecks className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Analyses</p>
+                <h3 className="text-3xl font-bold mt-1">0</h3>
+              </div>
+              <div className="p-2 bg-blue-100 rounded-full">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Tracked Keywords</p>
+                <h3 className="text-3xl font-bold mt-1">0</h3>
+              </div>
+              <div className="p-2 bg-green-100 rounded-full">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </div>
         </div>
-        <h3 className="text-lg font-medium mb-2">No projects yet</h3>
-        <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-          Projects help you organize multiple websites for easier tracking and comparison of SEO metrics.
-        </p>
-        <Button variant="outline">
-          <ListChecks className="mr-2 h-4 w-4" />
-          Create Project
-        </Button>
+        
+        <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-muted">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+            <ListChecks className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">No projects yet</h3>
+          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+            Projects help you organize multiple websites for easier tracking and comparison of SEO metrics.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+            <Button className="flex-1">
+              <ListChecks className="mr-2 h-4 w-4" />
+              Create Project
+            </Button>
+            <Button variant="outline" className="flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 8v8" />
+                <path d="M8 12h8" />
+              </svg>
+              Import Existing Data
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -511,146 +629,429 @@ function UserProjectsList() {
     }
   ];
 
+  // Calculate the total stats from sample projects
+  const totalProjects = sampleProjects.length;
+  const totalAnalyses = totalProjects * 2; // Just for mock data
+  const totalKeywords = sampleProjects.reduce((sum, project) => {
+    const keywordValue = project.organicKeywords.value;
+    const numericValue = typeof keywordValue === 'string' 
+      ? parseInt(keywordValue.replace(/[^\d]/g, ''), 10) 
+      : keywordValue;
+    return sum + numericValue;
+  }, 0);
+
+  const filteredProjects = sampleProjects.filter(project => 
+    project.name.toLowerCase().includes(filterValue.toLowerCase()) || 
+    project.domain.toLowerCase().includes(filterValue.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
-        <div>
-          <h3 className="text-lg font-medium">SEO Projects</h3>
-          <p className="text-sm text-muted-foreground">Show filters</p>
+      {/* Dashboard summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+              <h3 className="text-3xl font-bold mt-1">{totalProjects}</h3>
+            </div>
+            <div className="p-2 bg-primary/10 rounded-full">
+              <ListChecks className="h-5 w-5 text-primary" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="w-full h-1 bg-gray-100 rounded-full">
+              <div 
+                className="h-1 bg-primary rounded-full" 
+                style={{ width: `${Math.min(100, totalProjects * 5)}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {totalProjects} of 20 projects tracked
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-sm text-muted-foreground">Table view</div>
-          <Button variant="outline" size="sm">Share</Button>
-          <Button size="sm" className="flex items-center gap-1.5">
-            <span className="hidden sm:inline">Create SEO Project</span>
-            <span className="sm:hidden">+ Project</span>
-          </Button>
+        
+        <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Analyses</p>
+              <h3 className="text-3xl font-bold mt-1">{totalAnalyses}</h3>
+            </div>
+            <div className="p-2 bg-blue-100 rounded-full">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="bg-green-50 p-2 rounded text-center">
+              <p className="text-xs text-green-700 font-medium">Good</p>
+              <p className="text-sm font-bold text-green-800">{Math.round(totalAnalyses * 0.6)}</p>
+            </div>
+            <div className="bg-yellow-50 p-2 rounded text-center">
+              <p className="text-xs text-yellow-700 font-medium">Average</p>
+              <p className="text-sm font-bold text-yellow-800">{Math.round(totalAnalyses * 0.3)}</p>
+            </div>
+            <div className="bg-red-50 p-2 rounded text-center">
+              <p className="text-xs text-red-700 font-medium">Poor</p>
+              <p className="text-sm font-bold text-red-800">{Math.round(totalAnalyses * 0.1)}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Tracked Keywords</p>
+              <h3 className="text-3xl font-bold mt-1">{totalKeywords.toLocaleString()}</h3>
+            </div>
+            <div className="p-2 bg-green-100 rounded-full">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+              <span>Change (30 days)</span>
+              <span className="text-green-600 font-medium">+5.2%</span>
+            </div>
+            <div className="h-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={Array.from({ length: 30 }, (_, i) => ({ 
+                    day: i, 
+                    value: 4200 + Math.floor(Math.random() * 800) 
+                  }))}
+                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="keywordGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    fill="url(#keywordGradient)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Page header with controls */}
+      <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Search projects..." 
+                className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary" 
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+            <div className="flex items-center">
+              <select className="mr-2 py-2 px-3 rounded-md border border-gray-300 text-sm">
+                <option value="all">All Projects</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+              </select>
+              <select className="py-2 px-3 rounded-md border border-gray-300 text-sm">
+                <option value="date">Sort by Date</option>
+                <option value="name">Sort by Name</option>
+                <option value="score">Sort by Score</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Export
+              </Button>
+              <Button size="sm" className="whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                New Project
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
       
       {/* Projects list */}
-      <div className="space-y-4">
-        {sampleProjects.map((project) => (
-          <div 
-            key={project.id} 
-            className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all hover:shadow-md"
-          >
-            <div className="p-4 sm:p-6">
-              {/* Project header */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-primary">{project.name}</span>
-                      <span className="text-xs text-muted-foreground">{project.domain}</span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">AScore: {project.score}</span>
-                    </div>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <span className="sr-only">Menu</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <circle cx="12" cy="12" r="1"/>
-                    <circle cx="19" cy="12" r="1"/>
-                    <circle cx="5" cy="12" r="1"/>
-                  </svg>
-                </Button>
-              </div>
-              
-              {/* Project metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Site Health</div>
+      {dashboardView === "grid" ? (
+        <div className="space-y-4">
+          {filteredProjects.map((project) => (
+            <div 
+              key={project.id} 
+              className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all hover:shadow-md"
+            >
+              <div className="p-4 sm:p-6">
+                {/* Project header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="text-xl font-bold">{project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%'}</div>
-                    <div className={`text-xs ${project.id === 1 ? 'text-muted-foreground' : project.id === 2 ? 'text-green-600' : 'text-red-600'} flex items-center`}>
-                      {project.id === 1 ? '0%' : 
-                        project.id === 2 ? 
-                          <><ArrowUpRight className="h-3 w-3 mr-0.5" />+2%</> : 
-                          <><ArrowDownRight className="h-3 w-3 mr-0.5" />-3%</>
-                      }
-                    </div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5 my-1">
-                    <div 
-                      className="bg-primary h-1.5 rounded-full" 
-                      style={{ 
-                        width: project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%',
-                        backgroundColor: project.id === 1 ? '#6366f1' : project.id === 2 ? '#10b981' : '#f59e0b'
-                      }}
-                    />
-                  </div>
-                  <div className="text-xs text-muted-foreground">Track keyword positions.</div>
-                  <Button variant="outline" size="sm" className="h-7 mt-1 text-xs w-full sm:w-auto">Set up</Button>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Organic Traffic</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="text-xl font-bold">{project.organicTraffic.value}</div>
-                      <div className={`text-xs ${project.organicTraffic.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
-                        {project.organicTraffic.change.startsWith('+') ? 
-                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
-                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
-                        }
-                        {project.organicTraffic.change}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-primary">{project.name}</span>
+                        <span className="text-xs text-muted-foreground">{project.domain}</span>
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">AScore: {project.score}</span>
                       </div>
                     </div>
-                    <MiniChart 
-                      data={project.organicTraffic.trend} 
-                      isPositive={project.organicTraffic.change.startsWith('+')} 
-                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={project.id === 1 ? "text-green-600 bg-green-50" : "text-blue-600 bg-blue-50"}>
+                      {project.id === 1 ? "Active" : "In Progress"}
+                    </Badge>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <span className="sr-only">Menu</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="19" cy="12" r="1"/>
+                        <circle cx="5" cy="12" r="1"/>
+                      </svg>
+                    </Button>
                   </div>
                 </div>
                 
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Organic Keywords</div>
-                  <div className="flex items-center justify-between">
+                {/* Project metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Site Health</div>
                     <div className="flex items-center gap-2">
-                      <div className="text-xl font-bold">{project.organicKeywords.value}</div>
-                      <div className={`text-xs ${project.organicKeywords.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
-                        {project.organicKeywords.change.startsWith('+') ? 
-                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
-                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                      <div className="text-xl font-bold">{project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%'}</div>
+                      <div className={`text-xs ${project.id === 1 ? 'text-muted-foreground' : project.id === 2 ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                        {project.id === 1 ? '0%' : 
+                          project.id === 2 ? 
+                            <><ArrowUpRight className="h-3 w-3 mr-0.5" />+2%</> : 
+                            <><ArrowDownRight className="h-3 w-3 mr-0.5" />-3%</>
                         }
-                        {project.organicKeywords.change}
                       </div>
                     </div>
-                    <MiniChart 
-                      data={project.organicKeywords.trend} 
-                      isPositive={project.organicKeywords.change.startsWith('+')} 
-                    />
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 my-1">
+                      <div 
+                        className="bg-primary h-1.5 rounded-full" 
+                        style={{ 
+                          width: project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%',
+                          backgroundColor: project.id === 1 ? '#6366f1' : project.id === 2 ? '#10b981' : '#f59e0b'
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">Track keyword positions.</div>
+                    <Button variant="outline" size="sm" className="h-7 mt-1 text-xs w-full sm:w-auto">Set up</Button>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Organic Traffic</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold">{project.organicTraffic.value}</div>
+                        <div className={`text-xs ${project.organicTraffic.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                          {project.organicTraffic.change.startsWith('+') ? 
+                            <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                            <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          }
+                          {project.organicTraffic.change}
+                        </div>
+                      </div>
+                      <MiniChart 
+                        data={project.organicTraffic.trend} 
+                        isPositive={project.organicTraffic.change.startsWith('+')} 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Organic Keywords</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold">{project.organicKeywords.value}</div>
+                        <div className={`text-xs ${project.organicKeywords.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                          {project.organicKeywords.change.startsWith('+') ? 
+                            <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                            <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          }
+                          {project.organicKeywords.change}
+                        </div>
+                      </div>
+                      <MiniChart 
+                        data={project.organicKeywords.trend} 
+                        isPositive={project.organicKeywords.change.startsWith('+')} 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">Backlinks</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="text-xl font-bold">{project.backlinks.value}</div>
+                        <div className={`text-xs ${project.backlinks.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                          {project.backlinks.change.startsWith('+') ? 
+                            <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                            <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          }
+                          {project.backlinks.change}
+                        </div>
+                      </div>
+                      <MiniChart 
+                        data={project.backlinks.trend} 
+                        isPositive={project.backlinks.change.startsWith('+')} 
+                      />
+                    </div>
                   </div>
                 </div>
                 
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">Backlinks</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="text-xl font-bold">{project.backlinks.value}</div>
-                      <div className={`text-xs ${project.backlinks.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
-                        {project.backlinks.change.startsWith('+') ? 
-                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
-                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
-                        }
-                        {project.backlinks.change}
-                      </div>
-                    </div>
-                    <MiniChart 
-                      data={project.backlinks.trend} 
-                      isPositive={project.backlinks.change.startsWith('+')} 
-                    />
+                {/* Action buttons */}
+                <div className="mt-6 pt-4 border-t border-gray-100 flex flex-wrap justify-between gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="text-xs">
+                      <LineChart className="h-3.5 w-3.5 mr-1" />
+                      View Analytics
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 mr-1">
+                        <path d="M5 12h14"></path>
+                        <path d="M12 5v14"></path>
+                      </svg>
+                      Add Keyword
+                    </Button>
                   </div>
+                  <Button variant="ghost" size="sm" className="text-xs">
+                    Updated 2 days ago
+                  </Button>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-muted/30">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Site
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    AScore
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Organic Traffic
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Organic Keywords
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Backlinks
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredProjects.map((project) => (
+                  <tr key={project.id} className="hover:bg-muted/10 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{project.name}</div>
+                          <div className="text-xs text-muted-foreground">{project.domain}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge variant="outline" className={project.id === 1 ? "text-green-600 bg-green-50" : project.id === 2 ? "text-blue-600 bg-blue-50" : "text-yellow-600 bg-yellow-50"}>
+                        {project.id === 1 ? "Active" : project.id === 2 ? "In Progress" : "Monitoring"}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-sm font-medium">{project.score}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium">{project.organicTraffic.value}</div>
+                        <div className={`text-xs ${project.organicTraffic.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                          {project.organicTraffic.change.startsWith('+') ? 
+                            <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                            <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          }
+                          {project.organicTraffic.change}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium">{project.organicKeywords.value}</div>
+                        <div className={`text-xs ${project.organicKeywords.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                          {project.organicKeywords.change.startsWith('+') ? 
+                            <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                            <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          }
+                          {project.organicKeywords.change}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium">{project.backlinks.value}</div>
+                        <div className={`text-xs ${project.backlinks.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                          {project.backlinks.change.startsWith('+') ? 
+                            <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                            <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                          }
+                          {project.backlinks.change}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button variant="outline" size="sm" className="text-xs">
+                          <LineChart className="h-3.5 w-3.5 mr-1" />
+                          Analytics
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="1"/>
+                            <circle cx="19" cy="12" r="1"/>
+                            <circle cx="5" cy="12" r="1"/>
+                          </svg>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
       
       {/* Add domain section */}
       <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6">
