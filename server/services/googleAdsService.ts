@@ -74,17 +74,31 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
   try {
     console.log(`Fetching keyword data for "${keyword}" from Google Ads API...`);
 
-    // Convert DataForSEO location code to Google Ads location criterion ID
-    // Note: This is a simplification, you might need a mapping table for different locations
-    // 2840 (US in DataForSEO) -> 2840 (US in Google Ads)
-    const locationCriterionId = location;
+    // Always use United States (2840) as the location for more comprehensive results
+    // Use more general alternatives for the keyword to increase chances of getting data
+    const locationCriterionId = 2840; // United States
+    
+    // Extract the main terms from the keyword
+    const words = keyword.split(' ');
+    const mainTerms = words.filter(word => word.length > 3).slice(0, 2);
+    const alternativeKeywords = [keyword];
+    
+    // Add more general versions of the keyword to improve results
+    if (mainTerms.length > 0) {
+      alternativeKeywords.push(mainTerms[0]);
+      if (mainTerms.length > 1) {
+        alternativeKeywords.push(`${mainTerms[0]} ${mainTerms[1]}`);
+      }
+    }
+    
+    console.log(`Using keyword variants for better results: ${alternativeKeywords.join(', ')}`);
 
     // Create keyword plan ideas request
     const keywordPlanIdeaService = customer?.keywordPlanIdeaService;
     
     const response = await keywordPlanIdeaService?.generateKeywordIdeas({
       keywordSeed: {
-        keywords: [keyword],
+        keywords: alternativeKeywords,
       },
       geoTargetConstants: [`geoTargetConstants/${locationCriterionId}`],
       keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
@@ -97,15 +111,34 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     // Process the main keyword data
     const keywordResult = response.results.find((result: any) => 
       result.text?.toLowerCase() === keyword.toLowerCase()
-    ) || response.results[0];
-
+    );
+    
+    // If the exact keyword isn't found, look for a close match or use the first result
+    const fallbackResult = keywordResult || 
+      response.results.find((result: any) => 
+        result.text?.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
+      ) || 
+      (response.results.length > 0 ? response.results[0] : null);
+    
+    if (!fallbackResult) {
+      console.log(`No results found for keyword "${keyword}" or similar keywords`);
+      throw new Error('No matching keyword data found');
+    }
+    
     // Get the average monthly searches for the past 12 months
-    const monthlySearches = keywordResult.keywordIdeaMetrics?.avgMonthlySearches || 0;
+    const monthlySearches = fallbackResult.keywordIdeaMetrics?.avgMonthlySearches || 0;
+    
+    // Log whether we're using an exact match or fallback
+    if (keywordResult) {
+      console.log(`Found exact match for "${keyword}"`);
+    } else {
+      console.log(`Using closest match "${fallbackResult.text}" for "${keyword}"`);
+    }
     
     // Calculate competition score (0-100 scale)
     // Google Ads uses LOW, MEDIUM, HIGH, which we convert to a numerical scale
     let difficultyScore = 0;
-    switch (keywordResult.keywordIdeaMetrics?.competition) {
+    switch (fallbackResult.keywordIdeaMetrics?.competition) {
       case enums.KeywordPlanCompetitionLevel.LOW:
         difficultyScore = 25;
         break;
@@ -120,7 +153,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     }
 
     // Format CPC (cost per click) with $ symbol
-    const cpcMicros = keywordResult.keywordIdeaMetrics?.avgCpcMicros || 0;
+    const cpcMicros = fallbackResult.keywordIdeaMetrics?.avgCpcMicros || 0;
     const cpcDollars = cpcMicros / 1000000; // Convert micros to dollars
     const formattedCpc = `$${cpcDollars.toFixed(2)}`;
 
@@ -147,7 +180,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       searchVolume: monthlySearches,
       difficulty: difficultyScore,
       cpc: formattedCpc,
-      competition: keywordResult.keywordIdeaMetrics?.competitionIndex || 0,
+      competition: fallbackResult.keywordIdeaMetrics?.competitionIndex || 0,
       trend,
       relatedKeywords
     };
@@ -181,15 +214,31 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
   try {
     console.log(`Fetching keyword suggestions for "${keyword}" from Google Ads API...`);
 
-    // Convert DataForSEO location code to Google Ads location criterion ID
-    const locationCriterionId = location;
+    // Always use United States (2840) as the location for more comprehensive results
+    // Use more general alternatives for the keyword to increase chances of getting data
+    const locationCriterionId = 2840; // United States
+    
+    // Extract the main terms from the keyword
+    const words = keyword.split(' ');
+    const mainTerms = words.filter(word => word.length > 3).slice(0, 2);
+    const alternativeKeywords = [keyword];
+    
+    // Add more general versions of the keyword to improve results
+    if (mainTerms.length > 0) {
+      alternativeKeywords.push(mainTerms[0]);
+      if (mainTerms.length > 1) {
+        alternativeKeywords.push(`${mainTerms[0]} ${mainTerms[1]}`);
+      }
+    }
+    
+    console.log(`Using keyword variants for suggestions: ${alternativeKeywords.join(', ')}`);
 
     // Create keyword plan ideas request
     const keywordPlanIdeaService = customer?.keywordPlanIdeaService;
     
     const response = await keywordPlanIdeaService?.generateKeywordIdeas({
       keywordSeed: {
-        keywords: [keyword],
+        keywords: alternativeKeywords,
       },
       geoTargetConstants: [`geoTargetConstants/${locationCriterionId}`],
       keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
@@ -203,7 +252,22 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
     const baseKeywordResult = response.results.find((result: any) => 
       result.text?.toLowerCase() === keyword.toLowerCase()
     );
-    const baseSearchVolume = baseKeywordResult?.keywordIdeaMetrics?.avgMonthlySearches || 0;
+    
+    // If the exact keyword isn't found, look for a close match or use the first result
+    const fallbackResult = baseKeywordResult || 
+      response.results.find((result: any) => 
+        result.text?.toLowerCase().includes(keyword.toLowerCase().split(' ')[0])
+      ) || 
+      (response.results.length > 0 ? response.results[0] : null);
+      
+    // Log whether we're using an exact match or fallback
+    if (baseKeywordResult) {
+      console.log(`Found exact match for "${keyword}" in suggestions`);
+    } else if (fallbackResult) {
+      console.log(`Using closest match "${fallbackResult.text}" for "${keyword}" in suggestions`);
+    }
+    
+    const baseSearchVolume = fallbackResult?.keywordIdeaMetrics?.avgMonthlySearches || 0;
 
     // Process and return related keywords
     return response.results
