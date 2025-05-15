@@ -16,11 +16,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-// Import sample documents
-import summaryPdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Summary.pdf';
-import onPagePdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - On-Page.pdf';
-import structureNavigationPdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Structure & Navigation.pdf';
-import contactPagePdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Contact Page.pdf';
+// Sample document paths
+const summaryPdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Summary.pdf';
+const onPagePdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - On-Page.pdf';
+const structureNavigationPdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Structure & Navigation.pdf';
+const contactPagePdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Contact Page.pdf';
 
 // Summary card component
 interface SummaryCardProps {
@@ -617,18 +617,8 @@ const PdfAnalyzerPage: React.FC = () => {
       const blob = await response.blob();
       const fileName = sampleName || 'sample-document.pdf';
       
-      // Create a file object using the Blob API
-      const fileObj = blob as unknown as File;
-      // Add name property to the blob
-      Object.defineProperty(fileObj, 'name', {
-        value: fileName,
-        writable: false
-      });
-      // Ensure it has the right type
-      Object.defineProperty(fileObj, 'type', {
-        value: 'application/pdf',
-        writable: false
-      });
+      // Create a File object with the blob data
+      const fileObj = new File([blob], fileName, { type: 'application/pdf' });
       
       // Process as normal PDF
       setFile(fileObj);

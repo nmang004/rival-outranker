@@ -85,6 +85,12 @@ export default function NavBar() {
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-60">
+                  <Link href="/rival-audit">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <ClipboardCheck className="h-4 w-4 mr-2" />
+                      Rival Audit Tool
+                    </DropdownMenuItem>
+                  </Link>
                   <Link href="/basic-rank-tracker">
                     <DropdownMenuItem className="cursor-pointer">
                       <BarChart className="h-4 w-4 mr-2" />
@@ -158,7 +164,7 @@ export default function NavBar() {
           <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/rival-audit")}>
               <div className="flex items-center">
-                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
+                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit Tool
               </div>
             </div>
           </Link>
