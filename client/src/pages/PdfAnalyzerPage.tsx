@@ -485,7 +485,7 @@ const PdfAnalyzerPage: React.FC = () => {
       },
       
       // Add chart data if detected
-      chartData: chartData.isChartData ? {
+      chartData: chartData && chartData.isChartData ? {
         type: chartData.chartType,
         dataPoints: chartData.dataPoints,
         hasTimeSeries: chartData.hasTimeSeries,
@@ -539,7 +539,7 @@ const PdfAnalyzerPage: React.FC = () => {
           },
           body: JSON.stringify({
             text: text,
-            chartData: chartData.isChartData ? chartData : null
+            chartData: chartData && chartData.isChartData ? chartData : null
           }),
         });
         
@@ -617,8 +617,9 @@ const PdfAnalyzerPage: React.FC = () => {
       const blob = await response.blob();
       const fileName = sampleName || 'sample-document.pdf';
       
-      // Create a File object with the blob data
-      const fileObj = new File([blob], fileName, { type: 'application/pdf' });
+      // Create a proper File object from the blob
+      // In TypeScript, we need to cast this to work around type checking
+      const fileObj = new File([blob], fileName, { type: 'application/pdf' }) as unknown as File;
       
       // Process as normal PDF
       setFile(fileObj);
