@@ -138,15 +138,107 @@ const PdfAnalyzerPage: React.FC = () => {
   // Extract text from image
   const extractTextFromImage = async (file: File): Promise<string> => {
     try {
-      const result = await Tesseract.recognize(file, 'eng', {
+      // Function to create an enhanced canvas version of the image
+      const enhanceImage = async (imgFile: File): Promise<HTMLCanvasElement> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          const url = URL.createObjectURL(imgFile);
+          
+          img.onload = () => {
+            // Create canvas element
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas dimensions
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Draw original image to canvas
+            ctx?.drawImage(img, 0, 0, img.width, img.height);
+            
+            // Apply basic image enhancements for OCR
+            if (ctx) {
+              // Get image data
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const data = imageData.data;
+              
+              // Increase contrast and convert to grayscale
+              for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const newVal = avg > 127 ? 255 : 0; // Increase contrast
+                
+                data[i] = newVal;     // R
+                data[i + 1] = newVal; // G
+                data[i + 2] = newVal; // B
+              }
+              
+              // Put enhanced image data back to canvas
+              ctx.putImageData(imageData, 0, 0);
+            }
+            
+            URL.revokeObjectURL(url);
+            resolve(canvas);
+          };
+          
+          img.src = url;
+        });
+      };
+      
+      // First pass with standard settings
+      const initialResult = await Tesseract.recognize(file, 'eng', {
         logger: (m) => {
           if (m.status === 'recognizing text') {
-            setProgress(Math.floor(m.progress * 50));
+            setProgress(Math.floor(m.progress * 25)); // First 25% of progress
           }
-        },
+        }
       });
       
-      return result.data.text;
+      // Determine if the image might contain a graph/chart/table
+      const detectGraphsAndTables = (text: string): boolean => {
+        const textLower = text.toLowerCase();
+        
+        // Check for common terms used in data visualizations
+        const chartTerms = ['chart', 'graph', 'figure', 'table', 'axis', 'plot', 
+                           'bar chart', 'line chart', 'pie chart', 'histogram', 
+                           'trend', 'distribution', 'percentage', 'statistics',
+                           'metrics', 'growth', 'decline', 'ranking'];
+                           
+        // Check for data patterns (numbers in sequence or with % signs)
+        const hasDataPatterns = textLower.match(/(\d+(\.\d+)?%)|(\d+\.?\d*\s*[,-]\s*\d+\.?\d*)/g);
+        
+        // Check for month names (common in time series)
+        const monthPattern = /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
+        const hasMonths = monthPattern.test(textLower);
+        
+        // Return true if any chart terms are present or data patterns are detected
+        return chartTerms.some(term => textLower.includes(term)) || 
+               (hasDataPatterns !== null && hasDataPatterns.length > 3) ||
+               hasMonths;
+      };
+      
+      // Check if the image might contain a graph/chart/table
+      const mightContainGraphOrTable = detectGraphsAndTables(initialResult.data.text);
+      
+      if (mightContainGraphOrTable) {
+        // Enhance image for better OCR
+        const enhancedCanvas = await enhanceImage(file);
+        
+        // Second pass with optimized settings for graphs/charts/tables
+        const dataImageResult = await Tesseract.recognize(enhancedCanvas, 'eng', {
+          logger: (m) => {
+            if (m.status === 'recognizing text') {
+              setProgress(25 + Math.floor(m.progress * 25)); // Next 25% of progress
+            }
+          }
+        });
+        
+        // Combine results with a note about chart detection
+        return initialResult.data.text + 
+               '\n\n[CHART/GRAPH DETECTED: Enhanced OCR Applied]\n\n' + 
+               dataImageResult.data.text;
+      }
+      
+      return initialResult.data.text;
     } catch (error) {
       console.error('Error extracting text from image:', error);
       throw new Error('Failed to extract text from image');
@@ -161,6 +253,59 @@ const PdfAnalyzerPage: React.FC = () => {
     // This would be where you'd integrate with a more sophisticated analysis tool,
     // like OpenAI or Claude, but for this demo we'll use some basic analysis
 
+    // Function to detect and analyze chart data
+    const analyzeChartData = (text: string) => {
+      // Check if chart detection message exists
+      const isChartDetected = text.includes('[CHART/GRAPH DETECTED:');
+      
+      // If no chart is detected, return empty results
+      if (!isChartDetected) return { isChartData: false };
+      
+      // Look for patterns that suggest chart type
+      const chartTypes = {
+        bar: ['bar chart', 'bar graph', 'histogram', 'column chart'],
+        line: ['line chart', 'line graph', 'trend line', 'time series'],
+        pie: ['pie chart', 'donut chart', 'circle graph', 'distribution'],
+        table: ['table', 'grid', 'data table', 'dataset']
+      };
+      
+      const textLower = text.toLowerCase();
+      
+      // Determine chart type
+      let detectedType = 'unknown';
+      for (const [type, keywords] of Object.entries(chartTypes)) {
+        if (keywords.some(keyword => textLower.includes(keyword))) {
+          detectedType = type;
+          break;
+        }
+      }
+      
+      // Extract numeric values (potential data points)
+      const numericValues = Array.from(
+        textLower.matchAll(/\b(\d+(\.\d+)?%?)\b/g)
+      ).map(match => match[1]);
+      
+      // Extract potential labels (capitalized words or words near numbers)
+      const potentialLabels = Array.from(
+        text.matchAll(/\b([A-Z][a-z]+)\b|\b([A-Za-z]+)(?=\s*:?\s*\d)/g)
+      ).map(match => match[0]);
+      
+      // Look for date patterns (common in time-series charts)
+      const datePatterns = Array.from(
+        text.matchAll(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s\.,]|(\d{1,2}[\/\-]\d{1,2}([\/\-]\d{2,4})?)\b/gi)
+      ).map(match => match[0]);
+      
+      return {
+        isChartData: true,
+        chartType: detectedType,
+        dataPoints: numericValues.length,
+        hasLabels: potentialLabels.length > 0,
+        hasTimeSeries: datePatterns.length > 0,
+        extractedValues: numericValues.slice(0, 10), // First 10 values for analysis
+        extractedLabels: [...new Set(potentialLabels)].slice(0, 10) // Deduplicated, first 10
+      };
+    };
+
     // Prepare regex patterns for common SEO terms
     const metaTagPattern = /meta\s*(name|property|http-equiv)=["']([^"']+)["']/gi;
     const h1Pattern = /<h1[^>]*>(.*?)<\/h1>/gi;
@@ -169,6 +314,10 @@ const PdfAnalyzerPage: React.FC = () => {
     const titlePattern = /<title[^>]*>(.*?)<\/title>/gi;
     const canonicalPattern = /<link\s+rel=["']canonical["']\s+href=["']([^"']*)["']/gi;
     const robotsPattern = /<meta\s+name=["']robots["']\s+content=["']([^"']*)["']/gi;
+    
+    // Additional patterns for SEO report data
+    const scorePattern = /\b(score|rating|grade|value|index)[\s:]+(\d+(\.\d+)?%?|\d+(\.\d+)?\/\d+(\.\d+)?)\b/gi;
+    const kpiPattern = /\b(impressions|clicks|ctr|position|ranking|traffic|visitors|pageviews|bounce rate|conversions)\b/gi;
     const keywordMentions = (text: string): { [key: string]: number } => {
       const keywords = ['seo', 'search engine', 'keyword', 'backlink', 'ranking', 'meta description', 'title tag', 'alt text', 'canonical', 'robots'];
       return keywords.reduce((acc, keyword) => {
@@ -179,6 +328,20 @@ const PdfAnalyzerPage: React.FC = () => {
       }, {} as { [key: string]: number });
     };
 
+    // Check for chart data
+    const chartData = analyzeChartData(text);
+    
+    // Extract SEO scores and metrics from the text
+    const extractedScores = Array.from(text.matchAll(scorePattern)).map(match => ({
+      metric: match[1].trim().toLowerCase(),
+      value: match[2].trim()
+    }));
+    
+    // Extract key SEO KPIs mentioned in the text
+    const mentionedKpis = Array.from(text.matchAll(kpiPattern)).map(match => 
+      match[0].trim().toLowerCase()
+    );
+    
     // Extract key SEO elements
     const metaTags = Array.from(text.matchAll(metaTagPattern)).map(match => match[0]);
     const h1Tags = Array.from(text.matchAll(h1Pattern)).map(match => match[1]);
@@ -211,6 +374,36 @@ const PdfAnalyzerPage: React.FC = () => {
     if (missingAltText === 0) seoScore += 15;
     if (externalLinks > 0) seoScore += 10;
     if (internalLinks > 0) seoScore += 15;
+    
+    // If we found extracted scores, try to use them to refine our score
+    if (extractedScores.length > 0) {
+      // Look for overall score metrics that might be in the document
+      const overallScoreMetrics = extractedScores.filter(score => 
+        score.metric.includes('overall') || 
+        score.metric.includes('total') || 
+        score.metric.includes('score') ||
+        score.metric.includes('performance')
+      );
+      
+      if (overallScoreMetrics.length > 0) {
+        // Try to parse the most relevant overall score
+        const mainScore = overallScoreMetrics[0].value;
+        // If it's a percentage, use it directly
+        if (mainScore.includes('%')) {
+          const parsedScore = parseInt(mainScore.replace('%', ''));
+          if (!isNaN(parsedScore)) {
+            seoScore = parsedScore; // Use the extracted score instead
+          }
+        } 
+        // If it's a ratio like 85/100
+        else if (mainScore.includes('/')) {
+          const [numerator, denominator] = mainScore.split('/').map(n => parseInt(n.trim()));
+          if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+            seoScore = Math.round((numerator / denominator) * 100);
+          }
+        }
+      }
+    }
     
     // Prepare recommendations
     const recommendations = [];
