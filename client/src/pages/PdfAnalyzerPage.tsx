@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image, Loader2, Code, Globe, Search, Layers, Share2, MapPin } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image as ImageIcon, Loader2, Code, Globe, Search, Layers, Share2, MapPin, BarChart } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Configure PDF.js worker
@@ -141,7 +141,7 @@ const PdfAnalyzerPage: React.FC = () => {
       // Function to create an enhanced canvas version of the image
       const enhanceImage = async (imgFile: File): Promise<HTMLCanvasElement> => {
         return new Promise((resolve) => {
-          const img = new Image();
+          const img = new Image() as HTMLImageElement;
           const url = URL.createObjectURL(imgFile);
           
           img.onload = () => {
@@ -439,6 +439,21 @@ const PdfAnalyzerPage: React.FC = () => {
       keywordStats,
       keywordDensity: keywordDensity.toFixed(2) + '%',
       recommendations,
+      
+      // Add extraction metrics 
+      extractedMetrics: {
+        scores: extractedScores,
+        kpis: mentionedKpis
+      },
+      
+      // Add chart data if detected
+      chartData: chartData.isChartData ? {
+        type: chartData.chartType,
+        dataPoints: chartData.dataPoints,
+        hasTimeSeries: chartData.hasTimeSeries,
+        sampleValues: chartData.extractedValues,
+        sampleLabels: chartData.extractedLabels
+      } : null
     };
   };
 
@@ -728,6 +743,16 @@ const PdfAnalyzerPage: React.FC = () => {
               </div>
               
               <div className="flex gap-2 items-start">
+                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                <p>For charts and graphs, make sure they have clear labels and values</p>
+              </div>
+              
+              <div className="flex gap-2 items-start">
+                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                <p>The tool can detect and extract data from bar charts, line graphs, and tables</p>
+              </div>
+              
+              <div className="flex gap-2 items-start">
                 <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
                 <p>Large documents may take longer to process</p>
               </div>
@@ -781,6 +806,64 @@ const PdfAnalyzerPage: React.FC = () => {
               color="bg-purple-50"
             />
           </div>
+          
+          {/* Chart data section - only shown if charts are detected */}
+          {summary.chartData && (
+            <Card className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-medium">Data Visualization Detected</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Chart Type</p>
+                  <p className="text-lg font-medium capitalize">{summary.chartData.type}</p>
+                </div>
+                
+                <div className="bg-green-50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Data Points</p>
+                  <p className="text-lg font-medium">{summary.chartData.dataPoints}</p>
+                </div>
+                
+                <div className="bg-purple-50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Time Series</p>
+                  <p className="text-lg font-medium">{summary.chartData.hasTimeSeries ? 'Yes' : 'No'}</p>
+                </div>
+                
+                <div className="bg-amber-50 rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground mb-1">Enhanced OCR</p>
+                  <p className="text-lg font-medium">Applied</p>
+                </div>
+              </div>
+              
+              {summary.chartData.sampleLabels && summary.chartData.sampleLabels.length > 0 && (
+                <div className="mb-4">
+                  <p className="font-medium mb-2">Detected Labels</p>
+                  <div className="flex flex-wrap gap-2">
+                    {summary.chartData.sampleLabels.map((label, index) => (
+                      <Badge key={index} variant="outline" className="bg-blue-50">
+                        {label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {summary.chartData.sampleValues && summary.chartData.sampleValues.length > 0 && (
+                <div>
+                  <p className="font-medium mb-2">Detected Values</p>
+                  <div className="flex flex-wrap gap-2">
+                    {summary.chartData.sampleValues.map((value, index) => (
+                      <Badge key={index} variant="outline" className="bg-green-50">
+                        {value}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
           
           {/* Detailed analysis tabs */}
           <Tabs defaultValue="recommendations" className="space-y-4">
