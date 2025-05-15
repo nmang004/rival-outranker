@@ -77,7 +77,7 @@ export default function NavBar() {
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className={linkClass(location.startsWith("/rival") ? location : "")}>
+                  <div className={linkClass(location.startsWith("/rival") ? location : "") + " cursor-pointer hover:border-primary/50 hover:text-foreground"}>
                     <ClipboardCheck className="h-4 w-4 mr-1" /> 
                     Rival Audit
                     <ChevronDown className="h-3 w-3 ml-1" />

@@ -14,13 +14,69 @@ import {
   ChevronRight, 
   UserCog,
   History,
-  BarChart3 
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  Area, 
+  AreaChart, 
+  ResponsiveContainer, 
+  Tooltip,
+  XAxis,
+  YAxis 
+} from "recharts";
+
+// Mini trend chart component
+interface MiniChartProps {
+  data: number[];
+  isPositive: boolean;
+}
+
+function MiniChart({ data, isPositive }: MiniChartProps) {
+  const chartData = data.map((value, index) => ({
+    name: String(index),
+    value: value
+  }));
+
+  return (
+    <div className="w-20 h-12">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`gradient-${isPositive ? 'up' : 'down'}`} x1="0" y1="0" x2="0" y2="1">
+              <stop 
+                offset="0%" 
+                stopColor={isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"} 
+                stopOpacity={0.3}
+              />
+              <stop 
+                offset="100%" 
+                stopColor={isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"} 
+                stopOpacity={0}
+              />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+            strokeWidth={1.5}
+            fillOpacity={1}
+            fill={`url(#gradient-${isPositive ? 'up' : 'down'})`}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 export default function ProfilePage(props: { params?: { tab?: string } }) {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -397,15 +453,18 @@ function UserProjectsList() {
       score: 29,
       organicTraffic: {
         value: "8.9K",
-        change: "+58.95%"
+        change: "+58.95%",
+        trend: [32, 28, 35, 42, 50, 65, 80, 95, 100, 120, 130, 140]
       },
       organicKeywords: {
         value: "3.6K",
-        change: "+1.71%"
+        change: "+1.71%",
+        trend: [3200, 3250, 3300, 3350, 3400, 3450, 3500, 3550, 3600, 3620, 3650, 3660]
       },
       backlinks: {
         value: "3.1K",
-        change: "-10.6%"
+        change: "-10.6%",
+        trend: [3800, 3750, 3700, 3650, 3600, 3550, 3500, 3450, 3400, 3350, 3300, 3100]
       }
     },
     {
@@ -415,15 +474,18 @@ function UserProjectsList() {
       score: 14,
       organicTraffic: {
         value: "432",
-        change: "-7%"
+        change: "-7%",
+        trend: [480, 475, 470, 465, 460, 455, 450, 445, 440, 435, 432, 432]
       },
       organicKeywords: {
         value: "617",
-        change: "+3.29%"
+        change: "+3.29%",
+        trend: [580, 585, 590, 595, 600, 605, 610, 615, 617, 617, 617, 617]
       },
       backlinks: {
         value: "131",
-        change: "-1.5%"
+        change: "-1.5%",
+        trend: [135, 134, 133, 132, 132, 132, 131, 131, 131, 131, 131, 131]
       }
     },
     {
@@ -433,15 +495,18 @@ function UserProjectsList() {
       score: 19,
       organicTraffic: {
         value: "654",
-        change: "-9.92%"
+        change: "-9.92%",
+        trend: [750, 740, 730, 720, 710, 700, 690, 680, 670, 660, 657, 654]
       },
       organicKeywords: {
         value: "277",
-        change: "-5.14%"
+        change: "-5.14%",
+        trend: [300, 298, 295, 290, 285, 283, 280, 278, 278, 278, 277, 277]
       },
       backlinks: {
         value: "1.8K",
-        change: "-25.04%"
+        change: "-25.04%",
+        trend: [2500, 2400, 2300, 2200, 2100, 2000, 1950, 1900, 1850, 1830, 1810, 1800]
       }
     }
   ];
@@ -501,9 +566,22 @@ function UserProjectsList() {
                   <div className="text-sm font-medium">Site Health</div>
                   <div className="flex items-center gap-2">
                     <div className="text-xl font-bold">{project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%'}</div>
-                    <div className={`text-xs ${project.id === 1 ? 'text-muted-foreground' : project.id === 2 ? 'text-green-600' : 'text-red-600'}`}>
-                      {project.id === 1 ? '0%' : project.id === 2 ? '+2%' : '-3%'}
+                    <div className={`text-xs ${project.id === 1 ? 'text-muted-foreground' : project.id === 2 ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                      {project.id === 1 ? '0%' : 
+                        project.id === 2 ? 
+                          <><ArrowUpRight className="h-3 w-3 mr-0.5" />+2%</> : 
+                          <><ArrowDownRight className="h-3 w-3 mr-0.5" />-3%</>
+                      }
                     </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 my-1">
+                    <div 
+                      className="bg-primary h-1.5 rounded-full" 
+                      style={{ 
+                        width: project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%',
+                        backgroundColor: project.id === 1 ? '#6366f1' : project.id === 2 ? '#10b981' : '#f59e0b'
+                      }}
+                    />
                   </div>
                   <div className="text-xs text-muted-foreground">Track keyword positions.</div>
                   <Button variant="outline" size="sm" className="h-7 mt-1 text-xs w-full sm:w-auto">Set up</Button>
@@ -511,31 +589,61 @@ function UserProjectsList() {
                 
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Organic Traffic</div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xl font-bold">{project.organicTraffic.value}</div>
-                    <div className={`text-xs ${project.organicTraffic.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                      {project.organicTraffic.change}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xl font-bold">{project.organicTraffic.value}</div>
+                      <div className={`text-xs ${project.organicTraffic.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                        {project.organicTraffic.change.startsWith('+') ? 
+                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                        }
+                        {project.organicTraffic.change}
+                      </div>
                     </div>
+                    <MiniChart 
+                      data={project.organicTraffic.trend} 
+                      isPositive={project.organicTraffic.change.startsWith('+')} 
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Organic Keywords</div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xl font-bold">{project.organicKeywords.value}</div>
-                    <div className={`text-xs ${project.organicKeywords.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                      {project.organicKeywords.change}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xl font-bold">{project.organicKeywords.value}</div>
+                      <div className={`text-xs ${project.organicKeywords.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                        {project.organicKeywords.change.startsWith('+') ? 
+                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                        }
+                        {project.organicKeywords.change}
+                      </div>
                     </div>
+                    <MiniChart 
+                      data={project.organicKeywords.trend} 
+                      isPositive={project.organicKeywords.change.startsWith('+')} 
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Backlinks</div>
-                  <div className="flex items-center gap-2">
-                    <div className="text-xl font-bold">{project.backlinks.value}</div>
-                    <div className={`text-xs ${project.backlinks.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                      {project.backlinks.change}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="text-xl font-bold">{project.backlinks.value}</div>
+                      <div className={`text-xs ${project.backlinks.change.startsWith('+') ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                        {project.backlinks.change.startsWith('+') ? 
+                          <ArrowUpRight className="h-3 w-3 mr-0.5" /> : 
+                          <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                        }
+                        {project.backlinks.change}
+                      </div>
                     </div>
+                    <MiniChart 
+                      data={project.backlinks.trend} 
+                      isPositive={project.backlinks.change.startsWith('+')} 
+                    />
                   </div>
                 </div>
               </div>
@@ -551,23 +659,97 @@ function UserProjectsList() {
           Quickly see changes in key organic and paid traffic metrics and track the Authority Score of your competitors.
         </p>
         
-        <div className="flex flex-col sm:flex-row gap-2 mt-4">
-          <div className="flex-grow">
-            <input
-              type="text"
-              placeholder="Enter domain"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="col-span-1 lg:col-span-2">
+            {/* Sample Domain Traffic Chart */}
+            <div className="bg-muted/20 rounded-lg p-4 border border-gray-100 h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium">domain.com</h4>
+                <div className="text-sm text-muted-foreground">291.5M</div>
+              </div>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={[
+                      { month: 'Jan', traffic: 240 },
+                      { month: 'Feb', traffic: 230 },
+                      { month: 'Mar', traffic: 245 },
+                      { month: 'Apr', traffic: 260 },
+                      { month: 'May', traffic: 255 },
+                      { month: 'Jun', traffic: 270 },
+                      { month: 'Jul', traffic: 290 },
+                      { month: 'Aug', traffic: 280 },
+                      { month: 'Sep', traffic: 300 },
+                      { month: 'Oct', traffic: 310 },
+                      { month: 'Nov', traffic: 305 },
+                      { month: 'Dec', traffic: 320 },
+                    ]}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <XAxis 
+                      dataKey="month" 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis hide />
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-white p-2 rounded shadow-md border text-xs">
+                              <p>{`${payload[0].payload.month}: ${payload[0].value}`}</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <defs>
+                      <linearGradient id="trafficGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Area 
+                      type="monotone" 
+                      dataKey="traffic" 
+                      stroke="#6366f1" 
+                      strokeWidth={2}
+                      fill="url(#trafficGradient)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
-              <option value="US">US</option>
-              <option value="UK">UK</option>
-              <option value="CA">CA</option>
-            </select>
-            <Button size="sm" className="gap-1.5">
-              + Add domain
-            </Button>
+          <div>
+            {/* Domain Input Form */}
+            <div className="bg-muted/10 rounded-lg p-4 border border-gray-100 h-full">
+              <h4 className="font-medium mb-3">Add new domain</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Enter domain name</label>
+                  <input
+                    type="text"
+                    placeholder="example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Country</label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                    <option value="US">United States</option>
+                    <option value="UK">United Kingdom</option>
+                    <option value="CA">Canada</option>
+                    <option value="AU">Australia</option>
+                  </select>
+                </div>
+                <Button className="w-full mt-2">
+                  + Add domain
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
