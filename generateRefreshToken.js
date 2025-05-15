@@ -31,49 +31,35 @@ const oauth2Client = new google.auth.OAuth2(
  * Open the browser for authentication and get the authorization code
  */
 async function getAuthorizationCode() {
-  return new Promise((resolve, reject) => {
-    // Generate the url that will be used for the authorization
-    const authorizeUrl = oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      scope: SCOPES,
-      prompt: 'consent' // Force to always get refresh_token
-    });
+  // Generate the url that will be used for the authorization
+  const authorizeUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+    prompt: 'consent' // Force to always get refresh_token
+  });
 
-    // Create a simple server to receive the authorization code
-    const server = http.createServer(async (req, res) => {
-      try {
-        // Check if this is the callback from Google
-        if (req.url.indexOf('/oauth2callback') > -1) {
-          // Get the authorization code from the callback URL
-          const qs = new url.URL(req.url, 'http://localhost:3000').searchParams;
-          const code = qs.get('code');
-          
-          // Close the HTTP server
-          server.destroy();
-          
-          // Respond to the user
-          res.writeHead(200, {'Content-Type': 'text/html'});
-          res.end(`
-            <html>
-              <body>
-                <h1>Authentication successful!</h1>
-                <p>You can close this window and return to the application.</p>
-              </body>
-            </html>
-          `);
-          
-          // Resolve the promise with the authorization code
-          resolve(code);
-        }
-      } catch (e) {
-        reject(e);
-      }
-    }).listen(3000, () => {
-      // Open the authorization URL in the browser
-      open(authorizeUrl, {wait: false}).then(cp => cp.unref());
+  // In Replit, we can't open a browser directly, so we'll display the URL for the user
+  console.log('\n\n================================================');
+  console.log('Please open this URL in your browser:');
+  console.log(authorizeUrl);
+  console.log('================================================\n\n');
+  
+  // Prompt for the authorization code
+  console.log('After authorizing, you will be redirected to a page that may show an error.');
+  console.log('Look at the URL in your browser and copy the "code" parameter (between "code=" and "&")');
+  
+  // Simple function to prompt for input in Node.js
+  const readline = await import('readline');
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question('\nEnter the authorization code: ', (code) => {
+      rl.close();
+      resolve(code);
     });
-    
-    destroyer(server);
   });
 }
 
