@@ -94,7 +94,7 @@ export async function generateRecommendations(analysisResults: any) {
       keywords: analysisResults.keywords || [],
       contentStructure: analysisResults.contentStructure || {},
       chartInsights: analysisResults.chartInsights || '',
-      extractedText: (analysisResults.extractedText || '').slice(0, 1000) + '...'
+      extractedText: ((analysisResults.extractedText || '') as string).slice(0, 1000) + '...'
     };
 
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -121,7 +121,8 @@ export async function generateRecommendations(analysisResults: any) {
     });
 
     // Parse the JSON response
-    const recommendations = JSON.parse(response.choices[0].message.content);
+    const content = response.choices[0].message.content || '{"recommendations":[]}';
+    const recommendations = JSON.parse(content);
     return recommendations;
   } catch (error) {
     console.error('Error generating recommendations with OpenAI:', error);

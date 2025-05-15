@@ -1121,6 +1121,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // API endpoint for deep content analysis (POST)
+  // OpenAI-powered PDF and image analysis
+  app.post("/api/analyze-content", async (req: Request, res: Response) => {
+    try {
+      const { text, chartData } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ error: 'Text content is required' });
+      }
+      
+      const openaiService = (await import('./services/openaiService')).default;
+      
+      // Perform text analysis
+      const textAnalysis = await openaiService.analyzeTextContent(text);
+      
+      // Analyze chart data if provided
+      let chartAnalysis = null;
+      if (chartData && typeof chartData === 'object') {
+        chartAnalysis = await openaiService.analyzeChartData(chartData, text.slice(0, 2000));
+      }
+      
+      // Generate final recommendations
+      const recommendations = await openaiService.generateRecommendations({
+        ...textAnalysis,
+        chartInsights: chartAnalysis?.analysis || '',
+        extractedText: text.slice(0, 3000)
+      });
+      
+      res.json({
+        textAnalysis,
+        chartAnalysis,
+        recommendations
+      });
+    } catch (error) {
+      console.error('Error in AI content analysis:', error);
+      res.status(500).json({ 
+        error: 'Failed to analyze content with AI', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+  
   app.post("/api/deep-content", async (req: Request, res: Response) => {
     try {
       const { url, keywords } = req.body;
