@@ -11,7 +11,10 @@ import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download,
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url
+).toString();
 
 // Summary card component
 interface SummaryCardProps {
@@ -38,6 +41,31 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, description, ic
 );
 
 // Main PDF Analyzer Component
+// Sample files for demonstration
+const SAMPLE_FILES = [
+  {
+    name: "SEO Metrics Chart",
+    type: "image",
+    description: "Bar chart showing performance metrics for organic traffic",
+    path: "/samples/seo-chart.png",
+    source: "internal"
+  },
+  {
+    name: "Keyword Rankings Graph",
+    type: "image",
+    description: "Line graph tracking keyword position changes over time",
+    path: "/samples/keyword-trend.png",
+    source: "internal"
+  },
+  {
+    name: "SEO Audit Summary",
+    type: "pdf",
+    description: "Sample report with audit findings and improvement suggestions",
+    path: "/samples/seo-audit-sample.pdf",
+    source: "internal"
+  }
+];
+
 const PdfAnalyzerPage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<'pdf' | 'image' | null>(null);
@@ -49,6 +77,7 @@ const PdfAnalyzerPage: React.FC = () => {
   const [summary, setSummary] = useState<any>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showSamples, setShowSamples] = useState<boolean>(false);
 
   // Function to determine file type
   const determineFileType = (file: File): 'pdf' | 'image' | null => {
