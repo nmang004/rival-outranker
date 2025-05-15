@@ -16,11 +16,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-// Sample document paths
-const summaryPdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Summary.pdf';
-const onPagePdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - On-Page.pdf';
-const structureNavigationPdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Structure & Navigation.pdf';
-const contactPagePdf = '/attached_assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Contact Page.pdf';
+// Sample document API paths
+const summaryPdf = '/api/samples/pdf/summary';
+const onPagePdf = '/api/samples/pdf/on-page';
+const structureNavigationPdf = '/api/samples/pdf/structure-navigation';
+const contactPagePdf = '/api/samples/pdf/contact-page';
+const servicePagesPdf = '/api/samples/pdf/service-pages';
 
 // Summary card component
 interface SummaryCardProps {
@@ -602,26 +603,34 @@ const PdfAnalyzerPage: React.FC = () => {
   // Load sample document
   const loadSampleDocument = async (samplePath: string, sampleName: string) => {
     try {
-      setShowSamples(false);
       setIsProcessing(true);
       setError(null);
       setProgress(10);
       setProcessingStep('Loading sample document...');
       
       // Fetch the sample document
+      console.log('Fetching sample document from:', samplePath);
       const response = await fetch(samplePath);
+      
       if (!response.ok) {
-        throw new Error('Failed to load sample document');
+        throw new Error(`Failed to load sample document. Server responded with status ${response.status}`);
       }
       
       const blob = await response.blob();
+      console.log('Sample document blob received, size:', blob.size, 'bytes');
+      
+      if (blob.size === 0) {
+        throw new Error('The sample document is empty. Please try again or select a different document.');
+      }
+      
       const fileName = sampleName || 'sample-document.pdf';
       
-      // Create a proper File object from the blob
-      // In TypeScript, we need to cast this to work around type checking
-      const fileObj = new File([blob], fileName, { type: 'application/pdf' }) as unknown as File;
+      // Use the blob constructor with proper typing for File
+      const fileObj = new Blob([blob], { type: 'application/pdf' }) as any;
+      fileObj.name = fileName;
+      fileObj.lastModified = Date.now();
       
-      // Process as normal PDF
+      // Set the file and type
       setFile(fileObj);
       setFileType('pdf');
       
@@ -632,12 +641,12 @@ const PdfAnalyzerPage: React.FC = () => {
       setProgress(30);
       setProcessingStep('Sample document loaded successfully');
       
-      // Automatically process the sample document
-      await new Promise(resolve => setTimeout(resolve, 500)); // Short delay for UX
+      // Automatically process the sample document after a short delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 800)); 
       processFile();
     } catch (error) {
       console.error('Error loading sample document:', error);
-      setError('Failed to load sample document. Please try again.');
+      setError(`Failed to load sample document: ${error.message || 'Unknown error'}`);
       setIsProcessing(false);
     }
   };
@@ -786,48 +795,129 @@ const PdfAnalyzerPage: React.FC = () => {
           {/* Sample documents section */}
           <Card className="p-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Sample Documents</h3>
+              <h3 className="text-lg font-medium flex items-center">
+                <FileText className="h-5 w-5 mr-2 text-primary" />
+                Sample SEO Audit Documents
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Don't have an SEO audit PDF? Try analyzing one of our sample documents:
+                Don't have an SEO audit PDF? Try analyzing one of our sample documents to see how the analyzer works:
               </p>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                  onClick={() => loadSampleDocument(summaryPdf, 'SEO Audit - Summary.pdf')}
-                  disabled={isProcessing}
-                >
-                  <File className="h-4 w-4 text-blue-600" />
-                  SEO Audit Summary
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                  onClick={() => loadSampleDocument(onPagePdf, 'SEO Audit - On-Page.pdf')}
-                  disabled={isProcessing}
-                >
-                  <File className="h-4 w-4 text-blue-600" />
-                  On-Page SEO Analysis
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                  onClick={() => loadSampleDocument(structureNavigationPdf, 'SEO Audit - Structure & Navigation.pdf')}
-                  disabled={isProcessing}
-                >
-                  <File className="h-4 w-4 text-blue-600" />
-                  Structure & Navigation Analysis
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                  onClick={() => loadSampleDocument(contactPagePdf, 'SEO Audit - Contact Page.pdf')}
-                  disabled={isProcessing}
-                >
-                  <File className="h-4 w-4 text-blue-600" />
-                  Contact Page Analysis
-                </Button>
+              <div className="grid grid-cols-1 gap-4">
+                {/* Summary Document */}
+                <div className="border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium flex items-center">
+                        <File className="h-4 w-4 mr-2 text-blue-600" />
+                        SEO Audit Summary
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Overview of key SEO findings across all categories with prioritized recommendations.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-[#52bb7a] hover:bg-[#43a067] text-white"
+                      onClick={() => loadSampleDocument(summaryPdf, 'SEO Audit - Summary.pdf')}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Loading...' : 'Analyze'}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* On-Page Document */}
+                <div className="border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium flex items-center">
+                        <File className="h-4 w-4 mr-2 text-blue-600" />
+                        On-Page SEO Analysis
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Detailed assessment of content quality, user experience, and on-page ranking factors.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-[#52bb7a] hover:bg-[#43a067] text-white"
+                      onClick={() => loadSampleDocument(onPagePdf, 'SEO Audit - On-Page.pdf')}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Loading...' : 'Analyze'}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Structure & Navigation Document */}
+                <div className="border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium flex items-center">
+                        <File className="h-4 w-4 mr-2 text-blue-600" />
+                        Structure & Navigation Analysis
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Evaluation of website architecture, URL structure, and navigation elements.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-[#52bb7a] hover:bg-[#43a067] text-white"
+                      onClick={() => loadSampleDocument(structureNavigationPdf, 'SEO Audit - Structure & Navigation.pdf')}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Loading...' : 'Analyze'}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Contact Page Document */}
+                <div className="border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium flex items-center">
+                        <File className="h-4 w-4 mr-2 text-blue-600" />
+                        Contact Page Analysis
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Assessment of business information, contact forms, and local SEO elements.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-[#52bb7a] hover:bg-[#43a067] text-white"
+                      onClick={() => loadSampleDocument(contactPagePdf, 'SEO Audit - Contact Page.pdf')}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Loading...' : 'Analyze'}
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Service Pages Document */}
+                <div className="border rounded-lg p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h4 className="font-medium flex items-center">
+                        <File className="h-4 w-4 mr-2 text-blue-600" />
+                        Service Pages Analysis
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">
+                        Review of service page content, calls-to-action, and conversion optimization.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-[#52bb7a] hover:bg-[#43a067] text-white"
+                      onClick={() => loadSampleDocument(servicePagesPdf, 'SEO Audit - Service Pages.pdf')}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Loading...' : 'Analyze'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

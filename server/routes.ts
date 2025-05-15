@@ -55,6 +55,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google Ads API authentication routes
   app.use('/api/google-ads-auth', googleAdsAuthRouter);
   
+  // Serve sample PDF files for PDF Analyzer
+  app.get('/api/samples/pdf/:filename', (req: Request, res: Response) => {
+    const filename = req.params.filename;
+    const allowedFiles = [
+      'summary',
+      'on-page',
+      'structure-navigation',
+      'contact-page',
+      'service-pages'
+    ];
+    
+    // Only allow specific filenames for security
+    const fileKey = allowedFiles.find(f => filename.toLowerCase().includes(f));
+    if (!fileKey) {
+      return res.status(404).send('File not found');
+    }
+    
+    // Map to actual filenames
+    let actualFilename = '';
+    if (filename.includes('summary')) {
+      actualFilename = 'Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Summary.pdf';
+    } else if (filename.includes('on-page')) {
+      actualFilename = 'Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - On-Page.pdf';
+    } else if (filename.includes('structure')) {
+      actualFilename = 'Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Structure & Navigation.pdf';
+    } else if (filename.includes('contact')) {
+      actualFilename = 'Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Contact Page.pdf';
+    } else if (filename.includes('service')) {
+      actualFilename = 'Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Service Pages.pdf';
+    }
+    
+    const filePath = `./attached_assets/${actualFilename}`;
+    
+    // Send the file
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.sendFile(filePath, { root: '.' });
+  });
+  
   // Utility function for URL normalization
   const normalizeUrl = (inputUrl: string) => {
     // Convert URL to lowercase
