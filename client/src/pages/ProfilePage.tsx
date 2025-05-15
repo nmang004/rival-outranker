@@ -34,24 +34,37 @@ import {
   YAxis 
 } from "recharts";
 
-// Mini trend chart component
+// Interactive Components
+
+// Mini trend chart component with tooltip
 interface MiniChartProps {
   data: number[];
   isPositive: boolean;
+  showTooltip?: boolean;
+  tooltipFormatter?: (value: number) => string;
+  unit?: string;
 }
 
-function MiniChart({ data, isPositive }: MiniChartProps) {
+function MiniChart({ 
+  data, 
+  isPositive, 
+  showTooltip = false, 
+  tooltipFormatter = (value) => `${value}`, 
+  unit = ''
+}: MiniChartProps) {
   const chartData = data.map((value, index) => ({
     name: String(index),
     value: value
   }));
+
+  const gradientId = `gradient-${isPositive ? 'up' : 'down'}-${Math.random().toString(36).substring(2, 9)}`;
 
   return (
     <div className="w-20 h-12">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <defs>
-            <linearGradient id={`gradient-${isPositive ? 'up' : 'down'}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <stop 
                 offset="0%" 
                 stopColor={isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"} 
@@ -64,16 +77,153 @@ function MiniChart({ data, isPositive }: MiniChartProps) {
               />
             </linearGradient>
           </defs>
+          {showTooltip && (
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-white p-2 rounded shadow-md border text-xs">
+                      <p>{tooltipFormatter(payload[0].value as number)}{unit}</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          )}
           <Area
             type="monotone"
             dataKey="value"
             stroke={isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
             strokeWidth={1.5}
             fillOpacity={1}
-            fill={`url(#gradient-${isPositive ? 'up' : 'down'})`}
+            fill={`url(#${gradientId})`}
+            activeDot={{ r: 4, strokeWidth: 0 }}
           />
         </AreaChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+// Status Badge component
+interface StatusBadgeProps {
+  status: "active" | "in-progress" | "monitoring" | "paused" | "error";
+  onClick?: () => void;
+}
+
+function StatusBadge({ status, onClick }: StatusBadgeProps) {
+  const statusConfig = {
+    "active": { 
+      text: "Active", 
+      className: "text-green-600 bg-green-50 hover:bg-green-100" 
+    },
+    "in-progress": { 
+      text: "In Progress", 
+      className: "text-blue-600 bg-blue-50 hover:bg-blue-100" 
+    },
+    "monitoring": { 
+      text: "Monitoring", 
+      className: "text-yellow-600 bg-yellow-50 hover:bg-yellow-100" 
+    },
+    "paused": { 
+      text: "Paused", 
+      className: "text-muted-foreground bg-muted/50 hover:bg-muted" 
+    },
+    "error": { 
+      text: "Error", 
+      className: "text-red-600 bg-red-50 hover:bg-red-100" 
+    }
+  };
+
+  // Use a button element to avoid DOM nesting errors with Badge component
+  return (
+    <button
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${statusConfig[status].className}`}
+      onClick={onClick}
+    >
+      {statusConfig[status].text}
+    </button>
+  );
+}
+
+// Project Actions Menu Component
+interface ProjectActionsMenuProps {
+  projectId: number;
+}
+
+function ProjectActionsMenu({ projectId }: ProjectActionsMenuProps) {
+  const [open, setOpen] = useState(false);
+  
+  const handleAction = (action: string) => {
+    console.log(`Performing ${action} on project ${projectId}`);
+    setOpen(false);
+  };
+  
+  return (
+    <div className="relative">
+      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setOpen(!open)}>
+        <span className="sr-only">Menu</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <circle cx="12" cy="12" r="1"/>
+          <circle cx="19" cy="12" r="1"/>
+          <circle cx="5" cy="12" r="1"/>
+        </svg>
+      </Button>
+      
+      {open && (
+        <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+          <div className="py-1">
+            <button 
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-muted/50 flex items-center"
+              onClick={() => handleAction('edit')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Edit Project
+            </button>
+            <button 
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-muted/50 flex items-center"
+              onClick={() => handleAction('duplicate')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+              </svg>
+              Duplicate
+            </button>
+            <button 
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-muted/50 flex items-center"
+              onClick={() => handleAction('share')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              Share
+            </button>
+            <hr className="my-1 border-gray-200" />
+            <button 
+              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+              onClick={() => handleAction('delete')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"></path>
+                <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -563,69 +713,257 @@ function UserProjectsList() {
   }
 
   // Sample project data based on the reference image
+  // Helper functions for generating comprehensive mock data
+  const generateTrendData = (start: number, isGrowing: boolean, volatility: number, length: number = 10) => {
+    const data = [];
+    let current = start;
+    for (let i = 0; i < length; i++) {
+      // Add randomness with specified volatility
+      const change = Math.random() * volatility * (isGrowing ? 1 : -1);
+      current = Math.max(0, current + change);
+      data.push(Math.round(current));
+    }
+    return data;
+  };
+  
+  const generateHistoricalData = (start: number, end: number, months: number = 6) => {
+    const data = [];
+    const step = (end - start) / (months - 1);
+    for (let i = 0; i < months; i++) {
+      const monthValue = Math.round(start + step * i);
+      // Add some randomness
+      const variance = Math.random() * 0.2 * monthValue;
+      data.push(Math.round(monthValue + variance * (Math.random() > 0.5 ? 1 : -1)));
+    }
+    return data;
+  };
+  
+  const generateKeywordData = (count: number, baseKeyword: string) => {
+    const keywords = [
+      "heating and cooling", "HVAC", "air conditioning repair", "furnace installation", 
+      "AC service", "heating systems", "duct cleaning", "emergency HVAC", "commercial HVAC",
+      "heat pump repair", "air quality", "thermostat installation", "energy efficient HVAC",
+      "air conditioning units", "furnace repair", "HVAC maintenance", "cooling systems",
+      "air conditioner installation", "heating repair", "HVAC contractor"
+    ];
+    
+    const locations = [
+      "Texas", "Dallas", "Houston", "Austin", "San Antonio", "Fort Worth", 
+      "Charlotte", "Raleigh", "Durham", "Winston-Salem", "Greensboro", "Asheville"
+    ];
+    
+    return Array.from({ length: count }, (_, i) => {
+      const keyword = i < 5 
+        ? `${baseKeyword} ${keywords[Math.floor(Math.random() * keywords.length)]}` 
+        : `${keywords[Math.floor(Math.random() * keywords.length)]} ${locations[Math.floor(Math.random() * locations.length)]}`;
+      
+      return {
+        id: i + 1,
+        keyword: keyword,
+        position: Math.floor(Math.random() * 50) + 1,
+        volume: Math.floor(Math.random() * 5000) + 100,
+        difficulty: Math.floor(Math.random() * 100),
+        cpc: (Math.random() * 15).toFixed(2),
+        trend: generateTrendData(10 + Math.random() * 20, Math.random() > 0.3, 3, 6)
+      };
+    });
+  };
+  
+  const generateCompetitors = (domain: string) => {
+    const competitors = [
+      { domain: "competitor1.com", overlap: Math.floor(Math.random() * 30) + 20 },
+      { domain: "competitor2.net", overlap: Math.floor(Math.random() * 20) + 10 },
+      { domain: "competitor3.org", overlap: Math.floor(Math.random() * 15) + 5 },
+      { domain: "competitor4.biz", overlap: Math.floor(Math.random() * 10) + 5 },
+      { domain: "competitor5.co", overlap: Math.floor(Math.random() * 5) + 1 }
+    ];
+    
+    return competitors.map(comp => ({
+      ...comp,
+      traffic: Math.floor(Math.random() * 15000) + 1000,
+      keywords: Math.floor(Math.random() * 5000) + 500,
+      backlinks: Math.floor(Math.random() * 2000) + 100,
+      domain: domain.replace(domain.split(".")[0], "competitor" + Math.floor(Math.random() * 10))
+    }));
+  };
+  
+  // Rich sample project data
   const sampleProjects = [
     {
       id: 1,
-      name: "brodypennell.com",
+      name: "Brody Pennell HVAC",
       domain: "brodypennell.com",
-      score: 29,
+      status: "active" as const,
+      score: 79,
+      created: new Date(2023, 1, 15),
+      updated: new Date(2023, 4, 27),
       organicTraffic: {
         value: "8.9K",
         change: "+58.95%",
-        trend: [32, 28, 35, 42, 50, 65, 80, 95, 100, 120, 130, 140]
+        trend: [32, 28, 35, 42, 50, 65, 80, 95, 100, 120, 130, 140],
+        history: generateHistoricalData(5600, 8900, 6)
       },
       organicKeywords: {
         value: "3.6K",
         change: "+1.71%",
-        trend: [3200, 3250, 3300, 3350, 3400, 3450, 3500, 3550, 3600, 3620, 3650, 3660]
+        trend: [3200, 3250, 3300, 3350, 3400, 3450, 3500, 3550, 3600, 3620, 3650, 3660],
+        history: generateHistoricalData(3200, 3600, 6)
       },
       backlinks: {
         value: "3.1K",
         change: "-10.6%",
-        trend: [3800, 3750, 3700, 3650, 3600, 3550, 3500, 3450, 3400, 3350, 3300, 3100]
-      }
+        trend: [3800, 3750, 3700, 3650, 3600, 3550, 3500, 3450, 3400, 3350, 3300, 3100],
+        history: generateHistoricalData(3500, 3100, 6)
+      },
+      keywords: generateKeywordData(15, "Brody Pennell"),
+      competitors: generateCompetitors("brodypennell.com"),
+      analyses: [
+        { id: 101, date: new Date(2023, 1, 15), score: 68, status: "completed" },
+        { id: 102, date: new Date(2023, 2, 20), score: 72, status: "completed" },
+        { id: 103, date: new Date(2023, 3, 18), score: 75, status: "completed" },
+        { id: 104, date: new Date(2023, 4, 27), score: 79, status: "completed" }
+      ]
     },
     {
       id: 2,
       name: "Home Allegiance",
       domain: "callhomeallegiance.com",
-      score: 14,
+      status: "in-progress" as const,
+      score: 64,
+      created: new Date(2022, 10, 8),
+      updated: new Date(2023, 3, 22),
       organicTraffic: {
         value: "432",
         change: "-7%",
-        trend: [480, 475, 470, 465, 460, 455, 450, 445, 440, 435, 432, 432]
+        trend: [480, 475, 470, 465, 460, 455, 450, 445, 440, 435, 432, 432],
+        history: generateHistoricalData(480, 432, 6)
       },
       organicKeywords: {
         value: "617",
         change: "+3.29%",
-        trend: [580, 585, 590, 595, 600, 605, 610, 615, 617, 617, 617, 617]
+        trend: [580, 585, 590, 595, 600, 605, 610, 615, 617, 617, 617, 617],
+        history: generateHistoricalData(580, 617, 6)
       },
       backlinks: {
         value: "131",
         change: "-1.5%",
-        trend: [135, 134, 133, 132, 132, 132, 131, 131, 131, 131, 131, 131]
-      }
+        trend: [135, 134, 133, 132, 132, 132, 131, 131, 131, 131, 131, 131],
+        history: generateHistoricalData(135, 131, 6)
+      },
+      keywords: generateKeywordData(12, "Home Allegiance"),
+      competitors: generateCompetitors("callhomeallegiance.com"),
+      analyses: [
+        { id: 201, date: new Date(2022, 10, 8), score: 52, status: "completed" },
+        { id: 202, date: new Date(2022, 11, 15), score: 55, status: "completed" },
+        { id: 203, date: new Date(2023, 0, 12), score: 59, status: "completed" },
+        { id: 204, date: new Date(2023, 1, 20), score: 62, status: "completed" },
+        { id: 205, date: new Date(2023, 3, 22), score: 64, status: "completed" }
+      ]
     },
     {
       id: 3,
-      name: "jaydorco.com",
+      name: "Jay Dorco Services",
       domain: "jaydorco.com",
-      score: 19,
+      status: "monitoring" as const,
+      score: 59,
+      created: new Date(2022, 8, 3),
+      updated: new Date(2023, 2, 14),
       organicTraffic: {
         value: "654",
         change: "-9.92%",
-        trend: [750, 740, 730, 720, 710, 700, 690, 680, 670, 660, 657, 654]
+        trend: [750, 740, 730, 720, 710, 700, 690, 680, 670, 660, 657, 654],
+        history: generateHistoricalData(750, 654, 6)
       },
       organicKeywords: {
         value: "277",
         change: "-5.14%",
-        trend: [300, 298, 295, 290, 285, 283, 280, 278, 278, 278, 277, 277]
+        trend: [300, 298, 295, 290, 285, 283, 280, 278, 278, 278, 277, 277],
+        history: generateHistoricalData(300, 277, 6)
       },
       backlinks: {
         value: "1.8K",
         change: "-25.04%",
-        trend: [2500, 2400, 2300, 2200, 2100, 2000, 1950, 1900, 1850, 1830, 1810, 1800]
-      }
+        trend: [2500, 2400, 2300, 2200, 2100, 2000, 1950, 1900, 1850, 1830, 1810, 1800],
+        history: generateHistoricalData(2500, 1800, 6)
+      },
+      keywords: generateKeywordData(10, "Jay Dorco"),
+      competitors: generateCompetitors("jaydorco.com"),
+      analyses: [
+        { id: 301, date: new Date(2022, 8, 3), score: 48, status: "completed" },
+        { id: 302, date: new Date(2022, 9, 20), score: 52, status: "completed" },
+        { id: 303, date: new Date(2022, 11, 8), score: 55, status: "completed" },
+        { id: 304, date: new Date(2023, 0, 15), score: 57, status: "completed" },
+        { id: 305, date: new Date(2023, 2, 14), score: 59, status: "completed" }
+      ]
+    },
+    {
+      id: 4,
+      name: "Absolute Comfort Heating",
+      domain: "absolutecomfort.co",
+      status: "paused" as const,
+      score: 45,
+      created: new Date(2022, 5, 12),
+      updated: new Date(2022, 11, 8),
+      organicTraffic: {
+        value: "321",
+        change: "-8.2%",
+        trend: generateTrendData(40, false, 4, 10),
+        history: generateHistoricalData(360, 321, 6)
+      },
+      organicKeywords: {
+        value: "512",
+        change: "-5.3%",
+        trend: generateTrendData(35, false, 3, 10),
+        history: generateHistoricalData(550, 512, 6)
+      },
+      backlinks: {
+        value: "184",
+        change: "-2.1%",
+        trend: generateTrendData(25, false, 2, 10),
+        history: generateHistoricalData(190, 184, 6)
+      },
+      keywords: generateKeywordData(8, "Absolute Comfort"),
+      competitors: generateCompetitors("absolutecomfort.co"),
+      analyses: [
+        { id: 401, date: new Date(2022, 5, 12), score: 40, status: "completed" },
+        { id: 402, date: new Date(2022, 7, 22), score: 42, status: "completed" },
+        { id: 403, date: new Date(2022, 9, 18), score: 44, status: "completed" },
+        { id: 404, date: new Date(2022, 11, 8), score: 45, status: "completed" }
+      ]
+    },
+    {
+      id: 5,
+      name: "Midwest Cooling Solutions",
+      domain: "midwestcooling.com",
+      status: "error" as const,
+      score: 32,
+      created: new Date(2023, 0, 5),
+      updated: new Date(2023, 1, 20),
+      organicTraffic: {
+        value: "247",
+        change: "-12.5%",
+        trend: generateTrendData(30, false, 5, 10),
+        history: generateHistoricalData(300, 247, 6)
+      },
+      organicKeywords: {
+        value: "376",
+        change: "-9.8%",
+        trend: generateTrendData(25, false, 4, 10),
+        history: generateHistoricalData(420, 376, 6)
+      },
+      backlinks: {
+        value: "95",
+        change: "-4.5%",
+        trend: generateTrendData(20, false, 3, 10),
+        history: generateHistoricalData(105, 95, 6)
+      },
+      keywords: generateKeywordData(6, "Midwest Cooling"),
+      competitors: generateCompetitors("midwestcooling.com"),
+      analyses: [
+        { id: 501, date: new Date(2023, 0, 5), score: 28, status: "completed" },
+        { id: 502, date: new Date(2023, 1, 20), score: 32, status: "completed" },
+        { id: 503, date: new Date(2023, 3, 10), score: 0, status: "error" }
+      ]
     }
   ];
 
@@ -819,17 +1157,13 @@ function UserProjectsList() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={project.id === 1 ? "text-green-600 bg-green-50" : "text-blue-600 bg-blue-50"}>
-                      {project.id === 1 ? "Active" : "In Progress"}
-                    </Badge>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <span className="sr-only">Menu</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="19" cy="12" r="1"/>
-                        <circle cx="5" cy="12" r="1"/>
-                      </svg>
-                    </Button>
+                    <StatusBadge 
+                      status={project.status} 
+                      onClick={() => {
+                        console.log(`Clicked status badge for ${project.name}`);
+                      }}
+                    />
+                    <ProjectActionsMenu projectId={project.id} />
                   </div>
                 </div>
                 
@@ -875,7 +1209,10 @@ function UserProjectsList() {
                       </div>
                       <MiniChart 
                         data={project.organicTraffic.trend} 
-                        isPositive={project.organicTraffic.change.startsWith('+')} 
+                        isPositive={project.organicTraffic.change.startsWith('+')}
+                        showTooltip={true}
+                        tooltipFormatter={(value) => value.toLocaleString()}
+                        unit=" visits"
                       />
                     </div>
                   </div>
@@ -895,7 +1232,10 @@ function UserProjectsList() {
                       </div>
                       <MiniChart 
                         data={project.organicKeywords.trend} 
-                        isPositive={project.organicKeywords.change.startsWith('+')} 
+                        isPositive={project.organicKeywords.change.startsWith('+')}
+                        showTooltip={true}
+                        tooltipFormatter={(value) => value.toLocaleString()}
+                        unit=" keywords"
                       />
                     </div>
                   </div>
@@ -915,7 +1255,10 @@ function UserProjectsList() {
                       </div>
                       <MiniChart 
                         data={project.backlinks.trend} 
-                        isPositive={project.backlinks.change.startsWith('+')} 
+                        isPositive={project.backlinks.change.startsWith('+')}
+                        showTooltip={true}
+                        tooltipFormatter={(value) => value.toLocaleString()}
+                        unit=" links"
                       />
                     </div>
                   </div>
@@ -985,9 +1328,12 @@ function UserProjectsList() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="outline" className={project.id === 1 ? "text-green-600 bg-green-50" : project.id === 2 ? "text-blue-600 bg-blue-50" : "text-yellow-600 bg-yellow-50"}>
-                        {project.id === 1 ? "Active" : project.id === 2 ? "In Progress" : "Monitoring"}
-                      </Badge>
+                      <StatusBadge 
+                        status={project.status} 
+                        onClick={() => {
+                          console.log(`Clicked status badge for ${project.name} in table view`);
+                        }}
+                      />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -1036,13 +1382,7 @@ function UserProjectsList() {
                           <LineChart className="h-3.5 w-3.5 mr-1" />
                           Analytics
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="1"/>
-                            <circle cx="19" cy="12" r="1"/>
-                            <circle cx="5" cy="12" r="1"/>
-                          </svg>
-                        </Button>
+                        <ProjectActionsMenu projectId={project.id} />
                       </div>
                     </td>
                   </tr>
