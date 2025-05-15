@@ -16,6 +16,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+// Import sample documents
+import summaryPdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Summary.pdf';
+import onPagePdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - On-Page.pdf';
+import structureNavigationPdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Structure & Navigation.pdf';
+import contactPagePdf from '@assets/Dinomite Heating & Cooling - Initial SEO Audit - YYYY-MM-DD - Contact Page.pdf';
+
 // Summary card component
 interface SummaryCardProps {
   title: string;
@@ -97,6 +103,7 @@ const PdfAnalyzerPage: React.FC = () => {
     setSummary(null);
     setExtractedText('');
     setProgress(0);
+    setProcessingStep('');
     
     // Check if any files were accepted
     if (acceptedFiles.length === 0) {
@@ -113,6 +120,7 @@ const PdfAnalyzerPage: React.FC = () => {
     
     setFile(file);
     setFileType(fileType);
+    setProcessingStep('File loaded successfully');
     
     // Create previews
     if (fileType === 'pdf') {
@@ -497,20 +505,25 @@ const PdfAnalyzerPage: React.FC = () => {
     setIsProcessing(true);
     setError(null);
     setProgress(0);
+    setProcessingStep('Starting document analysis...');
     
     try {
       let text = '';
       if (fileType === 'pdf') {
+        setProcessingStep('Extracting text from PDF document...');
         text = await extractTextFromPdf(file);
       } else if (fileType === 'image') {
+        setProcessingStep('Performing OCR on image...');
         text = await extractTextFromImage(file);
       }
       
       setExtractedText(text);
+      setProcessingStep('Identifying SEO elements...');
       
       // Initial analysis with local processing
       const analysisSummary = analyzeText(text);
       setProgress(70);
+      setProcessingStep('Initial analysis complete...');
       
       try {
         // Get chart data for AI analysis
@@ -558,6 +571,7 @@ const PdfAnalyzerPage: React.FC = () => {
       
       // Update with final results including AI analysis
       setSummary(analysisSummary);
+      setProcessingStep('Analysis complete!');
       
       // Complete
       setProgress(100);
@@ -731,7 +745,7 @@ const PdfAnalyzerPage: React.FC = () => {
             <Card className="p-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <p className="text-sm font-medium">Processing document...</p>
+                  <p className="text-sm font-medium">{processingStep || 'Processing document...'}</p>
                   <span className="text-sm text-muted-foreground">{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
