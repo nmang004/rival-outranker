@@ -8,7 +8,7 @@ interface PageHeaderProps {
   actions?: React.ReactNode;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({
+const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   description,
   icon,
@@ -31,3 +31,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     </div>
   );
 };
+
+export default PageHeader;
+export { PageHeader };

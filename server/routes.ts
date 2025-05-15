@@ -1699,25 +1699,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Try to use Google Ads API first, fall back to DataForSEO if needed
+      // Use only Google Ads API for keyword data - no fallback
       try {
         // Check if Google Ads API is configured
         if (isGoogleAdsApiReady()) {
           console.log(`Using Google Ads API for keyword data: "${keyword}"`);
           keywordData = await getGoogleAdsKeywordData(keyword, locationCode);
         } else {
-          // If Google Ads API is not configured, check if we need to ask for API credentials
+          // If Google Ads API is not configured, notify the user
           const requiredSecrets = getRequiredSecrets();
           console.log(`Google Ads API not configured, missing credentials: ${requiredSecrets.join(', ')}`);
           
-          // Fall back to DataForSEO
-          console.log(`Falling back to DataForSEO for keyword data: "${keyword}"`);
-          keywordData = await getDataForSeoKeywordData(keyword, locationCode);
+          // Return error response with required credentials
+          return res.status(503).json({ 
+            message: "Google Ads API is not configured",
+            requiredSecrets: requiredSecrets 
+          });
         }
       } catch (apiError) {
-        console.error('Error using Google Ads API, falling back to DataForSEO:', apiError);
-        // If Google Ads API fails, try DataForSEO as fallback
-        keywordData = await getDataForSeoKeywordData(keyword, locationCode);
+        console.error('Error using Google Ads API:', apiError);
+        // Return error as we're not using fallbacks
+        return res.status(503).json({ 
+          message: "Error accessing Google Ads API",
+          error: apiError instanceof Error ? apiError.message : String(apiError)
+        });
       }
       
       // Ensure related keywords array exists
@@ -1793,7 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // DataForSEO API endpoint to get keyword suggestions
+  // Google Ads API endpoint to get keyword suggestions
   app.post("/api/keyword-suggestions", async (req: Request, res: Response) => {
     try {
       const { keyword, location } = req.body;
@@ -1803,17 +1808,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Keyword suggestions requested for: "${keyword}"`);
       
-      // Default to US location if not specified (2840 is US in DataForSEO)
+      // Default to US location if not specified (2840 is US in Google Ads API)
       const locationCode = location || 2840;
       
-      // Get keyword suggestions from DataForSEO
-      const suggestions = await getKeywordSuggestions(keyword, locationCode);
+      // Check if Google Ads API is configured
+      if (!isGoogleAdsApiReady()) {
+        const requiredSecrets = getRequiredSecrets();
+        return res.status(503).json({ 
+          message: "Google Ads API is not configured",
+          requiredSecrets: requiredSecrets 
+        });
+      }
+      
+      // Get keyword suggestions from Google Ads API
+      const suggestions = await getGoogleAdsKeywordSuggestions(keyword, locationCode);
       
       res.json(suggestions);
     } catch (error) {
-      console.error('Error fetching keyword suggestions:', error);
-      res.status(500).json({ 
-        message: "Failed to fetch keyword suggestions",
+      console.error('Error fetching keyword suggestions from Google Ads API:', error);
+      res.status(503).json({ 
+        message: "Failed to fetch keyword suggestions from Google Ads API",
         error: error instanceof Error ? error.message : String(error)
       });
     }
@@ -1829,19 +1843,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const userId = req.user.claims.sub;
       
-      // Try to use the DataForSEO API first
+      // Use only Google Ads API for keyword suggestions
       try {
-        console.log(`Getting keyword suggestions from DataForSEO for: "${baseKeyword}"`);
-        const dataForSeoSuggestions = await getKeywordSuggestions(baseKeyword);
+        // Check if Google Ads API is configured
+        if (!isGoogleAdsApiReady()) {
+          const requiredSecrets = getRequiredSecrets();
+          return res.status(503).json({ 
+            message: "Google Ads API is not configured",
+            requiredSecrets: requiredSecrets 
+          });
+        }
+        
+        console.log(`Getting keyword suggestions from Google Ads API for: "${baseKeyword}"`);
+        const googleAdsSuggestions = await getGoogleAdsKeywordSuggestions(baseKeyword);
         
         // Transform to the expected format
-        const formattedSuggestions = dataForSeoSuggestions.map((suggestion: any) => ({
+        const formattedSuggestions = googleAdsSuggestions.map((suggestion: any) => ({
           userId,
           baseKeyword,
           suggestedKeyword: suggestion.keyword,
-          searchVolume: suggestion.volume || 0,
+          searchVolume: suggestion.searchVolume || 0,
           difficulty: suggestion.difficulty || 0,
-          source: 'DataForSEO'
+          source: 'Google Ads API'
         }));
         
         // Store suggestions in the database
@@ -1857,26 +1880,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         return res.json(storedSuggestions);
-      } catch (dataForSeoError) {
-        console.error('DataForSEO API error, falling back to legacy method:', dataForSeoError);
+      } catch (googleAdsError) {
+        console.error('Google Ads API error:', googleAdsError);
+        return res.status(503).json({ 
+          message: "Failed to get keyword suggestions from Google Ads API",
+          error: googleAdsError instanceof Error ? googleAdsError.message : String(googleAdsError)
+        });
       }
       
-      // Fall back to the legacy method if DataForSEO fails
-      const suggestions = await keywordService.generateSuggestions(userId, baseKeyword);
-      
-      // Store suggestions in the database
-      const storedSuggestions = [];
-      for (const suggestion of suggestions) {
-        try {
-          const storedSuggestion = await storage.createKeywordSuggestion(suggestion);
-          storedSuggestions.push(storedSuggestion);
-        } catch (error) {
-          console.error('Error storing keyword suggestion:', error);
-          // Continue with other suggestions even if one fails
-        }
-      }
-      
-      res.json(storedSuggestions);
+      // No fallback methods - we only use Google Ads API now
+      return res.status(503).json({ 
+        message: "Google Ads API is required for keyword suggestions",
+        requiredSecrets: getRequiredSecrets()
+      });
     } catch (error) {
       console.error('Error generating keyword suggestions:', error);
       res.status(500).json({ 
