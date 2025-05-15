@@ -616,7 +616,19 @@ const PdfAnalyzerPage: React.FC = () => {
       
       const blob = await response.blob();
       const fileName = sampleName || 'sample-document.pdf';
-      const fileObj = new File([blob], fileName, { type: 'application/pdf' } as FilePropertyBag);
+      
+      // Create a file object using the Blob API
+      const fileObj = blob as unknown as File;
+      // Add name property to the blob
+      Object.defineProperty(fileObj, 'name', {
+        value: fileName,
+        writable: false
+      });
+      // Ensure it has the right type
+      Object.defineProperty(fileObj, 'type', {
+        value: 'application/pdf',
+        writable: false
+      });
       
       // Process as normal PDF
       setFile(fileObj);
@@ -775,57 +787,57 @@ const PdfAnalyzerPage: React.FC = () => {
                   <p className="text-xs text-muted-foreground">
                     Supports PDF, PNG, JPG, JPEG and other image formats
                   </p>
-                  
-                  <div className="mt-4 border-t pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="gap-2 text-blue-600"
-                      onClick={() => setShowSamples(prev => !prev)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      {showSamples ? 'Hide Sample Documents' : 'Try Sample Documents'}
-                    </Button>
-                    
-                    {showSamples && (
-                      <div className="mt-4 grid gap-3">
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                          onClick={() => loadSampleDocument(summaryPdf, 'SEO Audit - Summary.pdf')}
-                        >
-                          <File className="h-4 w-4 text-blue-600" />
-                          SEO Audit Summary
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                          onClick={() => loadSampleDocument(onPagePdf, 'SEO Audit - On-Page.pdf')}
-                        >
-                          <File className="h-4 w-4 text-blue-600" />
-                          On-Page SEO Analysis
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                          onClick={() => loadSampleDocument(structureNavigationPdf, 'SEO Audit - Structure & Navigation.pdf')}
-                        >
-                          <File className="h-4 w-4 text-blue-600" />
-                          Structure & Navigation Analysis
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
-                          onClick={() => loadSampleDocument(contactPagePdf, 'SEO Audit - Contact Page.pdf')}
-                        >
-                          <File className="h-4 w-4 text-blue-600" />
-                          Contact Page Analysis
-                        </Button>
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
+            </div>
+          </Card>
+          
+          {/* Sample documents section */}
+          <Card className="p-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Sample Documents</h3>
+              <p className="text-sm text-muted-foreground">
+                Don't have an SEO audit PDF? Try analyzing one of our sample documents:
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                  onClick={() => loadSampleDocument(summaryPdf, 'SEO Audit - Summary.pdf')}
+                  disabled={isProcessing}
+                >
+                  <File className="h-4 w-4 text-blue-600" />
+                  SEO Audit Summary
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                  onClick={() => loadSampleDocument(onPagePdf, 'SEO Audit - On-Page.pdf')}
+                  disabled={isProcessing}
+                >
+                  <File className="h-4 w-4 text-blue-600" />
+                  On-Page SEO Analysis
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                  onClick={() => loadSampleDocument(structureNavigationPdf, 'SEO Audit - Structure & Navigation.pdf')}
+                  disabled={isProcessing}
+                >
+                  <File className="h-4 w-4 text-blue-600" />
+                  Structure & Navigation Analysis
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                  onClick={() => loadSampleDocument(contactPagePdf, 'SEO Audit - Contact Page.pdf')}
+                  disabled={isProcessing}
+                >
+                  <File className="h-4 w-4 text-blue-600" />
+                  Contact Page Analysis
+                </Button>
+              </div>
             </div>
           </Card>
           
