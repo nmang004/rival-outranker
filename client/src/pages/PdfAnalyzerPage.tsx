@@ -78,6 +78,7 @@ const PdfAnalyzerPage: React.FC = () => {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showSamples, setShowSamples] = useState<boolean>(false);
+  const [processingStep, setProcessingStep] = useState<string>('');
 
   // Function to determine file type
   const determineFileType = (file: File): 'pdf' | 'image' | null => {
@@ -642,6 +643,29 @@ const PdfAnalyzerPage: React.FC = () => {
                       {(file.size / 1024 / 1024).toFixed(2)} MB • {fileType === 'pdf' ? 'PDF Document' : 'Image File'}
                     </p>
                   </div>
+                  
+                  {/* Document preview */}
+                  {fileType === 'pdf' && pdfPreviewUrl && (
+                    <div className="mt-4 border rounded-md overflow-hidden h-[300px]">
+                      <object 
+                        data={pdfPreviewUrl} 
+                        type="application/pdf"
+                        className="w-full h-full"
+                      >
+                        <p>PDF preview not available</p>
+                      </object>
+                    </div>
+                  )}
+                  
+                  {fileType === 'image' && imagePreview && (
+                    <div className="mt-4 border rounded-md overflow-hidden">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="max-w-full h-auto max-h-[300px] mx-auto"
+                      />
+                    </div>
+                  )}
                   <div className="flex gap-2 justify-center">
                     <Button 
                       variant="outline" 
@@ -950,6 +974,71 @@ const PdfAnalyzerPage: React.FC = () => {
               <TabsTrigger value="keywords">Keywords</TabsTrigger>
               <TabsTrigger value="extracted-text">Extracted Text</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="ai-analysis" className="space-y-4">
+              {summary.aiAnalysis ? (
+                <Card className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">AI-Powered SEO Analysis</h3>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      Using OpenAI
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {/* General insights section */}
+                    <div>
+                      <h4 className="font-medium text-base mb-2">SEO Insights</h4>
+                      <div className="bg-slate-50 p-4 rounded-md whitespace-pre-line text-sm">
+                        {summary.aiAnalysis.insights}
+                      </div>
+                    </div>
+                    
+                    {/* Chart insights if available */}
+                    {summary.aiAnalysis.chartInsights && (
+                      <div>
+                        <h4 className="font-medium text-base mb-2">Chart Analysis</h4>
+                        <div className="bg-purple-50 p-4 rounded-md whitespace-pre-line text-sm">
+                          {summary.aiAnalysis.chartInsights}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* AI recommendations section */}
+                    <div>
+                      <h4 className="font-medium text-base mb-2">Priority Recommendations</h4>
+                      {summary.aiAnalysis.recommendations && 
+                      summary.aiAnalysis.recommendations.length > 0 ? (
+                        <div className="space-y-3">
+                          {summary.aiAnalysis.recommendations.map((rec: string, index: number) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <div className="min-w-7 h-7 flex items-center justify-center rounded-full bg-blue-100 text-blue-700 font-medium">
+                                {index + 1}
+                              </div>
+                              <p className="text-sm">{rec}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm">
+                          No specific recommendations available.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 text-amber-600 mb-4">
+                    <AlertTriangle className="h-5 w-5" />
+                    <h3 className="text-lg font-medium">AI Analysis Unavailable</h3>
+                  </div>
+                  <p className="text-muted-foreground">
+                    The AI-powered analysis could not be completed. This could be due to API limitations or connectivity issues.
+                  </p>
+                </Card>
+              )}
+            </TabsContent>
             
             <TabsContent value="recommendations" className="space-y-4">
               <Card className="p-6">
