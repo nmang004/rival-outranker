@@ -1,4 +1,4 @@
-import { apiRequest } from "@lib/queryClient";
+import { apiRequest } from "./queryClient";
 
 /**
  * Check the status of Google Ads API authentication

@@ -21,13 +21,6 @@ import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
-import { 
-  getKeywordData as getDataForSeoKeywordData, 
-  getKeywordSuggestions as getDataForSeoKeywordSuggestions,
-  getCompetitorRankings,
-  checkApiHealth 
-} from "./services/dataForSeoService";
-
 import {
   getKeywordData as getGoogleAdsKeywordData,
   getKeywordSuggestions as getGoogleAdsKeywordSuggestions,
