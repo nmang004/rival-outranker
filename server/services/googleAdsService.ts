@@ -1,4 +1,5 @@
-import { GoogleAdsApi, enums, Query, Customer, KeywordPlanIdea } from 'google-ads-api';
+import { GoogleAdsApi, enums } from 'google-ads-api';
+import axios from 'axios';
 import dotenv from 'dotenv';
 import { KeywordData, RelatedKeyword } from './dataForSeoService';
 
@@ -89,10 +90,10 @@ try {
 
     console.log('Google Ads API client initialized successfully');
     
-    // Test the connection with a simple request
+    // Test the connection with a direct REST API call
     const testConnection = async () => {
       try {
-        console.log('Testing Google Ads API connection...');
+        console.log('Testing Google Ads API connection with direct REST API call...');
         
         // First check if our customer/client is properly initialized
         if (!customer) {
@@ -106,74 +107,137 @@ try {
           console.log(` - ${prop}`);
         }
         
-        // The REST beta version might have a different structure
-        // Let's try to find services in a different way
-        let keywordPlanIdeaService;
-        
-        if (typeof customer.keywordPlanIdeaService === 'function') {
-          console.log('keywordPlanIdeaService is a function, calling it');
-          keywordPlanIdeaService = customer.keywordPlanIdeaService();
-        } else if (customer.keywordPlanIdeaService) {
-          console.log('keywordPlanIdeaService is a property, using directly');
-          keywordPlanIdeaService = customer.keywordPlanIdeaService;
-        } else if (typeof customer.getService === 'function') {
-          console.log('Using customer.getService() to get keywordPlanIdeaService');
-          try {
-            keywordPlanIdeaService = customer.getService('KeywordPlanIdeaService');
-          } catch (serviceError) {
-            console.error('Error getting service via getService():', serviceError);
-          }
-        } else {
-          console.error('keywordPlanIdeaService not available on customer');
-          console.error('REST beta API may have a different structure than expected');
-          return;
-        }
-        
-        console.log('Using test keywords:', JSON.stringify(TEST_KEYWORDS));
-        
+        // For the REST beta version, we'll need to make a direct API call
+        // instead of using the library's methods
         try {
-          console.log('Trying API test with simple keyword "test"...');
-          const simpleTest = await keywordPlanIdeaService.generateKeywordIdeas({
-            keywordSeed: {
-              keywords: ["test"],
-            },
-            geoTargetConstants: [`geoTargetConstants/2840`], // United States
-            keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
-          });
+          // Get an access token from the refresh token
+          console.log('Getting access token from refresh token...');
           
-          console.log(`Simple test result: ${simpleTest ? 'Successful' : 'Failed'}`);
-          if (simpleTest && simpleTest.results) {
-            console.log(`Found ${simpleTest.results.length} results in simple test`);
+          // Check if our customer object has a method to get access token
+          let accessToken = null;
+          if (customer.customerOptions && customer.customerOptions.refresh_token) {
+            console.log('Using refresh token from customer options');
+            
+            // Make a token request to Google's OAuth endpoint
+            const tokenResponse = await axios.post(
+              'https://oauth2.googleapis.com/token',
+              {
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+                refresh_token: REFRESH_TOKEN,
+                grant_type: 'refresh_token',
+              },
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              }
+            );
+            
+            if (tokenResponse.data && tokenResponse.data.access_token) {
+              accessToken = tokenResponse.data.access_token;
+              console.log('Successfully obtained access token');
+            } else {
+              console.error('Failed to get access token from refresh token');
+              return;
+            }
+          } else {
+            console.error('No refresh token available in customer options');
             return;
           }
-        } catch (simpleError) {
-          console.error('Simple test with "test" keyword failed:', simpleError);
-        }
-        
-        // Try with more keywords if the first test failed
-        try {
-          console.log('Trying API test with multiple test keywords...');
-          const test = await keywordPlanIdeaService.generateKeywordIdeas({
-            keywordSeed: {
-              keywords: TEST_KEYWORDS,
-            },
-            geoTargetConstants: [`geoTargetConstants/2840`], // United States
-            keywordPlanNetwork: enums.KeywordPlanNetwork.GOOGLE_SEARCH_AND_PARTNERS,
-          });
           
-          console.log(`Connection test result: ${test ? 'Successful' : 'Failed'}`);
-          if (test && test.results) {
-            console.log(`Found ${test.results.length} results in connection test`);
+          // Make a direct REST API call to the Google Ads API
+          console.log('Making direct REST API call to Google Ads API...');
+          
+          // Try a few different API versions, endpoints, and customer ID formats
+          const apiVersions = ['v19', 'v18', 'v17', 'v16'];
+          const customerIdFormats = [
+            CUSTOMER_ID, // Original no dashes
+            CUSTOMER_ID.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'), // With dashes
+            CUSTOMER_ID.replace(/(\d{3})(\d{3})(\d{4})/, '$1$2$3'), // All together
+          ];
+          
+          // Also try different API URL structures
+          const endpointStructures = [
+            // Standard endpoint format
+            (ver, custId) => `https://googleads.googleapis.com/${ver}/customers/${custId}/keywordPlanIdeas:generateKeywordIdeas`,
+            // Alternative formats that might work
+            (ver, custId) => `https://googleads.googleapis.com/${ver}/customers/${custId}:generateKeywordIdeas`,
+            (ver, custId) => `https://googleads.googleapis.com/${ver}/keywords:generateIdeas?customerId=${custId}`,
+            (ver, custId) => `https://googleads.googleapis.com/${ver}/keywordPlan:generateKeywordIdeas?customerId=${custId}`
+          ];
+          
+          let success = false;
+          
+          // Try all combinations
+          for (const version of apiVersions) {
+            if (success) break;
+            
+            for (const custId of customerIdFormats) {
+              if (success) break;
+              
+              for (const endpointFn of endpointStructures) {
+                if (success) break;
+                
+                const apiUrl = endpointFn(version, custId);
+                console.log(`Trying API URL: ${apiUrl}`);
+            
+                try {
+                  const response = await axios.post(
+                    apiUrl,
+                    {
+                      keywordSeed: {
+                        keywords: ["test"]
+                      },
+                      geoTargetConstants: ["geoTargetConstants/2840"], // United States
+                      keywordPlanNetwork: "GOOGLE_SEARCH_AND_PARTNERS"
+                    },
+                    {
+                      headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'developer-token': DEVELOPER_TOKEN,
+                        'Content-Type': 'application/json',
+                      }
+                    }
+                  );
+                  
+                  console.log(`API ${version} ${custId} response status:`, response.status);
+                  console.log(`API ${version} ${custId} response data:`, JSON.stringify(response.data, null, 2).substring(0, 500) + '...');
+                  
+                  console.log(`Connection test successful with API version ${version} and customer ID ${custId}!`);
+                  success = true;
+                  break;
+                } catch (versionError: any) {
+                  console.error(`API ${version} ${custId} call failed:`);
+                  if (versionError.response) {
+                    console.error(`Status: ${versionError.response.status}`);
+                    if (versionError.response.status !== 404) {
+                      // Only log detailed error for non-404 responses (which are expected for some versions)
+                      console.error(`Error data: ${JSON.stringify(versionError.response.data, null, 2)}`);
+                    }
+                  } else {
+                    console.error(`Error: ${versionError.message}`);
+                  }
+                }
+              }
+            }
           }
-        } catch (testError) {
-          console.error('Multiple keyword test failed:');
-          if (testError instanceof Error) {
-            console.error(`- Error name: ${testError.name}`);
-            console.error(`- Error message: ${testError.message}`);
-            console.error(`- Stack trace: ${testError.stack}`);
+          
+          if (!success) {
+            console.error('All API version attempts failed');
+          }
+        } catch (apiError: any) {
+          console.error('Direct API call failed:');
+          if (apiError.response) {
+            console.error(`Status: ${apiError.response.status}`);
+            console.error(`Data: ${JSON.stringify(apiError.response.data, null, 2)}`);
+            console.error(`Headers: ${JSON.stringify(apiError.response.headers, null, 2)}`);
+          } else if (apiError.request) {
+            console.error('No response received:', apiError.request);
           } else {
-            console.error(JSON.stringify(testError, null, 2));
+            console.error('Error:', apiError.message);
           }
+          console.error('Error stack:', apiError.stack);
         }
       } catch (outerError) {
         console.error('Google Ads API connection test failed completely:');
