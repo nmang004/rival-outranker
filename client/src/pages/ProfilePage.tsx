@@ -981,7 +981,13 @@ function UserProjectsList() {
 
   // Calculate the total stats from sample projects
   const totalProjects = sampleProjects.length;
-  const totalAnalyses = totalProjects * 2; // Just for mock data
+  
+  // Calculate total analyses from project analyses
+  const totalAnalyses = sampleProjects.reduce((sum, project) => {
+    return sum + (project.analyses?.length || 0);
+  }, 0);
+  
+  // Calculate total keywords tracked
   const totalKeywords = sampleProjects.reduce((sum, project) => {
     const keywordValue = project.organicKeywords.value;
     const numericValue = typeof keywordValue === 'string' 
@@ -990,6 +996,7 @@ function UserProjectsList() {
     return sum + numericValue;
   }, 0);
 
+  // Filter projects based on search input
   const filteredProjects = sampleProjects.filter(project => 
     project.name.toLowerCase().includes(filterValue.toLowerCase()) || 
     project.domain.toLowerCase().includes(filterValue.toLowerCase())
@@ -997,6 +1004,18 @@ function UserProjectsList() {
 
   return (
     <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-semibold">My Projects</h2>
+          <p className="text-sm text-muted-foreground">View and manage all your SEO projects.</p>
+        </div>
+        <Button className="bg-[#52bb7a] hover:bg-[#43a067]">
+          <ListChecks className="mr-2 h-4 w-4" />
+          Create Project
+        </Button>
+      </div>
+    
       {/* Dashboard summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
@@ -1005,14 +1024,14 @@ function UserProjectsList() {
               <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
               <h3 className="text-3xl font-bold mt-1">{totalProjects}</h3>
             </div>
-            <div className="p-2 bg-primary/10 rounded-full">
-              <ListChecks className="h-5 w-5 text-primary" />
+            <div className="p-2 bg-[#e6f5ec] rounded-full">
+              <ListChecks className="h-5 w-5 text-[#52bb7a]" />
             </div>
           </div>
           <div className="mt-4">
             <div className="w-full h-1 bg-gray-100 rounded-full">
               <div 
-                className="h-1 bg-primary rounded-full" 
+                className="h-1 bg-[#52bb7a] rounded-full" 
                 style={{ width: `${Math.min(100, totalProjects * 5)}%` }}
               ></div>
             </div>
@@ -1028,8 +1047,8 @@ function UserProjectsList() {
               <p className="text-sm font-medium text-muted-foreground">Total Analyses</p>
               <h3 className="text-3xl font-bold mt-1">{totalAnalyses}</h3>
             </div>
-            <div className="p-2 bg-blue-100 rounded-full">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-[#e1f0ff] rounded-full">
+              <BarChart3 className="h-5 w-5 text-[#3694ff]" />
             </div>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2">
@@ -1054,8 +1073,8 @@ function UserProjectsList() {
               <p className="text-sm font-medium text-muted-foreground">Tracked Keywords</p>
               <h3 className="text-3xl font-bold mt-1">{totalKeywords.toLocaleString()}</h3>
             </div>
-            <div className="p-2 bg-green-100 rounded-full">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-[#e9f9ee] rounded-full">
+              <TrendingUp className="h-5 w-5 text-[#38c173]" />
             </div>
           </div>
           <div className="mt-4">
@@ -1074,14 +1093,14 @@ function UserProjectsList() {
                 >
                   <defs>
                     <linearGradient id="keywordGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#38c173" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#38c173" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <Area 
                     type="monotone" 
                     dataKey="value" 
-                    stroke="#10b981" 
+                    stroke="#38c173" 
                     strokeWidth={2}
                     fill="url(#keywordGradient)" 
                   />
@@ -1092,7 +1111,7 @@ function UserProjectsList() {
         </div>
       </div>
       
-      {/* Page header with controls */}
+      {/* Search and filter controls */}
       <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex-1">
@@ -1109,15 +1128,15 @@ function UserProjectsList() {
               <input 
                 type="text" 
                 placeholder="Search projects..." 
-                className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary" 
+                className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#52bb7a]" 
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
               />
             </div>
           </div>
           <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-            <div className="flex items-center">
-              <select className="mr-2 py-2 px-3 rounded-md border border-gray-300 text-sm">
+            <div className="flex items-center gap-2">
+              <select className="py-2 px-3 rounded-md border border-gray-300 text-sm">
                 <option value="all">All Projects</option>
                 <option value="active">Active</option>
                 <option value="paused">Paused</option>
@@ -1127,20 +1146,35 @@ function UserProjectsList() {
                 <option value="name">Sort by Name</option>
                 <option value="score">Sort by Score</option>
               </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="whitespace-nowrap">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Export
-              </Button>
-              <Button size="sm" className="whitespace-nowrap">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                New Project
-              </Button>
+              <div className="flex bg-muted rounded-md p-0.5">
+                <Button 
+                  size="sm" 
+                  variant={dashboardView === "grid" ? "default" : "ghost"} 
+                  className="rounded-sm h-8 px-2.5"
+                  onClick={() => setDashboardView("grid")}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <rect width="7" height="7" x="3" y="3" rx="1" />
+                    <rect width="7" height="7" x="14" y="3" rx="1" />
+                    <rect width="7" height="7" x="14" y="14" rx="1" />
+                    <rect width="7" height="7" x="3" y="14" rx="1" />
+                  </svg>
+                  Grid
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={dashboardView === "table" ? "default" : "ghost"} 
+                  className="rounded-sm h-8 px-2.5"
+                  onClick={() => setDashboardView("table")}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <path d="M3 7h18" />
+                    <path d="M3 12h18" />
+                    <path d="M3 17h18" />
+                  </svg>
+                  Table
+                </Button>
+              </div>
             </div>
           </div>
         </div>
