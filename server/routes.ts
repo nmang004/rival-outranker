@@ -16,6 +16,7 @@ import { fromZodError } from "zod-validation-error";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { keywordRouter } from "./routes/keywords";
+import { googleAdsAuthRouter } from "./routes/googleAdsAuth";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
