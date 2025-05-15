@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image, Loader2, Code, Globe, Search, Layers, Share2, MapPin } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Configure PDF.js worker
@@ -732,17 +732,20 @@ const PdfAnalyzerPage: React.FC = () => {
                   <div>
                     <h4 className="font-medium mb-2">Keyword Mentions</h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {Object.entries(summary.keywordStats).map(([keyword, count]: [string, number]) => (
-                        <div key={keyword} className="bg-gray-50 rounded p-3">
-                          <p className="font-medium text-sm">{keyword}</p>
-                          <div className="flex justify-between items-center mt-1">
-                            <span className="text-xl font-bold">{count}</span>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-800">
-                              {count > 0 ? 'Found' : 'Not Found'}
-                            </Badge>
+                      {Object.entries(summary.keywordStats).map(entry => {
+                        const [keyword, count] = entry as [string, number];
+                        return (
+                          <div key={keyword} className="bg-gray-50 rounded p-3">
+                            <p className="font-medium text-sm">{keyword}</p>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-xl font-bold">{count}</span>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                                {count > 0 ? 'Found' : 'Not Found'}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   
