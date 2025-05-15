@@ -3,9 +3,12 @@ import http from 'http';
 import url from 'url';
 import open from 'open';
 import destroyer from 'server-destroy';
+import * as dotenv from 'dotenv';
 
-// Use your Google OAuth credentials
-// Note: These will be replaced with your actual credentials by the dev tool
+// Load environment variables from .env file
+dotenv.config();
+
+// Use your Google OAuth credentials from .env
 const CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET;
 const REDIRECT_URI = 'http://localhost:3000/oauth2callback';
