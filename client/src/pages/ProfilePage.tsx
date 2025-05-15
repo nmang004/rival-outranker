@@ -378,7 +378,7 @@ function UserProjectsList() {
         </div>
         <h3 className="text-lg font-medium mb-2">No projects yet</h3>
         <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-          Projects help you organize multiple analyses for easier tracking and comparison.
+          Projects help you organize multiple websites for easier tracking and comparison of SEO metrics.
         </p>
         <Button variant="outline">
           <ListChecks className="mr-2 h-4 w-4" />
@@ -388,36 +388,187 @@ function UserProjectsList() {
     );
   }
 
+  // Sample project data based on the reference image
+  const sampleProjects = [
+    {
+      id: 1,
+      name: "brodypennell.com",
+      domain: "brodypennell.com",
+      score: 29,
+      organicTraffic: {
+        value: "8.9K",
+        change: "+58.95%"
+      },
+      organicKeywords: {
+        value: "3.6K",
+        change: "+1.71%"
+      },
+      backlinks: {
+        value: "3.1K",
+        change: "-10.6%"
+      }
+    },
+    {
+      id: 2,
+      name: "Home Allegiance",
+      domain: "callhomeallegiance.com",
+      score: 14,
+      organicTraffic: {
+        value: "432",
+        change: "-7%"
+      },
+      organicKeywords: {
+        value: "617",
+        change: "+3.29%"
+      },
+      backlinks: {
+        value: "131",
+        change: "-1.5%"
+      }
+    },
+    {
+      id: 3,
+      name: "jaydorco.com",
+      domain: "jaydorco.com",
+      score: 19,
+      organicTraffic: {
+        value: "654",
+        change: "-9.92%"
+      },
+      organicKeywords: {
+        value: "277",
+        change: "-5.14%"
+      },
+      backlinks: {
+        value: "1.8K",
+        change: "-25.04%"
+      }
+    }
+  ];
+
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* This would be populated with actual projects */}
-          {[1, 2].map((i) => (
-            <div key={i} className="bg-muted/30 p-4 rounded-lg border border-muted hover:border-primary/30 hover:shadow-md transition-all">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="font-medium">Project {i}</h3>
-                <Badge variant="outline" className="text-xs">
-                  {i === 1 ? '3 analyses' : '2 analyses'}
-                </Badge>
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+        <div>
+          <h3 className="text-lg font-medium">SEO Projects</h3>
+          <p className="text-sm text-muted-foreground">Show filters</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-muted-foreground">Table view</div>
+          <Button variant="outline" size="sm">Share</Button>
+          <Button size="sm" className="flex items-center gap-1.5">
+            <span className="hidden sm:inline">Create SEO Project</span>
+            <span className="sm:hidden">+ Project</span>
+          </Button>
+        </div>
+      </div>
+      
+      {/* Projects list */}
+      <div className="space-y-4">
+        {sampleProjects.map((project) => (
+          <div 
+            key={project.id} 
+            className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all hover:shadow-md"
+          >
+            <div className="p-4 sm:p-6">
+              {/* Project header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-primary">{project.name}</span>
+                      <span className="text-xs text-muted-foreground">{project.domain}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">AScore: {project.score}</span>
+                    </div>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <span className="sr-only">Menu</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <circle cx="12" cy="12" r="1"/>
+                    <circle cx="19" cy="12" r="1"/>
+                    <circle cx="5" cy="12" r="1"/>
+                  </svg>
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {i === 1 
-                  ? 'Tracking SEO progress for example.com and related sites' 
-                  : 'Competitive analysis for business sector'
-                }
-              </p>
-              <div className="mt-4 pt-3 border-t border-muted flex justify-between">
-                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground">
-                  Last updated: May {i + 5}, 2025
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 px-2">
-                  <ChevronRight className="h-3.5 w-3.5 mr-1" />
-                  View
-                </Button>
+              
+              {/* Project metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Site Health</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xl font-bold">{project.id === 1 ? '77%' : project.id === 2 ? '90%' : '85%'}</div>
+                    <div className={`text-xs ${project.id === 1 ? 'text-muted-foreground' : project.id === 2 ? 'text-green-600' : 'text-red-600'}`}>
+                      {project.id === 1 ? '0%' : project.id === 2 ? '+2%' : '-3%'}
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">Track keyword positions.</div>
+                  <Button variant="outline" size="sm" className="h-7 mt-1 text-xs w-full sm:w-auto">Set up</Button>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Organic Traffic</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xl font-bold">{project.organicTraffic.value}</div>
+                    <div className={`text-xs ${project.organicTraffic.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                      {project.organicTraffic.change}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Organic Keywords</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xl font-bold">{project.organicKeywords.value}</div>
+                    <div className={`text-xs ${project.organicKeywords.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                      {project.organicKeywords.change}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Backlinks</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-xl font-bold">{project.backlinks.value}</div>
+                    <div className={`text-xs ${project.backlinks.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                      {project.backlinks.change}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
+        ))}
+      </div>
+      
+      {/* Add domain section */}
+      <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium mb-2">Domains for monitoring</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Quickly see changes in key organic and paid traffic metrics and track the Authority Score of your competitors.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+          <div className="flex-grow">
+            <input
+              type="text"
+              placeholder="Enter domain"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+              <option value="US">US</option>
+              <option value="UK">UK</option>
+              <option value="CA">CA</option>
+            </select>
+            <Button size="sm" className="gap-1.5">
+              + Add domain
+            </Button>
+          </div>
         </div>
       </div>
     </div>

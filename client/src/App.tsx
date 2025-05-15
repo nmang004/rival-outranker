@@ -32,13 +32,12 @@ function Router() {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <main className="flex-grow">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/results" component={ResultsPage} />
             <Route path="/history" component={History} />
             <Route path="/deep-content" component={DeepContentAnalysisPage} />
-            {/* Route for deep content analysis results */}
             <Route path="/deep-content-results" component={DeepContentResultsPage} />
             <Route path="/competitor-analysis" component={CompetitorAnalysisPage} />
             <Route path="/competitor-results" component={CompetitorResultsPage} />
@@ -50,10 +49,6 @@ function Router() {
             <Route path="/keywords" component={KeywordsPage} />
             <Route path="/keywords/:id" component={KeywordDetailsPage} />
             <Route path="/keyword-suggestions" component={KeywordSuggestionsPage} />
-            <Route path="/rival-rank-tracker" component={RivalRankTrackerPage} />
-            <Route path="/rival-rank-tracker-results/:id" component={SimpleRivalRankTrackerResults} />
-            <Route path="/simple-rival-rank-tracker" component={SimpleRivalRankTracker} />
-            <Route path="/simple-rival-rank-tracker-results/:id" component={SimpleRivalRankTrackerResults} />
             <Route path="/basic-rank-tracker" component={BasicRankTracker} />
             <Route path="/keyword-research" component={KeywordResearch} />
             <Route path="/google-ads-settings" component={GoogleAdsSettings} />

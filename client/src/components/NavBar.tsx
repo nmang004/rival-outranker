@@ -55,7 +55,7 @@ export default function NavBar() {
                   <div className="rounded-full p-1.5 bg-primary/10 mr-2">
                     <LineChart className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="gradient-heading text-xl">SEO Best Practices</span>
+                  <span className="gradient-heading text-xl truncate max-w-[160px] sm:max-w-full">SEO Best Practices</span>
                 </div>
               </Link>
             </div>
@@ -84,18 +84,6 @@ export default function NavBar() {
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-60">
-                  <Link href="/rival-audit">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <ClipboardCheck className="h-4 w-4 mr-2" />
-                      Rival Audit
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/rival-rank-tracker">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <BarChart className="h-4 w-4 mr-2" />
-                      Rival Rank Tracker
-                    </DropdownMenuItem>
-                  </Link>
                   <Link href="/basic-rank-tracker">
                     <DropdownMenuItem className="cursor-pointer">
                       <BarChart className="h-4 w-4 mr-2" />
@@ -161,58 +149,28 @@ export default function NavBar() {
               </div>
             </button>
           </Link>
-          <div className="cursor-pointer">
-            <div className={mobileLinkClass("/rival-audit") + " w-full text-left"}>
-              <div className="flex items-center justify-between" onClick={(e) => {
-                e.preventDefault();
-                window.location.href = "/rival-audit";
-                setMobileMenuOpen(false);
-              }}>
-                <div className="flex items-center">
-                  <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
-                </div>
+          <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
+            <div className={mobileLinkClass("/rival-audit")}>
+              <div className="flex items-center">
+                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
               </div>
             </div>
-          </div>
-          <div className="cursor-pointer pl-4">
-            <div className={mobileLinkClass("/rival-rank-tracker") + " w-full text-left"}>
-              <div className="flex items-center justify-between" onClick={(e) => {
-                e.preventDefault();
-                window.location.href = "/rival-rank-tracker";
-                setMobileMenuOpen(false);
-              }}>
-                <div className="flex items-center">
-                  <BarChart className="h-4 w-4 mr-2" /> Rival Rank Tracker
-                </div>
+          </Link>
+
+          <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
+            <div className={mobileLinkClass("/basic-rank-tracker") + " pl-4"}>
+              <div className="flex items-center">
+                <BarChart className="h-4 w-4 mr-2" /> Basic Rank Tracker
               </div>
             </div>
-          </div>
-          <div className="cursor-pointer pl-4">
-            <div className={mobileLinkClass("/basic-rank-tracker") + " w-full text-left"}>
-              <div className="flex items-center justify-between" onClick={(e) => {
-                e.preventDefault();
-                window.location.href = "/basic-rank-tracker";
-                setMobileMenuOpen(false);
-              }}>
-                <div className="flex items-center">
-                  <BarChart className="h-4 w-4 mr-2" /> Basic Rank Tracker
-                </div>
+          </Link>
+          <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
+            <div className={mobileLinkClass("/keyword-research") + " pl-4"}>
+              <div className="flex items-center">
+                <Search className="h-4 w-4 mr-2" /> Keyword Research
               </div>
             </div>
-          </div>
-          <div className="cursor-pointer pl-4">
-            <div className={mobileLinkClass("/keyword-research") + " w-full text-left"}>
-              <div className="flex items-center justify-between" onClick={(e) => {
-                e.preventDefault();
-                window.location.href = "/keyword-research";
-                setMobileMenuOpen(false);
-              }}>
-                <div className="flex items-center">
-                  <Search className="h-4 w-4 mr-2" /> Keyword Research
-                </div>
-              </div>
-            </div>
-          </div>
+          </Link>
           <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/history")}>
               <div className="flex items-center">
