@@ -18,7 +18,8 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Import as FileImport
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { AuthDialog } from "@/components/auth/AuthDialog";
@@ -644,8 +645,21 @@ function UserProjectsList() {
   }
 
   if (!projects || projects.length === 0) {
+    // Empty state view matching the screenshot
     return (
       <div className="space-y-6">
+        {/* Page header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold">My Projects</h2>
+            <p className="text-sm text-muted-foreground">View and manage all your SEO projects.</p>
+          </div>
+          <Button>
+            <ListChecks className="mr-2 h-4 w-4" />
+            Create Project
+          </Button>
+        </div>
+        
         {/* Dashboard summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
@@ -654,8 +668,8 @@ function UserProjectsList() {
                 <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
                 <h3 className="text-3xl font-bold mt-1">0</h3>
               </div>
-              <div className="p-2 bg-primary/10 rounded-full">
-                <ListChecks className="h-5 w-5 text-primary" />
+              <div className="p-2 bg-[#e6f5ec] rounded-full">
+                <ListChecks className="h-5 w-5 text-[#52bb7a]" />
               </div>
             </div>
           </div>
@@ -666,8 +680,8 @@ function UserProjectsList() {
                 <p className="text-sm font-medium text-muted-foreground">Total Analyses</p>
                 <h3 className="text-3xl font-bold mt-1">0</h3>
               </div>
-              <div className="p-2 bg-blue-100 rounded-full">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-[#e1f0ff] rounded-full">
+                <BarChart3 className="h-5 w-5 text-[#3694ff]" />
               </div>
             </div>
           </div>
@@ -678,32 +692,30 @@ function UserProjectsList() {
                 <p className="text-sm font-medium text-muted-foreground">Tracked Keywords</p>
                 <h3 className="text-3xl font-bold mt-1">0</h3>
               </div>
-              <div className="p-2 bg-green-100 rounded-full">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-[#e9f9ee] rounded-full">
+                <TrendingUp className="h-5 w-5 text-[#38c173]" />
               </div>
             </div>
           </div>
         </div>
         
-        <div className="text-center py-8 bg-muted/30 rounded-lg border border-dashed border-muted">
-          <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-            <ListChecks className="h-6 w-6 text-muted-foreground" />
+        {/* Empty state */}
+        <div className="flex flex-col items-center justify-center py-16 bg-white border border-gray-200 rounded-lg text-center">
+          <div className="flex justify-center items-center h-12 w-12 bg-[#f8f9fa] rounded-full mb-4">
+            <ListChecks className="h-6 w-6 text-gray-500" />
           </div>
-          <h3 className="text-lg font-medium mb-2">No projects yet</h3>
-          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-            Projects help you organize multiple websites for easier tracking and comparison of SEO metrics.
+          <h3 className="text-base font-medium mb-2">No projects yet</h3>
+          <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+            Projects help you organize multiple websites for easier tracking<br />
+            and comparison of SEO metrics.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
-            <Button className="flex-1">
+          <div className="flex gap-3">
+            <Button className="bg-[#52bb7a] hover:bg-[#43a067]">
               <ListChecks className="mr-2 h-4 w-4" />
               Create Project
             </Button>
-            <Button variant="outline" className="flex-1">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v8" />
-                <path d="M8 12h8" />
-              </svg>
+            <Button variant="outline" className="border-gray-300">
+              <FileImport className="mr-2 h-4 w-4" />
               Import Existing Data
             </Button>
           </div>
