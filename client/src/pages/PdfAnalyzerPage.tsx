@@ -598,6 +598,46 @@ const PdfAnalyzerPage: React.FC = () => {
     setProgress(0);
     setError(null);
   };
+  
+  // Load sample document
+  const loadSampleDocument = async (samplePath: string, sampleName: string) => {
+    try {
+      setShowSamples(false);
+      setIsProcessing(true);
+      setError(null);
+      setProgress(10);
+      setProcessingStep('Loading sample document...');
+      
+      // Fetch the sample document
+      const response = await fetch(samplePath);
+      if (!response.ok) {
+        throw new Error('Failed to load sample document');
+      }
+      
+      const blob = await response.blob();
+      const fileName = sampleName || 'sample-document.pdf';
+      const fileObj = new File([blob], fileName, { type: 'application/pdf' } as FilePropertyBag);
+      
+      // Process as normal PDF
+      setFile(fileObj);
+      setFileType('pdf');
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(fileObj);
+      setPdfPreviewUrl(previewUrl);
+      
+      setProgress(30);
+      setProcessingStep('Sample document loaded successfully');
+      
+      // Automatically process the sample document
+      await new Promise(resolve => setTimeout(resolve, 500)); // Short delay for UX
+      processFile();
+    } catch (error) {
+      console.error('Error loading sample document:', error);
+      setError('Failed to load sample document. Please try again.');
+      setIsProcessing(false);
+    }
+  };
 
   // Clean up object URLs when component unmounts
   useEffect(() => {
@@ -735,6 +775,55 @@ const PdfAnalyzerPage: React.FC = () => {
                   <p className="text-xs text-muted-foreground">
                     Supports PDF, PNG, JPG, JPEG and other image formats
                   </p>
+                  
+                  <div className="mt-4 border-t pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2 text-blue-600"
+                      onClick={() => setShowSamples(prev => !prev)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      {showSamples ? 'Hide Sample Documents' : 'Try Sample Documents'}
+                    </Button>
+                    
+                    {showSamples && (
+                      <div className="mt-4 grid gap-3">
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                          onClick={() => loadSampleDocument(summaryPdf, 'SEO Audit - Summary.pdf')}
+                        >
+                          <File className="h-4 w-4 text-blue-600" />
+                          SEO Audit Summary
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                          onClick={() => loadSampleDocument(onPagePdf, 'SEO Audit - On-Page.pdf')}
+                        >
+                          <File className="h-4 w-4 text-blue-600" />
+                          On-Page SEO Analysis
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                          onClick={() => loadSampleDocument(structureNavigationPdf, 'SEO Audit - Structure & Navigation.pdf')}
+                        >
+                          <File className="h-4 w-4 text-blue-600" />
+                          Structure & Navigation Analysis
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-left font-normal gap-2 hover:bg-blue-50"
+                          onClick={() => loadSampleDocument(contactPagePdf, 'SEO Audit - Contact Page.pdf')}
+                        >
+                          <File className="h-4 w-4 text-blue-600" />
+                          Contact Page Analysis
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
