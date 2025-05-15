@@ -37,10 +37,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { PaperclipIcon, CopyIcon, TrendingUpIcon, SearchIcon, SaveIcon, ChevronDown, ChevronUp, DownloadIcon, ArrowRightIcon, InfoIcon, RefreshCw } from 'lucide-react';
+import { PaperclipIcon, CopyIcon, TrendingUpIcon, SearchIcon, SaveIcon, ChevronDown, ChevronUp, DownloadIcon, ArrowRightIcon, InfoIcon, RefreshCw, Settings } from 'lucide-react';
+import { Link } from 'wouter';
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { checkGoogleAdsAuthStatus, GoogleAdsAuthStatus } from "../lib/googleAdsApi";
 
 interface KeywordData {
   keyword: string;
@@ -307,21 +309,40 @@ export default function KeywordResearch() {
         icon={<SearchIcon className="h-6 w-6" />}
       />
       
-      <form onSubmit={handleSubmit} className="mt-6 flex gap-2">
-        <div className="flex-1">
-          <Input
-            type="text"
-            placeholder="Enter a keyword to research..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            className="w-full"
-            disabled={isLoading}
-          />
-        </div>
-        <Button type="submit" disabled={isLoading || !keyword.trim()}>
-          {isLoading ? 'Researching...' : 'Research Keyword'}
-        </Button>
-      </form>
+      <div className="mt-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Enter a keyword to research..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="w-full"
+              disabled={isLoading}
+            />
+          </div>
+          <Button type="submit" disabled={isLoading || !keyword.trim()}>
+            {isLoading ? 'Researching...' : 'Research Keyword'}
+          </Button>
+          
+          <Button variant="outline" size="icon" asChild title="Google Ads API Settings">
+            <Link href="/google-ads-settings">
+              <Settings className="h-4 w-4" />
+            </Link>
+          </Button>
+        </form>
+        
+        <Alert variant="outline" className="bg-blue-50">
+          <InfoIcon className="h-4 w-4" />
+          <AlertTitle>Optimize Your Keyword Research</AlertTitle>
+          <AlertDescription>
+            Connect to the Google Ads API for more accurate keyword data and insights from Google Keyword Planner.{' '}
+            <Link href="/google-ads-settings" className="font-medium underline text-blue-600 hover:text-blue-800">
+              Configure API Settings
+            </Link>
+          </AlertDescription>
+        </Alert>
+      </div>
       
       <AnimatePresence>
         {isLoading && (

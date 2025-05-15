@@ -59,6 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/user', userRouter);
   app.use('/api/keywords', keywordRouter);
   
+  // Google Ads API authentication routes
+  app.use('/api/google-ads-auth', googleAdsAuthRouter);
+  
   // Utility function for URL normalization
   const normalizeUrl = (inputUrl: string) => {
     // Convert URL to lowercase

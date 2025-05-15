@@ -23,6 +23,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import KeywordsPage from "@/pages/KeywordsPage";
 import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
 import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
+import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 
@@ -55,6 +56,7 @@ function Router() {
             <Route path="/simple-rival-rank-tracker-results/:id" component={SimpleRivalRankTrackerResults} />
             <Route path="/basic-rank-tracker" component={BasicRankTracker} />
             <Route path="/keyword-research" component={KeywordResearch} />
+            <Route path="/google-ads-settings" component={GoogleAdsSettings} />
             <Route component={NotFound} />
           </Switch>
         </div>
