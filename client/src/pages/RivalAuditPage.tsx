@@ -163,33 +163,6 @@ export default function RivalAuditPage() {
           </Card>
         </div>
         
-        <div className="mt-8 flex flex-col items-center">
-          <h2 className="text-xl font-bold mb-4">Additional Tools</h2>
-          <Card className="w-full max-w-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileText className="w-5 h-5 mr-2 text-primary" />
-                PDF Analyzer
-              </CardTitle>
-              <CardDescription>
-                Extract and analyze SEO data from PDF reports and images
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Upload PDF documents or images of SEO reports and audits to automatically extract insights, metrics, and recommendations.
-              </p>
-              <Button 
-                className="w-full gap-2" 
-                onClick={() => navigate("/rival-audit/pdf-analyzer")}
-              >
-                <Upload className="h-4 w-4" />
-                Go to PDF Analyzer
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        
         <div className="mt-8">
           <Card>
             <CardHeader>

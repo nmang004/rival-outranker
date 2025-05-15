@@ -12,7 +12,8 @@ import {
   ClipboardCheck,
   ChevronDown,
   BarChart,
-  Search
+  Search,
+  FileUp
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -98,6 +99,11 @@ export default function NavBar() {
                   </Link>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <Link href="/pdf-analyzer">
+                <div className={linkClass("/pdf-analyzer")}>
+                  <FileUp className="h-4 w-4 mr-1" /> PDF Analyzer
+                </div>
+              </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-1" /> History
@@ -168,6 +174,13 @@ export default function NavBar() {
             <div className={mobileLinkClass("/keyword-research") + " pl-4"}>
               <div className="flex items-center">
                 <Search className="h-4 w-4 mr-2" /> Keyword Research
+              </div>
+            </div>
+          </Link>
+          <Link href="/pdf-analyzer" onClick={() => setMobileMenuOpen(false)}>
+            <div className={mobileLinkClass("/pdf-analyzer")}>
+              <div className="flex items-center">
+                <FileUp className="h-4 w-4 mr-2" /> PDF Analyzer
               </div>
             </div>
           </Link>

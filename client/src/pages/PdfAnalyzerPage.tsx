@@ -180,13 +180,13 @@ const PdfAnalyzerPage: React.FC = () => {
     };
 
     // Extract key SEO elements
-    const metaTags = [...text.matchAll(metaTagPattern)].map(match => match[0]);
-    const h1Tags = [...text.matchAll(h1Pattern)].map(match => match[1]);
-    const links = [...text.matchAll(linkPattern)].map(match => match[1]);
-    const images = [...text.matchAll(imgPattern)].map(match => match[0]);
-    const titles = [...text.matchAll(titlePattern)].map(match => match[1]);
-    const canonicals = [...text.matchAll(canonicalPattern)].map(match => match[1]);
-    const robots = [...text.matchAll(robotsPattern)].map(match => match[1]);
+    const metaTags = Array.from(text.matchAll(metaTagPattern)).map(match => match[0]);
+    const h1Tags = Array.from(text.matchAll(h1Pattern)).map(match => match[1]);
+    const links = Array.from(text.matchAll(linkPattern)).map(match => match[1]);
+    const images = Array.from(text.matchAll(imgPattern)).map(match => match[0]);
+    const titles = Array.from(text.matchAll(titlePattern)).map(match => match[1]);
+    const canonicals = Array.from(text.matchAll(canonicalPattern)).map(match => match[1]);
+    const robots = Array.from(text.matchAll(robotsPattern)).map(match => match[1]);
     const keywordStats = keywordMentions(text);
 
     // Count important SEO aspects

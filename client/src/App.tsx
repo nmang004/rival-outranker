@@ -46,7 +46,7 @@ function Router() {
             <Route path="/competitor-results" component={CompetitorResultsPage} />
             <Route path="/rival-audit" component={RivalAuditPage} />
             <Route path="/rival-audit-results" component={RivalAuditResultsPage} />
-            <Route path="/rival-audit/pdf-analyzer" component={PdfAnalyzerPage} />
+            <Route path="/pdf-analyzer" component={PdfAnalyzerPage} />
             <Route path="/test-export" component={TestExportPage} />
             <Route path="/profile" component={ProfilePageMock} />
             <Route path="/profile/:tab" component={ProfilePageMock} />
