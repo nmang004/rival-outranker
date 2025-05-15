@@ -629,26 +629,242 @@ function UserAnalysesList() {
 
 // User's Projects List Component
 function UserProjectsList() {
-  const { data: projects, isLoading } = useQuery<any[]>({
-    queryKey: ['/api/user/projects'],
-    retry: false,
-  });
   const [dashboardView, setDashboardView] = useState<"grid" | "table">("grid");
   const [filterValue, setFilterValue] = useState("");
+  
+  // Using mock data directly instead of API
+  const demoMode = true; // Set to true to force use of sample data
+  
+  // Helper functions for generating comprehensive mock data
+  const generateTrendData = (start: number, isGrowing: boolean, volatility: number, length: number = 10) => {
+    const data = [];
+    let current = start;
+    for (let i = 0; i < length; i++) {
+      // Add randomness with specified volatility
+      const change = Math.random() * volatility * (isGrowing ? 1 : -1);
+      current = Math.max(0, current + change);
+      data.push(Math.round(current));
+    }
+    return data;
+  };
+  
+  const generateHistoricalData = (start: number, end: number, months: number = 6) => {
+    const data = [];
+    const step = (end - start) / (months - 1);
+    for (let i = 0; i < months; i++) {
+      const monthValue = Math.round(start + step * i);
+      // Add some randomness
+      const variance = Math.random() * 0.2 * monthValue;
+      data.push(Math.round(monthValue + variance * (Math.random() > 0.5 ? 1 : -1)));
+    }
+    return data;
+  };
+  
+  const generateKeywordData = (count: number, baseKeyword: string) => {
+    const keywords = [
+      "heating and cooling", "HVAC", "air conditioning repair", "furnace installation", 
+      "AC service", "heating systems", "duct cleaning", "emergency HVAC", "commercial HVAC",
+      "heat pump repair", "air quality", "thermostat installation", "energy efficient HVAC"
+    ];
+    
+    const locations = [
+      "Texas", "Dallas", "Houston", "Austin", "San Antonio", "Fort Worth", 
+      "Charlotte", "Raleigh", "Durham", "Winston-Salem", "Greensboro", "Asheville"
+    ];
+    
+    return Array.from({ length: count }, (_, i) => {
+      const keyword = i < 5 
+        ? `${baseKeyword} ${keywords[Math.floor(Math.random() * keywords.length)]}` 
+        : `${keywords[Math.floor(Math.random() * keywords.length)]} ${locations[Math.floor(Math.random() * locations.length)]}`;
+      
+      return {
+        id: i + 1,
+        keyword: keyword,
+        position: Math.floor(Math.random() * 50) + 1,
+        volume: Math.floor(Math.random() * 5000) + 100,
+        difficulty: Math.floor(Math.random() * 100),
+        cpc: (Math.random() * 15).toFixed(2),
+        trend: generateTrendData(10 + Math.random() * 20, Math.random() > 0.3, 3, 6)
+      };
+    });
+  };
+  
+  const generateCompetitors = (domain: string) => {
+    const competitors = [
+      { domain: "competitor1.com", overlap: Math.floor(Math.random() * 30) + 20 },
+      { domain: "competitor2.net", overlap: Math.floor(Math.random() * 20) + 10 },
+      { domain: "competitor3.org", overlap: Math.floor(Math.random() * 15) + 5 }
+    ];
+    
+    return competitors.map(comp => ({
+      ...comp,
+      traffic: Math.floor(Math.random() * 15000) + 1000,
+      keywords: Math.floor(Math.random() * 5000) + 500,
+      backlinks: Math.floor(Math.random() * 2000) + 100,
+      domain: domain.replace(domain.split(".")[0], "competitor" + Math.floor(Math.random() * 10))
+    }));
+  };
+  
+  // Sample project data with rich details
+  const sampleProjects = [
+    {
+      id: 1,
+      name: "Brody Pennell HVAC",
+      domain: "brodypennell.com",
+      status: "active" as const,
+      score: 79,
+      created: new Date(2023, 1, 15),
+      updated: new Date(2023, 4, 27),
+      organicTraffic: {
+        value: "8.9K",
+        change: "+58.95%",
+        trend: [32, 28, 35, 42, 50, 65, 80, 95, 100, 120, 130, 140],
+        history: generateHistoricalData(5600, 8900, 6)
+      },
+      organicKeywords: {
+        value: "3.6K",
+        change: "+1.71%",
+        trend: [3200, 3250, 3300, 3350, 3400, 3450, 3500, 3550, 3600, 3620, 3650, 3660],
+        history: generateHistoricalData(3200, 3600, 6)
+      },
+      backlinks: {
+        value: "3.1K",
+        change: "-10.6%",
+        trend: [3800, 3750, 3700, 3650, 3600, 3550, 3500, 3450, 3400, 3350, 3300, 3100],
+        history: generateHistoricalData(3500, 3100, 6)
+      },
+      keywords: generateKeywordData(15, "Brody Pennell"),
+      competitors: generateCompetitors("brodypennell.com"),
+      analyses: [
+        { id: 101, date: new Date(2023, 1, 15), score: 68, status: "completed" },
+        { id: 102, date: new Date(2023, 2, 20), score: 72, status: "completed" },
+        { id: 103, date: new Date(2023, 3, 18), score: 75, status: "completed" },
+        { id: 104, date: new Date(2023, 4, 27), score: 79, status: "completed" }
+      ]
+    },
+    {
+      id: 2,
+      name: "Home Allegiance",
+      domain: "callhomeallegiance.com",
+      status: "in-progress" as const,
+      score: 64,
+      created: new Date(2022, 10, 8),
+      updated: new Date(2023, 3, 22),
+      organicTraffic: {
+        value: "432",
+        change: "-7%",
+        trend: [480, 475, 470, 465, 460, 455, 450, 445, 440, 435, 432, 432],
+        history: generateHistoricalData(480, 432, 6)
+      },
+      organicKeywords: {
+        value: "617",
+        change: "+3.29%",
+        trend: [580, 585, 590, 595, 600, 605, 610, 615, 617, 617, 617, 617],
+        history: generateHistoricalData(580, 617, 6)
+      },
+      backlinks: {
+        value: "131",
+        change: "-1.5%",
+        trend: [135, 134, 133, 132, 132, 132, 131, 131, 131, 131, 131, 131],
+        history: generateHistoricalData(135, 131, 6)
+      },
+      keywords: generateKeywordData(12, "Home Allegiance"),
+      competitors: generateCompetitors("callhomeallegiance.com"),
+      analyses: [
+        { id: 201, date: new Date(2022, 10, 8), score: 52, status: "completed" },
+        { id: 202, date: new Date(2022, 11, 15), score: 55, status: "completed" },
+        { id: 203, date: new Date(2023, 0, 12), score: 59, status: "completed" },
+        { id: 204, date: new Date(2023, 1, 20), score: 62, status: "completed" },
+        { id: 205, date: new Date(2023, 3, 22), score: 64, status: "completed" }
+      ]
+    },
+    {
+      id: 3,
+      name: "Jay Dorco Services",
+      domain: "jaydorco.com",
+      status: "monitoring" as const,
+      score: 59,
+      created: new Date(2022, 8, 3),
+      updated: new Date(2023, 2, 14),
+      organicTraffic: {
+        value: "654",
+        change: "-9.92%",
+        trend: [750, 740, 730, 720, 710, 700, 690, 680, 670, 660, 657, 654],
+        history: generateHistoricalData(750, 654, 6)
+      },
+      organicKeywords: {
+        value: "277",
+        change: "-5.14%",
+        trend: [300, 298, 295, 290, 285, 283, 280, 278, 278, 278, 277, 277],
+        history: generateHistoricalData(300, 277, 6)
+      },
+      backlinks: {
+        value: "1.8K",
+        change: "-25.04%",
+        trend: [2500, 2400, 2300, 2200, 2100, 2000, 1950, 1900, 1850, 1830, 1810, 1800],
+        history: generateHistoricalData(2500, 1800, 6)
+      },
+      keywords: generateKeywordData(10, "Jay Dorco"),
+      competitors: generateCompetitors("jaydorco.com"),
+      analyses: [
+        { id: 301, date: new Date(2022, 8, 3), score: 48, status: "completed" },
+        { id: 302, date: new Date(2022, 9, 20), score: 52, status: "completed" },
+        { id: 303, date: new Date(2022, 11, 8), score: 55, status: "completed" },
+        { id: 304, date: new Date(2023, 0, 15), score: 57, status: "completed" },
+        { id: 305, date: new Date(2023, 2, 14), score: 59, status: "completed" }
+      ]
+    }
+  ];
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+  // Calculate totals from sample projects
+  const totalProjects = sampleProjects.length;
+  const totalAnalyses = sampleProjects.reduce((sum, project) => {
+    return sum + (project.analyses?.length || 0);
+  }, 0);
+  const totalKeywords = sampleProjects.reduce((sum, project) => {
+    const keywordValue = project.organicKeywords.value;
+    const numericValue = typeof keywordValue === 'string' 
+      ? parseInt(keywordValue.replace(/[^\d]/g, ''), 10) 
+      : keywordValue;
+    return sum + numericValue;
+  }, 0);
+  
+  // Filter projects based on search input
+  const filteredProjects = sampleProjects.filter(project => 
+    project.name.toLowerCase().includes(filterValue.toLowerCase()) || 
+    project.domain.toLowerCase().includes(filterValue.toLowerCase())
+  );
+
+  // Option 1: Show loading state
+  const loadingState = (
+    <div className="flex justify-center items-center py-8">
+      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+  
+  // Option 2: Show empty state
+  const emptyState = (
+    <div className="flex flex-col items-center justify-center py-16 px-6 bg-white rounded-lg border border-gray-100 shadow-sm text-center">
+      <div className="bg-gray-100 p-3 rounded-full mb-4">
+        <ListChecks className="h-8 w-8 text-gray-500" />
       </div>
-    );
-  }
-
-  if (!projects || projects.length === 0) {
-    // Empty state view matching the screenshot
-    return (
-      <div className="space-y-6">
-        {/* Page header */}
+      <h3 className="text-lg font-medium mb-2">No projects yet</h3>
+      <p className="text-sm text-muted-foreground max-w-md mb-6">
+        Projects help you organize multiple websites for easier tracking
+        and comparison of SEO metrics.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button className="bg-[#52bb7a] hover:bg-[#43a067]">
+          <ListChecks className="mr-2 h-4 w-4" />
+          Create Project
+        </Button>
+        <Button variant="outline">
+          <Upload className="mr-2 h-4 w-4" />
+          Import Existing Data
+        </Button>
+      </div>
+    </div>
+  );
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold">My Projects</h2>
