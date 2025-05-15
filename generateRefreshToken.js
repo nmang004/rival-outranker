@@ -4,7 +4,8 @@ import url from 'url';
 import open from 'open';
 import destroyer from 'server-destroy';
 
-// Replace these with your Google OAuth credentials
+// Use your Google OAuth credentials
+// Note: These will be replaced with your actual credentials by the dev tool
 const CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET;
 const REDIRECT_URI = 'http://localhost:3000/oauth2callback';
