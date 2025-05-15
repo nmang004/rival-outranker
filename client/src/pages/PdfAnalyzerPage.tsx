@@ -507,8 +507,55 @@ const PdfAnalyzerPage: React.FC = () => {
       
       setExtractedText(text);
       
-      // Analyze the text
+      // Initial analysis with local processing
       const analysisSummary = analyzeText(text);
+      setProgress(70);
+      
+      try {
+        // Get chart data for AI analysis
+        const chartData = analysisSummary.chartData;
+        
+        // Perform AI-powered analysis
+        setProcessingStep('Performing AI analysis...');
+        
+        const aiResponse = await fetch('/api/analyze-content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: text,
+            chartData: chartData.isChartData ? chartData : null
+          }),
+        });
+        
+        if (aiResponse.ok) {
+          const aiAnalysis = await aiResponse.json();
+          
+          // Enhance analysis with AI insights
+          analysisSummary.aiAnalysis = {
+            insights: aiAnalysis.textAnalysis?.analysis || 'No AI analysis available',
+            chartInsights: aiAnalysis.chartAnalysis?.analysis || '',
+            recommendations: aiAnalysis.recommendations?.recommendations || []
+          };
+          
+          console.log('AI analysis completed successfully');
+        } else {
+          console.error('AI analysis failed:', await aiResponse.text());
+          analysisSummary.aiAnalysis = {
+            insights: 'AI analysis unavailable at this time',
+            recommendations: []
+          };
+        }
+      } catch (aiError) {
+        console.error('Error during AI analysis:', aiError);
+        analysisSummary.aiAnalysis = {
+          insights: 'AI analysis failed. Please try again later.',
+          recommendations: []
+        };
+      }
+      
+      // Update with final results including AI analysis
       setSummary(analysisSummary);
       
       // Complete
@@ -895,8 +942,9 @@ const PdfAnalyzerPage: React.FC = () => {
           )}
           
           {/* Detailed analysis tabs */}
-          <Tabs defaultValue="recommendations" className="space-y-4">
+          <Tabs defaultValue="ai-analysis" className="space-y-4">
             <TabsList>
+              <TabsTrigger value="ai-analysis">AI Analysis</TabsTrigger>
               <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
               <TabsTrigger value="seo-elements">SEO Elements</TabsTrigger>
               <TabsTrigger value="keywords">Keywords</TabsTrigger>
