@@ -24,7 +24,8 @@ import {
   Layers,
   FileText,
   Share2,
-  MapPin
+  MapPin,
+  MoreHorizontal
 } from "lucide-react";
 import { 
   Area, 
