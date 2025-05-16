@@ -31,6 +31,8 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   lastLoginAt: timestamp("last_login_at"),
   isEmailVerified: boolean("is_email_verified").default(false),
+  chatUsageCount: integer("chat_usage_count").default(0),
+  chatUsageResetDate: timestamp("chat_usage_reset_date"),
 });
 
 // Define the schema for storing user analysis history
@@ -105,6 +107,16 @@ export const insertProjectAnalysisSchema = createInsertSchema(projectAnalyses).o
   addedAt: true,
 });
 
+// Anonymous chat usage tracking (for non-logged in users)
+export const anonChatUsage = pgTable("anon_chat_usage", {
+  id: serial("id").primaryKey(),
+  ipAddress: text("ip_address").notNull(),
+  sessionId: text("session_id").notNull(),
+  usageCount: integer("usage_count").default(0).notNull(),
+  lastUsed: timestamp("last_used").defaultNow().notNull(),
+  resetDate: timestamp("reset_date"),
+});
+
 // Types
 export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 export type Analysis = typeof analyses.$inferSelect;
@@ -117,6 +129,7 @@ export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export type Project = typeof projects.$inferSelect;
 export type InsertProjectAnalysis = z.infer<typeof insertProjectAnalysisSchema>;
 export type ProjectAnalysis = typeof projectAnalyses.$inferSelect;
+export type AnonChatUsage = typeof anonChatUsage.$inferSelect;
 
 // Custom types for SEO analysis results
 export const urlFormSchema = z.object({

@@ -8,8 +8,10 @@ import {
   KeywordRanking, InsertKeywordRanking,
   CompetitorRanking, InsertCompetitorRanking,
   KeywordSuggestion, InsertKeywordSuggestion,
+  AnonChatUsage,
   users, analyses, projects, projectAnalyses,
-  keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions
+  keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions,
+  anonChatUsage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, inArray, sql, asc, gte, lte } from "drizzle-orm";
@@ -26,6 +28,14 @@ export interface IStorage {
   verifyEmail(id: string): Promise<User>;
   getUserCount(): Promise<number>;
   upsertUser(userData: { id: string, email?: string | null, firstName?: string | null, lastName?: string | null, profileImageUrl?: string | null }): Promise<User>;
+  
+  // Chat usage tracking operations
+  incrementUserChatCount(userId: string): Promise<number>;
+  getUserChatCount(userId: string): Promise<number>;
+  resetUserChatCount(userId: string): Promise<void>;
+  getAnonChatUsage(sessionId: string, ipAddress: string): Promise<AnonChatUsage | undefined>;
+  incrementAnonChatCount(sessionId: string, ipAddress: string): Promise<number>;
+  resetAnonChatCount(sessionId: string, ipAddress: string): Promise<void>;
   
   // Analysis operations
   createAnalysis(analysis: InsertAnalysis): Promise<Analysis>;
@@ -598,6 +608,174 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(keywordSuggestions)
       .where(eq(keywordSuggestions.id, id));
+  }
+  
+  // Chat usage tracking methods
+  
+  async incrementUserChatCount(userId: string): Promise<number> {
+    // Get current user first
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Check if we need to reset the counter (after a month)
+    const now = new Date();
+    const resetDate = user.chatUsageResetDate;
+    
+    let newCount = 1;
+    if (resetDate && resetDate > now) {
+      // Still within the current month, increment count
+      newCount = (user.chatUsageCount || 0) + 1;
+    } else {
+      // First chat of new month, set resetDate to one month from now
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+    }
+    
+    // Update user's chat count
+    const [updated] = await db
+      .update(users)
+      .set({
+        chatUsageCount: newCount,
+        chatUsageResetDate: resetDate && resetDate > now ? resetDate : new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        updatedAt: now
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updated.chatUsageCount || 0;
+  }
+  
+  async getUserChatCount(userId: string): Promise<number> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Check if we need to reset the counter (after a month)
+    const now = new Date();
+    const resetDate = user.chatUsageResetDate;
+    
+    if (resetDate && resetDate < now) {
+      // Reset count if past reset date
+      await db
+        .update(users)
+        .set({
+          chatUsageCount: 0,
+          chatUsageResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+          updatedAt: now
+        })
+        .where(eq(users.id, userId));
+        
+      return 0;
+    }
+    
+    return user.chatUsageCount || 0;
+  }
+  
+  async resetUserChatCount(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        chatUsageCount: 0,
+        chatUsageResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+  
+  async getAnonChatUsage(sessionId: string, ipAddress: string): Promise<AnonChatUsage | undefined> {
+    const [usage] = await db
+      .select()
+      .from(anonChatUsage)
+      .where(
+        and(
+          eq(anonChatUsage.sessionId, sessionId),
+          eq(anonChatUsage.ipAddress, ipAddress)
+        )
+      );
+    
+    // Check if we need to reset (after a month)
+    if (usage && usage.resetDate && usage.resetDate < new Date()) {
+      // Reset usage
+      await this.resetAnonChatCount(sessionId, ipAddress);
+      const [refreshed] = await db
+        .select()
+        .from(anonChatUsage)
+        .where(
+          and(
+            eq(anonChatUsage.sessionId, sessionId),
+            eq(anonChatUsage.ipAddress, ipAddress)
+          )
+        );
+      
+      return refreshed;
+    }
+    
+    return usage;
+  }
+  
+  async incrementAnonChatCount(sessionId: string, ipAddress: string): Promise<number> {
+    // Get existing usage
+    let usage = await this.getAnonChatUsage(sessionId, ipAddress);
+    
+    const now = new Date();
+    // Create new or update existing
+    if (!usage) {
+      // Create new
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      
+      const [newUsage] = await db
+        .insert(anonChatUsage)
+        .values({
+          sessionId,
+          ipAddress,
+          usageCount: 1,
+          lastUsed: now,
+          resetDate: nextMonth
+        })
+        .returning();
+      
+      return newUsage.usageCount;
+    } else {
+      // Update existing
+      const [updated] = await db
+        .update(anonChatUsage)
+        .set({
+          usageCount: usage.usageCount + 1,
+          lastUsed: now
+        })
+        .where(
+          and(
+            eq(anonChatUsage.sessionId, sessionId),
+            eq(anonChatUsage.ipAddress, ipAddress)
+          )
+        )
+        .returning();
+      
+      return updated.usageCount;
+    }
+  }
+  
+  async resetAnonChatCount(sessionId: string, ipAddress: string): Promise<void> {
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    await db
+      .update(anonChatUsage)
+      .set({
+        usageCount: 0,
+        lastUsed: new Date(),
+        resetDate: nextMonth
+      })
+      .where(
+        and(
+          eq(anonChatUsage.sessionId, sessionId),
+          eq(anonChatUsage.ipAddress, ipAddress)
+        )
+      );
   }
 }
 
