@@ -76,46 +76,48 @@ export default function NavBar() {
                   <Users className="h-4 w-4 mr-1" /> Competitors
                 </button>
               </Link>
-              <div className="flex items-center">
-                <Link href="/rival-audit">
-                  <div className={linkClass("/rival-audit")} style={{ borderBottomWidth: '0' }}>
-                    <ClipboardCheck className="h-4 w-4 mr-1" /> 
-                    Rival Audit
-                  </div>
-                </Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div className="cursor-pointer hover:text-foreground flex items-center px-1 h-full">
-                      <ChevronDown className="h-3 w-3" />
+              <div className="relative group">
+                <div className="flex items-center">
+                  <Link href="/rival-audit">
+                    <div className={linkClass("/rival-audit")}>
+                      <ClipboardCheck className="h-4 w-4 mr-1" /> 
+                      Rival Audit
+                      <ChevronDown className="h-3 w-3 ml-1" />
                     </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-60">
-                    <Link href="/rival-audit">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <ClipboardCheck className="h-4 w-4 mr-2" />
-                        Rival Audit Tool
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/basic-rank-tracker">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <BarChart className="h-4 w-4 mr-2" />
-                        Basic Rank Tracker
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/keyword-research">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <Search className="h-4 w-4 mr-2" />
-                        Keyword Research
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/pdf-analyzer">
-                      <DropdownMenuItem className="cursor-pointer">
-                        <FileUp className="h-4 w-4 mr-2" />
-                        PDF Analyzer
-                      </DropdownMenuItem>
-                    </Link>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </Link>
+                </div>
+                <div className="absolute left-0 top-full hidden group-hover:block hover:block z-50">
+                  <div className="pt-2">
+                    <div className="bg-white rounded-md shadow-lg border border-gray-200 w-60">
+                      <div className="py-1">
+                        <Link href="/rival-audit">
+                          <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                            <ClipboardCheck className="h-4 w-4 mr-2" />
+                            Rival Audit Tool
+                          </div>
+                        </Link>
+                        <Link href="/basic-rank-tracker">
+                          <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                            <BarChart className="h-4 w-4 mr-2" />
+                            Basic Rank Tracker
+                          </div>
+                        </Link>
+                        <Link href="/keyword-research">
+                          <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                            <Search className="h-4 w-4 mr-2" />
+                            Keyword Research
+                          </div>
+                        </Link>
+                        <Link href="/pdf-analyzer">
+                          <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                            <FileUp className="h-4 w-4 mr-2" />
+                            PDF Analyzer
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <Link href="/history">
                 <div className={linkClass("/history")}>
