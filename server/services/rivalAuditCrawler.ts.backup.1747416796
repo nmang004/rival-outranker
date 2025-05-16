@@ -3132,7 +3132,24 @@ class RivalAuditCrawler {
           "Service pages have good CTAs"
       });
       
-      // Removed duplicate FAQ schema check
+      // Check for FAQ schema
+      const faqSchemaPages = servicePages.filter(page => 
+        page.hasSchema && page.schemaTypes.some(type => 
+          type.toLowerCase().includes('faq')
+        )
+      ).length;
+      
+      const faqSchemaPercentage = (faqSchemaPages / servicePages.length) * 100;
+      
+      items.push({
+        name: "Includes FAQ schema?",
+        description: "FAQ schema markup helps with rich results",
+        status: faqSchemaPercentage >= 30 ? 'OK' : 'OFI',
+        importance: 'Low',
+        notes: faqSchemaPercentage < 30 ? 
+          "Few service pages use FAQ schema markup" :
+          "Good implementation of FAQ schema"
+      });
       
       // Check for testimonials
       const testimonialPages = servicePages.filter(page => {
