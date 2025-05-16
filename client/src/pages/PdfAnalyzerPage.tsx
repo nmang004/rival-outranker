@@ -1025,42 +1025,21 @@ const PdfAnalyzerPage: React.FC = () => {
             </Alert>
           )}
           
-          {/* File preview */}
+          {/* External view button for documents */}
           {(pdfPreviewUrl || imagePreview) && (
-            <Card className="overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="font-medium">Document Preview</h3>
-                {pdfPreviewUrl && (
-                  <a 
-                    href={pdfPreviewUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary flex items-center gap-1"
-                  >
-                    <span>Open in new tab</span>
-                    <FileText className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-              <div className="h-[400px] overflow-auto bg-gray-50">
-                {pdfPreviewUrl && (
-                  <iframe 
-                    src={pdfPreviewUrl} 
-                    className="w-full h-full" 
-                    title="PDF Preview"
-                  />
-                )}
-                {imagePreview && (
-                  <div className="flex items-center justify-center h-full p-4">
-                    <img 
-                      src={imagePreview} 
-                      alt="Uploaded" 
-                      className="max-h-full max-w-full object-contain" 
-                    />
-                  </div>
-                )}
-              </div>
-            </Card>
+            <div className="flex justify-end mb-4">
+              {pdfPreviewUrl && (
+                <a 
+                  href={pdfPreviewUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary flex items-center gap-1"
+                >
+                  <span>Open PDF in new tab</span>
+                  <FileText className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           )}
         </div>
         
