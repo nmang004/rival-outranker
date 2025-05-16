@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Send, Bot, User, Maximize2, Minimize2, MessageCircle, 
-  ChevronLeft, ExternalLink, Book, Search, X
+  ChevronLeft, ExternalLink, Book, Search, X, Lightbulb, Cpu 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { seoKnowledgeBase, SeoTopic, SeoSubtopic, industrySpecificAdvice, seoTools } from '@/data/seoKnowledgeBase';
+import { getOpenAIResponse } from '@/services/openAiService';
 
 // Define message type
 interface Message {
@@ -14,6 +15,7 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  isAI?: boolean;
   sources?: {
     topic: string;
     subtopic: string;
@@ -203,8 +205,8 @@ Would you like specific recommendations for any of these technical areas?`
       .slice(0, 3);
   };
 
-  // Generate response using the knowledge base
-  const generateResponse = (userInput: string): { text: string; sources?: { topic: string; subtopic: string; }[] } => {
+  // Generate response using the knowledge base and OpenAI fallback
+  const generateResponse = async (userInput: string): Promise<{ text: string; sources?: { topic: string; subtopic: string; }[]; isAI?: boolean }> => {
     // First check for common questions
     const commonResponse = checkCommonQuestions(userInput);
     if (commonResponse) {
@@ -245,16 +247,27 @@ Would you like specific recommendations for any of these technical areas?`
         return { text: toolResponse };
       }
       
-      // Default fallback response
-      return {
-        text: "To optimize your website's SEO comprehensively, focus on these key areas:\n\n" +
-              "1. **Technical SEO**: Ensure your site is fast, mobile-friendly, and crawlable\n" +
-              "2. **On-Page SEO**: Optimize content, meta tags, headers, and internal links\n" +
-              "3. **Off-Page SEO**: Build quality backlinks from reputable sites\n" +
-              "4. **Content Strategy**: Create valuable, keyword-optimized content that serves user intent\n" +
-              "5. **User Experience**: Improve engagement metrics and reduce bounce rates\n\n" +
-              "Would you like specific details about any of these areas?"
-      };
+      // Use OpenAI for more specific or complex queries
+      try {
+        const aiResponse = await getOpenAIResponse(userInput);
+        return { 
+          text: aiResponse,
+          isAI: true
+        };
+      } catch (error) {
+        console.error("Error getting AI response:", error);
+        
+        // Default fallback response if OpenAI fails
+        return {
+          text: "To optimize your website's SEO comprehensively, focus on these key areas:\n\n" +
+                "1. **Technical SEO**: Ensure your site is fast, mobile-friendly, and crawlable\n" +
+                "2. **On-Page SEO**: Optimize content, meta tags, headers, and internal links\n" +
+                "3. **Off-Page SEO**: Build quality backlinks from reputable sites\n" +
+                "4. **Content Strategy**: Create valuable, keyword-optimized content that serves user intent\n" +
+                "5. **User Experience**: Improve engagement metrics and reduce bounce rates\n\n" +
+                "Would you like specific details about any of these areas?"
+        };
+      }
     }
     
     let response = '';
@@ -318,24 +331,38 @@ Would you like specific recommendations for any of these technical areas?`
     setInputValue('');
     setIsThinking(true);
     
-    // Generate response after slight delay to simulate thinking
-    setTimeout(() => {
-      const response = generateResponse(userMessage.text);
-      
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response.text,
-        isUser: false,
-        timestamp: new Date(),
-        sources: response.sources?.map(source => ({
-          topic: source.topic,
-          subtopic: source.subtopic
-        }))
-      };
-      
-      setMessages(prev => [...prev, botResponse]);
-      setIsThinking(false);
-    }, 1000 + Math.random() * 1000);
+    // Generate response using knowledge base or OpenAI
+    generateResponse(userMessage.text)
+      .then(response => {
+        const botResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: response.text,
+          isUser: false,
+          timestamp: new Date(),
+          isAI: response.isAI,
+          sources: response.sources?.map(source => ({
+            topic: source.topic,
+            subtopic: source.subtopic
+          }))
+        };
+        
+        setMessages(prev => [...prev, botResponse]);
+      })
+      .catch(error => {
+        console.error("Error generating response:", error);
+        // Provide a fallback response if something goes wrong
+        const errorResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "I'm having trouble processing your request. Please try asking a different question about SEO.",
+          isUser: false,
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, errorResponse]);
+      })
+      .finally(() => {
+        setIsThinking(false);
+      });
   };
 
   return (
@@ -400,15 +427,34 @@ Would you like specific recommendations for any of these technical areas?`
             >
               <div className="flex items-start mb-1">
                 <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-1 flex-shrink-0 ${
-                  message.isUser ? 'bg-white/20' : 'bg-primary/20'
+                  message.isUser 
+                    ? 'bg-white/20' 
+                    : message.isAI ? 'bg-green-600/20' : 'bg-primary/20'
                 }`}>
                   {message.isUser 
                     ? <User className={`w-2.5 h-2.5 text-white`} /> 
-                    : <Bot className={`w-2.5 h-2.5 text-primary`} />
+                    : message.isAI
+                      ? <Cpu className={`w-2.5 h-2.5 text-green-600`} />
+                      : <Bot className={`w-2.5 h-2.5 text-primary`} />
                   }
                 </div>
-                <span className="text-[11px] font-medium">
-                  {message.isUser ? 'You' : 'SEO Buddy'}
+                <span className="text-[11px] font-medium flex items-center">
+                  {message.isUser 
+                    ? 'You' 
+                    : message.isAI 
+                      ? (<>
+                          <span>AI Assistant</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Lightbulb className="ml-1 w-2.5 h-2.5 text-green-600" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              <p>Powered by advanced AI for enhanced responses</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </>)
+                      : 'SEO Buddy'
+                  }
                 </span>
               </div>
               <div 

@@ -2478,6 +2478,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OpenAI Chat API endpoint
+  app.post("/api/openai-chat", async (req: Request, res: Response) => {
+    try {
+      const { message, context } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ success: false, error: "Message is required" });
+      }
+      
+      const seoContext = context || "You are an SEO expert assistant. Provide detailed, accurate advice about search engine optimization techniques, best practices, and strategies. Use markdown formatting for better readability.";
+      
+      const response = await getOpenAIResponse(message, seoContext);
+      
+      if (!response.success) {
+        return res.status(500).json({ 
+          success: false, 
+          error: response.error || "Failed to get response from AI service" 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        answer: response.answer 
+      });
+    } catch (error) {
+      console.error('Error in OpenAI chat endpoint:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

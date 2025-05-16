@@ -8,7 +8,11 @@ export async function getOpenAIResponse(query: string): Promise<string> {
       context: "You are an SEO expert assistant helping with SEO-related questions. Provide detailed, accurate, and helpful information about search engine optimization techniques, best practices, and strategies. Format your responses with markdown for better readability, using **bold text** for important points, numbered lists, and bullet points where appropriate."
     });
     
-    return response.data.answer;
+    if (response.data.success) {
+      return response.data.answer;
+    } else {
+      throw new Error(response.data.error || 'Failed to get AI response');
+    }
   } catch (error) {
     console.error('Error fetching from OpenAI:', error);
     throw new Error('Unable to get a response from the AI service');
