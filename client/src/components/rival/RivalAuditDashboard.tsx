@@ -71,12 +71,28 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     return relevantItems > 0 ? (totals.ok / relevantItems) * 100 : 0;
   };
 
-  // Prepare data for status distribution chart
+  // Prepare data for status distribution chart, using updatedSummary if available
   const statusDistributionData = [
-    { name: 'Priority Issues', value: audit.summary.priorityOfiCount, color: '#ef4444' },
-    { name: 'Opportunities', value: audit.summary.ofiCount, color: '#eab308' },
-    { name: 'Completed', value: audit.summary.okCount, color: '#22c55e' },
-    { name: 'Not Applicable', value: audit.summary.naCount, color: '#9ca3af' },
+    { 
+      name: 'Priority Issues', 
+      value: updatedSummary ? updatedSummary.priorityOfiCount : audit.summary.priorityOfiCount, 
+      color: '#ef4444' 
+    },
+    { 
+      name: 'Opportunities', 
+      value: updatedSummary ? updatedSummary.ofiCount : audit.summary.ofiCount, 
+      color: '#eab308' 
+    },
+    { 
+      name: 'Completed', 
+      value: updatedSummary ? updatedSummary.okCount : audit.summary.okCount, 
+      color: '#22c55e' 
+    },
+    { 
+      name: 'Not Applicable', 
+      value: updatedSummary ? updatedSummary.naCount : audit.summary.naCount, 
+      color: '#9ca3af' 
+    },
   ];
 
   // Prepare data for category comparison chart
@@ -260,8 +276,10 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                             return ["0 items (0%)", name];
                           }
                           
-                          const total = audit.summary.total || 
-                            (audit.summary.priorityOfiCount + audit.summary.ofiCount + audit.summary.okCount + audit.summary.naCount);
+                          // Use updated summary if available
+                          const summary = updatedSummary || audit.summary;
+                          const total = summary.total || 
+                            (summary.priorityOfiCount + summary.ofiCount + summary.okCount + summary.naCount);
                           return [`${value} items (${((Number(value)/total) * 100).toFixed(1)}%)`, name];
                         }}
                         contentStyle={{ 
