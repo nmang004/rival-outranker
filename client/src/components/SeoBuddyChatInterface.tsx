@@ -50,10 +50,16 @@ export default function SeoBuddyChatInterface({ onClose, showHeader = true, onEx
   
   // Handle expand/collapse
   const handleResize = (expand: boolean) => {
+    console.log("Expanding chat:", expand);
     setIsExpanded(expand);
     if (onExpand) {
       onExpand(expand);
     }
+    
+    // Ensure UI updates happen by forcing a reflow after state change
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
   };
   
   // Detect mobile screen size and adjust on window resize
