@@ -1322,6 +1322,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to update status of an audit item
+  app.post("/api/rival-audit/:id/update-item", async (req: Request, res: Response) => {
+    try {
+      const auditId = parseInt(req.params.id);
+      
+      if (isNaN(auditId)) {
+        return res.status(400).json({ error: "Invalid audit ID" });
+      }
+      
+      const { sectionName, itemName, status, notes } = req.body;
+      
+      if (!sectionName || !itemName || !status) {
+        return res.status(400).json({ error: "Missing required fields: sectionName, itemName, status" });
+      }
+      
+      // Validate status is a valid AuditStatus
+      const validStatuses = ["Priority OFI", "OFI", "OK", "N/A"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status value" });
+      }
+      
+      // Check if we have cached results for this ID
+      if (!auditCache[auditId]) {
+        return res.status(404).json({ error: "Audit not found" });
+      }
+      
+      // Get the appropriate section
+      const audit = auditCache[auditId];
+      let section;
+      
+      switch (sectionName) {
+        case "onPage":
+          section = audit.onPage;
+          break;
+        case "structureNavigation":
+          section = audit.structureNavigation;
+          break;
+        case "contactPage":
+          section = audit.contactPage;
+          break;
+        case "servicePages":
+          section = audit.servicePages;
+          break;
+        case "locationPages":
+          section = audit.locationPages;
+          break;
+        case "serviceAreaPages":
+          section = audit.serviceAreaPages;
+          break;
+        default:
+          return res.status(400).json({ error: "Invalid section name" });
+      }
+      
+      if (!section) {
+        return res.status(404).json({ error: "Section not found" });
+      }
+      
+      // Find the item and update its status
+      const item = section.items.find(item => item.name === itemName);
+      
+      if (!item) {
+        return res.status(404).json({ error: "Item not found" });
+      }
+      
+      // Update the status and notes
+      const oldStatus = item.status;
+      item.status = status as AuditStatus;
+      
+      // Update notes if provided
+      if (notes !== undefined) {
+        item.notes = notes;
+      }
+      
+      // Update the summary counts
+      updateAuditSummary(audit);
+      
+      return res.json({
+        success: true,
+        updatedItem: item,
+        oldStatus,
+        newStatus: status,
+        summary: audit.summary
+      });
+    } catch (error) {
+      console.error("Error updating audit item:", error);
+      return res.status(500).json({ error: "Failed to update audit item" });
+    }
+  });
+
+  // Helper function to update the summary counts
+  function updateAuditSummary(audit: CachedRivalAudit) {
+    // Reset counts
+    audit.summary.priorityOfiCount = 0;
+    audit.summary.ofiCount = 0;
+    audit.summary.okCount = 0;
+    audit.summary.naCount = 0;
+    audit.summary.total = 0;
+    
+    // Count items in each section
+    const sections = [
+      audit.onPage,
+      audit.structureNavigation, 
+      audit.contactPage, 
+      audit.servicePages, 
+      audit.locationPages
+    ];
+    
+    if (audit.serviceAreaPages) {
+      sections.push(audit.serviceAreaPages);
+    }
+    
+    sections.forEach(section => {
+      if (!section || !section.items) return;
+      
+      section.items.forEach(item => {
+        switch (item.status) {
+          case "Priority OFI":
+            audit.summary.priorityOfiCount++;
+            break;
+          case "OFI":
+            audit.summary.ofiCount++;
+            break;
+          case "OK":
+            audit.summary.okCount++;
+            break;
+          case "N/A":
+            audit.summary.naCount++;
+            break;
+        }
+        audit.summary.total = (audit.summary.total || 0) + 1;
+      });
+    });
+  }
+
   app.get("/api/rival-audit/:id", async (req: Request, res: Response) => {
     try {
       const auditId = parseInt(req.params.id);
