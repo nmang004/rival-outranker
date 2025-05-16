@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, MessageSquare, HelpCircle, Lightbulb, TrendingUp } from 'lucide-react';
-import { useLocation } from 'wouter';
+import { X, MessageSquare, HelpCircle, Lightbulb, TrendingUp, ExternalLink, Link as LinkIcon, Search, Award } from 'lucide-react';
+import { useLocation, Link } from 'wouter';
 import { 
   Card,
   CardContent,
@@ -23,38 +23,42 @@ import { motion, AnimatePresence } from "framer-motion";
 // SEO Buddy character
 const buddyQuotes = {
   dashboard: [
-    "Welcome to your SEO dashboard! Here you can see all your key metrics at a glance.",
-    "Try analyzing a competitor to see how you stack up against them.",
-    "Remember to check your keyword rankings regularly to track your progress."
+    "Welcome to your SEO dashboard! Check out the <a href='/rival-audit'>Rival Audit</a> tool to analyze competitors.",
+    "Need keyword ideas? Try the <a href='/keyword-research'>Keyword Research</a> tool for fresh inspiration.",
+    "Track your keyword positions with the <a href='/basic-rank-tracker'>Rank Tracker</a> to see your progress."
   ],
   rivalAudit: [
-    "The Rival Audit tool helps you analyze competitor websites in detail.",
-    "Make sure to review both technical factors and content quality in your audit.",
-    "Don't forget to export your audit results for team presentations!"
+    "The Rival Audit tool helps analyze competitors. Check <a href='/competitor-analysis'>Competitor Analysis</a> too!",
+    "After your audit, use <a href='/keyword-research'>Keyword Research</a> to find gaps in your strategy.",
+    "Don't forget to <a href='/pdf-analyzer'>analyze PDF reports</a> for more insights!"
   ],
   keywordResearch: [
-    "Looking for new keywords? Focus on search intent, not just volume.",
-    "Try combining your core terms with modifiers like 'best', 'how to', or location names.",
-    "Remember that long-tail keywords often convert better, even with lower volume."
+    "Looking for keywords? Remember to focus on search intent, not just volume.",
+    "Try combining core terms with modifiers like 'best', 'how to', or location names.",
+    "Track performance in the <a href='/basic-rank-tracker'>Rank Tracker</a> after targeting new keywords."
   ],
   pdfAnalyzer: [
-    "Upload your SEO reports for smart AI analysis and insights.",
-    "PDF Analyzer works best with reports that include metrics and charts.",
-    "You can extract key insights without manual data entry!"
+    "Upload SEO reports here for AI analysis! Need help with keywords? Try <a href='/keyword-research'>Keyword Research</a>.",
+    "After analyzing, track performance with <a href='/basic-rank-tracker'>Rank Tracker</a>.",
+    "Check <a href='/rival-audit'>Rival Audit</a> to compare your data against competitors!"
   ],
   default: [
-    "Need SEO help? I'm your SEO Buddy - here to guide you through best practices!",
-    "Don't forget to check your keyword rankings to see how you're performing.",
-    "Remember the SEO basics: quality content, good technical structure, and authoritative backlinks."
+    "Need SEO help? I'm your SEO Buddy! Try the <a href='/rival-audit'>Rival Audit</a> tool first.",
+    "Looking for keyword ideas? Check out <a href='/keyword-research'>Keyword Research</a>.",
+    "Want to analyze SEO reports? Use the <a href='/pdf-analyzer'>PDF Analyzer</a> tool!"
   ]
 };
 
+// SEO character faces
+const buddyFaces = ["(◠‿◠)", "(⌐■_■)", "(◕‿◕)", "ʕ•ᴥ•ʔ", "(•‿•)"];
+
 export default function SeoBuddy() {
   const [location] = useLocation();
-  const [minimized, setMinimized] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [showBuddy, setShowBuddy] = useState(true);
   const [currentTip, setCurrentTip] = useState(0);
   const [isWaving, setIsWaving] = useState(false);
+  const [buddyFace, setBuddyFace] = useState(buddyFaces[0]);
   
   // Determine which tips to show based on current page
   const getTipsForLocation = () => {
@@ -65,17 +69,19 @@ export default function SeoBuddy() {
     return buddyQuotes.default;
   };
   
-  // Rotate through tips
+  // Rotate through tips and occasionally change face
   useEffect(() => {
     const tipInterval = setInterval(() => {
       const tips = getTipsForLocation();
       setCurrentTip((prevTip) => (prevTip + 1) % tips.length);
-      // Occasionally wave to get attention
+      
+      // Occasionally wave and change face to get attention
       if (Math.random() > 0.7) {
         setIsWaving(true);
+        setBuddyFace(buddyFaces[Math.floor(Math.random() * buddyFaces.length)]);
         setTimeout(() => setIsWaving(false), 2000);
       }
-    }, 12000);
+    }, 8000);
     
     return () => clearInterval(tipInterval);
   }, [location]);
@@ -83,11 +89,16 @@ export default function SeoBuddy() {
   // Reset tip counter when changing pages
   useEffect(() => {
     setCurrentTip(0);
+    setBuddyFace(buddyFaces[0]);
   }, [location]);
   
   if (!showBuddy) return null;
   
   const tips = getTipsForLocation();
+  
+  const createMarkup = (html) => {
+    return { __html: html };
+  };
   
   return (
     <AnimatePresence>
@@ -97,32 +108,41 @@ export default function SeoBuddy() {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
       >
-        {minimized ? (
+        {!expanded ? (
           <motion.div 
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setMinimized(false)}
-            className="bg-primary shadow-lg rounded-full p-3 cursor-pointer"
+            onClick={() => setExpanded(true)}
+            className="cursor-pointer flex flex-col items-center"
           >
-            <MessageSquare className="w-6 h-6 text-white" />
+            <motion.div
+              animate={isWaving ? { rotate: [0, 15, -15, 10, -5, 0] } : {}}
+              transition={{ duration: 1.5 }}
+              className="bg-gradient-to-br from-primary/90 to-primary shadow-lg rounded-full p-3 mb-2"
+            >
+              <div className="text-white text-lg font-bold">{buddyFace}</div>
+            </motion.div>
+            <div className="bg-white px-3 py-1.5 rounded-full text-xs shadow-md border border-gray-100">
+              Need SEO help?
+            </div>
           </motion.div>
         ) : (
-          <Card className="w-[300px] shadow-xl border-primary/10">
-            <CardHeader className="pb-2 pt-4 px-4 flex flex-row justify-between items-center">
+          <Card className="w-[250px] shadow-xl border-primary/10 rounded-2xl overflow-hidden">
+            <CardHeader className="pb-2 pt-3 px-3 flex flex-row justify-between items-center bg-gradient-to-r from-primary/10 to-primary/5">
               <div className="flex items-center">
                 <div className="mr-2 relative">
                   <motion.div
                     animate={isWaving ? { rotate: [0, 15, -15, 10, -5, 0] } : {}}
                     transition={{ duration: 1.5 }}
                   >
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-primary" />
+                    <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-bold">{buddyFace}</span>
                     </div>
                   </motion.div>
                 </div>
                 <div>
-                  <CardTitle className="text-base">SEO Buddy</CardTitle>
-                  <CardDescription className="text-xs">Your optimization assistant</CardDescription>
+                  <CardTitle className="text-sm">SEO Buddy</CardTitle>
+                  <CardDescription className="text-xs">SEO tips & tricks</CardDescription>
                 </div>
               </div>
               <div className="flex space-x-1">
@@ -130,7 +150,7 @@ export default function SeoBuddy() {
                   variant="ghost" 
                   size="icon" 
                   className="h-6 w-6" 
-                  onClick={() => setMinimized(true)}
+                  onClick={() => setExpanded(false)}
                 >
                   <span className="sr-only">Minimize</span>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -148,84 +168,114 @@ export default function SeoBuddy() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="px-4 py-2 text-sm">
+            <CardContent className="px-3 py-2 text-xs bg-gradient-to-br from-white to-gray-50">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentTip}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
-                  className="min-h-[60px] flex items-center"
+                  className="min-h-[60px] flex items-start pt-1"
                 >
-                  <Lightbulb className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" />
-                  <p>{tips[currentTip]}</p>
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-500 mr-1.5 flex-shrink-0 mt-0.5" />
+                  <div 
+                    className="tip-text" 
+                    dangerouslySetInnerHTML={createMarkup(tips[currentTip])}
+                    onClick={(e) => {
+                      // Handle click on links inside the tip text
+                      if (e.target.tagName === 'A') {
+                        e.preventDefault();
+                        const href = e.target.getAttribute('href');
+                        if (href) {
+                          // Use Wouter's navigate
+                          window.location.href = href;
+                        }
+                      }
+                    }}
+                  />
                 </motion.div>
               </AnimatePresence>
             </CardContent>
-            <CardFooter className="pt-0 px-4 pb-3">
+            <CardFooter className="pt-0 px-3 pb-3 bg-gradient-to-br from-white to-gray-50">
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full text-xs">
+                  <Button variant="outline" size="sm" className="w-full text-xs px-2 py-1 h-7">
                     <HelpCircle className="w-3 h-3 mr-1" />
-                    Get SEO help
+                    SEO Best Practices
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[400px] sm:max-w-md">
+                <SheetContent side="right" className="w-[350px] sm:max-w-md">
                   <SheetHeader>
-                    <SheetTitle>SEO Best Practices</SheetTitle>
+                    <SheetTitle className="flex items-center">
+                      <Award className="w-4 h-4 mr-2 text-primary" />
+                      SEO Best Practices
+                    </SheetTitle>
                     <SheetDescription>
                       Quick tips to improve your search rankings
                     </SheetDescription>
                   </SheetHeader>
-                  <div className="py-4">
-                    <h3 className="font-medium mb-2">Top 5 SEO Tips:</h3>
-                    <ul className="space-y-2">
+                  <div className="py-4 overflow-y-auto max-h-[calc(100vh-120px)]">
+                    <h3 className="font-medium mb-2 text-sm flex items-center">
+                      <TrendingUp className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                      Top SEO Tips:
+                    </h3>
+                    <ul className="space-y-2 mb-4">
                       <li className="flex items-start">
                         <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
                           <TrendingUp className="w-3 h-3 text-primary" />
                         </div>
-                        <span className="text-sm">Focus on user experience - Google rewards sites that visitors love</span>
+                        <div className="text-sm">
+                          <a href="https://moz.com/learn/seo/on-site-seo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
+                            Focus on user experience <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                          <span className="text-xs text-gray-600">Google rewards sites that visitors love</span>
+                        </div>
                       </li>
                       <li className="flex items-start">
                         <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                          <TrendingUp className="w-3 h-3 text-primary" />
+                          <Search className="w-3 h-3 text-primary" />
                         </div>
-                        <span className="text-sm">Create in-depth content that thoroughly answers user questions</span>
+                        <div className="text-sm">
+                          <a href="https://ahrefs.com/blog/keyword-research/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
+                            Research keywords thoroughly <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                          <span className="text-xs text-gray-600">Target terms with the right search intent</span>
+                        </div>
                       </li>
                       <li className="flex items-start">
                         <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                          <TrendingUp className="w-3 h-3 text-primary" />
+                          <LinkIcon className="w-3 h-3 text-primary" />
                         </div>
-                        <span className="text-sm">Optimize page speed - slow sites rank lower</span>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                          <TrendingUp className="w-3 h-3 text-primary" />
+                        <div className="text-sm">
+                          <a href="https://backlinko.com/link-building" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
+                            Build quality backlinks <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                          <span className="text-xs text-gray-600">From reputable, relevant sites</span>
                         </div>
-                        <span className="text-sm">Use descriptive URLs, title tags, and meta descriptions</span>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                          <TrendingUp className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-sm">Build quality backlinks from reputable, relevant sites</span>
                       </li>
                     </ul>
                     
-                    <h3 className="font-medium mb-2 mt-6">Tools in this app:</h3>
-                    <ul className="space-y-3">
-                      <li className="text-sm">
-                        <span className="font-medium">Rival Audit:</span> Analyze competitor websites for SEO gaps and opportunities
+                    <h3 className="font-medium mb-2 text-sm flex items-center">
+                      <Award className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                      Tools in this app:
+                    </h3>
+                    <ul className="space-y-2">
+                      <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                        <Link href="/rival-audit" className="font-medium text-primary hover:underline">Rival Audit:</Link>
+                        <div className="text-xs text-gray-600">Analyze competitor websites</div>
                       </li>
-                      <li className="text-sm">
-                        <span className="font-medium">Keyword Research:</span> Discover valuable search terms your audience uses
+                      <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                        <Link href="/keyword-research" className="font-medium text-primary hover:underline">Keyword Research:</Link>
+                        <div className="text-xs text-gray-600">Discover valuable search terms</div>
                       </li>
-                      <li className="text-sm">
-                        <span className="font-medium">Rank Tracker:</span> Monitor your search position for important keywords
+                      <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                        <Link href="/basic-rank-tracker" className="font-medium text-primary hover:underline">Rank Tracker:</Link>
+                        <div className="text-xs text-gray-600">Monitor search positions</div>
                       </li>
-                      <li className="text-sm">
-                        <span className="font-medium">PDF Analyzer:</span> Extract insights from SEO reports automatically
+                      <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                        <Link href="/pdf-analyzer" className="font-medium text-primary hover:underline">PDF Analyzer:</Link>
+                        <div className="text-xs text-gray-600">Extract insights from reports</div>
                       </li>
                     </ul>
                   </div>
