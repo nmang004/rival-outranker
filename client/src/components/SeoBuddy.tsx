@@ -20,6 +20,12 @@ import {
   SheetTrigger,
   SheetFooter
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import SeoBuddyChatInterface from "./SeoBuddyChatInterface";
 
