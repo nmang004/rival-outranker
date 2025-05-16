@@ -633,42 +633,68 @@ const PdfAnalyzerPage: React.FC = () => {
       
       // Fetch the sample document
       console.log('Fetching sample document from:', samplePath);
-      const response = await fetch(samplePath);
+      const response = await fetch(samplePath, {
+        method: 'GET',
+        cache: 'no-cache', // Avoid caching issues
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      });
       
       if (!response.ok) {
-        throw new Error(`Failed to load sample document. Server responded with status ${response.status}`);
+        const errorText = await response.text().catch(() => 'No error details available');
+        console.error('Sample document fetch failed:', response.status, errorText);
+        throw new Error(`Failed to load sample document. Server responded with status ${response.status}: ${errorText}`);
       }
       
+      // Get the blob from the response
       const blob = await response.blob();
-      console.log('Sample document blob received, size:', blob.size, 'bytes');
+      console.log('Sample document blob received, type:', blob.type, 'size:', blob.size, 'bytes');
       
       if (blob.size === 0) {
         throw new Error('The sample document is empty. Please try again or select a different document.');
       }
       
+      // Ensure we have the correct MIME type
+      const blobWithCorrectType = blob.type === 'application/pdf' 
+        ? blob 
+        : new Blob([await blob.arrayBuffer()], { type: 'application/pdf' });
+      
       const fileName = sampleName || 'sample-document.pdf';
       
       // Create a proper File object from the blob with the needed properties
-      const fileObj = new File([blob], fileName, { 
-        type: 'application/pdf',
-        lastModified: Date.now()
-      });
-      
-      // Set the file and type
-      setFile(fileObj);
-      setFileType('pdf');
-      
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(fileObj);
-      setPdfPreviewUrl(previewUrl);
-      
-      setProgress(30);
-      setProcessingStep('Sample document loaded successfully');
-      
-      // Automatically process the sample document after a short delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 800)); 
-      processFile();
-    } catch (error) {
+      try {
+        const fileObj = new File([blobWithCorrectType], fileName, { 
+          type: 'application/pdf',
+          lastModified: Date.now()
+        });
+        
+        // Make sure the File object has the right properties
+        if (!fileObj.type || fileObj.size === 0) {
+          throw new Error('Created file object is invalid');
+        }
+        
+        // Set the file and type
+        setFile(fileObj);
+        setFileType('pdf');
+        
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(fileObj);
+        setPdfPreviewUrl(previewUrl);
+        
+        console.log('File object created successfully:', fileObj.name, fileObj.type, fileObj.size, 'bytes');
+        
+        setProgress(30);
+        setProcessingStep('Sample document loaded successfully');
+        
+        // Automatically process the sample document after a short delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 800)); 
+        processFile();
+      } catch (fileError: any) {
+        console.error('Error creating File object:', fileError);
+        throw new Error(`Failed to create File object: ${fileError.message || 'Unknown error'}`);
+      }
+    } catch (error: any) {
       console.error('Error loading sample document:', error);
       setError(`Failed to load sample document: ${error.message || 'Unknown error'}`);
       setIsProcessing(false);

@@ -58,6 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sample PDF files for PDF Analyzer
   app.get('/api/samples/pdf/:filename', (req: Request, res: Response) => {
     const filename = req.params.filename;
+    console.log(`Sample PDF request for: ${filename}`);
+    
     const allowedFiles = [
       'summary',
       'on-page',
@@ -69,6 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Only allow specific filenames for security
     const fileKey = allowedFiles.find(f => filename.toLowerCase().includes(f));
     if (!fileKey) {
+      console.error(`Invalid sample file requested: ${filename}`);
       return res.status(404).send('File not found');
     }
     
@@ -87,11 +90,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const filePath = `./attached_assets/${actualFilename}`;
+    console.log(`Attempting to serve PDF file from: ${filePath}`);
     
-    // Send the file
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.sendFile(filePath, { root: '.' });
+    // Check if file exists
+    const fs = require('fs');
+    if (!fs.existsSync(filePath)) {
+      console.error(`Sample PDF file not found at path: ${filePath}`);
+      return res.status(404).send('Sample file not found on server');
+    }
+    
+    try {
+      // Send the file
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}.pdf"`);
+      console.log(`Sending file: ${filePath}`);
+      res.sendFile(filePath, { root: '.' });
+    } catch (error) {
+      console.error(`Error sending sample PDF: ${error.message}`);
+      res.status(500).send('Error serving sample file');
+    }
   });
   
   // Utility function for URL normalization
