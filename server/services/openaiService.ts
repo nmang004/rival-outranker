@@ -1,92 +1,67 @@
 import OpenAI from 'openai';
 
-// Initialize the OpenAI client with API key from environment
+// Create the OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-/**
- * Analyze text content using OpenAI's GPT model
- * Includes fallback for API limitations
- */
-export async function analyzeTextContent(text: string): Promise<string> {
-  try {
-    // If text is too long, truncate it to avoid token limits
-    const truncatedText = text.length > 15000 ? text.substring(0, 15000) + '...' : text;
-    
-    // Attempt to call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-      messages: [
-        { 
-          role: "system", 
-          content: "You are an expert SEO analyst reviewing a PDF document. Analyze the content and provide a comprehensive yet concise report focusing on SEO metrics, keyword analysis, content quality, and actionable recommendations. Format with proper headings and bullet points." 
-        },
-        { 
-          role: "user", 
-          content: `Please analyze this SEO report document and provide key insights:\n\n${truncatedText}` 
-        }
-      ],
-      max_tokens: 1000,
-    });
-
-    // Return the generated analysis
-    return completion.choices[0].message.content || '';
-  } catch (error: any) {
-    console.error('Error analyzing content with OpenAI:', error);
-    
-    // Handle API quota exceeded with detailed error
-    if (error.code === 'insufficient_quota') {
-      // Provide a helpful message about quota limits
-      return "AI analysis unavailable: API usage quota exceeded. The system will use basic document analysis instead. For full AI analysis capabilities, please check API quota limits.";
-    }
-    
-    // Create a fallback analysis based on text length and structure
-    const fallbackAnalysis = generateFallbackAnalysis(text);
-    
-    if (fallbackAnalysis) {
-      return fallbackAnalysis;
-    }
-    
-    // If all fallbacks fail, throw a general error
-    throw new Error('Failed to analyze content with AI. Please try again.');
-  }
+interface OpenAIAnalysisResult {
+  analysis: string;
+  model: string;
 }
 
 /**
- * Generate a fallback analysis when OpenAI API is unavailable
+ * Analyze text content using OpenAI
  */
-function generateFallbackAnalysis(text: string): string {
-  // Look for SEO-related terms in the text
-  const seoTerms = ['SEO', 'keyword', 'organic', 'ranking', 'metadata', 'backlink', 'traffic', 'SERP'];
-  const seoTermsFound = seoTerms.filter(term => text.includes(term));
-  
-  const wordCount = text.split(/\s+/).length;
-  const paragraphCount = text.split(/\n\n+/).length;
-  
-  let analysis = '## Document Analysis (Local Processing)\n\n';
-  analysis += '### Document Overview\n';
-  analysis += `* Document length: ${wordCount} words\n`;
-  analysis += `* Approximate sections: ${paragraphCount}\n\n`;
-  
-  if (seoTermsFound.length > 0) {
-    analysis += '### SEO Content Detected\n';
-    analysis += `* Document contains SEO-related terms: ${seoTermsFound.join(', ')}\n`;
-    analysis += '* Appears to be an SEO report or analysis document\n\n';
+export async function analyzeTextContent(text: string): Promise<OpenAIAnalysisResult> {
+  try {
+    // Truncate text if it's too long to avoid token limits
+    const truncatedText = text.length > 15000 ? text.substring(0, 15000) : text;
+    
+    // Create the prompt for SEO/Analytics report analysis
+    const prompt = `You are an SEO analyst examining a PDF document. The document likely contains SEO or analytics data, performance metrics, and visualizations.
+
+Your task:
+1. Identify the main purpose of the document
+2. Extract and summarize key metrics
+3. Note any significant trends (positive or negative)
+4. Identify the timeframe covered by the report
+5. Format your response in markdown with sections organized by topic
+6. Use bullet points for key findings
+
+Ensure your analysis is concise but comprehensive, focusing on the most important information that would be valuable to a marketing director or account manager who needs to report to a client.
+
+Here is the document text:
+${truncatedText}`;
+
+    console.log("Calling OpenAI API for analysis...");
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are a helpful SEO analyst assistant." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.5,
+      max_tokens: 1500
+    });
+    
+    const analysisText = response.choices[0].message.content || '';
+    console.log("Successfully received analysis from OpenAI API");
+    
+    return {
+      analysis: analysisText,
+      model: "gpt-4o"
+    };
+    
+  } catch (error) {
+    console.error("Error during OpenAI analysis:", error);
+    return {
+      analysis: "## AI Analysis Temporarily Unavailable\n\nWe were unable to complete the AI analysis of this document. You can still view the extracted text and other document details in the tabs below.",
+      model: "error"
+    };
   }
-  
-  analysis += '### Key Points\n';
-  analysis += '* Basic document structure analysis completed\n';
-  analysis += '* For detailed AI analysis, please ensure API quota is available\n';
-  analysis += '* This is a fallback analysis due to API limitations\n\n';
-  
-  analysis += '### Next Steps\n';
-  analysis += '* Review the extracted text tab for complete document content\n';
-  analysis += '* Consider checking API quota if AI analysis is needed\n';
-  
-  return analysis;
 }
 
 export default {
-  analyzeTextContent,
+  analyzeTextContent
 };
