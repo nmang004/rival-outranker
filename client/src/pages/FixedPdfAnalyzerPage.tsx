@@ -354,13 +354,47 @@ const PdfAnalyzerPage: React.FC = () => {
           return obj;
         }, {} as Record<string, number>);
       
-      // Generate dummy metrics for visualization
+      // Import and use the chart detection utilities
+      const chartDetection = await import('../utils/chartDetection').then(module => module.default);
+      
+      // Analyze the text for charts and metrics
+      const chartAnalysis = chartDetection.detectChartData(text);
+      
+      // Generate insights about the charts
+      let chartInsights = '';
+      if (chartAnalysis.chartCount > 0) {
+        chartInsights = chartDetection.generateChartInsights(chartAnalysis);
+        console.log('Chart analysis:', chartAnalysis);
+      }
+      
+      // Extract real metrics from the chart analysis if available, or use fallback
       const metricsData = {
-        traffic: Math.floor(Math.random() * 50000) + 10000,
-        rankings: Math.floor(Math.random() * 50) + 10,
-        conversion: (Math.random() * 5 + 1).toFixed(2),
-        visibility: Math.floor(Math.random() * 100),
+        traffic: extractMetricValue(chartAnalysis.metrics, 'Sessions', 'Users', 'Traffic') || Math.floor(Math.random() * 50000) + 10000,
+        rankings: extractMetricValue(chartAnalysis.metrics, 'Position', 'Ranking', 'Keywords') || Math.floor(Math.random() * 50) + 10,
+        conversion: extractMetricValue(chartAnalysis.metrics, 'Conversion', 'CTR') || (Math.random() * 5 + 1).toFixed(2),
+        visibility: extractMetricValue(chartAnalysis.metrics, 'Visibility', 'Impression') || Math.floor(Math.random() * 100),
       };
+      
+      // Helper function to extract metric values from analysis
+      function extractMetricValue(metrics: any[], ...namePatterns: string[]): number | null {
+        const metric = metrics.find(m => 
+          namePatterns.some(pattern => 
+            m.name.toLowerCase().includes(pattern.toLowerCase())
+          )
+        );
+        
+        if (metric && metric.value && typeof metric.value === 'string') {
+          // Try to parse numeric value from the string
+          const numValue = parseFloat(metric.value.replace(/[^\d.-]/g, ''));
+          if (!isNaN(numValue)) {
+            return numValue;
+          }
+        } else if (metric && typeof metric.value === 'number') {
+          return metric.value;
+        }
+        
+        return null;
+      }
       
       // Attempt AI analysis using the PDF analysis service
       try {
@@ -369,9 +403,39 @@ const PdfAnalyzerPage: React.FC = () => {
         // Import our PDF analysis service
         const pdfAnalysisService = await import('../services/pdfAnalysisService').then(module => module.default);
         
-        // Call our server-side analysis service with the extracted text
+        // Enhance the text with chart analysis if available
+        let enhancedText = text;
+        if (chartAnalysis.chartCount > 0) {
+          // Add chart analysis to the text for better AI insights
+          enhancedText += "\n\n--- CHART AND GRAPH ANALYSIS ---\n";
+          enhancedText += `Detected ${chartAnalysis.chartCount} charts/graphs in the document.\n`;
+          
+          if (chartAnalysis.hasAnalyticsData) {
+            enhancedText += "Google Analytics data detected with metrics:\n";
+            chartAnalysis.metrics
+              .filter(m => ['Sessions', 'Users', 'Pageviews', 'Bounce Rate'].some(term => m.name.includes(term)))
+              .forEach(m => {
+                enhancedText += `- ${m.name}: ${m.value}\n`;
+              });
+          }
+          
+          if (chartAnalysis.hasSearchConsoleData) {
+            enhancedText += "Google Search Console data detected with metrics:\n";
+            chartAnalysis.metrics
+              .filter(m => ['Impressions', 'Clicks', 'CTR', 'Position'].some(term => m.name.includes(term)))
+              .forEach(m => {
+                enhancedText += `- ${m.name}: ${m.value}\n`;
+              });
+          }
+          
+          if (chartAnalysis.timeframe) {
+            enhancedText += `Time period covered: ${chartAnalysis.timeframe}\n`;
+          }
+        }
+        
+        // Call our server-side analysis service with the enhanced text
         const aiResult = await pdfAnalysisService.analyzePdfContent(
-          text,
+          enhancedText,
           file.name,
           file.size,
           0 // pageCount is handled by the server
@@ -383,14 +447,28 @@ const PdfAnalyzerPage: React.FC = () => {
         } else {
           console.warn('Failed to get AI analysis:', aiResult.message);
           
-          // Generate fallback insights based on document analysis
-          generateFallbackInsights(text, file.name, sortedKeywords);
+          // Generate fallback insights with chart analysis included
+          const insights = generateFallbackInsights(text, file.name, sortedKeywords);
+          
+          // Add chart insights if available
+          if (chartInsights) {
+            setAiInsights(insights + '\n\n' + chartInsights);
+          } else {
+            setAiInsights(insights);
+          }
         }
       } catch (apiError) {
         console.error('Error connecting to PDF analysis API:', apiError);
         
-        // Generate fallback insights if AI fails
-        generateFallbackInsights(text, file.name, sortedKeywords);
+        // Generate fallback insights with chart analysis included
+        const insights = generateFallbackInsights(text, file.name, sortedKeywords);
+        
+        // Add chart insights if available
+        if (chartInsights) {
+          setAiInsights(insights + '\n\n' + chartInsights);
+        } else {
+          setAiInsights(insights);
+        }
       }
       
       // Set summary data
