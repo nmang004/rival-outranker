@@ -56,8 +56,11 @@ export default function SeoBuddyChatInterface({ onClose, showHeader = true, onEx
     }
   };
   
-  // Expanded/collapsed height
-  const chatHeight = isExpanded ? 'h-[400px]' : 'h-[200px]';
+  // Calculate appropriate height based on screen size and expansion state
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const mobileHeight = isExpanded ? 'h-[350px]' : 'h-[200px]';
+  const desktopHeight = isExpanded ? 'h-[450px]' : 'h-[250px]';
+  const chatHeight = isMobile ? mobileHeight : desktopHeight;
 
   // Common SEO questions for more natural responses
   const commonQuestions = [
@@ -381,6 +384,7 @@ Would you like specific recommendations for any of these technical areas?`
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5"
+                    data-chat-expand="true"
                     onClick={() => handleResize(!isExpanded)}
                   >
                     {isExpanded ? (

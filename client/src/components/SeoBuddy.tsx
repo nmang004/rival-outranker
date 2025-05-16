@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, MessageSquare, HelpCircle, Lightbulb, TrendingUp, ExternalLink, Link as LinkIcon, Search, Award, MessageCircle, ChevronLeft } from 'lucide-react';
+import { X, MessageSquare, HelpCircle, Lightbulb, TrendingUp, ExternalLink, Link as LinkIcon, Search, Award, MessageCircle, ChevronLeft, Maximize2, Minimize2 } from 'lucide-react';
 import { useLocation, Link } from 'wouter';
 import { 
   Card,
@@ -285,11 +285,41 @@ export default function SeoBuddy() {
               
               {/* Chatbot Section - Conditional */}
               {showChatBot && (
-                <CardContent className="p-0 overflow-hidden">
+                <CardContent className="p-0 overflow-hidden relative">
                   <SeoBuddyChatInterface 
                     onClose={() => setShowChatBot(false)}
                     showHeader={false}
+                    onExpand={(expanded) => {
+                      // Handle expanded state if needed
+                      const newFaceIndex = Math.floor(Math.random() * buddyFaces.length);
+                      setBuddyFace(buddyFaces[newFaceIndex]);
+                    }}
                   />
+                  <div className="absolute top-1 right-1 z-10 flex gap-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 bg-white/80 hover:bg-white rounded-full"
+                            onClick={() => {
+                              // Toggle expanded state in chat interface
+                              const chatElem = document.querySelector('[data-chat-expand]') as HTMLButtonElement;
+                              if (chatElem) {
+                                chatElem.click();
+                              }
+                            }}
+                          >
+                            <Maximize2 className="h-2.5 w-2.5 text-primary/70" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="text-xs">
+                          <p>Expand chat</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </CardContent>
               )}
               
