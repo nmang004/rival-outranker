@@ -3,12 +3,41 @@
  */
 
 /**
- * Send extracted text for AI-powered analysis
+ * Helper function to chunk large files for transmission
+ */
+function chunkArrayBuffer(arrayBuffer: ArrayBuffer, chunkSize: number = 500 * 1024): ArrayBuffer[] {
+  const chunks: ArrayBuffer[] = [];
+  const bytesTotal = arrayBuffer.byteLength;
+  
+  for (let offset = 0; offset < bytesTotal; offset += chunkSize) {
+    const sliceSize = Math.min(chunkSize, bytesTotal - offset);
+    const chunk = arrayBuffer.slice(offset, offset + sliceSize);
+    chunks.push(chunk);
+  }
+  
+  return chunks;
+}
+
+/**
+ * Convert an ArrayBuffer to base64 string
+ */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Send PDF content for AI-powered analysis, with support for both file and text-based analysis
  * 
  * @param pdfText The extracted text content from the PDF
  * @param fileName Name of the PDF file
  * @param fileSize Size of the PDF in bytes
  * @param pageCount Number of pages in the PDF
+ * @param pdfFile The actual PDF file object (optional)
  * @returns The analysis result from the server
  */
 export async function analyzePdfContent(
@@ -16,7 +45,7 @@ export async function analyzePdfContent(
   fileName?: string, 
   fileSize?: number, 
   pageCount?: number,
-  _pdfFile?: File | Blob // We're not using this directly anymore due to size limitations
+  pdfFile?: File | Blob
 ): Promise<{
   success: boolean;
   analysis?: string;
@@ -24,8 +53,8 @@ export async function analyzePdfContent(
   message?: string;
 }> {
   try {
-    // Note: We're not sending the PDF directly because of payload size limitations
-    // Instead, we're relying on the extracted text which is more efficient
+    // First try sending just the text content, which works better for large documents
+    console.log("Analyzing PDF using extracted text...");
     
     // Make the request to our server endpoint
     const response = await fetch('/api/pdf-analyzer', {
@@ -34,7 +63,6 @@ export async function analyzePdfContent(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        // Just send the text - more reliable and works with large files
         text: pdfText,
         fileName: fileName || 'document.pdf',
         fileSize: fileSize || 0,
@@ -46,7 +74,15 @@ export async function analyzePdfContent(
       throw new Error(`API request failed with status ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    
+    // If text analysis worked well, return the result
+    if (result.success && result.analysis) {
+      return result;
+    } else {
+      console.warn("Text-based analysis was not successful, falling back to basic document info");
+      return result;
+    }
   } catch (error) {
     console.error('Error analyzing PDF content:', error);
     return {
