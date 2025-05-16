@@ -76,40 +76,47 @@ export default function NavBar() {
                   <Users className="h-4 w-4 mr-1" /> Competitors
                 </button>
               </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className={linkClass(location.startsWith("/rival") ? location : "") + " cursor-pointer hover:border-primary/50 hover:text-foreground"}>
+              <div className="flex items-center">
+                <Link href="/rival-audit">
+                  <div className={linkClass("/rival-audit")} style={{ borderBottomWidth: '0' }}>
                     <ClipboardCheck className="h-4 w-4 mr-1" /> 
                     Rival Audit
-                    <ChevronDown className="h-3 w-3 ml-1" />
                   </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-60">
-                  <Link href="/rival-audit">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <ClipboardCheck className="h-4 w-4 mr-2" />
-                      Rival Audit Tool
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/basic-rank-tracker">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <BarChart className="h-4 w-4 mr-2" />
-                      Basic Rank Tracker
-                    </DropdownMenuItem>
-                  </Link>
-                  <Link href="/keyword-research">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Search className="h-4 w-4 mr-2" />
-                      Keyword Research
-                    </DropdownMenuItem>
-                  </Link>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Link href="/pdf-analyzer">
-                <div className={linkClass("/pdf-analyzer")}>
-                  <FileUp className="h-4 w-4 mr-1" /> PDF Analyzer
-                </div>
-              </Link>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div className="cursor-pointer hover:text-foreground flex items-center px-1 h-full">
+                      <ChevronDown className="h-3 w-3" />
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-60">
+                    <Link href="/rival-audit">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <ClipboardCheck className="h-4 w-4 mr-2" />
+                        Rival Audit Tool
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/basic-rank-tracker">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <BarChart className="h-4 w-4 mr-2" />
+                        Basic Rank Tracker
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/keyword-research">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Search className="h-4 w-4 mr-2" />
+                        Keyword Research
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/pdf-analyzer">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <FileUp className="h-4 w-4 mr-2" />
+                        PDF Analyzer
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-1" /> History
@@ -164,27 +171,27 @@ export default function NavBar() {
           <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
             <div className={mobileLinkClass("/rival-audit")}>
               <div className="flex items-center">
-                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit Tool
+                <ClipboardCheck className="h-4 w-4 mr-2" /> Rival Audit
               </div>
             </div>
           </Link>
 
           <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
-            <div className={mobileLinkClass("/basic-rank-tracker") + " pl-4"}>
+            <div className={mobileLinkClass("/basic-rank-tracker") + " pl-8"}>
               <div className="flex items-center">
                 <BarChart className="h-4 w-4 mr-2" /> Basic Rank Tracker
               </div>
             </div>
           </Link>
           <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
-            <div className={mobileLinkClass("/keyword-research") + " pl-4"}>
+            <div className={mobileLinkClass("/keyword-research") + " pl-8"}>
               <div className="flex items-center">
                 <Search className="h-4 w-4 mr-2" /> Keyword Research
               </div>
             </div>
           </Link>
           <Link href="/pdf-analyzer" onClick={() => setMobileMenuOpen(false)}>
-            <div className={mobileLinkClass("/pdf-analyzer")}>
+            <div className={mobileLinkClass("/pdf-analyzer") + " pl-8"}>
               <div className="flex items-center">
                 <FileUp className="h-4 w-4 mr-2" /> PDF Analyzer
               </div>
