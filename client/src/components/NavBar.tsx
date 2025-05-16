@@ -90,12 +90,6 @@ export default function NavBar() {
                   <div className="pt-1.5">
                     <div className="bg-white rounded-md shadow-xl border border-gray-100 w-60 overflow-hidden">
                       <div className="py-1">
-                        <Link href="/rival-audit">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <ClipboardCheck className="h-4 w-4 mr-2.5 text-primary" />
-                            <span>Rival Audit Tool</span>
-                          </div>
-                        </Link>
                         <Link href="/basic-rank-tracker">
                           <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
                             <BarChart className="h-4 w-4 mr-2.5 text-primary" />
@@ -191,14 +185,6 @@ export default function NavBar() {
             
             {/* Nested items with visual indication */}
             <div className="border-l border-primary/20 ml-4 mt-1">
-              <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
-                <div className={mobileLinkClass(location === "/rival-audit" ? "/rival-audit" : "") + " border-l-0 py-1.5 pl-8"}>
-                  <div className="flex items-center">
-                    <ClipboardCheck className="h-3.5 w-3.5 mr-2 text-primary/70" /> 
-                    <span className="text-sm">Rival Audit Tool</span>
-                  </div>
-                </div>
-              </Link>
               <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
                 <div className={mobileLinkClass("/basic-rank-tracker") + " border-l-0 py-1.5 pl-8"}>
                   <div className="flex items-center">
