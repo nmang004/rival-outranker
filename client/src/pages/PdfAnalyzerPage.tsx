@@ -239,22 +239,105 @@ that should be highlighted when communicating results to clients.
         // If we successfully loaded the PDF, extract text
         if (pdf) {
           let extractedText = documentSummary;
-          const totalPages = Math.min(pdf.numPages, 10); // Limit to first 10 pages for demo
+          const totalPages = Math.min(pdf.numPages, 15); // Extract up to 15 pages for more comprehensive analysis
+          
+          // Explicitly set the URL for preview
+          if (!pdfPreviewUrl && fileBlob) {
+            try {
+              const url = URL.createObjectURL(fileBlob);
+              setPdfPreviewUrl(url);
+              console.log("Successfully created preview URL:", url);
+            } catch (urlError) {
+              console.error("Error creating preview URL:", urlError);
+            }
+          }
+          
+          // First scan: Look for headings and table of contents
+          let tableOfContents = [];
+          let headings = [];
+          
+          for (let i = 1; i <= Math.min(5, totalPages); i++) {
+            try {
+              setProcessingStep(`Analyzing document structure (page ${i})`);
+              
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              
+              // Look for likely headings (short lines, possibly numbered, with specific formatting)
+              for (const item of textContent.items) {
+                const text = item.str.trim();
+                // Detect headings by format (numbers followed by text, all caps, etc.)
+                if ((text.match(/^\d+(\.\d+)*\s+[A-Z]/)) ||
+                    (text.length < 60 && text.toUpperCase() === text && text.length > 5) ||
+                    (text.match(/^(SUMMARY|OVERVIEW|INTRODUCTION|CONCLUSION|RECOMMENDATIONS|APPENDIX|TABLE|FIGURE)/i))) {
+                  headings.push(text);
+                }
+                
+                // Detect table of contents entries
+                if (text.match(/^\s*\d+\s*$/) || // Page numbers
+                    text.match(/^\.\.\.\.\s*\d+\s*$/) || // Dots followed by page numbers
+                    text.match(/^[A-Z][a-z]+(\s+[A-Z][a-z]+){1,5}\s*\.{2,}\s*\d+$/)) { // Title followed by dots and page number
+                  tableOfContents.push(text);
+                }
+              }
+            } catch (pageError) {
+              console.error(`Error analyzing structure on page ${i}:`, pageError);
+            }
+          }
+          
+          // Add structure information to our analysis
+          if (headings.length > 0) {
+            extractedText += "\n--- Document Structure ---\n";
+            extractedText += "Main headings detected:\n";
+            // Only include first 10 headings to avoid overwhelming
+            extractedText += headings.slice(0, 10).map(h => `• ${h}`).join("\n");
+            extractedText += "\n";
+          }
           
           // Extract text from each page
+          const pageTexts = [];
+          
           for (let i = 1; i <= totalPages; i++) {
             try {
-              setProcessingStep(`Extracting text from page ${i} of ${totalPages}`);
+              setProcessingStep(`Extracting content from page ${i} of ${totalPages}`);
               setProgress(Math.floor((i / totalPages) * 50)); // First half of progress bar
               
               const page = await pdf.getPage(i);
               const textContent = await page.getTextContent();
-              const pageText = textContent.items
-                .map((item: any) => item.str)
-                .join(' ');
+              
+              // More sophisticated text extraction that preserves some structure
+              let lastY = null;
+              let textChunks = [];
+              let currentLine = '';
+              
+              for (const item of textContent.items) {
+                // Group text by vertical position to maintain paragraph structure
+                if (lastY !== null && Math.abs(lastY - item.transform[5]) > 5) {
+                  if (currentLine.trim().length > 0) {
+                    textChunks.push(currentLine.trim());
+                    currentLine = '';
+                  }
+                }
+                
+                currentLine += item.str + ' ';
+                lastY = item.transform[5];
+              }
+              
+              // Add the last line
+              if (currentLine.trim().length > 0) {
+                textChunks.push(currentLine.trim());
+              }
+              
+              const pageText = textChunks.join("\n");
+              pageTexts.push(pageText);
               
               if (pageText.trim().length > 0) {
-                extractedText += `\n--- Page ${i} Content ---\n${pageText}\n`;
+                // Only include first 2000 chars per page to avoid huge output
+                const truncatedText = pageText.length > 2000 ? 
+                  pageText.substring(0, 2000) + "... [content truncated]" : 
+                  pageText;
+                  
+                extractedText += `\n--- Page ${i} Content ---\n${truncatedText}\n`;
               }
             } catch (pageError) {
               console.error(`Error extracting text from page ${i}:`, pageError);
@@ -262,9 +345,50 @@ that should be highlighted when communicating results to clients.
             }
           }
           
+          // Look for data patterns in the extracted text
+          const numericPatterns = [];
+          const combinedText = pageTexts.join(" ");
+          
+          // Look for percentages
+          const percentMatches = combinedText.match(/(\d+(\.\d+)?%)/g) || [];
+          if (percentMatches.length > 0) {
+            numericPatterns.push(`Percentage metrics: ${percentMatches.slice(0, 8).join(", ")}`);
+          }
+          
+          // Look for rankings
+          const rankingMatches = combinedText.match(/rank(ing|ed|s)?\s+(\d+|#\d+)/gi) || [];
+          if (rankingMatches.length > 0) {
+            numericPatterns.push(`Ranking metrics: ${rankingMatches.slice(0, 5).join(", ")}`);
+          }
+          
+          // Look for traffic numbers
+          const trafficMatches = combinedText.match(/traffic:?\s+(\d{1,3}(,\d{3})*)/gi) || [];
+          if (trafficMatches.length > 0) {
+            numericPatterns.push(`Traffic metrics: ${trafficMatches.slice(0, 5).join(", ")}`);
+          }
+          
+          // Add data patterns to our analysis
+          if (numericPatterns.length > 0) {
+            extractedText += "\n--- Data Metrics Detected ---\n";
+            extractedText += numericPatterns.join("\n");
+            extractedText += "\n";
+          }
+          
           return extractedText;
         } else {
           // Return our document summary if PDF loading failed
+          
+          // Still try to set the preview URL even if text extraction failed
+          if (!pdfPreviewUrl && fileBlob) {
+            try {
+              const url = URL.createObjectURL(fileBlob);
+              setPdfPreviewUrl(url);
+              console.log("Created preview URL despite extraction failure:", url);
+            } catch (urlError) {
+              console.error("Error creating preview URL:", urlError);
+            }
+          }
+          
           return documentSummary;
         }
       } catch (pdfError) {
@@ -535,41 +659,135 @@ Conversion Rate: 3.8%
         }
       }
       
-      const aiAnalysisText = `
-# ${file.name.replace(/\.[^/.]+$/, "")} - Executive Summary
+      // Create a more sophisticated analysis based on the data patterns we've detected
+let detectedKeywords = Object.keys(sortedKeywords).slice(0, 8);
+let detectedTimeframeMatch = text.match(/((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4})/gi);
+let detectedTimeframes = detectedTimeframeMatch ? Array.from(new Set(detectedTimeframeMatch)).slice(0, 3) : [];
 
-## Report Overview
-This document appears to be a ${contentLength} report containing approximately ${pageCount} pages of data, metrics, and analytics information. The report likely contains performance trends and metrics analysis for the period covered.
+// Look for numeric values like rankings, traffic, etc.
+const numericValues = {};
+const rankingMatch = text.match(/rank(ing|ed)?\s+(\d+)/gi);
+if (rankingMatch && rankingMatch.length > 0) {
+  numericValues.rankings = rankingMatch.slice(0, 5);
+}
 
-## Key Data Points
-${keyFindings ? keyFindings : `
-- Performance metrics and KPIs for the covered period
-- Trend analysis showing performance changes over time
-- Comparative data against previous periods
-- Visual data representations (charts, graphs, tables)
-- Strategic recommendations based on data insights`}
+const trafficMatch = text.match(/traffic:?\s+(\d{1,3}(,\d{3})*)/gi);
+if (trafficMatch && trafficMatch.length > 0) {
+  numericValues.traffic = trafficMatch.slice(0, 3);
+}
 
-## Data Context
-- Document contains approximately ${wordCount} words of textual content
-- Primary focus areas include: ${Object.keys(sortedKeywords).slice(0, 3).join(', ') || 'performance metrics, trend analysis, strategic insights'}
-- Report appears to contain data visualizations alongside textual analysis
+const conversionMatch = text.match(/(conversion|rate|cr):\s+(\d+(\.\d+)?%)/gi);
+if (conversionMatch && conversionMatch.length > 0) {
+  numericValues.conversions = conversionMatch.slice(0, 3);
+}
 
-## Summary for Client Communication
-This report provides comprehensive performance data for the analyzed period. Key trends indicate ${text.includes('increase') || text.includes('growth') ? 'potential growth opportunities' : text.includes('decrease') || text.includes('decline') ? 'areas requiring attention' : 'various performance patterns'} that should be highlighted in client communications.
+// Check if the report mentions growth or decline
+const hasPositiveMetrics = text.match(/increase|growth|higher|improved|better|up/gi);
+const hasNegativeMetrics = text.match(/decrease|decline|lower|worse|down|drop/gi);
+const trendDirection = hasPositiveMetrics && hasPositiveMetrics.length > hasNegativeMetrics?.length 
+  ? 'positive' 
+  : hasNegativeMetrics && hasNegativeMetrics.length > hasPositiveMetrics?.length
+  ? 'negative'
+  : 'mixed';
 
-The most valuable insights to share with clients would focus on:
-1. Overall performance summary with clear metrics
-2. Notable trend changes and their business impact
-3. Strategic recommendations based on the data analysis
-4. Projected outcomes for implementing the suggested strategies
+// Extract file name components for a cleaner title
+const fileName = file.name.replace(/\.[^/.]+$/, "");
+let clientName = '';
+if (fileName.includes('_')) {
+  clientName = fileName.split('_')[0];
+} else if (fileName.includes(' ')) {
+  clientName = fileName.split(' ')[0];
+}
 
-## Recommended Client Presentation Approach
-- Begin with an executive summary of key performance metrics
-- Highlight the most significant data trends with visual support
-- Present actionable insights derived from the analysis
-- Conclude with strategic recommendations and projected outcomes
+// Format detected metrics for better presentation
+const formatMetrics = () => {
+  let metricsText = '';
+  
+  if (Object.keys(numericValues).length > 0) {
+    Object.entries(numericValues).forEach(([key, values]) => {
+      metricsText += `- ${key.charAt(0).toUpperCase() + key.slice(1)}: ${values.join(', ')}\n`;
+    });
+  }
+  
+  // If we have percentages, include them
+  const percentages = text.match(/\d+(\.\d+)?%/g);
+  if (percentages && percentages.length > 0) {
+    const uniquePercentages = Array.from(new Set(percentages)).slice(0, 8);
+    metricsText += `- Key performance percentages: ${uniquePercentages.join(', ')}\n`;
+  }
+  
+  return metricsText.length > 0 ? metricsText : 'Specific metrics were not extractable from this document format.';
+};
 
-This summary is designed to help Account Directors quickly identify the most relevant information to share with clients in a concise, value-focused manner.
+// Create a more detailed, SEO-specific analysis if it's an SEO report
+let reportSpecificInsights = '';
+if (fileName.toLowerCase().includes('seo') || text.toLowerCase().includes('seo') || text.toLowerCase().includes('search engine')) {
+  reportSpecificInsights = `
+## SEO Performance Insights
+- The report contains data on search visibility and organic performance
+- ${trendDirection === 'positive' ? 'Growth patterns' : trendDirection === 'negative' ? 'Decline patterns' : 'Varied patterns'} are evident in the metrics
+- Key SEO factors tracked include rankings, traffic, and visibility
+${text.toLowerCase().includes('keyword') ? '- Keyword performance analysis is included in the report' : ''}
+${text.toLowerCase().includes('backlink') ? '- Backlink profile assessment is covered' : ''}
+${text.toLowerCase().includes('technical') ? '- Technical SEO factors are evaluated' : ''}
+  `;
+} else if (fileName.toLowerCase().includes('analytics') || text.toLowerCase().includes('analytics')) {
+  reportSpecificInsights = `
+## Analytics Performance Insights
+- The report contains data on user behavior and site performance
+- ${trendDirection === 'positive' ? 'Positive trends' : trendDirection === 'negative' ? 'Concerning trends' : 'Mixed trends'} are evident in the analytics data
+- Key metrics tracked include traffic, sessions, and user engagement
+${text.toLowerCase().includes('conversion') ? '- Conversion rate optimization data is included' : ''}
+${text.toLowerCase().includes('source') ? '- Traffic source analysis is provided' : ''}
+${text.toLowerCase().includes('user') ? '- User behavior patterns are analyzed' : ''}
+  `;
+} else {
+  reportSpecificInsights = `
+## Performance Data Insights
+- The report contains various performance metrics and indicators
+- ${trendDirection === 'positive' ? 'Positive performance' : trendDirection === 'negative' ? 'Performance challenges' : 'Mixed performance results'} are shown in the data
+- Multiple data points are tracked across different performance areas
+- Visualizations help illustrate key performance trends
+  `;
+}
+
+const aiAnalysisText = `
+# ${clientName || fileName} Executive Summary
+For the period: ${detectedTimeframes.length > 0 ? detectedTimeframes.join(' to ') : timeframe || 'Covered Period'}
+
+## Report Analysis
+This document is a comprehensive performance report containing approximately ${pageCount} pages of data, metrics, and analytics. The analysis reveals patterns and trends in ${detectedKeywords.length > 0 ? detectedKeywords.join(', ') : 'key performance areas'}.
+
+## Key Metrics Detected
+${formatMetrics()}
+
+${reportSpecificInsights}
+
+## Client Communication Strategy
+When presenting this data to clients, focus on these key elements:
+
+### 1. Performance Overview
+- Present the overall ${trendDirection === 'positive' ? 'improvements in performance metrics' : trendDirection === 'negative' ? 'challenges in performance metrics' : 'changes in performance metrics'}
+- Highlight ${trendDirection === 'positive' ? 'the successful areas' : trendDirection === 'negative' ? 'areas needing attention' : 'the most significant changes'}
+- Provide context for the metrics against industry benchmarks
+
+### 2. Strategic Implications
+- Discuss how these results impact the client's business objectives
+- Connect the data points to ROI and business outcomes
+- Identify opportunities for optimization based on the findings
+
+### 3. Action Plan
+- Recommend specific next steps based on the report findings
+- Prioritize actions based on potential impact and resource requirements
+- Include timeline estimates for implementing recommendations
+
+## Presentation Format Recommendations
+- Begin with a high-level executive summary highlighting key wins and opportunities
+- Use visualizations from the report to illustrate performance trends
+- Present a clear before/after comparison where improvement metrics exist
+- End with a prioritized action plan that ties directly to business goals
+
+This analysis is designed to help account directors quickly extract the most valuable insights from complex report data for clear client communication.
 `;
       
       setAiInsights(aiAnalysisText);
