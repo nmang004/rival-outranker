@@ -10,11 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image as ImageIcon, Loader2, Code, Globe, Search, Layers, Share2, MapPin, BarChart } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url
-).toString();
+// Configure PDF.js worker using CDN to avoid worker loading issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.worker.min.js';
 
 // Static paths for sample documents (directly from static server)
 const summaryPdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Summary.pdf';
