@@ -11,7 +11,7 @@ import { generateRivalAuditExcel } from "./services/excelExporter";
 import { generateRivalAuditCsv } from "./services/csvExporter";
 import fs from "fs";
 import path from "path";
-import { urlFormSchema, insertAnalysisSchema, RivalAudit, updateKeywordSchema } from "@shared/schema";
+import { urlFormSchema, insertAnalysisSchema, RivalAudit, updateKeywordSchema, AuditStatus } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";

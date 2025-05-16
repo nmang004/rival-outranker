@@ -48,6 +48,14 @@ export default function RivalAuditResultsPage() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("summary");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // State to manage real-time updates to summary counts without refetching
+  const [updatedSummary, setUpdatedSummary] = useState<{
+    priorityOfiCount: number;
+    ofiCount: number;
+    okCount: number;
+    naCount: number;
+    total?: number;
+  } | null>(null);
   const [isContinuing, setIsContinuing] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "dashboard">("list");
   
