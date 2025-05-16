@@ -540,8 +540,17 @@ const PdfAnalyzerPage: React.FC = () => {
   const processFile = async () => {
     // Check if we have a file to process
     console.log('Processing file:', file?.name, file?.type, fileType);
+    console.log('File object details:', JSON.stringify({
+      hasFile: !!file,
+      hasType: !!fileType,
+      name: file?.name,
+      size: file?.size
+    }));
     
-    if (!file || !fileType) {
+    // Don't show error if we have a progress - it means the file is loading
+    if (progress > 0 && !error) {
+      console.log('File is loading, proceeding with processing');
+    } else if (!file || !fileType) {
       setError('Please upload a file first');
       return;
     }
@@ -646,6 +655,10 @@ const PdfAnalyzerPage: React.FC = () => {
   // Load sample document
   const loadSampleDocument = async (samplePath: string, sampleName: string) => {
     try {
+      // Reset any previous state
+      setExtractedText('');
+      setAnalysisComplete(false);
+      setSummary(null);
       setIsProcessing(true);
       setError(null);
       setProgress(10);
@@ -710,16 +723,31 @@ const PdfAnalyzerPage: React.FC = () => {
         setProgress(30);
         setProcessingStep('Sample document loaded successfully');
         
-        // Clear any previous errors specifically related to file loading
-        if (error && error.includes('upload a file first')) {
-          setError(null);
-        }
-        
         // Wait a bit for the UI to update before processing
-        await new Promise(resolve => setTimeout(resolve, 800)); 
+        await new Promise(resolve => setTimeout(resolve, 500)); 
         
-        // Process the document
-        processFile();
+        // Now process the file - we need to do it in a way that ensures the state is updated
+        // Manually extract and analyze the document
+        try {
+          console.log('Starting manual text extraction for sample document');
+          const text = await extractTextFromPdf(customFileObject as any);
+          console.log('Text extracted successfully, length:', text.length);
+          
+          setExtractedText(text);
+          setProgress(80);
+          setProcessingStep('Analyzing extracted text...');
+          
+          const analysisResult = analyzeText(text);
+          setSummary(analysisResult);
+          setProgress(100);
+          setProcessingStep('Analysis complete!');
+          setIsProcessing(false);
+          setAnalysisComplete(true);
+        } catch (processingError: any) {
+          console.error('Error during manual processing:', processingError);
+          setError(`Failed to process document: ${processingError?.message || 'Unknown error'}`);
+          setIsProcessing(false);
+        }
       } catch (fileError: any) {
         console.error('Error creating file object:', fileError);
         throw new Error(`Failed to prepare document: ${fileError?.message || 'Unknown error'}`);
