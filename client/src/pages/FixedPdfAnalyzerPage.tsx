@@ -435,12 +435,13 @@ const PdfAnalyzerPage: React.FC = () => {
           }
         }
         
-        // Call our server-side analysis service with the enhanced text
+        // Call our server-side analysis service with both the PDF file and enhanced text
         const aiResult = await pdfAnalysisService.analyzePdfContent(
           enhancedText,
           file.name,
           file.size,
-          0 // pageCount is handled by the server
+          0, // pageCount is handled by the server
+          file // Pass the actual PDF file for direct OpenAI analysis
         );
         
         // If we got a successful analysis, use it

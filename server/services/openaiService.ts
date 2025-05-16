@@ -125,5 +125,6 @@ export async function analyzePdfFile(pdfBuffer: Buffer, fileName: string): Promi
 }
 
 export default {
-  analyzeTextContent
+  analyzeTextContent,
+  analyzePdfFile
 };
