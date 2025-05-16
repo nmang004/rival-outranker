@@ -73,8 +73,11 @@ const SAMPLE_FILES = [
   }
 ];
 
+// Define a type that can handle both File objects and enhanced Blobs
+type FileOrBlob = File | (Blob & { name: string; lastModified: number; webkitRelativePath?: string });
+
 const PdfAnalyzerPage: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<FileOrBlob | null>(null);
   const [fileType, setFileType] = useState<'pdf' | 'image' | null>(null);
   const [extractedText, setExtractedText] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -88,7 +91,7 @@ const PdfAnalyzerPage: React.FC = () => {
   const [processingStep, setProcessingStep] = useState<string>('');
 
   // Function to determine file type
-  const determineFileType = (file: File): 'pdf' | 'image' | null => {
+  const determineFileType = (file: FileOrBlob): 'pdf' | 'image' | null => {
     if (file.type === 'application/pdf') {
       return 'pdf';
     } else if (file.type.startsWith('image/')) {
@@ -662,27 +665,31 @@ const PdfAnalyzerPage: React.FC = () => {
       
       const fileName = sampleName || 'sample-document.pdf';
       
-      // Create a proper File object from the blob with the needed properties
+      // Work directly with blob instead of creating a File object
       try {
-        const fileObj = new File([blobWithCorrectType], fileName, { 
-          type: 'application/pdf',
+        // We'll use the blob directly since File constructor is having issues
+        console.log('Using blob directly for sample document');
+        
+        // Create an object that has the minimal interface needed
+        const blobWithName = Object.assign(blobWithCorrectType, {
+          name: fileName,
           lastModified: Date.now()
         });
         
-        // Make sure the File object has the right properties
-        if (!fileObj.type || fileObj.size === 0) {
-          throw new Error('Created file object is invalid');
+        // Make sure the blob has the right properties
+        if (!blobWithName.type || blobWithName.size === 0) {
+          throw new Error('Blob is invalid');
         }
         
-        // Set the file and type
-        setFile(fileObj);
+        // Set the blob as our file and type
+        setFile(blobWithName);
         setFileType('pdf');
         
         // Create preview URL
-        const previewUrl = URL.createObjectURL(fileObj);
+        const previewUrl = URL.createObjectURL(blobWithName);
         setPdfPreviewUrl(previewUrl);
         
-        console.log('File object created successfully:', fileObj.name, fileObj.type, fileObj.size, 'bytes');
+        console.log('Using blob directly:', fileName, blobWithName.type, blobWithName.size, 'bytes');
         
         setProgress(30);
         setProcessingStep('Sample document loaded successfully');
