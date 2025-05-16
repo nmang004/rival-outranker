@@ -987,14 +987,36 @@ When presenting this data to clients, focus on these key elements:
                                 .replace(/^\-\s+(.*?)$/gm, '<ul><li>$1</li></ul>')
                                 .replace(/<\/ul>\s*<ul>/g, '')
                             }} />
+                            
+                            {/* Add Enhanced Chart Analysis Component */}
+                            {extractedText && file && (
+                              <div className="mt-8 border-t pt-8">
+                                {React.createElement(require('../components/EnhancedChartAnalysis').default, {
+                                  pdfText: extractedText,
+                                  fileName: file.name
+                                })}
+                              </div>
+                            )}
                           </div>
                         ) : (
-                          <div className="text-center py-10">
-                            <AlertTriangle className="mx-auto h-10 w-10 text-yellow-500" />
-                            <h3 className="mt-2 text-sm font-medium text-gray-900">AI Analysis Unavailable</h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              The AI-powered analysis could not be completed. This could be due to API limitations or connectivity issues.
-                            </p>
+                          <div>
+                            <div className="text-center py-6">
+                              <AlertTriangle className="mx-auto h-10 w-10 text-yellow-500" />
+                              <h3 className="mt-2 text-sm font-medium text-gray-900">AI Analysis Unavailable</h3>
+                              <p className="mt-1 text-sm text-gray-500 mb-6">
+                                The AI-powered analysis could not be completed. Using enhanced chart detection instead.
+                              </p>
+                            </div>
+                            
+                            {/* Show Chart Analysis as fallback */}
+                            {extractedText && file && (
+                              <div>
+                                {React.createElement(require('../components/EnhancedChartAnalysis').default, {
+                                  pdfText: extractedText,
+                                  fileName: file.name
+                                })}
+                              </div>
+                            )}
                           </div>
                         )}
                       </TabsContent>
