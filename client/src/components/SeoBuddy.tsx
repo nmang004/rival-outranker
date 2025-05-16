@@ -21,7 +21,7 @@ import {
   SheetFooter
 } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
-import SeoBuddyChatbot from "./SeoBuddyChatbot";
+import SeoBuddyChatInterface from "./SeoBuddyChatInterface";
 
 // SEO Buddy character
 const buddyQuotes = {
@@ -285,8 +285,10 @@ export default function SeoBuddy() {
               
               {/* Chatbot Section - Conditional */}
               {showChatBot && (
-                <CardContent className="p-0 h-[200px] overflow-hidden">
-                  <SeoBuddyChatbot />
+                <CardContent className="p-0 overflow-hidden">
+                  <SeoBuddyChatInterface 
+                    onClose={() => setShowChatBot(false)}
+                  />
                 </CardContent>
               )}
               
@@ -387,7 +389,7 @@ export default function SeoBuddy() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full text-xs"
+                            className="w-full text-xs hover:bg-primary/10 hover:text-primary transition-colors"
                             onClick={() => {
                               setShowBestPractices(!showBestPractices); 
                               const newFaceIndex = Math.floor(Math.random() * buddyFaces.length);
@@ -410,7 +412,7 @@ export default function SeoBuddy() {
                               className="mt-2 border rounded-md overflow-hidden"
                             >
                               <div className="h-[250px]">
-                                <SeoBuddyChatbot />
+                                <SeoBuddyChatInterface />
                               </div>
                             </motion.div>
                           )}
@@ -423,7 +425,11 @@ export default function SeoBuddy() {
                 <Button
                   variant={showChatBot ? "ghost" : "default"}
                   size="sm"
-                  className={`text-xs h-7 ${showChatBot ? 'border-primary/20 hover:bg-primary/5 text-primary/80' : 'bg-primary/90 hover:bg-primary'}`}
+                  className={`relative text-xs h-7 group ${
+                    showChatBot 
+                      ? 'border-primary/20 hover:bg-red-50 hover:text-red-600 hover:border-red-200' 
+                      : 'bg-primary/90 hover:bg-primary'
+                  }`}
                   onClick={() => {
                     setShowChatBot(!showChatBot);
                     // Change face when toggling chat
@@ -431,8 +437,14 @@ export default function SeoBuddy() {
                     setBuddyFace(buddyFaces[newFaceIndex]);
                   }}
                 >
-                  <MessageCircle className="w-3 h-3 mr-1.5" />
-                  {showChatBot ? "Show SEO Tips" : "Chat with me"}
+                  <MessageCircle className={`w-3 h-3 mr-1.5 ${showChatBot ? 'group-hover:hidden' : ''}`} />
+                  <X className={`w-3 h-3 mr-1.5 absolute left-2 hidden ${showChatBot ? 'group-hover:block' : ''}`} />
+                  <span className={`${showChatBot ? 'group-hover:hidden' : ''}`}>
+                    {showChatBot ? "Show SEO Tips" : "Chat with me"}
+                  </span>
+                  <span className={`hidden ${showChatBot ? 'group-hover:block' : ''} text-red-600`}>
+                    Close Chat
+                  </span>
                 </Button>
               </div>
             </div>
