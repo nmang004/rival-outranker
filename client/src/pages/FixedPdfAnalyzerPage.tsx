@@ -137,6 +137,51 @@ const PdfAnalyzerPage: React.FC = () => {
     multiple: false
   });
 
+  // Helper function to convert PDF.js TextContent to structured text with proper line breaks
+  const textContentToLines = (textContent: any): string => {
+    // First, sort the items by their position
+    const items = textContent.items.sort((a: any, b: any) => {
+      // First sort by y position (vertically)
+      if (Math.abs(a.transform[5] - b.transform[5]) > 2) {
+        return b.transform[5] - a.transform[5]; // Note: PDF coordinates start from bottom
+      }
+      // If on the same line, sort by x position (horizontally)
+      return a.transform[4] - b.transform[4];
+    });
+    
+    // Group items into lines based on y-position
+    const lines: any[] = [];
+    let currentLine: any[] = [];
+    let currentY: number = 0;
+    
+    items.forEach((item: any) => {
+      if ('str' in item && item.str.trim()) {
+        const y = item.transform[5];
+        
+        // If this is first item or new line detected
+        if (currentLine.length === 0 || Math.abs(y - currentY) > 2) {
+          if (currentLine.length > 0) {
+            lines.push(currentLine);
+          }
+          currentLine = [item];
+          currentY = y;
+        } else {
+          currentLine.push(item);
+        }
+      }
+    });
+    
+    // Add the last line if it exists
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+    
+    // Convert lines to text
+    return lines.map(line => {
+      return line.map((item: any) => item.str).join(' ');
+    }).join('\n');
+  };
+
   // Function to determine trend direction from text
   const determineTrendDirection = (text: string): 'positive' | 'negative' | 'neutral' => {
     const positiveWords = ['increase', 'growth', 'improved', 'higher', 'better', 'success', 'gain', 'up'];
@@ -216,9 +261,8 @@ const PdfAnalyzerPage: React.FC = () => {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
                 
-                const pageText = textContent.items
-                  .map(item => ('str' in item) ? item.str : '')
-                  .join(' ');
+                // Improved text extraction that preserves layout better
+                const pageText = textContentToLines(textContent);
                 
                 resultText += `--- Page ${i} ---\n${pageText}\n\n`;
               } catch (pageError) {
