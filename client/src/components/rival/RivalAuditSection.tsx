@@ -242,6 +242,12 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         return;
       }
       
+      // Ensure we have a valid status - if not, use the current status
+      const newStatus = editStatus || item.status;
+      const newNotes = editNotes !== undefined ? editNotes : item.notes || "";
+      
+      console.log("Saving item with status:", newStatus);
+      
       // Send update to the backend
       const response = await fetch(`/api/rival-audit/${auditId}/update-item`, {
         method: 'POST',
@@ -251,8 +257,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         body: JSON.stringify({
           sectionName,
           itemName: item.name,
-          status: editStatus,
-          notes: editNotes
+          status: newStatus,
+          notes: newNotes
         }),
       });
       
@@ -263,8 +269,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
       const result = await response.json();
       
       // Update the item in the local state
-      item.status = editStatus;
-      item.notes = editNotes;
+      item.status = newStatus;
+      item.notes = newNotes;
       
       // This will trigger a re-render with the updated data
       setEditModeItem(null);
