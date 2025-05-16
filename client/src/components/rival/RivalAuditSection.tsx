@@ -36,6 +36,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [editModeItem, setEditModeItem] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState<string>("");
+  const [editStatus, setEditStatus] = useState<AuditStatus>("OK");
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // Group items by categories
   const itemCategories = useMemo(() => {
@@ -220,16 +222,71 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   
   const filteredItems = filteredAndSortedItems.sorted;
 
-  // Handle edit notes
+  // Handle edit item
   const handleEditClick = (item: AuditItem) => {
     setEditModeItem(item.name);
     setEditNotes(item.notes || "");
+    setEditStatus(item.status);
   };
 
-  const handleSaveNotes = (item: AuditItem) => {
-    // In a real implementation, this would save to the backend
-    console.log("Saving notes for:", item.name, "Notes:", editNotes);
-    setEditModeItem(null);
+  const handleSaveItem = async (item: AuditItem, sectionName: string) => {
+    try {
+      setIsUpdating(true);
+      
+      // Get URL params to extract the audit ID
+      const urlParams = new URLSearchParams(window.location.search);
+      const auditId = urlParams.get('id');
+      
+      if (!auditId) {
+        console.error("No audit ID found in URL params");
+        return;
+      }
+      
+      // Send update to the backend
+      const response = await fetch(`/api/rival-audit/${auditId}/update-item`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sectionName,
+          itemName: item.name,
+          status: editStatus,
+          notes: editNotes
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update item: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Update the item in the local state
+      item.status = editStatus;
+      item.notes = editNotes;
+      
+      // This will trigger a re-render with the updated data
+      setEditModeItem(null);
+      
+      // Force a re-render of the parent component with updated summary
+      if (typeof window !== 'undefined') {
+        // Create and dispatch a custom event that the parent can listen for
+        const updateEvent = new CustomEvent('audit-item-updated', { 
+          detail: { 
+            summary: result.summary,
+            oldStatus: result.oldStatus,
+            newStatus: result.newStatus,
+          } 
+        });
+        window.dispatchEvent(updateEvent);
+      }
+    } catch (error) {
+      console.error("Error updating item:", error);
+      alert("Failed to update item. Please try again.");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -376,27 +433,93 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                         </div>
                         <div className="col-span-12 md:col-span-4 space-y-4">
                           <div>
-                            <h4 className="font-medium mb-2">Notes</h4>
                             {editModeItem === item.name ? (
-                              <div className="space-y-2">
-                                <Textarea 
-                                  value={editNotes} 
-                                  onChange={(e) => setEditNotes(e.target.value)}
-                                  placeholder="Add notes about this audit item..."
-                                  className="min-h-[100px]"
-                                />
+                              <div className="space-y-4">
+                                <div>
+                                  <h4 className="font-medium mb-2">Status</h4>
+                                  <Select
+                                    value={editStatus}
+                                    onValueChange={(value: AuditStatus) => setEditStatus(value)}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Priority OFI">
+                                        <div className="flex items-center">
+                                          <AlertCircle className="h-4 w-4 text-destructive mr-2" />
+                                          Priority OFI
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="OFI">
+                                        <div className="flex items-center">
+                                          <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
+                                          OFI
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="OK">
+                                        <div className="flex items-center">
+                                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                                          OK
+                                        </div>
+                                      </SelectItem>
+                                      <SelectItem value="N/A">
+                                        <div className="flex items-center">
+                                          <CircleHelp className="h-4 w-4 text-gray-500 mr-2" />
+                                          N/A
+                                        </div>
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                
+                                <div>
+                                  <h4 className="font-medium mb-2">Notes</h4>
+                                  <Textarea 
+                                    value={editNotes} 
+                                    onChange={(e) => setEditNotes(e.target.value)}
+                                    placeholder="Add notes about this audit item..."
+                                    className="min-h-[100px]"
+                                  />
+                                </div>
+                                
                                 <div className="flex gap-2">
-                                  <Button size="sm" onClick={() => handleSaveNotes(item)}>Save</Button>
-                                  <Button size="sm" variant="outline" onClick={handleCancelEdit}>Cancel</Button>
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleSaveItem(item, "onPage")}
+                                    disabled={isUpdating}
+                                  >
+                                    {isUpdating ? "Saving..." : "Save"}
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={handleCancelEdit}
+                                    disabled={isUpdating}
+                                  >
+                                    Cancel
+                                  </Button>
                                 </div>
                               </div>
                             ) : (
-                              <div className="space-y-2">
-                                <p className="text-muted-foreground">
-                                  {item.notes || "No notes added yet"}
-                                </p>
+                              <div className="space-y-4">
+                                <div>
+                                  <h4 className="font-medium mb-2">Status</h4>
+                                  <div className="flex items-center gap-2">
+                                    {getStatusIcon(item.status)}
+                                    {getStatusBadge(item.status)}
+                                  </div>
+                                </div>
+                                
+                                <div>
+                                  <h4 className="font-medium mb-2">Notes</h4>
+                                  <p className="text-muted-foreground">
+                                    {item.notes || "No notes added yet"}
+                                  </p>
+                                </div>
+                                
                                 <Button size="sm" variant="outline" onClick={() => handleEditClick(item)}>
-                                  Edit Notes
+                                  Edit Item
                                 </Button>
                               </div>
                             )}
@@ -465,18 +588,71 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                               </div>
                               <div className="col-span-12 md:col-span-4 space-y-4">
                                 <div>
-                                  <h4 className="font-medium mb-2">Notes</h4>
                                   {editModeItem === item.name ? (
-                                    <div className="space-y-2">
-                                      <Textarea 
-                                        value={editNotes} 
-                                        onChange={(e) => setEditNotes(e.target.value)}
-                                        placeholder="Add notes about this audit item..."
-                                        className="min-h-[100px]"
-                                      />
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="font-medium mb-2">Status</h4>
+                                        <Select
+                                          value={editStatus}
+                                          onValueChange={(value: AuditStatus) => setEditStatus(value)}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select status" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="Priority OFI">
+                                              <div className="flex items-center">
+                                                <AlertCircle className="h-4 w-4 text-destructive mr-2" />
+                                                Priority OFI
+                                              </div>
+                                            </SelectItem>
+                                            <SelectItem value="OFI">
+                                              <div className="flex items-center">
+                                                <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
+                                                OFI
+                                              </div>
+                                            </SelectItem>
+                                            <SelectItem value="OK">
+                                              <div className="flex items-center">
+                                                <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                                                OK
+                                              </div>
+                                            </SelectItem>
+                                            <SelectItem value="N/A">
+                                              <div className="flex items-center">
+                                                <CircleHelp className="h-4 w-4 text-gray-500 mr-2" />
+                                                N/A
+                                              </div>
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      
+                                      <div>
+                                        <h4 className="font-medium mb-2">Notes</h4>
+                                        <Textarea 
+                                          value={editNotes} 
+                                          onChange={(e) => setEditNotes(e.target.value)}
+                                          placeholder="Add notes about this audit item..."
+                                          className="min-h-[100px]"
+                                        />
+                                      </div>
                                       <div className="flex gap-2">
-                                        <Button size="sm" onClick={() => handleSaveNotes(item)}>Save</Button>
-                                        <Button size="sm" variant="outline" onClick={handleCancelEdit}>Cancel</Button>
+                                        <Button 
+                                          size="sm" 
+                                          onClick={() => handleSaveItem(item, title.toLowerCase().replace(/\s+/g, ''))}
+                                          disabled={isUpdating}
+                                        >
+                                          {isUpdating ? "Saving..." : "Save"}
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          onClick={handleCancelEdit}
+                                          disabled={isUpdating}
+                                        >
+                                          Cancel
+                                        </Button>
                                       </div>
                                     </div>
                                   ) : (
