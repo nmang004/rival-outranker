@@ -361,8 +361,46 @@ Would you like specific recommendations for any of these technical areas?`
     return { text: response, sources };
   };
 
-  const handleSendMessage = () => {
-    if (inputValue.trim() === '') return;
+  // Track chat usage via API
+  const trackChatUsage = async (): Promise<ChatUsageStatus | null> => {
+    try {
+      const response = await axios.post('/api/chat-usage', { sessionId });
+      return response.data;
+    } catch (error) {
+      console.error('Error tracking chat usage:', error);
+      return null;
+    }
+  };
+  
+  // Update chat usage on first load and when isAuthenticated changes
+  useEffect(() => {
+    trackChatUsage().then(usage => {
+      if (usage) {
+        setChatUsage(usage);
+      }
+    });
+  }, [isAuthenticated]);
+
+  const handleSendMessage = async () => {
+    if (inputValue.trim() === '' || isThinking) return;
+    
+    // Check usage limits before proceeding
+    const usageStatus = await trackChatUsage();
+    setChatUsage(usageStatus);
+    
+    // If limit reached, don't proceed
+    if (usageStatus?.status === 'limit_reached') {
+      const limitMessage: Message = {
+        id: Date.now().toString(),
+        text: isAuthenticated ? 
+          "You've reached your monthly limit of 100 messages. Your limit will reset next month." :
+          "You've reached your monthly limit of 20 messages. Please log in to get access to 100 messages per month, or wait until next month when your limit resets.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, limitMessage]);
+      return;
+    }
     
     // Add user message
     const userMessage: Message = {
@@ -377,37 +415,50 @@ Would you like specific recommendations for any of these technical areas?`
     setIsThinking(true);
     
     // Generate response using knowledge base or OpenAI
-    generateResponse(userMessage.text)
-      .then(response => {
-        const botResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: response.text,
-          isUser: false,
-          timestamp: new Date(),
-          isAI: response.isAI,
-          sources: response.sources?.map(source => ({
-            topic: source.topic,
-            subtopic: source.subtopic
-          }))
-        };
-        
-        setMessages(prev => [...prev, botResponse]);
-      })
-      .catch(error => {
-        console.error("Error generating response:", error);
-        // Provide a fallback response if something goes wrong
-        const errorResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: "I'm having trouble processing your request. Please try asking a different question about SEO.",
-          isUser: false,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, errorResponse]);
-      })
-      .finally(() => {
-        setIsThinking(false);
-      });
+    try {
+      const response = await generateResponse(userMessage.text);
+      const botResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: response.text,
+        isUser: false,
+        timestamp: new Date(),
+        isAI: response.isAI,
+        sources: response.sources?.map(source => ({
+          topic: source.topic,
+          subtopic: source.subtopic
+        }))
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+      
+      // After response, show usage warning if approaching limit
+      if (usageStatus?.status === 'approaching_limit') {
+        setTimeout(() => {
+          const warningMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            text: isAuthenticated ? 
+              `Note: You've used ${usageStatus.usageCount} of your 100 monthly messages.` :
+              `Note: You've used ${usageStatus.usageCount} of your 20 monthly messages. Log in to get 100 messages per month.`,
+            isUser: false,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, warningMessage]);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Error generating response:", error);
+      // Provide a fallback response if something goes wrong
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm having trouble processing your request. Please try asking a different question about SEO.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return (
