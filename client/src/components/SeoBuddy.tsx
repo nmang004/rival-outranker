@@ -288,6 +288,7 @@ export default function SeoBuddy() {
                 <CardContent className="p-0 overflow-hidden">
                   <SeoBuddyChatInterface 
                     onClose={() => setShowChatBot(false)}
+                    showHeader={false}
                   />
                 </CardContent>
               )}
@@ -425,9 +426,9 @@ export default function SeoBuddy() {
                 <Button
                   variant={showChatBot ? "ghost" : "default"}
                   size="sm"
-                  className={`relative text-xs h-7 group ${
+                  className={`relative text-xs h-7 ${
                     showChatBot 
-                      ? 'border-primary/20 hover:bg-red-50 hover:text-red-600 hover:border-red-200' 
+                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
                       : 'bg-primary/90 hover:bg-primary'
                   }`}
                   onClick={() => {
@@ -437,14 +438,17 @@ export default function SeoBuddy() {
                     setBuddyFace(buddyFaces[newFaceIndex]);
                   }}
                 >
-                  <MessageCircle className={`w-3 h-3 mr-1.5 ${showChatBot ? 'group-hover:hidden' : ''}`} />
-                  <X className={`w-3 h-3 mr-1.5 absolute left-2 hidden ${showChatBot ? 'group-hover:block' : ''}`} />
-                  <span className={`${showChatBot ? 'group-hover:hidden' : ''}`}>
-                    {showChatBot ? "Show SEO Tips" : "Chat with me"}
-                  </span>
-                  <span className={`hidden ${showChatBot ? 'group-hover:block' : ''} text-red-600`}>
-                    Close Chat
-                  </span>
+                  {showChatBot ? (
+                    <>
+                      <X className="w-3 h-3 mr-1.5" />
+                      <span>Close Chat</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="w-3 h-3 mr-1.5" />
+                      <span>Chat with me</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

@@ -6,7 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { seoKnowledgeBase, SeoTopic, SeoSubtopic } from '@/data/seoKnowledgeBase';
+import { seoKnowledgeBase, SeoTopic, SeoSubtopic, industrySpecificAdvice, seoTools } from '@/data/seoKnowledgeBase';
 
 // Define message type
 interface Message {
@@ -21,7 +21,13 @@ interface Message {
   }[];
 }
 
-export default function SeoBuddyChatInterface({ onClose }: { onClose?: () => void }) {
+export interface SeoBuddyChatProps {
+  onClose?: () => void;
+  showHeader?: boolean;
+  onExpand?: (expanded: boolean) => void;
+}
+
+export default function SeoBuddyChatInterface({ onClose, showHeader = true, onExpand }: SeoBuddyChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -40,8 +46,99 @@ export default function SeoBuddyChatInterface({ onClose }: { onClose?: () => voi
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
+  // Handle expand/collapse
+  const handleResize = (expand: boolean) => {
+    setIsExpanded(expand);
+    if (onExpand) {
+      onExpand(expand);
+    }
+  };
+  
   // Expanded/collapsed height
   const chatHeight = isExpanded ? 'h-[400px]' : 'h-[200px]';
+
+  // Common SEO questions for more natural responses
+  const commonQuestions = [
+    {
+      patterns: ['best way', 'how to optimize', 'improve seo', 'boost ranking', 'better rankings'],
+      response: `To optimize your site's SEO effectively, I recommend a comprehensive approach:
+
+1. **Technical foundation**: Ensure your site is crawlable, mobile-friendly, and loads quickly
+2. **Content quality**: Create in-depth, valuable content that answers user questions
+3. **On-page SEO**: Optimize titles, meta descriptions, headers, and use structured data
+4. **Off-page SEO**: Build quality backlinks from reputable sites in your industry
+5. **User experience**: Focus on engagement metrics like time on site and bounce rate
+
+Would you like more specific information about any of these areas?`
+    },
+    {
+      patterns: ['keywords', 'keyword research', 'find keywords', 'best keywords'],
+      response: `Effective keyword research is crucial for SEO success. Here's a proven process:
+
+1. **Start broad**: Identify seed keywords related to your business/industry
+2. **Expand**: Use tools like Semrush, Ahrefs, or Google Keyword Planner to find related terms
+3. **Analyze intent**: Group keywords by user intent (informational, navigational, commercial, transactional)
+4. **Evaluate competition**: Balance search volume against difficulty and your site's authority
+5. **Target long-tail keywords**: These longer, more specific phrases often convert better
+6. **Map keywords**: Assign primary and secondary keywords to specific pages
+
+Need recommendations for specific keyword research tools?`
+    },
+    {
+      patterns: ['backlinks', 'link building', 'get links', 'quality links'],
+      response: `Strategic link building remains one of the most powerful SEO tactics. Here are effective approaches:
+
+1. **Create linkable assets**: Develop comprehensive guides, original research, or tools that naturally attract links
+2. **Guest posting**: Contribute quality content to relevant, authoritative sites in your industry
+3. **Resource link building**: Get your site included in resource lists and directories
+4. **Broken link building**: Find broken links on other sites and suggest your content as a replacement
+5. **Digital PR**: Create newsworthy content and build relationships with journalists/influencers
+6. **Competitor analysis**: Identify who's linking to competitors but not to you
+
+Would you like more details about any of these strategies?`
+    },
+    {
+      patterns: ['local seo', 'google business', 'local search', 'local rankings'],
+      response: `For local SEO success, focus on these key strategies:
+
+1. **Google Business Profile**: Claim, verify and fully optimize your listing with photos, posts, and complete information
+2. **Local citations**: Ensure consistent NAP (Name, Address, Phone) across all online directories
+3. **Local content**: Create location-specific pages and content mentioning local landmarks
+4. **Local link building**: Earn backlinks from local businesses, organizations, and news sites
+5. **Reviews**: Implement a system to ethically generate and respond to customer reviews
+6. **Local schema markup**: Add structured data for your business location and services
+
+Is there a specific aspect of local SEO you'd like to explore further?`
+    },
+    {
+      patterns: ['technical seo', 'site speed', 'crawlability', 'indexing'],
+      response: `Technical SEO creates the foundation for all other optimization efforts:
+
+1. **Site architecture**: Create a logical structure that's easy for users and search engines to navigate
+2. **Page speed**: Optimize loading times through image compression, code minification, and server improvements
+3. **Mobile optimization**: Ensure perfect mobile experience with responsive design and touch-friendly elements
+4. **Crawlability**: Use robots.txt, XML sitemaps, and proper internal linking to guide search engines
+5. **HTTPS**: Secure your site with proper SSL implementation
+6. **Core Web Vitals**: Optimize LCP (loading), FID (interactivity), and CLS (visual stability) metrics
+
+Would you like specific recommendations for any of these technical areas?`
+    }
+  ];
+
+  // Function to check for common question patterns
+  const checkCommonQuestions = (query: string): string | null => {
+    query = query.toLowerCase();
+    
+    for (const question of commonQuestions) {
+      for (const pattern of question.patterns) {
+        if (query.includes(pattern)) {
+          return question.response;
+        }
+      }
+    }
+    
+    return null;
+  };
 
   // Function to find relevant information from the knowledge base
   const findRelevantInformation = (query: string) => {
@@ -108,12 +205,55 @@ export default function SeoBuddyChatInterface({ onClose }: { onClose?: () => voi
 
   // Generate response using the knowledge base
   const generateResponse = (userInput: string): { text: string; sources?: { topic: string; subtopic: string; }[] } => {
+    // First check for common questions
+    const commonResponse = checkCommonQuestions(userInput);
+    if (commonResponse) {
+      return { text: commonResponse };
+    }
+    
     const relevantInfo = findRelevantInformation(userInput);
     
-    // If no relevant information found
+    // If no relevant information found from knowledge base
     if (relevantInfo.length === 0) {
+      // Check if the query contains industry-specific terms
+      const industries = Object.keys(industrySpecificAdvice);
+      for (const industry of industries) {
+        if (userInput.toLowerCase().includes(industry.toLowerCase())) {
+          const industryAdvice = industrySpecificAdvice[industry as keyof typeof industrySpecificAdvice];
+          return {
+            text: `Here are some SEO tips specifically for ${industryAdvice.name}:\n\n` + 
+                 industryAdvice.tips.map(tip => `• ${tip}`).join('\n')
+          };
+        }
+      }
+      
+      // Check if asking about SEO tools
+      if (userInput.toLowerCase().includes('tool') || userInput.toLowerCase().includes('software')) {
+        const toolCategories = Object.keys(seoTools);
+        let toolResponse = "Here are some popular SEO tools you might find helpful:\n\n";
+        
+        // Provide a sampling of tools from different categories
+        toolCategories.forEach(category => {
+          const tools = seoTools[category as keyof typeof seoTools];
+          toolResponse += `For ${category} SEO:\n`;
+          tools.slice(0, 2).forEach(tool => {
+            toolResponse += `• ${tool.name}: ${tool.description}\n`;
+          });
+          toolResponse += '\n';
+        });
+        
+        return { text: toolResponse };
+      }
+      
+      // Default fallback response
       return {
-        text: "I don't have specific information about that. Would you like to ask about on-page SEO, technical SEO, link building, local SEO, or content strategy instead?"
+        text: "To optimize your website's SEO comprehensively, focus on these key areas:\n\n" +
+              "1. **Technical SEO**: Ensure your site is fast, mobile-friendly, and crawlable\n" +
+              "2. **On-Page SEO**: Optimize content, meta tags, headers, and internal links\n" +
+              "3. **Off-Page SEO**: Build quality backlinks from reputable sites\n" +
+              "4. **Content Strategy**: Create valuable, keyword-optimized content that serves user intent\n" +
+              "5. **User Experience**: Improve engagement metrics and reduce bounce rates\n\n" +
+              "Would you like specific details about any of these areas?"
       };
     }
     
@@ -200,48 +340,50 @@ export default function SeoBuddyChatInterface({ onClose }: { onClose?: () => voi
 
   return (
     <div className={`flex flex-col ${chatHeight} transition-all duration-300 ease-in-out`}>
-      <div className="flex justify-between items-center p-2 border-b bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="flex items-center">
-          <Bot className="w-4 h-4 text-primary mr-1.5" />
-          <span className="text-xs font-medium">SEO Buddy Chat</span>
+      {showHeader && (
+        <div className="flex justify-between items-center p-2 border-b bg-gradient-to-r from-primary/10 to-primary/5">
+          <div className="flex items-center">
+            <Bot className="w-3.5 h-3.5 text-primary mr-1" />
+            <span className="text-xs font-medium">SEO Buddy Chat</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={() => handleResize(!isExpanded)}
+                  >
+                    {isExpanded ? (
+                      <Minimize2 className="h-2.5 w-2.5 text-gray-500" />
+                    ) : (
+                      <Maximize2 className="h-2.5 w-2.5 text-gray-500" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p className="text-xs">{isExpanded ? 'Minimize' : 'Maximize'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {onClose && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-5 w-5 hover:bg-red-100 hover:text-red-600" 
+                onClick={onClose}
+              >
+                <X className="h-2.5 w-2.5" />
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="flex space-x-1">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
-                  {isExpanded ? (
-                    <Minimize2 className="h-3 w-3 text-gray-500" />
-                  ) : (
-                    <Maximize2 className="h-3 w-3 text-gray-500" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left">
-                <p className="text-xs">{isExpanded ? 'Minimize' : 'Maximize'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          {onClose && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6 hover:bg-red-100 hover:text-red-600" 
-              onClick={onClose}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
       
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {messages.map((message) => (
           <motion.div
             key={message.id}
@@ -257,31 +399,40 @@ export default function SeoBuddyChatInterface({ onClose }: { onClose?: () => voi
               }`}
             >
               <div className="flex items-start mb-1">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center mr-1 flex-shrink-0 ${
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-1 flex-shrink-0 ${
                   message.isUser ? 'bg-white/20' : 'bg-primary/20'
                 }`}>
                   {message.isUser 
-                    ? <User className={`w-3 h-3 text-white`} /> 
-                    : <Bot className={`w-3 h-3 text-primary`} />
+                    ? <User className={`w-2.5 h-2.5 text-white`} /> 
+                    : <Bot className={`w-2.5 h-2.5 text-primary`} />
                   }
                 </div>
-                <span className="text-xs font-medium">
+                <span className="text-[11px] font-medium">
                   {message.isUser ? 'You' : 'SEO Buddy'}
                 </span>
               </div>
-              <p className="text-xs leading-snug whitespace-pre-line">{message.text}</p>
+              <div 
+                className="text-xs leading-snug"
+                dangerouslySetInnerHTML={{ 
+                  __html: message.text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n\n/g, '<br/><br/>')
+                    .replace(/\n/g, '<br/>')
+                    .replace(/•/g, '&#8226;')
+                }} 
+              />
               
               {/* Sources section */}
               {message.sources && message.sources.length > 0 && (
-                <div className="mt-2 pt-1 border-t border-gray-200 text-xs">
+                <div className="mt-2 pt-1 border-t border-gray-200 text-[10px]">
                   <div className="flex items-center text-gray-500">
-                    <Book className="w-3 h-3 mr-1" />
+                    <Book className="w-2.5 h-2.5 mr-1" />
                     <span>Sources:</span>
                   </div>
                   <ul className="mt-0.5 space-y-0.5">
                     {message.sources.map((source, index) => (
                       <li key={index} className="flex items-start">
-                        <Search className="w-2.5 h-2.5 mt-0.5 mr-1 flex-shrink-0" />
+                        <Search className="w-2 h-2 mt-0.5 mr-1 flex-shrink-0" />
                         <span className={message.isUser ? "text-white/80" : "text-gray-600"}>
                           {source.topic}: {source.subtopic}
                         </span>
@@ -328,7 +479,7 @@ export default function SeoBuddyChatInterface({ onClose }: { onClose?: () => voi
             onClick={handleSendMessage}
             className="bg-primary text-white p-1.5 rounded-r-md hover:bg-primary/90 transition-colors"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
