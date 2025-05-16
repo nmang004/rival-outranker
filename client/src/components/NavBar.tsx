@@ -60,32 +60,32 @@ export default function NavBar() {
                 </div>
               </Link>
             </div>
-            <div className="hidden sm:ml-8 sm:flex h-full">
+            <div className="hidden sm:flex h-full items-center gap-2">
               <Link href="/">
                 <div className={linkClass("/")}>
-                  <BarChart2 className="h-4 w-4 mr-1" /> Dashboard
+                  <BarChart2 className="h-4 w-4 mr-2" /> Dashboard
                 </div>
               </Link>
               <Link href="/deep-content">
                 <div className={linkClass("/deep-content")}>
-                  <FileText className="h-4 w-4 mr-1" /> Deep Content
+                  <FileText className="h-4 w-4 mr-2" /> Deep Content
                 </div>
               </Link>
               <Link href="/competitor-analysis">
                 <button className={linkClass("/competitor-analysis") + " cursor-pointer"}>
-                  <Users className="h-4 w-4 mr-1" /> Competitors
+                  <Users className="h-4 w-4 mr-2" /> Competitors
                 </button>
               </Link>
               <div className="relative group">
-                <div className="flex items-center">
-                  <Link href="/rival-audit">
-                    <div className={`${linkClass("/rival-audit")} flex items-center`}>
-                      <ClipboardCheck className="h-4 w-4 mr-1.5" /> 
+                <Link href="/rival-audit">
+                  <div className={linkClass("/rival-audit")}>
+                    <div className="flex items-center">
+                      <ClipboardCheck className="h-4 w-4 mr-2" /> 
                       <span>Rival Audit</span>
-                      <ChevronDown className="h-3 w-3 ml-1.5 transition-transform duration-200 group-hover:rotate-180" />
+                      <ChevronDown className="h-3.5 w-3.5 ml-1.5 transition-transform duration-200 group-hover:rotate-180" />
                     </div>
-                  </Link>
-                </div>
+                  </div>
+                </Link>
                 <div className="absolute left-0 top-full hidden group-hover:block hover:block z-50">
                   <div className="pt-1.5">
                     <div className="bg-white rounded-md shadow-xl border border-gray-100 w-60 overflow-hidden">
@@ -115,7 +115,7 @@ export default function NavBar() {
               </div>
               <Link href="/history">
                 <div className={linkClass("/history")}>
-                  <History className="h-4 w-4 mr-1" /> History
+                  <History className="h-4 w-4 mr-2" /> History
                 </div>
               </Link>
             </div>
