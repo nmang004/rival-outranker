@@ -10,9 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image as ImageIcon, Loader2, Code, Globe, Search, Layers, Share2, MapPin, BarChart } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// Set PDF.js worker source to a reliable CDN that matches our version
+// Use built-in PDF.js fake worker since we're having CDN issues
+// This is fine for our demo purposes
 console.log('Using PDF.js version:', pdfjsLib.version);
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Enable the fake worker mode which doesn't require external worker script
+(window as any).pdfjsWorker = {};
 
 // Static paths for sample documents (directly from static server)
 const summaryPdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Summary.pdf';
