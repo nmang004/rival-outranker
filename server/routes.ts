@@ -2334,6 +2334,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: "Failed to fetch analysis" });
     }
   });
+  
+  // New dedicated endpoint for PDF analysis with OpenAI integration
+  app.post("/api/pdf-analyzer", async (req: Request, res: Response) => {
+    try {
+      const { text, fileName, fileSize, pageCount } = req.body;
+      
+      if (!text || text.trim().length === 0) {
+        return res.status(400).json({ 
+          message: "PDF text content is required",
+          success: false 
+        });
+      }
+      
+      // Basic text statistics
+      const wordCount = text.split(/\s+/).filter(Boolean).length;
+      const textLength = text.length;
+      
+      // Prepare document info
+      const documentInfo = {
+        fileName: fileName || "Unknown document",
+        fileSize: fileSize ? `${Math.round(fileSize / 1024)} KB` : "Unknown size",
+        pageCount: pageCount || "Unknown",
+        wordCount,
+        textLength,
+        analysisDate: new Date().toISOString()
+      };
+      
+      // Check if we have the OpenAI API key
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(200).json({
+          success: false,
+          documentInfo,
+          message: "OpenAI API key is not configured. Cannot perform AI analysis.",
+          basicStats: {
+            wordCount,
+            textLength,
+            pageCount
+          }
+        });
+      }
+      
+      // Import the OpenAI service
+      const openaiService = (await import('./services/openaiService')).default;
+      
+      // Create SEO-specific prompt for the report
+      const isSEOReport = 
+        (fileName && /seo|search|keyword|audit/i.test(fileName)) ||
+        /seo audit|seo report|search engine optimization|keyword research|backlink|serp/i.test(text.substring(0, 1000));
+        
+      // Determine best prompt based on document type
+      let analysisPrompt;
+      if (isSEOReport) {
+        analysisPrompt = `You are a senior SEO analyst preparing an executive summary of an SEO report for client communication.
+        
+        The following text was extracted from a PDF that appears to be an SEO report. Analyze it thoroughly to extract:
+        
+        1. Key performance metrics and data points (rankings, traffic, keywords, etc.)
+        2. Notable trends (improvements or declines)
+        3. Most significant insights for client communication
+        4. Strategic recommendations based on the data
+        
+        Format your response as a well-structured executive summary that an account director can use when communicating with clients. Focus on the most valuable insights rather than generic SEO advice.
+        
+        PDF CONTENT:
+        ${text.substring(0, 8000)}`; // Send a reasonable portion for analysis
+      } else {
+        analysisPrompt = `You are a senior data analyst preparing an executive summary of a performance report for client communication.
+        
+        The following text was extracted from a PDF document. Analyze it thoroughly to extract:
+        
+        1. Key performance metrics and data points
+        2. Notable trends and patterns
+        3. Most significant insights for client communication
+        4. Strategic recommendations based on the data
+        
+        Format your response as a well-structured executive summary that an account director can use when communicating with clients. Focus on the most valuable insights rather than generic advice.
+        
+        PDF CONTENT:
+        ${text.substring(0, 8000)}`; // Send a reasonable portion for analysis
+      }
+      
+      try {
+        // Use OpenAI to analyze the content
+        const analysisResponse = await openaiService.analyzeTextContent(analysisPrompt);
+        
+        // Format the final response
+        return res.status(200).json({
+          success: true,
+          documentInfo,
+          isSEOReport,
+          analysis: analysisResponse.analysis,
+          model: analysisResponse.model,
+          timestamp: new Date().toISOString()
+        });
+      } catch (aiError) {
+        console.error("Error during OpenAI analysis of PDF:", aiError);
+        
+        // Return partial results even if AI fails
+        return res.status(200).json({
+          success: false,
+          documentInfo,
+          message: "Could not complete AI analysis. Showing basic document information only.",
+          error: String(aiError).substring(0, 200),
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error("Server error during PDF analysis:", error);
+      res.status(500).json({ 
+        message: "Server error while analyzing PDF content",
+        success: false,
+        error: String(error)
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
