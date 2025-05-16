@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, MessageSquare, HelpCircle, Lightbulb, TrendingUp, ExternalLink, Link as LinkIcon, Search, Award, MessageCircle } from 'lucide-react';
+import { X, MessageSquare, HelpCircle, Lightbulb, TrendingUp, ExternalLink, Link as LinkIcon, Search, Award, MessageCircle, ChevronLeft } from 'lucide-react';
 import { useLocation, Link } from 'wouter';
 import { 
   Card,
@@ -12,13 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { 
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetFooter
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import SeoBuddyChatbot from "./SeoBuddyChatbot";
 
@@ -63,6 +64,7 @@ export default function SeoBuddy() {
   const [isShaking, setIsShaking] = useState(false);
   const [buddyFace, setBuddyFace] = useState(buddyFaces[0]);
   const [showChatBot, setShowChatBot] = useState(false);
+  const [showBestPractices, setShowBestPractices] = useState(false);
   
   // Determine which tips to show based on current page
   const getTipsForLocation = () => {
@@ -247,37 +249,46 @@ export default function SeoBuddy() {
               </div>
             </CardHeader>
             
-            <div className="flex flex-col h-[320px]">
-              {/* Tips Section - Always visible */}
-              <CardContent className="px-3 py-2 text-xs bg-gradient-to-br from-white to-gray-50 flex-shrink-0">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentTip}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
-                    className="min-h-[60px] flex items-start pt-1"
-                  >
-                    <Lightbulb className="w-3.5 h-3.5 text-amber-500 mr-1.5 flex-shrink-0 mt-0.5" />
-                    <div 
-                      className="tip-text" 
-                      dangerouslySetInnerHTML={createMarkup(tips[currentTip])}
-                      onClick={(e) => {
-                        // Handle click on links inside the tip text
-                        if (e.target.tagName === 'A') {
-                          e.preventDefault();
-                          const href = e.target.getAttribute('href');
-                          if (href) {
-                            // Use Wouter's navigate
-                            window.location.href = href;
+            <div className="flex flex-col h-auto">
+              {/* Tips Section - Always visible when not chatting */}
+              {!showChatBot && (
+                <CardContent className="px-3 py-2 text-xs bg-gradient-to-br from-white to-gray-50 flex-shrink-0">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentTip}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.3 }}
+                      className="min-h-[60px] flex items-start pt-1"
+                    >
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-500 mr-1.5 flex-shrink-0 mt-0.5" />
+                      <div 
+                        className="tip-text" 
+                        dangerouslySetInnerHTML={createMarkup(tips[currentTip])}
+                        onClick={(e) => {
+                          // Handle click on links inside the tip text
+                          if (e.target.tagName === 'A') {
+                            e.preventDefault();
+                            const href = e.target.getAttribute('href');
+                            if (href) {
+                              // Use Wouter's navigate
+                              window.location.href = href;
+                            }
                           }
-                        }
-                      }}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </CardContent>
+                        }}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                </CardContent>
+              )}
+              
+              {/* Chatbot Section - Conditional */}
+              {showChatBot && (
+                <CardContent className="p-0 h-[200px] overflow-hidden">
+                  <SeoBuddyChatbot />
+                </CardContent>
+              )}
               
               {/* Action Buttons */}
               <div className="px-3 py-2 flex gap-2 flex-shrink-0 border-t border-gray-100">
@@ -303,69 +314,106 @@ export default function SeoBuddy() {
                         Quick tips to improve your search rankings
                       </SheetDescription>
                     </SheetHeader>
-                    <div className="py-4 overflow-y-auto max-h-[calc(100vh-120px)]">
-                      <h3 className="font-medium mb-2 text-sm flex items-center">
-                        <TrendingUp className="w-3.5 h-3.5 mr-1.5 text-primary" />
-                        Top SEO Tips:
-                      </h3>
-                      <ul className="space-y-2 mb-4">
-                        <li className="flex items-start">
-                          <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                            <TrendingUp className="w-3 h-3 text-primary" />
-                          </div>
-                          <div className="text-sm">
-                            <a href="https://moz.com/learn/seo/on-site-seo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
-                              Focus on user experience <ExternalLink className="w-3 h-3 ml-1" />
-                            </a>
-                            <span className="text-xs text-gray-600">Google rewards sites that visitors love</span>
-                          </div>
-                        </li>
-                        <li className="flex items-start">
-                          <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                            <Search className="w-3 h-3 text-primary" />
-                          </div>
-                          <div className="text-sm">
-                            <a href="https://ahrefs.com/blog/keyword-research/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
-                              Research keywords thoroughly <ExternalLink className="w-3 h-3 ml-1" />
-                            </a>
-                            <span className="text-xs text-gray-600">Target terms with the right search intent</span>
-                          </div>
-                        </li>
-                        <li className="flex items-start">
-                          <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
-                            <LinkIcon className="w-3 h-3 text-primary" />
-                          </div>
-                          <div className="text-sm">
-                            <a href="https://backlinko.com/link-building" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
-                              Build quality backlinks <ExternalLink className="w-3 h-3 ml-1" />
-                            </a>
-                            <span className="text-xs text-gray-600">From reputable, relevant sites</span>
-                          </div>
-                        </li>
-                      </ul>
+                    
+                    <div className="py-4 flex flex-col h-[calc(100vh-150px)]">
+                      <div className="overflow-y-auto flex-grow">
+                        <h3 className="font-medium mb-2 text-sm flex items-center">
+                          <TrendingUp className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                          Top SEO Tips:
+                        </h3>
+                        <ul className="space-y-2 mb-4">
+                          <li className="flex items-start">
+                            <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
+                              <TrendingUp className="w-3 h-3 text-primary" />
+                            </div>
+                            <div className="text-sm">
+                              <a href="https://moz.com/learn/seo/on-site-seo" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
+                                Focus on user experience <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                              <span className="text-xs text-gray-600">Google rewards sites that visitors love</span>
+                            </div>
+                          </li>
+                          <li className="flex items-start">
+                            <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
+                              <Search className="w-3 h-3 text-primary" />
+                            </div>
+                            <div className="text-sm">
+                              <a href="https://ahrefs.com/blog/keyword-research/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
+                                Research keywords thoroughly <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                              <span className="text-xs text-gray-600">Target terms with the right search intent</span>
+                            </div>
+                          </li>
+                          <li className="flex items-start">
+                            <div className="bg-primary/10 p-1 rounded mr-2 mt-0.5">
+                              <LinkIcon className="w-3 h-3 text-primary" />
+                            </div>
+                            <div className="text-sm">
+                              <a href="https://backlinko.com/link-building" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center">
+                                Build quality backlinks <ExternalLink className="w-3 h-3 ml-1" />
+                              </a>
+                              <span className="text-xs text-gray-600">From reputable, relevant sites</span>
+                            </div>
+                          </li>
+                        </ul>
+                        
+                        <h3 className="font-medium mb-2 text-sm flex items-center">
+                          <Award className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                          Tools in this app:
+                        </h3>
+                        <ul className="space-y-2">
+                          <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                            <Link href="/rival-audit" className="font-medium text-primary hover:underline">Rival Audit:</Link>
+                            <div className="text-xs text-gray-600">Analyze competitor websites</div>
+                          </li>
+                          <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                            <Link href="/keyword-research" className="font-medium text-primary hover:underline">Keyword Research:</Link>
+                            <div className="text-xs text-gray-600">Discover valuable search terms</div>
+                          </li>
+                          <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                            <Link href="/basic-rank-tracker" className="font-medium text-primary hover:underline">Rank Tracker:</Link>
+                            <div className="text-xs text-gray-600">Monitor search positions</div>
+                          </li>
+                          <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
+                            <Link href="/pdf-analyzer" className="font-medium text-primary hover:underline">PDF Analyzer:</Link>
+                            <div className="text-xs text-gray-600">Extract insights from reports</div>
+                          </li>
+                        </ul>
+                      </div>
                       
-                      <h3 className="font-medium mb-2 text-sm flex items-center">
-                        <Award className="w-3.5 h-3.5 mr-1.5 text-primary" />
-                        Tools in this app:
-                      </h3>
-                      <ul className="space-y-2">
-                        <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
-                          <Link href="/rival-audit" className="font-medium text-primary hover:underline">Rival Audit:</Link>
-                          <div className="text-xs text-gray-600">Analyze competitor websites</div>
-                        </li>
-                        <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
-                          <Link href="/keyword-research" className="font-medium text-primary hover:underline">Keyword Research:</Link>
-                          <div className="text-xs text-gray-600">Discover valuable search terms</div>
-                        </li>
-                        <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
-                          <Link href="/basic-rank-tracker" className="font-medium text-primary hover:underline">Rank Tracker:</Link>
-                          <div className="text-xs text-gray-600">Monitor search positions</div>
-                        </li>
-                        <li className="text-sm border-l-2 border-primary/30 pl-2 py-0.5">
-                          <Link href="/pdf-analyzer" className="font-medium text-primary hover:underline">PDF Analyzer:</Link>
-                          <div className="text-xs text-gray-600">Extract insights from reports</div>
-                        </li>
-                      </ul>
+                      {/* Chat button inside the sheet */}
+                      <div className="mt-4 pt-2 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs"
+                          onClick={() => {
+                            setShowBestPractices(!showBestPractices); 
+                            const newFaceIndex = Math.floor(Math.random() * buddyFaces.length);
+                            setBuddyFace(buddyFaces[newFaceIndex]);
+                          }}
+                        >
+                          <MessageCircle className="w-3 h-3 mr-1" />
+                          Chat with SEO Buddy
+                        </Button>
+                      </div>
+                      
+                      {/* Chatbot inside the sheet */}
+                      <AnimatePresence>
+                        {showBestPractices && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 250, opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="mt-2 border rounded-md overflow-hidden"
+                          >
+                            <div className="h-[250px]">
+                              <SeoBuddyChatbot />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -382,26 +430,9 @@ export default function SeoBuddy() {
                   }}
                 >
                   <MessageCircle className="w-3 h-3 mr-1" />
-                  {showChatBot ? "Hide Chat" : "Chat with me"}
+                  {showChatBot ? "Show Tips" : "Chat with me"}
                 </Button>
               </div>
-              
-              {/* Chatbot Section - Conditional */}
-              <AnimatePresence>
-                {showChatBot && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 200, opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="border-t border-gray-100 flex-grow overflow-hidden"
-                  >
-                    <div className="h-[200px]">
-                      <SeoBuddyChatbot />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </Card>
         )}
