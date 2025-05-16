@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, FileText, Upload, X, AlertTriangle, Download, File, Image as ImageIcon, Loader2, Code, Globe, Search, Layers, Share2, MapPin, BarChart } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// Configure PDF.js worker using CDN to avoid worker loading issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.worker.min.js';
+// Set PDF.js worker source to a reliable CDN that matches our version
+console.log('Using PDF.js version:', pdfjsLib.version);
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 // Static paths for sample documents (directly from static server)
 const summaryPdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Summary.pdf';
@@ -649,7 +650,7 @@ const PdfAnalyzerPage: React.FC = () => {
     setError(null);
   };
   
-  // Load sample document
+  // Load sample document (preview only)
   const loadSampleDocument = async (samplePath: string, sampleName: string) => {
     try {
       // Reset any previous state
@@ -665,16 +666,14 @@ const PdfAnalyzerPage: React.FC = () => {
       console.log('Fetching sample document from:', samplePath);
       const response = await fetch(samplePath, {
         method: 'GET',
-        cache: 'no-cache', // Avoid caching issues
+        cache: 'no-cache',
         headers: {
           'Accept': 'application/pdf'
         }
       });
       
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'No error details available');
-        console.error('Sample document fetch failed:', response.status, errorText);
-        throw new Error(`Failed to load sample document. Server responded with status ${response.status}: ${errorText}`);
+        throw new Error(`Failed to load sample document. Server responded with status ${response.status}`);
       }
       
       // Get the blob from the response
@@ -685,70 +684,30 @@ const PdfAnalyzerPage: React.FC = () => {
         throw new Error('The sample document is empty. Please try again or select a different document.');
       }
       
-      // Ensure we have the correct MIME type
-      const blobWithCorrectType = blob.type === 'application/pdf' 
-        ? blob 
-        : new Blob([await blob.arrayBuffer()], { type: 'application/pdf' });
+      // Create preview URL from the blob
+      const previewUrl = URL.createObjectURL(blob);
+      setPdfPreviewUrl(previewUrl);
       
-      const fileName = sampleName || 'sample-document.pdf';
+      // Create a file object
+      const customFileObject = {
+        name: sampleName,
+        type: 'application/pdf',
+        size: blob.size,
+        lastModified: Date.now(),
+        _blob: blob
+      };
       
-      try {
-        console.log('Creating custom file object for sample document');
-        
-        // Create a custom object that has the essential properties we need
-        const customFileObject = {
-          name: fileName,
-          type: 'application/pdf',
-          size: blobWithCorrectType.size,
-          lastModified: Date.now(),
-          // Add a reference to the blob for our extraction function to use
-          _blob: blobWithCorrectType,
-          // Add a simple dummy function to avoid further File-compatibility issues
-          arrayBuffer: async () => await blobWithCorrectType.arrayBuffer()
-        };
-        
-        // Set our custom object as the file
-        setFile(customFileObject as any);
-        setFileType('pdf');
-        
-        // Create preview URL from the blob
-        const previewUrl = URL.createObjectURL(blobWithCorrectType);
-        setPdfPreviewUrl(previewUrl);
-        
-        console.log('File object created successfully:', fileName, customFileObject.type, customFileObject.size, 'bytes');
-        
-        setProgress(30);
-        setProcessingStep('Sample document loaded successfully');
-        
-        // Wait a bit for the UI to update before processing
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-        
-        // Now process the file - we need to do it in a way that ensures the state is updated
-        // Manually extract and analyze the document
-        try {
-          console.log('Starting manual text extraction for sample document');
-          const text = await extractTextFromPdf(customFileObject as any);
-          console.log('Text extracted successfully, length:', text.length);
-          
-          setExtractedText(text);
-          setProgress(80);
-          setProcessingStep('Analyzing extracted text...');
-          
-          const analysisResult = analyzeText(text);
-          setSummary(analysisResult);
-          setProgress(100);
-          setProcessingStep('Analysis complete!');
-          setIsProcessing(false);
-          setAnalysisComplete(true);
-        } catch (processingError: any) {
-          console.error('Error during manual processing:', processingError);
-          setError(`Failed to process document: ${processingError?.message || 'Unknown error'}`);
-          setIsProcessing(false);
-        }
-      } catch (fileError: any) {
-        console.error('Error creating file object:', fileError);
-        throw new Error(`Failed to prepare document: ${fileError?.message || 'Unknown error'}`);
-      }
+      // Set our custom object as the file
+      setFile(customFileObject as any);
+      setFileType('pdf');
+      
+      setProgress(100);
+      setProcessingStep('Sample document loaded successfully');
+      
+      // Display helpful message
+      setExtractedText(`Sample document loaded: ${sampleName}\n\nTo analyze the content, please click the "Analyze Document" button.`);
+      
+      setIsProcessing(false);
     } catch (error: any) {
       console.error('Error loading sample document:', error);
       setError(`Failed to load sample document: ${error.message || 'Unknown error'}`);
