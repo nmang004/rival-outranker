@@ -22,7 +22,7 @@ import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProfilePageMock from "@/pages/ProfilePageMock";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
-import PdfAnalyzerPage from "@/pages/PdfAnalyzerPage";
+import PdfAnalyzerPage from "@/pages/FixedPdfAnalyzerPage";
 import KeywordsPage from "@/pages/KeywordsPage";
 import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
 import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
