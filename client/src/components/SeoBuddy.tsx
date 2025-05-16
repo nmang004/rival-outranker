@@ -428,7 +428,7 @@ export default function SeoBuddy() {
                   size="sm"
                   className={`relative text-xs h-7 ${
                     showChatBot 
-                      ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+                      ? 'bg-green-800/10 text-green-800 border-green-800/20 hover:bg-green-800/20' 
                       : 'bg-primary/90 hover:bg-primary'
                   }`}
                   onClick={() => {
