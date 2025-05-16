@@ -812,12 +812,27 @@ When presenting this data to clients, focus on these key elements:
             </Button>
             
             {isProcessing && (
-              <div className="mt-4">
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>{processingStep}</span>
-                  <span>{progress}%</span>
+              <div className="mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-center text-sm mb-2">
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 text-primary animate-spin" />
+                    <span className="font-medium text-primary">{processingStep}</span>
+                  </div>
+                  <span className="font-bold text-primary">{progress}%</span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                <Progress value={progress} className="h-3 rounded-full bg-gray-200" 
+                  style={{
+                    backgroundImage: 'linear-gradient(to right, #f0f0f0 0%, #fafafa 50%, #f0f0f0 100%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'progressAnimation 2s linear infinite'
+                  }}
+                />
+                <style jsx>{`
+                  @keyframes progressAnimation {
+                    0% { background-position: 100% 0; }
+                    100% { background-position: -100% 0; }
+                  }
+                `}</style>
               </div>
             )}
             
@@ -916,16 +931,20 @@ When presenting this data to clients, focus on these key elements:
                         </div>
                         
                         <div 
-                          className="w-full border rounded-md overflow-hidden bg-white"
-                          style={{ height: '400px' }}
+                          className="w-full border rounded-md overflow-hidden bg-white shadow-md"
+                          style={{ height: '450px' }}
                         >
-                          <embed
-                            src={pdfPreviewUrl}
+                          <object
+                            data={pdfPreviewUrl}
                             type="application/pdf"
                             width="100%"
                             height="100%"
                             className="w-full h-full"
-                          />
+                          >
+                            <div className="p-4 text-center">
+                              <p>Your browser doesn't support embedded PDFs. Click the "Open in New Tab" button above to view it.</p>
+                            </div>
+                          </object>
                         </div>
                       </div>
                     </div>
