@@ -507,6 +507,41 @@ Would you like specific recommendations for any of these technical areas?`
         </div>
       )}
       
+      {/* Chat usage status indicator */}
+      {chatUsage && (
+        <div className="px-2 pt-1">
+          <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className={`h-1 ${
+                chatUsage.status === 'approaching_limit' 
+                  ? 'bg-amber-500' 
+                  : chatUsage.status === 'limit_reached' 
+                    ? 'bg-red-500' 
+                    : 'bg-green-500'
+              }`}
+              style={{ width: `${Math.min(100, (chatUsage.usageCount / chatUsage.limit) * 100)}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-[9px] text-gray-500 mt-0.5">
+            <span>
+              {chatUsage.usageCount}/{chatUsage.limit} messages used
+            </span>
+            {chatUsage.status === 'approaching_limit' && (
+              <span className="text-amber-600 flex items-center">
+                <AlertCircle className="w-2 h-2 mr-0.5" />
+                Approaching limit
+              </span>
+            )}
+            {chatUsage.status === 'limit_reached' && (
+              <span className="text-red-600 flex items-center">
+                <Lock className="w-2 h-2 mr-0.5" />
+                Limit reached
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {messages.map((message) => (
           <motion.div
