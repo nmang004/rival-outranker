@@ -3131,6 +3131,8 @@ class RivalAuditCrawler {
           "Many service pages lack clear call-to-action elements" : 
           "Service pages have good CTAs"
       });
+          "Good use of FAQ sections on service pages"
+      });
       
       // Check for FAQ schema
       const faqSchemaPages = servicePages.filter(page => 
