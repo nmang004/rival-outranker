@@ -1,4 +1,7 @@
 import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 // Create the OpenAI client
 const openai = new OpenAI({
@@ -57,6 +60,65 @@ ${truncatedText}`;
     console.error("Error during OpenAI analysis:", error);
     return {
       analysis: "## AI Analysis Temporarily Unavailable\n\nWe were unable to complete the AI analysis of this document. You can still view the extracted text and other document details in the tabs below.",
+      model: "error"
+    };
+  }
+}
+
+/**
+ * Analyze a PDF file directly using OpenAI's multimodal capabilities
+ */
+export async function analyzePdfFile(pdfBuffer: Buffer, fileName: string): Promise<OpenAIAnalysisResult> {
+  try {
+    // Create a base64 encoding of the PDF
+    const base64Pdf = pdfBuffer.toString('base64');
+    
+    console.log("Calling OpenAI API with direct PDF analysis...");
+    
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are an experienced SEO Account Director preparing monthly client reports. Your expertise is in translating complex SEO data into clear, actionable insights that demonstrate value to clients. Format your responses with professional markdown, including clear section headings, bullet points for key metrics, and concise explanations of trends. Always highlight positive changes and provide context for any negative metrics. Focus on data that shows ROI and business impact."
+          },
+          { 
+            role: "user", 
+            content: [
+              {
+                type: "text",
+                text: "I've uploaded a PDF SEO report. Please extract and summarize the key performance highlights into a format suitable for a monthly client update. Focus specifically on: 1) Organic traffic growth, 2) Keyword rankings, 3) Top-performing pages, 4) Google Search Console data (impressions, clicks, CTR, average position), and 5) Lead generation if available. Keep the tone client-friendly and professional. Use clear headers and formatting."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${base64Pdf}`,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1500
+      });
+      
+      const analysisText = response.choices[0].message.content || '';
+      console.log("Successfully received PDF analysis from OpenAI API");
+      
+      return {
+        analysis: analysisText,
+        model: "gpt-4o"
+      };
+    } catch (apiError) {
+      console.error("OpenAI API call failed for PDF analysis:", apiError);
+      throw new Error(`OpenAI API call failed for PDF: ${apiError.message}`);
+    }
+  } catch (error) {
+    console.error("Error during PDF analysis with OpenAI:", error);
+    return {
+      analysis: "## AI Analysis Temporarily Unavailable\n\nWe were unable to complete the AI analysis of this PDF document. Please try again later.",
       model: "error"
     };
   }
