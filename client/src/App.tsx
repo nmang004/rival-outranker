@@ -29,6 +29,7 @@ import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
 import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import SeoBuddy from "@/components/SeoBuddy";
 
 function Router() {
   return (
@@ -62,6 +63,8 @@ function Router() {
         </div>
       </main>
       <Footer />
+      {/* SEO Buddy helper */}
+      <SeoBuddy />
     </div>
   );
 }
