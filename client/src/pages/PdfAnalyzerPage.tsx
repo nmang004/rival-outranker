@@ -151,8 +151,20 @@ const PdfAnalyzerPage: React.FC = () => {
   // Extract text from PDF
   const extractTextFromPdf = async (file: File): Promise<string> => {
     try {
+      console.log('Starting PDF text extraction, file size:', file.size, 'bytes');
+      
+      // Make sure the file is valid
+      if (!file || file.size === 0) {
+        throw new Error('Invalid or empty PDF file');
+      }
+      
       const arrayBuffer = await file.arrayBuffer();
+      console.log('Successfully created array buffer, size:', arrayBuffer.byteLength);
+      
+      // Load the PDF document
+      setProcessingStep('Loading PDF document...');
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log('PDF document loaded successfully, pages:', pdf.numPages);
       
       let fullText = '';
       const totalPages = pdf.numPages;
@@ -160,17 +172,28 @@ const PdfAnalyzerPage: React.FC = () => {
       for (let i = 1; i <= totalPages; i++) {
         // Update progress
         setProgress(Math.floor((i / totalPages) * 50));
+        setProcessingStep(`Extracting text from page ${i} of ${totalPages}...`);
         
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items.map((item: any) => item.str).join(' ');
         fullText += pageText + '\n\n';
+        
+        console.log(`Extracted text from page ${i}, content length:`, pageText.length);
+      }
+      
+      console.log('PDF text extraction complete, total text length:', fullText.length);
+      
+      // If we didn't get any text, warn but don't fail completely
+      if (fullText.trim().length === 0) {
+        console.warn('Extracted text is empty');
+        fullText = 'The PDF appears to be empty or contains only images without text. Please try an image-based extraction.';
       }
       
       return fullText;
     } catch (error) {
       console.error('Error extracting text from PDF:', error);
-      throw new Error('Failed to extract text from PDF');
+      throw new Error(`Failed to extract text from PDF: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -625,10 +648,11 @@ const PdfAnalyzerPage: React.FC = () => {
       
       const fileName = sampleName || 'sample-document.pdf';
       
-      // Use the blob constructor with proper typing for File
-      const fileObj = new Blob([blob], { type: 'application/pdf' }) as any;
-      fileObj.name = fileName;
-      fileObj.lastModified = Date.now();
+      // Create a proper File object from the blob with the needed properties
+      const fileObj = new File([blob], fileName, { 
+        type: 'application/pdf',
+        lastModified: Date.now()
+      });
       
       // Set the file and type
       setFile(fileObj);
