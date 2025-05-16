@@ -90,6 +90,15 @@ export async function generateRivalAuditExcel(audit: RivalAudit): Promise<any> {
     }
   ];
   
+  // Add service area pages to category data if they exist
+  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
+    categoryData.push({
+      name: 'Service Area Pages',
+      items: audit.serviceAreaPages.items,
+      icon: '🌐'
+    });
+  }
+  
   // Add data rows
   let rowIndex = 7;
   categoryData.forEach(category => {
@@ -164,7 +173,9 @@ export async function generateRivalAuditExcel(audit: RivalAudit): Promise<any> {
   
   // Add service area pages worksheet if it exists
   if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
+    // Make sure the worksheet name matches what we're showing in the summary
     addCategoryWorksheet(workbook, 'Service-Area-Pages', audit.serviceAreaPages.items);
+    console.log("Adding Service Area Pages worksheet with", audit.serviceAreaPages.items.length, "items");
   }
   
   // Add Priority OFI Summary worksheet for quick review
@@ -365,7 +376,7 @@ function addCategoryWorksheet(workbook: Excel.Workbook, name: string, items: Aud
  * @param audit The complete rival audit
  */
 function addPriorityOfiWorksheet(workbook: Excel.Workbook, audit: RivalAudit): void {
-  // Skip if there are no Priority OFI items
+  // Collect all Priority OFI items from each section
   const priorityOfiItems: AuditItem[] = [
     ...audit.onPage.items.filter(item => item.status === 'Priority OFI'),
     ...audit.structureNavigation.items.filter(item => item.status === 'Priority OFI'),
