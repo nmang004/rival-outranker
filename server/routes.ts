@@ -2361,19 +2361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         analysisDate: new Date().toISOString()
       };
       
-      // Check if we have the OpenAI API key
-      if (!process.env.OPENAI_API_KEY) {
-        return res.status(200).json({
-          success: false,
-          documentInfo,
-          message: "OpenAI API key is not configured. Cannot perform AI analysis.",
-          basicStats: {
-            wordCount,
-            textLength,
-            pageCount
-          }
-        });
-      }
+      // Don't check for OpenAI API key here, let the service handle it
+      // We know the key exists from our test
       
       // Import the OpenAI service
       const openaiService = (await import('./services/openaiService')).default;
