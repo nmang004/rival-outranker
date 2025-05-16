@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 import Tesseract from 'tesseract.js';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1023,18 +1024,10 @@ When presenting this data to clients, focus on these key elements:
                       
                       <TabsContent value="ai" className="p-6 pt-4">
                         {aiInsights ? (
-                          <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <div dangerouslySetInnerHTML={{ 
-                              __html: aiInsights
-                                .replace(/^#\s+(.*?)$/gm, '<h1>$1</h1>')
-                                .replace(/^##\s+(.*?)$/gm, '<h2>$1</h2>')
-                                .replace(/^###\s+(.*?)$/gm, '<h3>$1</h3>')
-                                .replace(/^####\s+(.*?)$/gm, '<h4>$1</h4>')
-                                .replace(/^\*\*(.*?)\*\*/gm, '<strong>$1</strong>')
-                                .replace(/^\*(.*?)\*/gm, '<em>$1</em>')
-                                .replace(/^\-\s+(.*?)$/gm, '<ul><li>$1</li></ul>')
-                                .replace(/<\/ul>\s*<ul>/g, '')
-                            }} />
+                          <div className="prose prose-headings:font-bold prose-headings:text-primary prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base prose-strong:font-bold prose-strong:text-black dark:prose-strong:text-white prose-ul:ml-6 prose-p:my-2 prose-li:my-0 max-w-none dark:prose-invert">
+                            <ReactMarkdown>
+                              {aiInsights}
+                            </ReactMarkdown>
                             
                             {/* Add Enhanced Chart Analysis Component */}
                             {extractedText && file && (
