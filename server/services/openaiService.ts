@@ -35,23 +35,30 @@ Here is the document text:
 ${truncatedText}`;
 
     console.log("Calling OpenAI API for analysis...");
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "You are a helpful SEO analyst assistant." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.5,
-      max_tokens: 1500
-    });
-    
-    const analysisText = response.choices[0].message.content || '';
-    console.log("Successfully received analysis from OpenAI API");
-    
-    return {
-      analysis: analysisText,
-      model: "gpt-4o"
-    };
+    // Use a simple try-catch specifically for the API call
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "You are a helpful SEO analyst assistant." },
+          { role: "user", content: prompt }
+        ],
+        temperature: 0.5,
+        max_tokens: 1500
+      });
+      
+      const analysisText = response.choices[0].message.content || '';
+      console.log("Successfully received analysis from OpenAI API");
+      
+      return {
+        analysis: analysisText,
+        model: "gpt-4o"
+      };
+    } catch (apiError) {
+      console.error("OpenAI API call failed:", apiError);
+      // Re-throw but with better message for debugging
+      throw new Error(`OpenAI API call failed: ${apiError.message}`);
+    }
     
   } catch (error) {
     console.error("Error during OpenAI analysis:", error);
