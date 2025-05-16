@@ -1017,11 +1017,33 @@ Click "Analyze Document" to process the full document for more detailed insights
                   {/* Document preview */}
                   {fileType === 'pdf' && pdfPreviewUrl && (
                     <div className="mt-4">
-                      {/* Use our new PDF Viewer component */}
-                      {React.createElement(require('../components/PdfViewer').default, {
-                        pdfUrl: pdfPreviewUrl,
-                        height: '400px'
-                      })}
+                      {/* Enhanced PDF preview */}
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-sm font-medium">PDF Document</h3>
+                          <a 
+                            href={pdfPreviewUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                          >
+                            Open in New Tab
+                          </a>
+                        </div>
+                        
+                        <div 
+                          className="w-full border rounded-md overflow-hidden bg-white"
+                          style={{ height: '400px' }}
+                        >
+                          <embed
+                            src={pdfPreviewUrl}
+                            type="application/pdf"
+                            width="100%"
+                            height="100%"
+                            className="w-full h-full"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
                   {fileType === 'image' && imagePreview && (
