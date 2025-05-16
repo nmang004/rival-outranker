@@ -35,9 +35,16 @@ import {
 
 interface RivalAuditDashboardProps {
   audit: RivalAudit;
+  updatedSummary: {
+    priorityOfiCount: number;
+    ofiCount: number;
+    okCount: number;
+    naCount: number;
+    total?: number;
+  } | null;
 }
 
-export default function RivalAuditDashboard({ audit }: RivalAuditDashboardProps) {
+export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAuditDashboardProps) {
   // Calculate total issues for each category
   const getCategoryTotals = (categoryItems: any[]) => {
     return {

@@ -80,6 +80,33 @@ export default function RivalAuditResultsPage() {
     },
     enabled: !!auditId,
   });
+
+  // Listen for status updates from the RivalAuditSection components
+  useEffect(() => {
+    function handleAuditItemUpdated(event: CustomEvent) {
+      // Update the local summary state with the new counts
+      if (event.detail && event.detail.summary) {
+        setUpdatedSummary(event.detail.summary);
+        
+        // Show notification of the status change
+        if (event.detail.oldStatus && event.detail.newStatus) {
+          toast({
+            title: "Item Status Updated",
+            description: `Status changed from "${event.detail.oldStatus}" to "${event.detail.newStatus}"`,
+            variant: "default"
+          });
+        }
+      }
+    }
+    
+    // Add event listener for our custom event
+    window.addEventListener('audit-item-updated', handleAuditItemUpdated as EventListener);
+    
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener('audit-item-updated', handleAuditItemUpdated as EventListener);
+    };
+  }, [toast]);
   
   // Function to refresh/recrawl the audit
   const handleRefreshAudit = async () => {
@@ -405,7 +432,10 @@ export default function RivalAuditResultsPage() {
         </div>
         
         {viewMode === "dashboard" ? (
-          <RivalAuditDashboard audit={audit} />
+          <RivalAuditDashboard 
+            audit={audit} 
+            updatedSummary={updatedSummary}
+          />
         ) : (
           <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid sm:grid-cols-6 mb-4 h-auto p-1">
