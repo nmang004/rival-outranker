@@ -668,11 +668,12 @@ class RivalAuditCrawler {
     const title = page.title.toLowerCase();
     const path = new URL(page.url).pathname.toLowerCase();
     const pathSegments = path.split('/').filter(Boolean);
+    const bodyText = page.bodyText.toLowerCase();
     
     // Define comprehensive service directory and term lists for accurate detection
     const serviceDirectories = [
       'services', 'service', 'products', 'solutions', 'offerings', 
-      'capabilities', 'what-we-do', 'what-we-offer'
+      'capabilities', 'what-we-do', 'what-we-offer', 'our-services'
     ];
     
     const specificServiceTerms = [
@@ -734,6 +735,75 @@ class RivalAuditCrawler {
     
     if (serviceTitlePatterns.some(pattern => pattern.test(title)) && 
         !this.containsLocationIndicator(title)) {
+      return true;
+    }
+    
+    // Pattern 5: Check for service-related content analysis
+    // Many pages don't explicitly say "service" in the URL or title but are clearly service pages
+    
+    // Check the headings for service indicators
+    const serviceHeadingTerms = [
+      'repair', 'installation', 'maintenance', 'service', 'replacement',
+      'tune-up', 'ac', 'hvac', 'heating', 'cooling', 'furnace', 'air conditioning'
+    ];
+    
+    // Look for service terms in h1, h2, and h3 headings
+    const allHeadings = [
+      ...page.headings.h1, 
+      ...page.headings.h2, 
+      ...page.headings.h3
+    ].map(h => h.toLowerCase());
+    
+    // If a heading contains service terms but not location terms, likely a service page
+    for (const heading of allHeadings) {
+      if (serviceHeadingTerms.some(term => heading.includes(term)) && 
+          !this.containsLocationIndicator(heading)) {
+        return true;
+      }
+    }
+    
+    // Pattern 6: Check for pricing patterns typical in service pages
+    const pricingPatterns = [
+      /\$\d+/,
+      /starting at/i,
+      /price/i,
+      /cost/i,
+      /estimate/i,
+      /quote/i,
+      /special offer/i,
+      /discount/i,
+      /save \$\d+/i
+    ];
+    
+    // If the page contains pricing information and service terms, likely a service page
+    if (specificServiceTerms.some(term => bodyText.includes(term)) &&
+        pricingPatterns.some(pattern => pattern.test(bodyText)) &&
+        !this.containsLocationIndicator(bodyText)) {
+      return true;
+    }
+    
+    // Pattern 7: Check for "benefits" or "advantages" sections typical in service pages
+    const benefitPatterns = [
+      /benefits of/i,
+      /advantages of/i,
+      /why choose/i,
+      /features of/i,
+      /our process/i,
+      /how we/i,
+      /what to expect/i
+    ];
+    
+    if (benefitPatterns.some(pattern => pattern.test(bodyText)) &&
+        specificServiceTerms.some(term => bodyText.includes(term)) &&
+        !this.containsLocationIndicator(bodyText)) {
+      return true;
+    }
+    
+    // Pattern 8: Check for schema presence (often service pages have rich schema)
+    if (page.hasSchema && page.schemaTypes.some(schema => 
+        schema.includes('Service') || 
+        schema.includes('Product') || 
+        schema.includes('Offer'))) {
       return true;
     }
     
