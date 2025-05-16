@@ -179,7 +179,7 @@ export default function SeoBuddy() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleBuddyClick}
-            className="cursor-pointer flex flex-col items-center"
+            className="cursor-pointer flex flex-col items-end" // Right-aligned for mobile
           >
             <motion.div
               animate={
