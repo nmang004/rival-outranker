@@ -2338,11 +2338,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New dedicated endpoint for PDF analysis with OpenAI integration
   app.post("/api/pdf-analyzer", async (req: Request, res: Response) => {
     try {
-      const { text, fileName, fileSize, pageCount } = req.body;
+      const { text, fileName, fileSize, pageCount, pdfData } = req.body;
       
-      if (!text || text.trim().length === 0) {
+      // Check if we have at least one of: PDF data or extracted text
+      if ((!text || text.trim().length === 0) && !pdfData) {
         return res.status(400).json({ 
-          message: "PDF text content is required",
+          message: "Either PDF data or extracted text is required",
           success: false 
         });
       }
@@ -2367,6 +2368,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import the OpenAI service
       const openaiService = (await import('./services/openaiService')).default;
       
+      // Try direct PDF analysis if we have PDF data
+      if (pdfData) {
+        try {
+          console.log("Using direct PDF analysis with OpenAI...");
+          
+          // Convert base64 string to buffer
+          const pdfBuffer = Buffer.from(pdfData, 'base64');
+          
+          // Use the PDF-specific analysis method
+          const analysisResponse = await openaiService.analyzePdfFile(pdfBuffer, fileName || 'document.pdf');
+          
+          // Create document info for response
+          const directDocumentInfo = {
+            fileName: fileName || "Unknown document",
+            fileSize: fileSize ? `${Math.round(fileSize / 1024)} KB` : "Unknown size",
+            pageCount: pageCount || "Unknown",
+            analysisDate: new Date().toISOString(),
+            analysisMethod: "direct-pdf"
+          };
+          
+          // Format the response with direct PDF analysis results
+          return res.status(200).json({
+            success: true,
+            documentInfo: directDocumentInfo,
+            analysis: analysisResponse.analysis,
+            model: analysisResponse.model,
+            timestamp: new Date().toISOString(),
+            directPdfAnalysis: true
+          });
+        } catch (pdfError) {
+          console.error("Error with direct PDF analysis:", pdfError);
+          // We'll fall back to text analysis below
+          console.log("Falling back to text-based analysis");
+        }
+      }
+      
+      // If we reach here, either there was no PDF data or direct analysis failed
       // Create SEO-specific prompt for the report
       const isSEOReport = 
         (fileName && /seo|search|keyword|audit/i.test(fileName)) ||
