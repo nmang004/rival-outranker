@@ -538,6 +538,9 @@ const PdfAnalyzerPage: React.FC = () => {
 
   // Process the file
   const processFile = async () => {
+    // Check if we have a file to process
+    console.log('Processing file:', file?.name, file?.type, fileType);
+    
     if (!file || !fileType) {
       setError('Please upload a file first');
       return;
@@ -679,46 +682,47 @@ const PdfAnalyzerPage: React.FC = () => {
       
       const fileName = sampleName || 'sample-document.pdf';
       
-      // Work directly with blob instead of creating a File object
       try {
-        // We'll use the blob directly since File constructor is having issues
-        console.log('Using blob directly for sample document');
+        console.log('Creating custom file object for sample document');
         
-        // Instead of trying to create a File-like object by modifying the blob, 
-        // let's create a simple custom object with just what we need
+        // Create a custom object that has the essential properties we need
         const customFileObject = {
           name: fileName,
           type: 'application/pdf',
           size: blobWithCorrectType.size,
           lastModified: Date.now(),
-          // Store the blob separately for later use
-          _blob: blobWithCorrectType
+          // Add a reference to the blob for our extraction function to use
+          _blob: blobWithCorrectType,
+          // Add a simple dummy function to avoid further File-compatibility issues
+          arrayBuffer: async () => await blobWithCorrectType.arrayBuffer()
         };
         
-        // Make sure the blob has the right properties
-        if (blobWithCorrectType.size === 0) {
-          throw new Error('Blob is invalid - zero size');
-        }
-        
-        // Set our custom object as the file and set type
+        // Set our custom object as the file
         setFile(customFileObject as any);
         setFileType('pdf');
         
-        // Create preview URL from the original blob
+        // Create preview URL from the blob
         const previewUrl = URL.createObjectURL(blobWithCorrectType);
         setPdfPreviewUrl(previewUrl);
         
-        console.log('Using custom file object:', fileName, customFileObject.type, customFileObject.size, 'bytes');
+        console.log('File object created successfully:', fileName, customFileObject.type, customFileObject.size, 'bytes');
         
         setProgress(30);
         setProcessingStep('Sample document loaded successfully');
         
-        // Automatically process the sample document after a short delay for better UX
+        // Clear any previous errors specifically related to file loading
+        if (error && error.includes('upload a file first')) {
+          setError(null);
+        }
+        
+        // Wait a bit for the UI to update before processing
         await new Promise(resolve => setTimeout(resolve, 800)); 
+        
+        // Process the document
         processFile();
       } catch (fileError: any) {
-        console.error('Error creating File object:', fileError);
-        throw new Error(`Failed to create File object: ${fileError.message || 'Unknown error'}`);
+        console.error('Error creating file object:', fileError);
+        throw new Error(`Failed to prepare document: ${fileError?.message || 'Unknown error'}`);
       }
     } catch (error: any) {
       console.error('Error loading sample document:', error);
