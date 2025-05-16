@@ -311,9 +311,18 @@ export default function SeoBuddy() {
                             className="h-5 w-5 bg-white/80 hover:bg-white rounded-full"
                             onClick={() => {
                               // Toggle expanded state in chat interface
-                              const chatElem = document.querySelector('[data-chat-expand]') as HTMLButtonElement;
+                              const chatElem = document.querySelector('[data-chat-expand="true"]') as HTMLButtonElement;
                               if (chatElem) {
                                 chatElem.click();
+                              } else {
+                                // Fallback for mobile devices
+                                const allButtons = document.querySelectorAll('button');
+                                for (const btn of allButtons) {
+                                  if (btn.dataset && btn.dataset.chatExpand === 'true') {
+                                    btn.click();
+                                    break;
+                                  }
+                                }
                               }
                             }}
                           >

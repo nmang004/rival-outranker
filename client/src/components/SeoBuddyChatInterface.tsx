@@ -56,8 +56,21 @@ export default function SeoBuddyChatInterface({ onClose, showHeader = true, onEx
     }
   };
   
+  // Detect mobile screen size and adjust on window resize
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 640
+  );
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
   // Calculate appropriate height based on screen size and expansion state
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
   const mobileHeight = isExpanded ? 'h-[350px]' : 'h-[200px]';
   const desktopHeight = isExpanded ? 'h-[450px]' : 'h-[250px]';
   const chatHeight = isMobile ? mobileHeight : desktopHeight;
