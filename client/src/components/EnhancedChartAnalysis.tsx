@@ -245,9 +245,9 @@ const EnhancedChartAnalysis: React.FC<Props> = ({ pdfText, fileName }) => {
       <h2 className="text-xl font-bold mb-4">Visual Chart Analysis</h2>
       
       {timeframe && (
-        <p className="text-sm text-gray-600 mb-4">
+        <div className="text-sm text-gray-600 mb-4">
           Report period: <Badge variant="secondary" className="ml-1">{timeframe}</Badge>
-        </p>
+        </div>
       )}
       
       {/* Analytics Metrics Section */}

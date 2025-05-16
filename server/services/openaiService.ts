@@ -18,20 +18,10 @@ export async function analyzeTextContent(text: string): Promise<OpenAIAnalysisRe
     // Truncate text if it's too long to avoid token limits
     const truncatedText = text.length > 15000 ? text.substring(0, 15000) : text;
     
-    // Create the prompt for SEO/Analytics report analysis
-    const prompt = `You are an SEO analyst examining a PDF document. The document likely contains SEO or analytics data, performance metrics, and visualizations.
+    // Create the client-friendly prompt for SEO/Analytics report analysis
+    const prompt = `I've uploaded a PDF report. Please extract and summarize the key performance highlights into a format suitable for a monthly client update. Focus on metrics such as organic traffic growth, keyword rankings, top-performing pages, Google Search Console data (impressions, clicks, CTR, average position), and lead generation if available. Avoid technical audit details or citation/report card sections unless they show major shifts. Keep the tone client-friendly and professional.
 
-Your task:
-1. Identify the main purpose of the document
-2. Extract and summarize key metrics
-3. Note any significant trends (positive or negative)
-4. Identify the timeframe covered by the report
-5. Format your response in markdown with sections organized by topic
-6. Use bullet points for key findings
-
-Ensure your analysis is concise but comprehensive, focusing on the most important information that would be valuable to a marketing director or account manager who needs to report to a client.
-
-Here is the document text:
+The PDF content is as follows:
 ${truncatedText}`;
 
     console.log("Calling OpenAI API for analysis...");
@@ -40,10 +30,13 @@ ${truncatedText}`;
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
-          { role: "system", content: "You are a helpful SEO analyst assistant." },
+          { 
+            role: "system", 
+            content: "You are an experienced SEO Account Director preparing monthly client reports. Your expertise is in translating complex SEO data into clear, actionable insights that demonstrate value to clients. Format your responses with professional markdown, including clear section headings, bullet points for key metrics, and concise explanations of trends. Always highlight positive changes and provide context for any negative metrics. Focus on data that shows ROI and business impact."
+          },
           { role: "user", content: prompt }
         ],
-        temperature: 0.5,
+        temperature: 0.3, // Lower temperature for more focused, professional responses
         max_tokens: 1500
       });
       
