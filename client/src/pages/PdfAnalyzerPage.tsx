@@ -16,12 +16,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-// Sample document API paths
-const summaryPdf = '/api/samples/pdf/summary';
-const onPagePdf = '/api/samples/pdf/on-page';
-const structureNavigationPdf = '/api/samples/pdf/structure-navigation';
-const contactPagePdf = '/api/samples/pdf/contact-page';
-const servicePagesPdf = '/api/samples/pdf/service-pages';
+// Static paths for sample documents (directly from static server)
+const summaryPdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Summary.pdf';
+const onPagePdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20On-Page.pdf';
+const structureNavigationPdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Structure%20%26%20Navigation.pdf';
+const contactPagePdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Contact%20Page.pdf';
+const servicePagesPdf = '/static-assets/Dinomite%20Heating%20%26%20Cooling%20-%20Initial%20SEO%20Audit%20-%20YYYY-MM-DD%20-%20Service%20Pages.pdf';
 
 // Summary card component
 interface SummaryCardProps {
@@ -206,9 +206,9 @@ const PdfAnalyzerPage: React.FC = () => {
       }
       
       return fullText;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error extracting text from PDF:', error);
-      throw new Error(`Failed to extract text from PDF: ${error.message || 'Unknown error'}`);
+      throw new Error(`Failed to extract text from PDF: ${error?.message || 'Unknown error'}`);
     }
   };
 
