@@ -1007,30 +1007,12 @@ Click "Analyze Document" to process the full document for more detailed insights
                   
                   {/* Document preview */}
                   {fileType === 'pdf' && pdfPreviewUrl && (
-                    <div className="mt-4 border rounded-md overflow-hidden h-[500px]">
-                      <object 
-                        data={pdfPreviewUrl} 
-                        type="application/pdf"
-                        className="w-full h-full"
-                        style={{ width: '100%', height: '100%' }}
-                      >
-                        <div className="flex h-full flex-col items-center justify-center p-4">
-                          <p className="mb-4 text-lg font-medium text-gray-700">
-                            Your browser doesn't support embedded PDFs.
-                          </p>
-                          <a 
-                            href={pdfPreviewUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                          >
-                            <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"></path>
-                            </svg>
-                            View PDF in New Tab
-                          </a>
-                        </div>
-                      </object>
+                    <div className="mt-4">
+                      {/* Use our new PDF Viewer component */}
+                      {React.createElement(require('../components/PdfViewer').default, {
+                        pdfUrl: pdfPreviewUrl,
+                        height: '400px'
+                      })}
                     </div>
                   )}
                   {fileType === 'image' && imagePreview && (
