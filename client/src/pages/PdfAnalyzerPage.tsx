@@ -151,8 +151,8 @@ const PdfAnalyzerPage: React.FC = () => {
     multiple: false,
   });
 
-  // Extract text from PDF
-  const extractTextFromPdf = async (file: File): Promise<string> => {
+  // Extract text from PDF - handles both File and our custom object
+  const extractTextFromPdf = async (file: any): Promise<string> => {
     try {
       console.log('Starting PDF text extraction, file size:', file.size, 'bytes');
       
@@ -161,7 +161,19 @@ const PdfAnalyzerPage: React.FC = () => {
         throw new Error('Invalid or empty PDF file');
       }
       
-      const arrayBuffer = await file.arrayBuffer();
+      // Get array buffer - handle both File objects and our custom object with _blob
+      let arrayBuffer;
+      if (file._blob) {
+        // Use the blob we stored earlier
+        arrayBuffer = await file._blob.arrayBuffer();
+        console.log('Using _blob property to get array buffer');
+      } else if (file.arrayBuffer) {
+        // Regular File object
+        arrayBuffer = await file.arrayBuffer();
+      } else {
+        throw new Error('File object does not support arrayBuffer');
+      }
+      
       console.log('Successfully created array buffer, size:', arrayBuffer.byteLength);
       
       // Load the PDF document
@@ -200,14 +212,16 @@ const PdfAnalyzerPage: React.FC = () => {
     }
   };
 
-  // Extract text from image
-  const extractTextFromImage = async (file: File): Promise<string> => {
+  // Extract text from image - handles both File and our custom objects
+  const extractTextFromImage = async (file: any): Promise<string> => {
     try {
       // Function to create an enhanced canvas version of the image
-      const enhanceImage = async (imgFile: File): Promise<HTMLCanvasElement> => {
+      const enhanceImage = async (imgFile: any): Promise<HTMLCanvasElement> => {
         return new Promise((resolve) => {
           const img = new Image() as HTMLImageElement;
-          const url = URL.createObjectURL(imgFile);
+          // Handle both regular files and our custom objects with _blob
+          const fileToUse = imgFile._blob || imgFile;
+          const url = URL.createObjectURL(fileToUse);
           
           img.onload = () => {
             // Create canvas element
@@ -670,26 +684,31 @@ const PdfAnalyzerPage: React.FC = () => {
         // We'll use the blob directly since File constructor is having issues
         console.log('Using blob directly for sample document');
         
-        // Create an object that has the minimal interface needed
-        const blobWithName = Object.assign(blobWithCorrectType, {
+        // Instead of trying to create a File-like object by modifying the blob, 
+        // let's create a simple custom object with just what we need
+        const customFileObject = {
           name: fileName,
-          lastModified: Date.now()
-        });
+          type: 'application/pdf',
+          size: blobWithCorrectType.size,
+          lastModified: Date.now(),
+          // Store the blob separately for later use
+          _blob: blobWithCorrectType
+        };
         
         // Make sure the blob has the right properties
-        if (!blobWithName.type || blobWithName.size === 0) {
-          throw new Error('Blob is invalid');
+        if (blobWithCorrectType.size === 0) {
+          throw new Error('Blob is invalid - zero size');
         }
         
-        // Set the blob as our file and type
-        setFile(blobWithName);
+        // Set our custom object as the file and set type
+        setFile(customFileObject as any);
         setFileType('pdf');
         
-        // Create preview URL
-        const previewUrl = URL.createObjectURL(blobWithName);
+        // Create preview URL from the original blob
+        const previewUrl = URL.createObjectURL(blobWithCorrectType);
         setPdfPreviewUrl(previewUrl);
         
-        console.log('Using blob directly:', fileName, blobWithName.type, blobWithName.size, 'bytes');
+        console.log('Using custom file object:', fileName, customFileObject.type, customFileObject.size, 'bytes');
         
         setProgress(30);
         setProcessingStep('Sample document loaded successfully');
