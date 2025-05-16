@@ -1,137 +1,92 @@
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
+// Initialize the OpenAI client with API key from environment
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
- * Analyze text content using OpenAI
- * @param text - Text content to analyze
- * @returns Analysis results with SEO insights
+ * Analyze text content using OpenAI's GPT model
+ * Includes fallback for API limitations
  */
-export async function analyzeTextContent(text: string) {
+export async function analyzeTextContent(text: string): Promise<string> {
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // If text is too long, truncate it to avoid token limits
+    const truncatedText = text.length > 15000 ? text.substring(0, 15000) + '...' : text;
+    
+    // Attempt to call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
       messages: [
-        {
-          role: "system",
-          content: "You are an SEO expert analyzing document content. Extract key SEO insights, identify issues, and provide recommendations."
+        { 
+          role: "system", 
+          content: "You are an expert SEO analyst reviewing a PDF document. Analyze the content and provide a comprehensive yet concise report focusing on SEO metrics, keyword analysis, content quality, and actionable recommendations. Format with proper headings and bullet points." 
         },
-        {
-          role: "user",
-          content: `Analyze the following content from an SEO perspective. Extract key insights related to SEO practices, identify potential issues, and provide specific recommendations for improvement. Focus on meta tags, keywords, content structure, and other SEO elements.\n\nCONTENT TO ANALYZE:\n${text.slice(0, 10000)}`
+        { 
+          role: "user", 
+          content: `Please analyze this SEO report document and provide key insights:\n\n${truncatedText}` 
         }
       ],
-      temperature: 0.3,
-      max_tokens: 1500,
+      max_tokens: 1000,
     });
 
-    return {
-      analysis: response.choices[0].message.content,
-      model: response.model,
-      usage: response.usage
-    };
-  } catch (error) {
+    // Return the generated analysis
+    return completion.choices[0].message.content || '';
+  } catch (error: any) {
     console.error('Error analyzing content with OpenAI:', error);
+    
+    // Handle API quota exceeded with detailed error
+    if (error.code === 'insufficient_quota') {
+      // Provide a helpful message about quota limits
+      return "AI analysis unavailable: API usage quota exceeded. The system will use basic document analysis instead. For full AI analysis capabilities, please check API quota limits.";
+    }
+    
+    // Create a fallback analysis based on text length and structure
+    const fallbackAnalysis = generateFallbackAnalysis(text);
+    
+    if (fallbackAnalysis) {
+      return fallbackAnalysis;
+    }
+    
+    // If all fallbacks fail, throw a general error
     throw new Error('Failed to analyze content with AI. Please try again.');
   }
 }
 
 /**
- * Analyze chart or image data
- * @param chartData - Chart metadata and extracted values
- * @param imgText - OCR extracted text from the image
- * @returns Analysis of chart data with insights
+ * Generate a fallback analysis when OpenAI API is unavailable
  */
-export async function analyzeChartData(chartData: any, imgText: string) {
-  try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an SEO data visualization expert. Your task is to analyze chart data and provide meaningful insights."
-        },
-        {
-          role: "user",
-          content: `Analyze this chart data from an SEO perspective. The chart type is: ${chartData.chartType || "unknown"}. 
-          Number of data points: ${chartData.dataPoints || 0}. 
-          Extracted values: ${JSON.stringify(chartData.extractedValues || [])}. 
-          Extracted labels: ${JSON.stringify(chartData.extractedLabels || [])}. 
-          OCR text from image: "${imgText}".
-          
-          Provide insights about what this data means for SEO, identify trends if any, and suggest what actions should be taken based on this data.`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-    });
-
-    return {
-      analysis: response.choices[0].message.content,
-      model: response.model
-    };
-  } catch (error) {
-    console.error('Error analyzing chart with OpenAI:', error);
-    throw new Error('Failed to analyze chart data with AI. Please try again.');
+function generateFallbackAnalysis(text: string): string {
+  // Look for SEO-related terms in the text
+  const seoTerms = ['SEO', 'keyword', 'organic', 'ranking', 'metadata', 'backlink', 'traffic', 'SERP'];
+  const seoTermsFound = seoTerms.filter(term => text.includes(term));
+  
+  const wordCount = text.split(/\s+/).length;
+  const paragraphCount = text.split(/\n\n+/).length;
+  
+  let analysis = '## Document Analysis (Local Processing)\n\n';
+  analysis += '### Document Overview\n';
+  analysis += `* Document length: ${wordCount} words\n`;
+  analysis += `* Approximate sections: ${paragraphCount}\n\n`;
+  
+  if (seoTermsFound.length > 0) {
+    analysis += '### SEO Content Detected\n';
+    analysis += `* Document contains SEO-related terms: ${seoTermsFound.join(', ')}\n`;
+    analysis += '* Appears to be an SEO report or analysis document\n\n';
   }
-}
-
-/**
- * Generate summarized SEO recommendations
- * @param analysisResults - Full analysis results
- * @returns Prioritized recommendations
- */
-export async function generateRecommendations(analysisResults: any) {
-  try {
-    // Create a condensed version of the analysis
-    const analysisData = {
-      metaTags: analysisResults.metaTags || [],
-      keywords: analysisResults.keywords || [],
-      contentStructure: analysisResults.contentStructure || {},
-      chartInsights: analysisResults.chartInsights || '',
-      extractedText: ((analysisResults.extractedText || '') as string).slice(0, 1000) + '...'
-    };
-
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an SEO strategist who prioritizes actionable recommendations based on document analysis."
-        },
-        {
-          role: "user",
-          content: `Based on this SEO analysis data, provide the top 5 most critical and actionable recommendations. 
-          Prioritize recommendations that would have the biggest impact on search visibility and user experience.
-          Present recommendations in order of importance.
-          
-          ANALYSIS DATA:
-          ${JSON.stringify(analysisData, null, 2)}`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: "json_object" }
-    });
-
-    // Parse the JSON response
-    const content = response.choices[0].message.content || '{"recommendations":[]}';
-    const recommendations = JSON.parse(content);
-    return recommendations;
-  } catch (error) {
-    console.error('Error generating recommendations with OpenAI:', error);
-    throw new Error('Failed to generate recommendations with AI. Please try again.');
-  }
+  
+  analysis += '### Key Points\n';
+  analysis += '* Basic document structure analysis completed\n';
+  analysis += '* For detailed AI analysis, please ensure API quota is available\n';
+  analysis += '* This is a fallback analysis due to API limitations\n\n';
+  
+  analysis += '### Next Steps\n';
+  analysis += '* Review the extracted text tab for complete document content\n';
+  analysis += '* Consider checking API quota if AI analysis is needed\n';
+  
+  return analysis;
 }
 
 export default {
   analyzeTextContent,
-  analyzeChartData,
-  generateRecommendations
 };
