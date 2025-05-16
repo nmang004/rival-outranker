@@ -13,6 +13,7 @@ import {
   Search, Layers, Share2, MapPin, BarChart 
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import EnhancedChartAnalysis from '@/components/EnhancedChartAnalysis';
 
 // Enable the fake worker mode for PDF.js
 console.log('Using PDF.js version:', pdfjsLib.version);
@@ -494,6 +495,34 @@ const PdfAnalyzerPage: React.FC = () => {
     const detectedTimeframes = text.match(/((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4})/gi) || [];
     const clientName = fileName.split('-')[0]?.trim() || 'Client';
     const timeframe = detectedTimeframes.length > 0 ? detectedTimeframes[0] : '';
+    
+    // Detect overall trend direction from text
+    const detectTrendDirection = (text: string): 'positive' | 'negative' | 'mixed' => {
+      const positiveWords = ['increase', 'growth', 'improvement', 'higher', 'better', 'success', 'gain'];
+      const negativeWords = ['decrease', 'decline', 'drop', 'lower', 'worse', 'loss', 'down'];
+      
+      let positiveCount = 0;
+      let negativeCount = 0;
+      
+      positiveWords.forEach(word => {
+        const regex = new RegExp(word, 'gi');
+        const matches = text.match(regex);
+        if (matches) positiveCount += matches.length;
+      });
+      
+      negativeWords.forEach(word => {
+        const regex = new RegExp(word, 'gi');
+        const matches = text.match(regex);
+        if (matches) negativeCount += matches.length;
+      });
+      
+      if (positiveCount > negativeCount * 1.5) return 'positive';
+      if (negativeCount > positiveCount * 1.5) return 'negative';
+      return 'mixed';
+    };
+    
+    // Determine overall trend
+    const trendDirection = detectTrendDirection(text);
     
     // Format metrics for display
     const formatNumber = (num: number | string, isPercent = false) => {
@@ -991,10 +1020,10 @@ When presenting this data to clients, focus on these key elements:
                             {/* Add Enhanced Chart Analysis Component */}
                             {extractedText && file && (
                               <div className="mt-8 border-t pt-8">
-                                {React.createElement(require('../components/EnhancedChartAnalysis').default, {
-                                  pdfText: extractedText,
-                                  fileName: file.name
-                                })}
+                                <EnhancedChartAnalysis 
+                                  pdfText={extractedText}
+                                  fileName={file.name}
+                                />
                               </div>
                             )}
                           </div>
@@ -1011,10 +1040,10 @@ When presenting this data to clients, focus on these key elements:
                             {/* Show Chart Analysis as fallback */}
                             {extractedText && file && (
                               <div>
-                                {React.createElement(require('../components/EnhancedChartAnalysis').default, {
-                                  pdfText: extractedText,
-                                  fileName: file.name
-                                })}
+                                <EnhancedChartAnalysis 
+                                  pdfText={extractedText}
+                                  fileName={file.name}
+                                />
                               </div>
                             )}
                           </div>

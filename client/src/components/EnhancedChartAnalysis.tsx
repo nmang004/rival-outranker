@@ -5,7 +5,7 @@ import { ChevronUp, ChevronDown, ChevronRight, BarChart, LineChart, PieChart, Ta
 
 interface ChartMetric {
   name: string;
-  value: string | number;
+  value: string;
   trend?: 'up' | 'down' | 'neutral';
   changePercent?: string;
 }
@@ -195,19 +195,20 @@ const EnhancedChartAnalysis: React.FC<Props> = ({ pdfText, fileName }) => {
       { name: 'Keywords', regex: /keywords?[:\s]+([0-9,]+)/i },
     ];
     
-    return patterns
-      .map(pattern => {
-        const match = text.match(pattern.regex);
-        if (match && match[1]) {
-          return {
-            name: pattern.name,
-            value: match[1].trim(),
-            trend: detectTrend(text, pattern.name)
-          };
-        }
-        return null;
-      })
-      .filter((item): item is ChartMetric => item !== null);
+    const metrics: ChartMetric[] = [];
+    
+    for (const pattern of patterns) {
+      const match = text.match(pattern.regex);
+      if (match && match[1]) {
+        metrics.push({
+          name: pattern.name,
+          value: match[1].trim(),
+          trend: detectTrend(text, pattern.name)
+        });
+      }
+    }
+    
+    return metrics;
   };
   
   // Helper function to render trend indicator
