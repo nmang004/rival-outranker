@@ -609,54 +609,63 @@ Conversion Rate: 3.8%
       // Generate a list of key findings based on detected metrics and data
       let keyFindings = '';
       
-      // Add findings about metrics and KPIs
-      if (metrics.length > 0) {
-        keyFindings += `- Key metrics detected: ${metrics.slice(0, 4).join(', ')}\n`;
-      }
-      
-      // Add findings about data visualizations
-      if (chartCount > 0 || tableCount > 0) {
-        keyFindings += `- Contains approximately ${chartCount} charts/graphs and ${tableCount} tables/data grids\n`;
-      }
-      
-      // Add findings based on content type
-      if (hasFinancialData) {
-        keyFindings += '- Financial metrics and performance indicators\n';
-      }
-      
-      if (hasMarketingData) {
-        keyFindings += '- Marketing campaign and conversion metrics\n';
-      }
-      
-      if (hasSEOData) {
-        keyFindings += '- SEO performance and organic visibility data\n';
-      }
-      
-      if (hasSocialData) {
-        keyFindings += '- Social media engagement and audience metrics\n';
-      }
-      
-      // Add findings about time comparisons
-      if (hasTimeComparison && timeframe.length > 0) {
-        const periods = Array.from(new Set(timeframe)).slice(0, 3).join('/');
-        keyFindings += `- Comparative analysis across ${periods} periods\n`;
-      }
-      
-      // Add findings about trends
-      if (trendCount > 0) {
-        keyFindings += `- Contains trend analysis with ${trendCount} references to performance changes\n`;
-      }
-      
-      // If we couldn't extract specific findings, provide generic ones based on file name and content
-      if (!keyFindings) {
-        const reportName = file.name.toLowerCase();
-        if (reportName.includes('seo')) {
-          keyFindings = '- SEO performance metrics and rankings\n- Organic traffic and visibility trends\n- Keyword performance analysis\n- Technical SEO recommendations\n';
-        } else if (reportName.includes('analytics') || reportName.includes('report')) {
-          keyFindings = '- Performance metrics and KPI tracking\n- Traffic and conversion analysis\n- Audience engagement metrics\n- Revenue and goal completion data\n';
+      // Instead of client-side analysis, call our OpenAI-powered server endpoint
+      try {
+        setProcessingStep('Sending content to AI for analysis...');
+        
+        // Import our PDF analysis service
+        const pdfAnalysisService = await import('../services/pdfAnalysisService').then(module => module.default);
+        
+        // Call our server-side analysis service with the extracted text
+        const aiResult = await pdfAnalysisService.analyzePdfContent(
+          text,
+          file.name,
+          file.size,
+          pageCount || 0
+        );
+        
+        // If we got a successful analysis, use it
+        if (aiResult.success && aiResult.analysis) {
+          // Set the AI analysis directly from the server response
+          setAiInsights(aiResult.analysis);
+          setProcessingStep('AI analysis completed');
+          
+          // Set keyFindings to a placeholder since we're using the AI analysis instead
+          keyFindings = '- Analysis performed by AI using actual document content\n';
+          
+          // Skip the rest of the analysis since we have a proper AI result
+          console.log('Successfully received AI analysis from server');
         } else {
-          keyFindings = '- Performance metrics and data analysis\n- Trend visualization and comparative studies\n- Strategic insights based on collected data\n- Actionable recommendations for improvement\n';
+          // Log the error and continue with fallback analysis
+          console.warn('Failed to get AI analysis:', aiResult.message);
+          
+          // Use fallback client-side analysis
+          keyFindings = '- Document content analysis\n';
+          
+          // Try to detect the document type from filename
+          const reportName = file.name.toLowerCase();
+          if (reportName.includes('seo')) {
+            keyFindings += '- SEO performance metrics and rankings\n- Organic traffic and visibility trends\n';
+          } else if (reportName.includes('analytics') || reportName.includes('report')) {
+            keyFindings += '- Performance metrics and KPI tracking\n- Traffic and conversion analysis\n';
+          } else {
+            keyFindings += '- Performance metrics and data analysis\n- Trend visualization and comparative studies\n';
+          }
         }
+      } catch (apiError) {
+        console.error('Error connecting to PDF analysis API:', apiError);
+        
+        // Fallback analysis if API call fails
+        keyFindings = '- PDF content extraction completed\n';
+        
+        // Basic analysis based on content length
+        if (text.length > 5000) {
+          keyFindings += '- Comprehensive document with detailed content\n';
+        } else {
+          keyFindings += '- Brief document summary\n';
+        }
+        
+        keyFindings += '- Analysis performed locally due to API connection issue\n';
       }
       
       // Create a more sophisticated analysis based on the data patterns we've detected
