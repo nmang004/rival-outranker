@@ -2510,6 +2510,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Chat usage tracking endpoint
+  app.post("/api/chat-usage", async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.body;
+      const ipAddress = req.ip || req.socket.remoteAddress || "unknown";
+      
+      // Check if user is authenticated
+      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+        const userId = req.user.claims?.sub;
+        if (userId) {
+          // For authenticated users (100 messages per month)
+          const currentCount = await storage.incrementUserChatCount(userId);
+          const limit = 100;
+          const remaining = Math.max(0, limit - currentCount);
+          
+          return res.json({
+            success: true,
+            authenticated: true,
+            usageCount: currentCount,
+            limit,
+            remaining,
+            status: currentCount >= limit ? "limit_reached" : 
+                   currentCount >= (limit - 10) ? "approaching_limit" : "ok"
+          });
+        }
+      }
+      
+      // For anonymous users (20 messages per month)
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID is required for anonymous users" });
+      }
+      
+      const currentCount = await storage.incrementAnonChatCount(sessionId, ipAddress);
+      const limit = 20;
+      const remaining = Math.max(0, limit - currentCount);
+      
+      return res.json({
+        success: true,
+        authenticated: false,
+        usageCount: currentCount,
+        limit,
+        remaining,
+        status: currentCount >= limit ? "limit_reached" : 
+               currentCount >= (limit - 5) ? "approaching_limit" : "ok"
+      });
+    } catch (error) {
+      console.error("Error tracking chat usage:", error);
+      res.status(500).json({ error: "Failed to track chat usage" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

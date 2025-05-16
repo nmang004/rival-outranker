@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Send, Bot, User, Maximize2, Minimize2, MessageCircle, 
-  ChevronLeft, ExternalLink, Book, Search, X, Lightbulb, Cpu 
+  ChevronLeft, ExternalLink, Book, Search, X, Lightbulb, Cpu,
+  AlertCircle, Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { seoKnowledgeBase, SeoTopic, SeoSubtopic, industrySpecificAdvice, seoTools } from '@/data/seoKnowledgeBase';
 import { getOpenAIResponse } from '@/services/openAiService';
+import { useAuth } from '@/hooks/useAuth';
+import axios from 'axios';
 
 // Define message type
 interface Message {
@@ -29,7 +33,17 @@ export interface SeoBuddyChatProps {
   onExpand?: (expanded: boolean) => void;
 }
 
+// Interface for usage tracking
+interface ChatUsageStatus {
+  authenticated: boolean;
+  usageCount: number;
+  limit: number;
+  remaining: number;
+  status: 'ok' | 'approaching_limit' | 'limit_reached';
+}
+
 export default function SeoBuddyChatInterface({ onClose, showHeader = true, onExpand }: SeoBuddyChatProps) {
+  const { user, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -41,7 +55,16 @@ export default function SeoBuddyChatInterface({ onClose, showHeader = true, onEx
   const [inputValue, setInputValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [sessionId] = useState(() => localStorage.getItem('chatSessionId') || `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+  const [chatUsage, setChatUsage] = useState<ChatUsageStatus | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Store session ID in localStorage (for anonymous users to track usage)
+  useEffect(() => {
+    if (!localStorage.getItem('chatSessionId')) {
+      localStorage.setItem('chatSessionId', sessionId);
+    }
+  }, [sessionId]);
   
   // Auto-scroll to bottom of messages
   useEffect(() => {
