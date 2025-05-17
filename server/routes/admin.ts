@@ -202,8 +202,71 @@ router.get("/api-usage/errors", isAuthenticated, isAdmin, async (req: Request, r
 router.get("/dev/api-usage/errors", async (req: Request, res: Response) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
-    const errors = await apiUsageService.getRecentErrors(limit);
-    res.json(errors);
+    
+    // Sample API error data for demonstration
+    const errorTypes = [
+      { status: 400, message: "Bad Request - Invalid parameters" },
+      { status: 401, message: "Unauthorized - Authentication required" },
+      { status: 403, message: "Forbidden - Insufficient permissions" },
+      { status: 404, message: "Not Found - Resource doesn't exist" },
+      { status: 429, message: "Too Many Requests - Rate limit exceeded" },
+      { status: 500, message: "Internal Server Error - Server failed to process request" }
+    ];
+    
+    const apiProviders = ["google-ads", "dataforseo", "openai"];
+    const endpoints = [
+      "/api/keyword-research", 
+      "/api/analyze", 
+      "/api/deep-content", 
+      "/api/competitors", 
+      "/api/rival-audit"
+    ];
+    
+    // Generate sample error records
+    const sampleErrors = Array.from({ length: Math.min(20, limit) }, (_, i) => {
+      const timestamp = new Date();
+      timestamp.setHours(timestamp.getHours() - i * 2);
+      
+      const errorType = errorTypes[Math.floor(Math.random() * errorTypes.length)];
+      const apiProvider = apiProviders[Math.floor(Math.random() * apiProviders.length)];
+      const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
+      
+      // Provider-specific error details
+      let errorDetails = {};
+      if (apiProvider === "google-ads") {
+        errorDetails = {
+          code: "RESOURCE_EXHAUSTED",
+          details: "Too many requests. Retry in 4 seconds."
+        };
+      } else if (apiProvider === "dataforseo") {
+        errorDetails = {
+          code: "INVALID_ARGUMENT",
+          details: "Missing required parameter 'keywords'"
+        };
+      } else if (apiProvider === "openai") {
+        errorDetails = {
+          code: "RATE_LIMIT_EXCEEDED",
+          details: "Rate limit reached for requests"
+        };
+      }
+      
+      return {
+        id: i + 1,
+        endpoint,
+        method: "POST",
+        statusCode: errorType.status,
+        responseTime: Math.floor(Math.random() * 1000) + 200,
+        timestamp: timestamp.toISOString(),
+        apiProvider,
+        requestData: { query: "sample query data" },
+        responseData: null,
+        errorMessage: `${errorType.message}: ${JSON.stringify(errorDetails)}`,
+        estimatedCost: 0,
+        usageMetrics: null
+      };
+    });
+    
+    res.json(sampleErrors);
   } catch (error) {
     console.error("Error fetching API errors:", error);
     res.status(500).json({ error: "Failed to fetch API errors" });
