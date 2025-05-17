@@ -1,6 +1,7 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { trackInternalApi, trackGoogleAdsApi, trackOpenAiApi, trackDataForSeoApi } from "./middleware/apiUsageMiddleware";
 import { crawler } from "./services/crawler";
 import { analyzer } from "./services/analyzer_fixed"; 
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
@@ -55,13 +56,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy routes - keep for backward compatibility
   app.use('/api/auth', authRouter);
   app.use('/api/user', userRouter);
-  app.use('/api/keywords', keywordRouter);
+  app.use('/api/keywords', trackInternalApi, keywordRouter);
   
   // Backlink tracking routes
-  app.use('/api/backlinks', backlinkRouter);
+  app.use('/api/backlinks', trackInternalApi, backlinkRouter);
   
   // Google Ads API authentication routes
-  app.use('/api/google-ads-auth', googleAdsAuthRouter);
+  app.use('/api/google-ads-auth', trackGoogleAdsApi, googleAdsAuthRouter);
+  
+  // Admin dashboard routes
+  app.use('/api/admin', isAuthenticated, adminRouter);
   
   // Set up static file serving for sample PDFs
   const samplePdfMapping = {
