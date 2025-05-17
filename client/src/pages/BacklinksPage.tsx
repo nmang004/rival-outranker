@@ -1,6 +1,29 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+
+// Simplified API request function for this component
+const apiRequest = async (url: string, options?: { method?: string; data?: any }) => {
+  const method = options?.method || 'GET';
+  const data = options?.data;
+  
+  const response = await fetch(url, {
+    method,
+    headers: data ? { "Content-Type": "application/json" } : {},
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return {};
+  }
+  
+  return response.json();
+};
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -223,7 +246,7 @@ export default function BacklinksPage() {
   
   // Get the selected profile
   const selectedProfile = selectedProfileId && Array.isArray(profiles) 
-    ? profiles.find((profile: Profile) => profile.id === selectedProfileId) 
+    ? profiles.find((profile) => profile && profile.id === selectedProfileId) 
     : null;
   
   // If there are no profiles, show the add profile screen
