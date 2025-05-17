@@ -15,8 +15,6 @@ export default function History() {
   
   // Filtering state
   const [urlFilter, setUrlFilter] = useState("");
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,75 +24,37 @@ export default function History() {
     queryKey: ['/api/analyses'],
   });
   
-  // Filter and paginate analyses
-  const filteredAndPaginatedData = (() => {
-    if (!data) return [];
-    
-    // Apply filters
-    let filtered = data;
-    
-    // Filter by URL
-    if (urlFilter) {
-      filtered = filtered.filter(analysis => 
-        analysis.url.toLowerCase().includes(urlFilter.toLowerCase())
-      );
-    }
-    
-    // Filter by date range
-    if (startDate) {
-      filtered = filtered.filter(analysis => 
-        new Date(analysis.timestamp) >= startDate
-      );
-    }
-    
-    if (endDate) {
-      // Set endDate to end of day
-      const endOfDay = new Date(endDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      filtered = filtered.filter(analysis => 
-        new Date(analysis.timestamp) <= endOfDay
-      );
-    }
-    
-    // Sort by timestamp (newest first)
-    filtered = [...filtered].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-    
-    // Calculate pagination
-    const totalPages = Math.ceil(filtered.length / itemsPerPage);
-    
-    // Ensure current page is valid
+  // Filtered and paginated data
+  const filteredData = data ? data.filter(item => 
+    urlFilter ? item.url.toLowerCase().includes(urlFilter.toLowerCase()) : true
+  ).sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  ) : [];
+  
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  
+  // Reset page if beyond bounds
+  useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
+      setCurrentPage(1);
     }
-    
-    // Get current page items
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const paginatedItems = filtered.slice(start, end);
-    
-    return {
-      items: paginatedItems,
-      totalItems: filtered.length,
-      totalPages
-    };
-  })();
+  }, [currentPage, totalPages]);
+  
+  // Get paginated items
+  const paginatedItems = filteredData.slice(
+    (currentPage - 1) * itemsPerPage, 
+    currentPage * itemsPerPage
+  );
   
   const handleViewAnalysis = (url: string) => {
     setLocation(`/results?url=${encodeURIComponent(url)}`);
   };
   
-  // Handle filter changes
-  const handleFilterChange = () => {
-    setCurrentPage(1); // Reset to first page when filters change
-  };
-  
-  // Apply filter changes on filter state changes
+  // Reset to first page when filters change
   useEffect(() => {
-    handleFilterChange();
-  }, [urlFilter, startDate, endDate]);
+    setCurrentPage(1);
+  }, [urlFilter]);
   
   if (isLoading) {
     return <HistorySkeleton />;
@@ -162,78 +122,30 @@ export default function History() {
         <CardHeader>
           <CardTitle>Analysis History</CardTitle>
           <CardDescription>
-            View and filter your previous SEO analyses. Showing {filteredAndPaginatedData.items.length} of {filteredAndPaginatedData.totalItems} results.
+            View and filter your previous SEO analyses. Showing {paginatedItems.length} of {totalItems} results.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
-              <Label htmlFor="url-filter">Filter by URL</Label>
-              <Input
-                id="url-filter"
-                placeholder="Enter domain or URL..."
-                value={urlFilter}
-                onChange={(e) => setUrlFilter(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label>Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full mt-1 justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : "Select start date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label>End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full mt-1 justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : "Select end date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div className="mb-6">
+            <Label htmlFor="url-filter">Filter by URL</Label>
+            <Input
+              id="url-filter"
+              placeholder="Enter domain or URL..."
+              value={urlFilter}
+              onChange={(e) => setUrlFilter(e.target.value)}
+              className="mt-1"
+            />
           </div>
           
           {/* Clear Filters */}
-          {(urlFilter || startDate || endDate) && (
+          {urlFilter && (
             <div className="flex justify-end mb-4">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   setUrlFilter("");
-                  setStartDate(undefined);
-                  setEndDate(undefined);
                 }}
               >
                 Clear Filters
@@ -261,14 +173,14 @@ export default function History() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAndPaginatedData.items.length === 0 ? (
+                {paginatedItems.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-4 sm:px-6 py-8 text-center text-sm text-gray-500">
                       No results match your filters. Try adjusting your search criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredAndPaginatedData.items.map((analysis) => (
+                  paginatedItems.map((analysis) => (
                     <tr key={analysis.id} className="hover:bg-gray-50">
                       <td className="px-4 sm:px-6 py-4 text-sm text-gray-900">
                         <div className="truncate max-w-[150px] sm:max-w-xs">
@@ -304,80 +216,31 @@ export default function History() {
           </div>
           
           {/* Pagination */}
-          {filteredAndPaginatedData.totalPages > 1 && (
-            <div className="mt-6">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      className={cn(currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer")}
-                    />
-                  </PaginationItem>
-                  
-                  {/* Show first page */}
-                  {currentPage > 2 && (
-                    <PaginationItem>
-                      <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
-                    </PaginationItem>
-                  )}
-                  
-                  {/* Ellipsis if needed */}
-                  {currentPage > 3 && (
-                    <PaginationItem>
-                      <span className="px-4">...</span>
-                    </PaginationItem>
-                  )}
-                  
-                  {/* Previous page if not first */}
-                  {currentPage > 1 && (
-                    <PaginationItem>
-                      <PaginationLink onClick={() => setCurrentPage(currentPage - 1)}>
-                        {currentPage - 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )}
-                  
-                  {/* Current page */}
-                  <PaginationItem>
-                    <PaginationLink isActive onClick={() => {}} className="pointer-events-none">
-                      {currentPage}
-                    </PaginationLink>
-                  </PaginationItem>
-                  
-                  {/* Next page if not last */}
-                  {currentPage < filteredAndPaginatedData.totalPages && (
-                    <PaginationItem>
-                      <PaginationLink onClick={() => setCurrentPage(currentPage + 1)}>
-                        {currentPage + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )}
-                  
-                  {/* Ellipsis if needed */}
-                  {currentPage < filteredAndPaginatedData.totalPages - 2 && (
-                    <PaginationItem>
-                      <span className="px-4">...</span>
-                    </PaginationItem>
-                  )}
-                  
-                  {/* Last page if not current */}
-                  {currentPage < filteredAndPaginatedData.totalPages - 1 && (
-                    <PaginationItem>
-                      <PaginationLink onClick={() => setCurrentPage(filteredAndPaginatedData.totalPages)}>
-                        {filteredAndPaginatedData.totalPages}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(Math.min(filteredAndPaginatedData.totalPages, currentPage + 1))}
-                      className={cn(currentPage === filteredAndPaginatedData.totalPages ? "pointer-events-none opacity-50" : "cursor-pointer")}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-1 mx-2">
+                  <span className="text-sm">Page {currentPage} of {totalPages}</span>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -453,18 +316,15 @@ function HistorySkeleton() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
                   <td className="px-4 sm:px-6 py-4">
-                    <Skeleton className="h-4 w-[150px] sm:w-64" />
-                    <div className="sm:hidden mt-1">
-                      <Skeleton className="h-3 w-20" />
-                    </div>
+                    <Skeleton className="h-4 w-48" />
                   </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                  <td className="px-4 sm:px-6 py-4 hidden sm:table-cell">
                     <Skeleton className="h-4 w-24" />
                   </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <Skeleton className="h-4 w-16" />
+                  <td className="px-4 sm:px-6 py-4">
+                    <Skeleton className="h-4 w-20" />
                   </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-4 sm:px-6 py-4 text-right">
                     <Skeleton className="h-8 w-16 ml-auto" />
                   </td>
                 </tr>
