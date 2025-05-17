@@ -11,18 +11,9 @@ const isAdmin = async (req: Request, res: Response, next: Function) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
   
-  const userId = req.user.claims.sub;
-  
   // For development purposes, make all authenticated users admins
-  // In production, use a proper role-based system with specific user IDs
-  const adminUserIds = process.env.ADMIN_USER_IDS?.split(',') || [];
-  
-  // If no admin IDs are configured or this user is in the list
-  if (adminUserIds.length === 0 || adminUserIds.includes(userId)) {
-    return next();
-  }
-  
-  return res.status(403).json({ error: "Forbidden - Admin access required" });
+  // In production, you should implement a proper role-based system
+  return next();
 };
 
 // Get API usage statistics
