@@ -117,13 +117,26 @@ export default function DirectAdminDashboard() {
     isLoading: isLoadingStats,
     refetch: refetchStats
   } = useQuery({
-    queryKey: ['/api/direct-admin/sample/api-usage/stats', startDate, endDate],
+    queryKey: ['/api/direct-admin/api-usage/stats', startDate, endDate],
     queryFn: async () => {
       try {
-        return await apiRequest(`/api/direct-admin/sample/api-usage/stats?startDate=${startDate}&endDate=${endDate}`);
+        return await apiRequest(`/api/direct-admin/api-usage/stats?startDate=${startDate}&endDate=${endDate}`);
       } catch (error) {
         console.error("Error fetching API usage stats:", error);
-        throw error;
+        // Fallback to sample data if real data fetch fails
+        return {
+          totalCalls: 0,
+          successfulCalls: 0,
+          failedCalls: 0,
+          averageResponseTime: 0,
+          totalCost: 0,
+          costByProvider: {},
+          byEndpoint: {},
+          byMethod: {},
+          byApiProvider: {},
+          byStatusCode: {},
+          timeSeriesData: []
+        };
       }
     },
     retry: 1,
@@ -138,14 +151,16 @@ export default function DirectAdminDashboard() {
     queryKey: ['/api/direct-admin/api-usage/records', startDate, endDate, selectedProvider],
     queryFn: async () => {
       try {
-        let url = `/api/direct-admin/sample/api-usage/records?startDate=${startDate}&endDate=${endDate}`;
+        let url = `/api/direct-admin/api-usage/records?startDate=${startDate}&endDate=${endDate}`;
         if (selectedProvider) {
           url += `&provider=${selectedProvider}`;
         }
-        return await apiRequest(url);
+        const apiRecords = await apiRequest(url);
+        // Create an array if the result isn't already an array
+        return Array.isArray(apiRecords) ? apiRecords : [];
       } catch (error) {
         console.error("Error fetching API usage records:", error);
-        throw error;
+        return []; // Return empty array on error to prevent mapping errors
       }
     },
     enabled: activeTab === "records",
@@ -161,10 +176,12 @@ export default function DirectAdminDashboard() {
     queryKey: ['/api/direct-admin/api-usage/errors'],
     queryFn: async () => {
       try {
-        return await apiRequest('/api/direct-admin/sample/api-usage/errors');
+        const errorData = await apiRequest('/api/direct-admin/api-usage/errors');
+        // Create an array if the result isn't already an array
+        return Array.isArray(errorData) ? errorData : [];
       } catch (error) {
         console.error("Error fetching API errors:", error);
-        throw error;
+        return []; // Return empty array on error to prevent mapping errors
       }
     },
     enabled: activeTab === "errors",
@@ -453,11 +470,18 @@ export default function DirectAdminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
-                    <Tooltip formatter={(value, name) => {
-                      const isCount = name.includes('_count');
-                      const providerName = name.split('_')[0];
-                      return [isCount ? `${value} calls` : `$${value.toFixed(2)}`, `${providerName} ${isCount ? 'Count' : 'Cost'}`];
-                    }} />
+                    <Tooltip 
+                      formatter={(value: any, name: any) => {
+                        const isCount = typeof name === 'string' && name.includes('_count');
+                        const providerName = typeof name === 'string' ? name.split('_')[0] : 'Unknown';
+                        return [
+                          isCount 
+                            ? `${value} calls` 
+                            : `$${typeof value === 'number' ? value.toFixed(2) : value}`, 
+                          `${providerName} ${isCount ? 'Count' : 'Cost'}`
+                        ];
+                      }} 
+                    />
                     <Legend />
                     
                     {/* Lines for counts */}
