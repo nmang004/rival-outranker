@@ -29,6 +29,7 @@ import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
 import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
 import BacklinksPage from "@/pages/BacklinksPage";
 import AdminDashboard from "@/pages/AdminDashboard";
+import DirectAdminDashboard from "@/pages/DirectAdminDashboard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import SeoBuddy from "@/components/SeoBuddy";
@@ -62,6 +63,7 @@ function Router() {
             <Route path="/google-ads-settings" component={GoogleAdsSettings} />
             <Route path="/backlinks" component={BacklinksPage} />
             <Route path="/admin/dashboard" component={AdminDashboard} />
+            <Route path="/direct-admin" component={DirectAdminDashboard} />
             <Route component={NotFound} />
           </Switch>
         </div>
