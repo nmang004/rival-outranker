@@ -139,6 +139,19 @@ export default function History() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Admin Dashboard Link */}
+      <div className="mt-8 text-center">
+        <p className="text-sm text-gray-600 mb-2">Administrator Access</p>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setLocation('/admin/dashboard')}
+          className="mx-auto"
+        >
+          View API Usage Dashboard
+        </Button>
+      </div>
     </div>
   );
 }
