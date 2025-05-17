@@ -143,45 +143,93 @@ export default function AdminDashboard() {
     new Date().toISOString().split('T')[0]
   );
   const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [loginRedirectRequired, setLoginRedirectRequired] = useState(false);
   
-  // Query for API usage stats
+  // Handle authentication error
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to log in to access the admin dashboard.",
+        variant: "destructive"
+      });
+      setTimeout(() => {
+        window.location.href = '/api/login';
+      }, 2000);
+    }
+  }, [authLoading, isAuthenticated, toast]);
+  
+  // Query for API usage stats with error handling
   const { 
     data: stats, 
     isLoading: statsLoading,
+    error: statsError,
     refetch: refetchStats
   } = useQuery<ApiUsageStats>({
     queryKey: ['/api/admin/api-usage/stats', startDate, endDate],
-    queryFn: () => 
-      apiRequest(`/api/admin/api-usage/stats?startDate=${startDate}&endDate=${endDate}`),
+    queryFn: async () => {
+      try {
+        return await apiRequest(`/api/admin/api-usage/stats?startDate=${startDate}&endDate=${endDate}`);
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        if ((error as any)?.status === 401) {
+          setLoginRedirectRequired(true);
+        }
+        throw error;
+      }
+    },
     enabled: isAuthenticated,
+    retry: 1,
   });
   
-  // Query for API usage records
+  // Query for API usage records with error handling
   const { 
     data: records, 
     isLoading: recordsLoading,
+    error: recordsError,
     refetch: refetchRecords
   } = useQuery<ApiUsage[]>({
     queryKey: ['/api/admin/api-usage/records', startDate, endDate, selectedProvider],
-    queryFn: () => {
-      let url = `/api/admin/api-usage/records?startDate=${startDate}&endDate=${endDate}`;
-      if (selectedProvider) {
-        url += `&provider=${selectedProvider}`;
+    queryFn: async () => {
+      try {
+        let url = `/api/admin/api-usage/records?startDate=${startDate}&endDate=${endDate}`;
+        if (selectedProvider) {
+          url += `&provider=${selectedProvider}`;
+        }
+        return await apiRequest(url);
+      } catch (error) {
+        console.error("Error fetching records:", error);
+        if ((error as any)?.status === 401) {
+          setLoginRedirectRequired(true);
+        }
+        throw error;
       }
-      return apiRequest(url);
     },
     enabled: isAuthenticated && activeTab === "records",
+    retry: 1,
   });
   
-  // Query for API errors
+  // Query for API errors with error handling
   const { 
     data: errors, 
     isLoading: errorsLoading,
+    error: errorsError,
     refetch: refetchErrors
   } = useQuery<ApiUsage[]>({
     queryKey: ['/api/admin/api-usage/errors'],
-    queryFn: () => apiRequest('/api/admin/api-usage/errors'),
+    queryFn: async () => {
+      try {
+        return await apiRequest('/api/admin/api-usage/errors');
+      } catch (error) {
+        console.error("Error fetching API errors:", error);
+        if ((error as any)?.status === 401) {
+          setLoginRedirectRequired(true);
+        }
+        throw error;
+      }
+    },
     enabled: isAuthenticated && activeTab === "errors",
+    retry: 1,
   });
   
   // Handle date filter change

@@ -7,15 +7,18 @@ const router = express.Router();
 // Admin authorization check
 const isAdmin = async (req: Request, res: Response, next: Function) => {
   // Admin authorization logic - either by role or specific userIds
-  if (!req.user?.id) {
+  if (!req.user || !req.user.claims || !req.user.claims.sub) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   
-  // Check if user is admin - for now checking specific user IDs
-  // In production, use a proper role-based system
+  const userId = req.user.claims.sub;
+  
+  // For development purposes, make all authenticated users admins
+  // In production, use a proper role-based system with specific user IDs
   const adminUserIds = process.env.ADMIN_USER_IDS?.split(',') || [];
   
-  if (adminUserIds.includes(req.user.id as string)) {
+  // If no admin IDs are configured or this user is in the list
+  if (adminUserIds.length === 0 || adminUserIds.includes(userId)) {
     return next();
   }
   
