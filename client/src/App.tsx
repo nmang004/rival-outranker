@@ -27,6 +27,7 @@ import KeywordsPage from "@/pages/KeywordsPage";
 import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
 import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
 import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
+import BacklinksPage from "@/pages/BacklinksPage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import SeoBuddy from "@/components/SeoBuddy";
@@ -58,6 +59,7 @@ function Router() {
             <Route path="/basic-rank-tracker" component={BasicRankTracker} />
             <Route path="/keyword-research" component={KeywordResearch} />
             <Route path="/google-ads-settings" component={GoogleAdsSettings} />
+            <Route path="/backlinks" component={BacklinksPage} />
             <Route component={NotFound} />
           </Switch>
         </div>

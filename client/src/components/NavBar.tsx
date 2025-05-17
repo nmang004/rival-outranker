@@ -13,7 +13,8 @@ import {
   ChevronDown,
   BarChart,
   Search,
-  FileUp
+  FileUp,
+  Link as LinkIcon
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -113,6 +114,11 @@ export default function NavBar() {
                   </div>
                 </div>
               </div>
+              <Link href="/backlinks">
+                <div className={linkClass("/backlinks")}>
+                  <LinkIcon className="h-4 w-4 mr-2" /> Backlinks
+                </div>
+              </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-2" /> History
@@ -213,6 +219,14 @@ export default function NavBar() {
           </div>
           
           <div className="mt-2">
+            <Link href="/backlinks" onClick={() => setMobileMenuOpen(false)}>
+              <div className={mobileLinkClass("/backlinks")}>
+                <div className="flex items-center">
+                  <LinkIcon className="h-4 w-4 mr-2.5 text-primary/80" /> 
+                  <span>Backlink Tracker</span>
+                </div>
+              </div>
+            </Link>
             <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
               <div className={mobileLinkClass("/history")}>
                 <div className="flex items-center">

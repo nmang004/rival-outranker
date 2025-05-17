@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,12 +52,30 @@ export default function BacklinksPage() {
     defaultValues,
   });
   
+  // Type definitions for the API responses
+  interface Profile {
+    id: number;
+    url: string;
+    domain: string;
+    createdAt: string;
+    updatedAt: string;
+    lastScanAt: string | null;
+    scanFrequency: string;
+    emailAlerts: boolean;
+    domainAuthority: number | null;
+    totalBacklinks: number;
+    newBacklinks: number;
+    lostBacklinks: number;
+    dofollow: number;
+    nofollow: number;
+  }
+
   // Fetch backlink profiles
   const { 
     data: profiles = [], 
     isLoading: isLoadingProfiles,
     error: profilesError,
-  } = useQuery({
+  } = useQuery<Profile[]>({
     queryKey: ['/api/backlinks/profiles'],
     enabled: true,
   });
@@ -103,7 +121,10 @@ export default function BacklinksPage() {
   
   // Create profile mutation
   const createProfile = useMutation({
-    mutationFn: (data: ProfileFormValues) => apiRequest("/api/backlinks/profiles", "POST", data),
+    mutationFn: (data: ProfileFormValues) => apiRequest("/api/backlinks/profiles", {
+      method: "POST",
+      data
+    }),
     onSuccess: () => {
       toast({
         title: "Profile Added",
@@ -125,7 +146,10 @@ export default function BacklinksPage() {
   // Scan outgoing links mutation
   const scanOutgoingLinks = useMutation({
     mutationFn: ({ url, profileId }: { url: string, profileId: number }) => 
-      apiRequest("/api/backlinks/scan-outgoing", "POST", { url, profileId }),
+      apiRequest("/api/backlinks/scan-outgoing", {
+        method: "POST", 
+        data: { url, profileId }
+      }),
     onSuccess: () => {
       toast({
         title: "Scan Complete",
@@ -147,7 +171,9 @@ export default function BacklinksPage() {
   // Update profile stats mutation
   const updateProfileStats = useMutation({
     mutationFn: (profileId: number) => 
-      apiRequest(`/api/backlinks/profiles/${profileId}/update-stats`, "POST"),
+      apiRequest(`/api/backlinks/profiles/${profileId}/update-stats`, {
+        method: "POST"
+      }),
     onSuccess: () => {
       toast({
         title: "Stats Updated",
@@ -177,13 +203,31 @@ export default function BacklinksPage() {
     createProfile.mutate(data);
   };
   
+  // Type definitions for the API responses
+  interface Profile {
+    id: number;
+    url: string;
+    domain: string;
+    createdAt: string;
+    updatedAt: string;
+    lastScanAt: string | null;
+    scanFrequency: string;
+    emailAlerts: boolean;
+    domainAuthority: number | null;
+    totalBacklinks: number;
+    newBacklinks: number;
+    lostBacklinks: number;
+    dofollow: number;
+    nofollow: number;
+  }
+  
   // Get the selected profile
-  const selectedProfile = selectedProfileId 
-    ? profiles.find((profile: any) => profile.id === selectedProfileId) 
+  const selectedProfile = selectedProfileId && Array.isArray(profiles) 
+    ? profiles.find((profile: Profile) => profile.id === selectedProfileId) 
     : null;
   
   // If there are no profiles, show the add profile screen
-  if (profiles.length === 0 && !isLoadingProfiles) {
+  if (Array.isArray(profiles) && profiles.length === 0 && !isLoadingProfiles) {
     return (
       <div className="container py-10">
         <Helmet>
