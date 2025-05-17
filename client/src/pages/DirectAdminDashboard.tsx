@@ -509,7 +509,10 @@ export default function DirectAdminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, 'Cost']} />
+                    <Tooltip formatter={(value: any) => {
+                      const formattedValue = typeof value === 'number' ? `$${value.toFixed(2)}` : `$${value}`;
+                      return [formattedValue, 'Cost'];
+                    }} />
                     <Bar dataKey="value" fill="#8884d8" name="Cost ($)">
                       {Object.entries(stats?.costByProvider || {}).map(([name, value], index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
