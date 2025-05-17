@@ -18,6 +18,7 @@ import { fromZodError } from "zod-validation-error";
 import { authRouter } from "./routes/auth";
 import { userRouter } from "./routes/user";
 import { keywordRouter } from "./routes/keywords";
+import { backlinkRouter } from "./routes/backlinks";
 import { googleAdsAuthRouter } from "./routes/googleAdsAuth";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
@@ -54,6 +55,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRouter);
   app.use('/api/user', userRouter);
   app.use('/api/keywords', keywordRouter);
+  
+  // Backlink tracking routes
+  app.use('/api/backlinks', backlinkRouter);
   
   // Google Ads API authentication routes
   app.use('/api/google-ads-auth', googleAdsAuthRouter);
