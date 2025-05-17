@@ -1,7 +1,7 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { trackInternalApi, trackGoogleAdsApi, trackOpenAiApi, trackDataForSeoApi } from "./middleware/apiUsageMiddleware";
+import { trackInternalApi, trackGoogleAdsApi, trackOpenAiApi, trackDataForSeoApi, trackApiUsage } from "./middleware/apiUsageMiddleware";
 import { crawler } from "./services/crawler";
 import { analyzer } from "./services/analyzer_fixed"; 
 import { competitorAnalyzer } from "./services/competitorAnalyzer";
@@ -60,16 +60,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/keywords', trackInternalApi, keywordRouter);
   
   // Backlink tracking routes
-  app.use('/api/backlinks', trackInternalApi, backlinkRouter);
+  app.use('/api/backlinks', trackApiUsage('backlinks'), backlinkRouter);
   
   // Google Ads API authentication routes
-  app.use('/api/google-ads-auth', trackGoogleAdsApi, googleAdsAuthRouter);
+  app.use('/api/google-ads-auth', trackApiUsage('google-ads'), googleAdsAuthRouter);
   
   // Admin dashboard routes
-  app.use('/api/admin', isAuthenticated, adminRouter);
+  app.use('/api/admin', isAuthenticated, trackApiUsage('internal'), adminRouter);
   
   // Direct admin access route without authentication
   app.use('/api/direct-admin', directAdminRouter);
+  
+  // Setup middleware for keyword-related endpoints
+  app.use('/api/keyword-research', trackApiUsage('dataforseo'));
+  app.use('/api/analyze-content', trackApiUsage('dataforseo'));
+  app.use('/api/deep-content', trackApiUsage('dataforseo'));
+  app.use('/api/analyze', trackApiUsage('internal'));
+  app.use('/api/competitors', trackApiUsage('internal'));
+  app.use('/api/rival-audit', trackApiUsage('internal'));
+  app.use('/api/openai-chat', trackApiUsage('openai'));
   
   // Set up static file serving for sample PDFs
   const samplePdfMapping = {
