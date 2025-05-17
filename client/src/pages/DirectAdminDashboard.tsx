@@ -334,11 +334,13 @@ export default function DirectAdminDashboard() {
                   <SelectValue placeholder="All Providers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Providers</SelectItem>
+                  <SelectItem value="all">All Providers</SelectItem>
                   {stats && getProviders(stats).map((provider) => (
+                    provider ? 
                     <SelectItem key={provider} value={provider}>
                       {provider}
                     </SelectItem>
+                    : null
                   ))}
                 </SelectContent>
               </Select>
