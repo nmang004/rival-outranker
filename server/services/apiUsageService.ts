@@ -21,6 +21,8 @@ interface ApiUsageStats {
   successfulCalls: number;
   failedCalls: number;
   averageResponseTime: number;
+  totalCost: number;
+  costByProvider: Record<string, number>;
   byEndpoint: Record<string, number>;
   byMethod: Record<string, number>;
   byApiProvider: Record<string, number>;
@@ -29,6 +31,7 @@ interface ApiUsageStats {
     date: string;
     count: number;
     provider: string;
+    cost?: number;
   }[];
 }
 
@@ -101,11 +104,13 @@ class ApiUsageService {
     const byMethod: Record<string, number> = {};
     const byApiProvider: Record<string, number> = {};
     const byStatusCode: Record<string, number> = {};
-    const byDate: Record<string, Record<string, number>> = {};
+    const byDate: Record<string, Record<string, {count: number, cost: number}>> = {};
+    const costByProvider: Record<string, number> = {};
     
     let totalResponseTime = 0;
     let successfulCalls = 0;
     let failedCalls = 0;
+    let totalCost = 0;
     
     records.forEach(record => {
       // Count by endpoint
@@ -121,12 +126,23 @@ class ApiUsageService {
       const statusString = String(record.statusCode || 'unknown');
       byStatusCode[statusString] = (byStatusCode[statusString] || 0) + 1;
       
+      // Track costs
+      const cost = record.estimatedCost || 0;
+      totalCost += cost;
+      costByProvider[record.apiProvider] = (costByProvider[record.apiProvider] || 0) + cost;
+      
       // Aggregate time series data by day and provider
       const date = record.timestamp.toISOString().split('T')[0]; // YYYY-MM-DD
       if (!byDate[date]) {
         byDate[date] = {};
       }
-      byDate[date][record.apiProvider] = (byDate[date][record.apiProvider] || 0) + 1;
+      
+      if (!byDate[date][record.apiProvider]) {
+        byDate[date][record.apiProvider] = { count: 0, cost: 0 };
+      }
+      
+      byDate[date][record.apiProvider].count += 1;
+      byDate[date][record.apiProvider].cost += cost;
       
       // Calculate success/failure and response time
       if (record.responseTime) {
@@ -143,10 +159,11 @@ class ApiUsageService {
     // Generate time series data for charting
     const timeSeriesData = Object.entries(byDate)
       .flatMap(([date, providers]) => 
-        Object.entries(providers).map(([provider, count]) => ({
+        Object.entries(providers).map(([provider, data]) => ({
           date,
           provider,
-          count
+          count: data.count,
+          cost: data.cost
         }))
       )
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -156,6 +173,8 @@ class ApiUsageService {
       successfulCalls,
       failedCalls,
       averageResponseTime: records.length > 0 ? Math.round(totalResponseTime / records.length) : 0,
+      totalCost: Number(totalCost.toFixed(6)),
+      costByProvider,
       byEndpoint,
       byMethod,
       byApiProvider,

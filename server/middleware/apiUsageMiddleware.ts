@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { apiUsageService } from '../services/apiUsageService';
+import { estimateCost, extractUsageMetrics } from '../services/costEstimationService';
 
 /**
  * Middleware to track API usage
@@ -39,7 +40,13 @@ export const trackApiUsage = (apiProvider: string) => {
       // Log the API call
       const userId = req.user?.id as string | undefined;
       
-      // Log API usage to database
+      // Extract usage metrics for cost calculation
+      const usageMetrics = extractUsageMetrics(apiProvider, req.body, responseBody);
+      
+      // Calculate estimated cost
+      const estimatedCost = estimateCost(apiProvider, req.path, usageMetrics);
+      
+      // Log API usage to database with cost information
       apiUsageService.logApiUsage({
         userId,
         endpoint: req.path,
@@ -51,7 +58,9 @@ export const trackApiUsage = (apiProvider: string) => {
         responseData: responseBody,
         errorMessage: res.statusCode >= 400 ? responseBody?.error || responseBody?.message : undefined,
         ipAddress: req.ip,
-        userAgent: req.get('user-agent')
+        userAgent: req.get('user-agent'),
+        estimatedCost,
+        usageMetrics
       }).catch(err => {
         console.error('Error logging API usage:', err);
       });

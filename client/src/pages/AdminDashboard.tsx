@@ -58,6 +58,8 @@ interface ApiUsageStats {
   successfulCalls: number;
   failedCalls: number;
   averageResponseTime: number;
+  totalCost: number;
+  costByProvider: Record<string, number>;
   byEndpoint: Record<string, number>;
   byMethod: Record<string, number>;
   byApiProvider: Record<string, number>;
@@ -66,6 +68,7 @@ interface ApiUsageStats {
     date: string;
     count: number;
     provider: string;
+    cost?: number;
   }[];
 }
 
@@ -354,19 +357,22 @@ export default function AdminDashboard() {
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Avg Response Time</CardTitle>
+                    <CardTitle className="text-lg">Estimated Cost</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">{stats.averageResponseTime} ms</div>
+                    <div className="text-3xl font-bold">${stats.totalCost.toFixed(4)}</div>
+                    <div className="text-sm text-muted-foreground">
+                      ${(stats.totalCost / stats.totalCalls).toFixed(6)} per call avg
+                    </div>
                   </CardContent>
                 </Card>
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">API Providers</CardTitle>
+                    <CardTitle className="text-lg">Avg Response Time</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">{Object.keys(stats.byApiProvider).length}</div>
+                    <div className="text-3xl font-bold">{stats.averageResponseTime} ms</div>
                   </CardContent>
                 </Card>
               </div>
@@ -401,7 +407,7 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
                 
-                {/* API Provider Chart */}
+                {/* API Provider Usage Chart */}
                 <Card>
                   <CardHeader>
                     <CardTitle>API Usage by Provider</CardTitle>
@@ -425,6 +431,43 @@ export default function AdminDashboard() {
                           ))}
                         </Pie>
                         <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                
+                {/* API Cost Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>API Cost Distribution</CardTitle>
+                    <CardDescription>Cost breakdown by provider (USD)</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={Object.entries(stats.costByProvider || {}).map(([name, value]) => ({ 
+                            name, 
+                            value: parseFloat(value.toFixed(6))
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, value, percent }) => 
+                            `${name}: $${value} (${(percent * 100).toFixed(1)}%)`
+                          }
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {Object.keys(stats.costByProvider || {}).map((_, index) => (
+                            <Cell 
+                              key={`cost-cell-${index}`} 
+                              fill={COLORS[(index + 3) % COLORS.length]} 
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `$${value}`} />
                       </PieChart>
                     </ResponsiveContainer>
                   </CardContent>

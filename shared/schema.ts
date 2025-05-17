@@ -17,6 +17,8 @@ export const apiUsage = pgTable("api_usage", {
   errorMessage: text("error_message"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
+  estimatedCost: real("estimated_cost"), // estimated cost in USD
+  usageMetrics: jsonb("usage_metrics"), // detailed usage metrics (tokens, requests, etc.)
 });
 
 // Session storage table.
