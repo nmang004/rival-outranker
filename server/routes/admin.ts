@@ -286,4 +286,45 @@ router.get("/dev/api-usage/errors", async (req: Request, res: Response) => {
   }
 });
 
+// Add endpoint to grant admin access to a user by email
+router.post("/grant-admin", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    
+    const { adminService } = await import('../services/adminService');
+    const success = await adminService.grantAdminRoleByEmail(email);
+    
+    if (!success) {
+      return res.status(404).json({ error: "User not found or error granting admin access" });
+    }
+    
+    res.json({ success: true, message: `Admin access granted to ${email}` });
+  } catch (error) {
+    console.error("Error granting admin access:", error);
+    res.status(500).json({ error: "Failed to grant admin access" });
+  }
+});
+
+// Check if current user is an admin
+router.get("/is-admin", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.claims?.sub) {
+      return res.status(401).json({ isAdmin: false });
+    }
+    
+    const userId = req.user.claims.sub;
+    const { adminService } = await import('../services/adminService');
+    const isAdmin = await adminService.isUserAdmin(userId);
+    
+    res.json({ isAdmin });
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    res.status(500).json({ error: "Failed to check admin status" });
+  }
+});
+
 export const adminRouter = router;

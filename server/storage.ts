@@ -153,6 +153,18 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return user;
   }
+  
+  async updateUserRole(id: string, role: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        role,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
 
   async getUserCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`count(*)` }).from(users);
