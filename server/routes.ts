@@ -27,6 +27,7 @@ import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
 import { getOpenAIResponse } from "./services/openaiService";
+import { directAdminRouter } from "./routes/directAdmin";
 import {
   getKeywordData as getGoogleAdsKeywordData,
   getKeywordSuggestions as getGoogleAdsKeywordSuggestions,
@@ -66,6 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin dashboard routes
   app.use('/api/admin', isAuthenticated, adminRouter);
+  
+  // Direct admin access route without authentication
+  app.use('/api/direct-admin', directAdminRouter);
   
   // Set up static file serving for sample PDFs
   const samplePdfMapping = {
