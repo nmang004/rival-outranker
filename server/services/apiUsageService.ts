@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { apiUsage, InsertApiUsage, ApiUsage } from '@shared/schema';
-import { between, desc, eq, sql } from 'drizzle-orm';
+import { between, desc, eq, sql, and } from 'drizzle-orm';
 
 interface ApiUsageData {
   userId?: string;
@@ -64,25 +64,30 @@ class ApiUsageService {
    * Get API usage by date range
    */
   async getApiUsage(dateRange?: DateRange): Promise<ApiUsage[]> {
-    let query = db.select().from(apiUsage).orderBy(desc(apiUsage.timestamp));
+    // Initial query without conditions
+    let query = db.select().from(apiUsage);
     
+    // Add conditions if date range is provided
     if (dateRange) {
       if (dateRange.startDate && dateRange.endDate) {
-        query = query.where(
+        query = db.select().from(apiUsage).where(
           between(apiUsage.timestamp, dateRange.startDate, dateRange.endDate)
         );
       } else if (dateRange.startDate) {
-        query = query.where(
+        query = db.select().from(apiUsage).where(
           sql`${apiUsage.timestamp} >= ${dateRange.startDate}`
         );
       } else if (dateRange.endDate) {
-        query = query.where(
+        query = db.select().from(apiUsage).where(
           sql`${apiUsage.timestamp} <= ${dateRange.endDate}`
         );
       }
     }
     
-    return await query;
+    // Add ordering
+    const finalQuery = query.orderBy(desc(apiUsage.timestamp));
+    
+    return await finalQuery;
   }
   
   /**
@@ -163,28 +168,24 @@ class ApiUsageService {
    * Get usage by API provider
    */
   async getUsageByProvider(provider: string, dateRange?: DateRange): Promise<ApiUsage[]> {
-    let query = db.select()
-      .from(apiUsage)
-      .where(eq(apiUsage.apiProvider, provider))
-      .orderBy(desc(apiUsage.timestamp));
+    // Build query conditions
+    const conditions = [eq(apiUsage.apiProvider, provider)];
     
     if (dateRange) {
       if (dateRange.startDate && dateRange.endDate) {
-        query = query.where(
-          between(apiUsage.timestamp, dateRange.startDate, dateRange.endDate)
-        );
+        conditions.push(between(apiUsage.timestamp, dateRange.startDate, dateRange.endDate));
       } else if (dateRange.startDate) {
-        query = query.where(
-          sql`${apiUsage.timestamp} >= ${dateRange.startDate}`
-        );
+        conditions.push(sql`${apiUsage.timestamp} >= ${dateRange.startDate}`);
       } else if (dateRange.endDate) {
-        query = query.where(
-          sql`${apiUsage.timestamp} <= ${dateRange.endDate}`
-        );
+        conditions.push(sql`${apiUsage.timestamp} <= ${dateRange.endDate}`);
       }
     }
     
-    return await query;
+    // Execute query with all conditions
+    return await db.select()
+      .from(apiUsage)
+      .where(conditions.length > 1 ? and(...conditions) : conditions[0])
+      .orderBy(desc(apiUsage.timestamp));
   }
   
   /**

@@ -28,6 +28,7 @@ import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
 import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
 import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
 import BacklinksPage from "@/pages/BacklinksPage";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import SeoBuddy from "@/components/SeoBuddy";
@@ -60,6 +61,7 @@ function Router() {
             <Route path="/keyword-research" component={KeywordResearch} />
             <Route path="/google-ads-settings" component={GoogleAdsSettings} />
             <Route path="/backlinks" component={BacklinksPage} />
+            <Route path="/admin/dashboard" component={AdminDashboard} />
             <Route component={NotFound} />
           </Switch>
         </div>
