@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 
 // Simplified API request function for this component
 const apiRequest = async (url: string, options?: { method?: string; data?: any }) => {
