@@ -145,6 +145,21 @@ export default function AdminDashboard() {
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [loginRedirectRequired, setLoginRedirectRequired] = useState(false);
   
+  // Check for admin status
+  const { data: adminStatus, isLoading: adminCheckLoading } = useQuery({
+    queryKey: ['/api/admin/is-admin'],
+    queryFn: async () => {
+      try {
+        if (!isAuthenticated) return { isAdmin: false };
+        return await apiRequest('/api/admin/is-admin');
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        return { isAdmin: false };
+      }
+    },
+    enabled: isAuthenticated && !authLoading,
+  });
+  
   // Query for API usage stats with error handling
   const { 
     data: stats, 
@@ -249,8 +264,33 @@ export default function AdminDashboard() {
     linkElement.click();
   };
   
-  // If not authenticated or loading, show a loading state
-  if (authLoading) {
+  // Use effect for handling authentication check
+  useEffect(() => {
+    if (authLoading || adminCheckLoading) return;
+
+    // Check authentication status
+    if (!isAuthenticated || !user) {
+      setLoginRedirectRequired(true);
+      toast({
+        title: "Authentication required",
+        description: "Please log in to access the admin dashboard.",
+        variant: "destructive"
+      });
+    } else if (!adminStatus?.isAdmin) {
+      // User is logged in but not an admin
+      toast({
+        title: "Admin Access Required",
+        description: "You need admin privileges to access this dashboard.",
+        variant: "destructive"
+      });
+      setLoginRedirectRequired(true);
+    } else {
+      setLoginRedirectRequired(false);
+    }
+  }, [isAuthenticated, user, authLoading, adminStatus, adminCheckLoading, toast]);
+
+  // If loading, show a loading state
+  if (authLoading || adminCheckLoading) {
     return <div className="flex justify-center items-center h-96">Loading...</div>;
   }
   
