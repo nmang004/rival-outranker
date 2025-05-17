@@ -2,6 +2,23 @@ import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, ind
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// API Usage tracking table
+export const apiUsage = pgTable("api_usage", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  endpoint: text("endpoint").notNull(),
+  method: text("method").notNull(),
+  statusCode: integer("status_code"),
+  responseTime: integer("response_time"), // in milliseconds
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  apiProvider: text("api_provider").notNull(), // e.g., 'google-ads', 'backlinks', 'keyword', 'internal'
+  requestData: jsonb("request_data"), // request parameters (sanitized)
+  responseData: jsonb("response_data"), // limited response data (sanitized)
+  errorMessage: text("error_message"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+});
+
 // Session storage table.
 // This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -227,6 +244,8 @@ export type InsertBacklink = z.infer<typeof insertBacklinkSchema>;
 export type OutgoingLink = typeof outgoingLinks.$inferSelect;
 export type InsertOutgoingLink = z.infer<typeof insertOutgoingLinkSchema>;
 export type BacklinkHistory = typeof backlinkHistory.$inferSelect;
+export type ApiUsage = typeof apiUsage.$inferSelect;
+export type InsertApiUsage = typeof apiUsage.$inferInsert;
 
 // Custom types for SEO analysis results
 export const urlFormSchema = z.object({

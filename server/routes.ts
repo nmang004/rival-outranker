@@ -20,6 +20,7 @@ import { userRouter } from "./routes/user";
 import { keywordRouter } from "./routes/keywords";
 import { backlinkRouter } from "./routes/backlinks";
 import { googleAdsAuthRouter } from "./routes/googleAdsAuth";
+import { adminRouter } from "./routes/admin";
 import { optionalAuth } from "./middleware/auth";
 import cookieParser from "cookie-parser";
 import { setupAuth, isAuthenticated } from "./replitAuth";
