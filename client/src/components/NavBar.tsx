@@ -119,6 +119,11 @@ export default function NavBar() {
                   <LinkIcon className="h-4 w-4 mr-2" /> Backlinks
                 </div>
               </Link>
+              <Link href="/direct-admin">
+                <div className={linkClass("/direct-admin")}>
+                  <BarChart2 className="h-4 w-4 mr-2" /> API Dashboard
+                </div>
+              </Link>
               <Link href="/history">
                 <div className={linkClass("/history")}>
                   <History className="h-4 w-4 mr-2" /> History
