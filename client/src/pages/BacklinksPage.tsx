@@ -65,6 +65,7 @@ const defaultValues: Partial<ProfileFormValues> = {
 
 export default function BacklinksPage() {
   const { toast } = useToast();
+  const { user, isAuthenticated, isLoading: authLoading, login } = useAuth();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [isAddProfileOpen, setIsAddProfileOpen] = useState(false);
@@ -101,7 +102,8 @@ export default function BacklinksPage() {
     error: profilesError,
   } = useQuery<Profile[]>({
     queryKey: ['/api/backlinks/profiles'],
-    enabled: true,
+    enabled: isAuthenticated, // Only fetch profiles when authenticated
+    retry: isAuthenticated ? 3 : 0, // Don't retry if not authenticated
   });
   
   // Fetch backlinks for the selected profile
@@ -118,7 +120,8 @@ export default function BacklinksPage() {
         selectedLinkType === 'active' ? 'status=active' :
         selectedLinkType === 'lost' ? 'status=lost' : ''
       }`),
-    enabled: !!selectedProfileId,
+    enabled: !!selectedProfileId && isAuthenticated,
+    retry: isAuthenticated ? 3 : 0,
   });
   
   // Fetch outgoing links for the selected profile
@@ -129,7 +132,8 @@ export default function BacklinksPage() {
   } = useQuery({
     queryKey: ['/api/backlinks/profiles', selectedProfileId, 'outgoing'],
     queryFn: () => apiRequest(`/api/backlinks/profiles/${selectedProfileId}/outgoing`),
-    enabled: !!selectedProfileId && activeTab === "outgoing",
+    enabled: !!selectedProfileId && activeTab === "outgoing" && isAuthenticated,
+    retry: isAuthenticated ? 3 : 0,
   });
   
   // Fetch history for the selected profile
@@ -140,7 +144,8 @@ export default function BacklinksPage() {
   } = useQuery({
     queryKey: ['/api/backlinks/profiles', selectedProfileId, 'history'],
     queryFn: () => apiRequest(`/api/backlinks/profiles/${selectedProfileId}/history`),
-    enabled: !!selectedProfileId && activeTab === "overview",
+    enabled: !!selectedProfileId && activeTab === "overview" && isAuthenticated,
+    retry: isAuthenticated ? 3 : 0,
   });
   
   // Create profile mutation
@@ -250,6 +255,37 @@ export default function BacklinksPage() {
     ? profiles.find((profile) => profile && profile.id === selectedProfileId) 
     : null;
   
+  // If user is not authenticated, show a login prompt
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <div className="container py-10">
+        <Helmet>
+          <title>Backlink Tracker - SEO Analysis Platform</title>
+          <meta name="description" content="Monitor and analyze your website's backlinks with our advanced backlink tracking tool. Track new and lost backlinks to improve your SEO strategy." />
+        </Helmet>
+        
+        <h1 className="text-3xl font-bold mb-6">Backlink Tracker</h1>
+        
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>
+              Please log in to access the backlink tracking features.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-6">
+              You need to be logged in to track and monitor backlinks for your websites.
+            </p>
+            <Button onClick={() => login()}>
+              Log In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // If there are no profiles, show the add profile screen
   if (Array.isArray(profiles) && profiles.length === 0 && !isLoadingProfiles) {
     return (
