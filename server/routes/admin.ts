@@ -6,14 +6,27 @@ const router = express.Router();
 
 // Admin authorization check
 const isAdmin = async (req: Request, res: Response, next: Function) => {
-  // Admin authorization logic - either by role or specific userIds
+  // Verify the user is authenticated
   if (!req.user || !req.user.claims || !req.user.claims.sub) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   
-  // For development purposes, make all authenticated users admins
-  // In production, you should implement a proper role-based system
-  return next();
+  try {
+    // Get the user from the database
+    const userId = req.user.claims.sub;
+    const { storage } = await import('../storage');
+    const user = await storage.getUser(userId);
+    
+    // Check if the user has admin role
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+    
+    return next();
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    return res.status(500).json({ error: "Server error" });
+  }
 };
 
 // Get API usage statistics - Protected route

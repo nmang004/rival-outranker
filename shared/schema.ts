@@ -52,6 +52,7 @@ export const users = pgTable("users", {
   isEmailVerified: boolean("is_email_verified").default(false),
   chatUsageCount: integer("chat_usage_count").default(0),
   chatUsageResetDate: timestamp("chat_usage_reset_date"),
+  role: text("role").default("user"), // Roles: user, admin
 });
 
 // Define the schema for storing user analysis history

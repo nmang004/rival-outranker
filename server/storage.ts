@@ -28,6 +28,7 @@ export interface IStorage {
   verifyEmail(id: string): Promise<User>;
   getUserCount(): Promise<number>;
   upsertUser(userData: { id: string, email?: string | null, firstName?: string | null, lastName?: string | null, profileImageUrl?: string | null }): Promise<User>;
+  updateUserRole(id: string, role: string): Promise<User>;
   
   // Chat usage tracking operations
   incrementUserChatCount(userId: string): Promise<number>;
