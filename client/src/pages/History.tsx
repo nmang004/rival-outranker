@@ -9,12 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Analysis } from "@shared/schema";
 import { formatDate } from "@/lib/formatters";
 import SearchApiUsage from "@/components/assessment/SearchApiUsage";
+import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-fns";
 
 export default function History() {
   const [, setLocation] = useLocation();
   
   // Filtering state
   const [urlFilter, setUrlFilter] = useState("");
+  const [startDateStr, setStartDateStr] = useState("");
+  const [endDateStr, setEndDateStr] = useState("");
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,9 +28,32 @@ export default function History() {
   });
   
   // Filtered and paginated data
-  const filteredData = data ? data.filter(item => 
-    urlFilter ? item.url.toLowerCase().includes(urlFilter.toLowerCase()) : true
-  ).sort((a, b) => 
+  const filteredData = data ? data.filter(item => {
+    // Filter by URL
+    if (urlFilter && !item.url.toLowerCase().includes(urlFilter.toLowerCase())) {
+      return false;
+    }
+    
+    // Filter by start date
+    if (startDateStr) {
+      const itemDate = parseISO(item.timestamp.toString());
+      const filterStartDate = startOfDay(new Date(startDateStr));
+      if (isBefore(itemDate, filterStartDate)) {
+        return false;
+      }
+    }
+    
+    // Filter by end date
+    if (endDateStr) {
+      const itemDate = parseISO(item.timestamp.toString());
+      const filterEndDate = endOfDay(new Date(endDateStr));
+      if (isAfter(itemDate, filterEndDate)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }).sort((a, b) => 
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   ) : [];
   
@@ -54,7 +80,7 @@ export default function History() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [urlFilter]);
+  }, [urlFilter, startDateStr, endDateStr]);
   
   if (isLoading) {
     return <HistorySkeleton />;
@@ -127,25 +153,49 @@ export default function History() {
         </CardHeader>
         <CardContent>
           {/* Filters */}
-          <div className="mb-6">
-            <Label htmlFor="url-filter">Filter by URL</Label>
-            <Input
-              id="url-filter"
-              placeholder="Enter domain or URL..."
-              value={urlFilter}
-              onChange={(e) => setUrlFilter(e.target.value)}
-              className="mt-1"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <Label htmlFor="url-filter">Filter by URL</Label>
+              <Input
+                id="url-filter"
+                placeholder="Enter domain or URL..."
+                value={urlFilter}
+                onChange={(e) => setUrlFilter(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="start-date">Start Date</Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={startDateStr}
+                onChange={(e) => setStartDateStr(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="end-date">End Date</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={endDateStr}
+                onChange={(e) => setEndDateStr(e.target.value)}
+                className="mt-1"
+              />
+            </div>
           </div>
           
           {/* Clear Filters */}
-          {urlFilter && (
+          {(urlFilter || startDateStr || endDateStr) && (
             <div className="flex justify-end mb-4">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   setUrlFilter("");
+                  setStartDateStr("");
+                  setEndDateStr("");
                 }}
               >
                 Clear Filters
