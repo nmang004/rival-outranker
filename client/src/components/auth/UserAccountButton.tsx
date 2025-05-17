@@ -20,30 +20,22 @@ export function UserAccountButton() {
   if (!isAuthenticated) {
     return (
       <div className="flex gap-2">
-        <AuthDialog 
-          mode="login" 
-          buttonProps={{ 
-            variant: "outline", 
-            size: "sm",
-            className: "hidden md:flex"
-          }} 
-        />
-        <AuthDialog 
-          mode="register" 
-          buttonProps={{ 
-            size: "sm",
-            className: "hidden md:flex"
-          }} 
-        />
-        <AuthDialog 
-          mode="login" 
-          buttonProps={{ 
-            variant: "outline", 
-            size: "sm",
-            className: "md:hidden"
-          }} 
-          buttonText="Login" 
-        />
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="hidden md:flex"
+          onClick={() => window.location.href = '/api/login'}
+        >
+          Log In
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="md:hidden"
+          onClick={() => window.location.href = '/api/login'}
+        >
+          Log In
+        </Button>
       </div>
     );
   }
