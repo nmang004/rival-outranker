@@ -105,6 +105,7 @@ export default function AssessmentTabs({ data, initialTab = "keyword" }: Assessm
             pageSpeedData={data.pageSpeedAnalysis}
             schemaData={data.schemaMarkupAnalysis}
             mobileData={data.mobileAnalysis}
+            url={data.url}
           />
         </TabsContent>
         
