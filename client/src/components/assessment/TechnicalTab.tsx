@@ -78,71 +78,96 @@ export default function TechnicalTab({
   };
   
   // Fetch real PageSpeed metrics when URL is provided
+  // Use a ref to keep track of whether we've already fetched data for this URL
+  const hasInitializedRef = useRef(false);
+  
   // Set initial component state - important!
   useEffect(() => {
+    // If no URL is provided, exit early
     if (!url) return;
     
-    // Always reset loading state when mounting with a URL
-    setLoading(true);
-    setMetricsFormatted(false);
+    console.log("TechnicalTab - useEffect running for URL:", url);
     
-    // Check if we have cached data for this URL
-    const cachedData = getCachedPageSpeedData(url);
-    
-    if (cachedData) {
-      // Use cached data instead of making a new API call
-      console.log("TechnicalTab - Using cached PageSpeed data for URL:", url);
+    // Important: Only reset loading state on initial mount, not on re-renders
+    if (!hasInitializedRef.current) {
+      console.log("TechnicalTab - First initialization for URL:", url);
+      setLoading(true);
+      setMetricsFormatted(false);
+      hasInitializedRef.current = true;
       
-      // Immediately update the UI with the cached data
-      setPageSpeedMetrics(cachedData);
-      setLoading(false);
-      setMetricsFormatted(true);
-      pageSpeedDataLoadedRef.current = true;
+      // Check for cached data
+      const cachedData = getCachedPageSpeedData(url);
       
-      // Dispatch event to notify that the data is loaded from cache
-      const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded', {
-        detail: { formatted: true }
-      });
-      window.dispatchEvent(pageSpeedLoadedEvent);
-      localStorage.setItem('pageSpeedDataLoaded', 'true');
-      console.log("TechnicalTab - Successfully set PageSpeed data from cache");
-      
-      return;
-    }
-    
-    // No cached data, so fetch fresh data
-    if (!pageSpeedDataLoadedRef.current) {
-      console.log("TechnicalTab - Starting PageSpeed data fetch for URL:", url);
-      
-      // Start fetching the data (loading state is already set)
-      fetchPageSpeedData(url);
-      
-      // Add a timeout to ensure we don't wait indefinitely 
-      // for PageSpeed data to load
-      const timeout = setTimeout(() => {
-        if (!pageSpeedDataLoadedRef.current) {
-          console.log("TechnicalTab - PageSpeed data loading timed out after 10 seconds");
-          
-          // Mark as loaded to prevent repeated API calls
-          pageSpeedDataLoadedRef.current = true;
-          
-          // Let the ResultsPage know we're done waiting
-          localStorage.setItem('pageSpeedDataLoaded', 'true');
-          
-          // Dispatch event with timeout information
-          const pageSpeedTimeoutEvent = new CustomEvent('pageSpeedDataLoaded', {
-            detail: { formatted: false, timeout: true }
+      if (cachedData) {
+        // Use cached data immediately
+        console.log("TechnicalTab - Using cached PageSpeed data for URL:", url);
+        
+        // Update the UI synchronously with cached data
+        setPageSpeedMetrics(cachedData);
+        setLoading(false);
+        setMetricsFormatted(true);
+        pageSpeedDataLoadedRef.current = true;
+        
+        // Notify the app the data is ready from cache
+        localStorage.setItem('pageSpeedDataLoaded', 'true');
+        
+        // Dispatch event to notify data is loaded from cache
+        setTimeout(() => {
+          const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded', {
+            detail: { formatted: true, fromCache: true }
           });
-          window.dispatchEvent(pageSpeedTimeoutEvent);
-          console.log("TechnicalTab - Dispatched timeout event for PageSpeed data");
-          
-          // End loading state
-          setLoading(false);
-        }
-      }, 120000); // 2 minute timeout before showing incomplete data
+          window.dispatchEvent(pageSpeedLoadedEvent);
+          console.log("TechnicalTab - Successfully set PageSpeed data from cache");
+        }, 0);
+        
+        return;
+      }
       
-      return () => clearTimeout(timeout);
+      // No cached data found, need to fetch new data
+      if (!pageSpeedDataLoadedRef.current) {
+        console.log("TechnicalTab - Starting PageSpeed data fetch for URL:", url);
+        
+        // Fetch fresh data
+        fetchPageSpeedData(url);
+        
+        // Add a timeout to prevent infinite waiting
+        const timeout = setTimeout(() => {
+          if (!pageSpeedDataLoadedRef.current) {
+            console.log("TechnicalTab - PageSpeed data loading timed out after 120 seconds");
+            
+            // Mark as loaded to prevent repeated API calls
+            pageSpeedDataLoadedRef.current = true;
+            
+            // Let the ResultsPage know we're done waiting
+            localStorage.setItem('pageSpeedDataLoaded', 'true');
+            
+            // Dispatch event with timeout information
+            const pageSpeedTimeoutEvent = new CustomEvent('pageSpeedDataLoaded', {
+              detail: { formatted: false, timeout: true }
+            });
+            window.dispatchEvent(pageSpeedTimeoutEvent);
+            console.log("TechnicalTab - Dispatched timeout event for PageSpeed data");
+            
+            // End loading state
+            setLoading(false);
+          }
+        }, 120000); // 2 minute timeout
+        
+        return () => clearTimeout(timeout);
+      }
+    } else {
+      // Component has already initialized for this URL
+      // Do nothing - avoid redundant API calls or state changes
+      console.log("TechnicalTab - Already initialized for URL:", url);
     }
+    
+    // Cleanup function for component unmount or URL change
+    return () => {
+      // Reset initialization state if URL changes
+      if (url) {
+        console.log("TechnicalTab - Cleaning up for URL:", url);
+      }
+    };
   }, [url]);
   
   // Function to fetch PageSpeed data from our API
