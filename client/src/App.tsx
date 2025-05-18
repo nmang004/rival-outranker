@@ -30,6 +30,9 @@ import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
 import BacklinksPage from "@/pages/BacklinksPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import DirectAdminDashboard from "@/pages/DirectAdminDashboard";
+// Learning Path Pages
+import LearningPathsPage from "@/pages/LearningPathsPage";
+import ModuleDetailPage from "@/pages/ModuleDetailPage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import SeoBuddy from "@/components/SeoBuddy";
@@ -64,6 +67,9 @@ function Router() {
             <Route path="/backlinks" component={BacklinksPage} />
             <Route path="/admin/dashboard" component={AdminDashboard} />
             <Route path="/direct-admin" component={DirectAdminDashboard} />
+            {/* Learning Path Routes */}
+            <Route path="/learning" component={LearningPathsPage} />
+            <Route path="/learning/modules/:id" component={ModuleDetailPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
