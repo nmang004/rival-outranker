@@ -374,8 +374,10 @@ export default function TechnicalTab({
                   if (mobileScore > 70) mobileScore = 69;
                 }
                 
+                // Consistent colors with other components
                 return mobileScore >= 70 ? 'bg-blue-100 text-blue-800' : 
-                       mobileScore >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+                       mobileScore >= 55 ? 'bg-yellow-100 text-yellow-800' : 
+                       mobileScore >= 40 ? 'bg-amber-100 text-amber-800' : 
                        'bg-red-100 text-red-800';
               })()
             }`}>

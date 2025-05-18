@@ -100,7 +100,9 @@ export default function KeyMetrics({
               </div>
               <div className="ml-2">
                 <PerformanceIndicator 
-                  category={mobileCategory}
+                  category={mobileScore >= 70 ? 'good' : 
+                            mobileScore >= 55 ? 'needs-work' : 
+                            mobileScore >= 40 ? 'needs-work' : 'poor'}
                   size="sm"
                   variant="badge"
                   showText={true}
