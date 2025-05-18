@@ -266,28 +266,47 @@ export default function ResultsPage() {
     return null;
   }
 
+  // Declare state for manual override of loading screen at the top level
+  const [forceShowResults, setForceShowResults] = useState(false);
+
+  // Set up timeout to eventually show results even if PageSpeed doesn't load
+  useEffect(() => {
+    console.log("Starting analysis and showing loading screen for PageSpeed data");
+    
+    // Reset forcing flag when URL changes
+    setForceShowResults(false);
+    
+    // Safety timeout: if PageSpeed data takes too long, show results anyway
+    const timer = setTimeout(() => {
+      console.log("Timeout reached, forcing results to show");
+      setForceShowResults(true);
+    }, 15000); // 15 seconds maximum wait time
+    
+    return () => clearTimeout(timer);
+  }, [selectedUrl]);
+
   // Show loading state if data is not yet available or being fetched
   if (isLoading || !apiResponse || !apiResponse.results) {
+    console.log("Initial data loading, showing skeleton");
     return (
       <ResultsPageSkeleton 
         url={selectedUrl} 
-        message={undefined}
+        message="Analyzing your website..."
       />
     );
   }
   
-  // Check if PageSpeed data is still loading or not properly formatted
+  // Check if PageSpeed data is properly formatted with units
   const hasValidPageSpeedFormat = data.pageSpeedAnalysis && 
-    data.pageSpeedAnalysis.lcp !== undefined && 
     typeof data.pageSpeedAnalysis.lcp === 'number' &&
-    data.pageSpeedAnalysis.cls !== undefined && 
     typeof data.pageSpeedAnalysis.cls === 'number' &&
-    data.pageSpeedAnalysis.ttfb !== undefined && 
     typeof data.pageSpeedAnalysis.ttfb === 'number';
   
-  // Always show loading skeleton if PageSpeed data isn't properly formatted yet
-  // This ensures we only show results when we have actual metrics with proper formatting
-  if (!hasValidPageSpeedFormat && !isPageSpeedLoaded) {
+  // Show PageSpeed loading indicator if:
+  // 1. PageSpeed data isn't properly formatted AND
+  // 2. PageSpeed loading event hasn't fired AND
+  // 3. We haven't hit the timeout to force showing results
+  if (!forceShowResults && !isPageSpeedLoaded && !hasValidPageSpeedFormat) {
     console.log("PageSpeed data not fully loaded yet, showing loading screen");
     return (
       <ResultsPageSkeleton 
@@ -296,10 +315,6 @@ export default function ResultsPage() {
       />
     );
   }
-  
-  // Wait for PageSpeed data to load before showing results
-  // This ensures we display actual data rather than placeholders
-  const forceShowResults = false;
   
   // If the analysis failed to retrieve content or was incomplete, show a custom error message
   const hasError = data.weaknesses?.length === 1 && 
