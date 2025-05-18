@@ -77,7 +77,11 @@ export default function AssessmentTabs({ data, initialTab = "keyword" }: Assessm
         </div>
         
         <TabsContent value="keyword" className="p-0 mt-0">
-          <KeywordTab data={data.keywordAnalysis} />
+          <KeywordTab 
+            data={data.keywordAnalysis} 
+            analysisId={data.id} 
+            url={data.url} 
+          />
         </TabsContent>
         
         <TabsContent value="meta" className="p-0 mt-0">
