@@ -28,7 +28,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
 import { getOpenAIResponse } from "./services/openaiService";
 import { directAdminRouter } from "./routes/directAdmin";
-import { fetchPageSpeedMetrics } from "./services/pageSpeedService";
+import { pagespeedRouter } from "./routes/pagespeed";
 import {
   getKeywordData as getGoogleAdsKeywordData,
   getKeywordSuggestions as getGoogleAdsKeywordSuggestions,
@@ -71,6 +71,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Direct admin access route without authentication
   app.use('/api/direct-admin', directAdminRouter);
+  
+  // PageSpeed Insights API route
+  app.use('/api/pagespeed', pagespeedRouter);
   
   // Setup middleware for keyword-related endpoints
   app.use('/api/keyword-research', trackApiUsage('dataforseo'));

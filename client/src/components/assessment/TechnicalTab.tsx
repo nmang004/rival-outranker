@@ -2,18 +2,72 @@ import { PageSpeedAnalysis, SchemaMarkupAnalysis, MobileAnalysis } from "@shared
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 interface TechnicalTabProps {
   pageSpeedData: PageSpeedAnalysis;
   schemaData: SchemaMarkupAnalysis;
   mobileData: MobileAnalysis;
+  url?: string; // URL to analyze
+}
+
+interface PageSpeedMetrics {
+  mobile: {
+    score: number;
+    firstContentfulPaint: number;
+    largestContentfulPaint: number;
+    firstInputDelay: number;
+    cumulativeLayoutShift: number;
+    timeToFirstByte: number;
+    totalBlockingTime: number;
+    speedIndex: number;
+  };
+  desktop: {
+    score: number;
+    firstContentfulPaint: number;
+    largestContentfulPaint: number;
+    cumulativeLayoutShift: number;
+    totalBlockingTime: number;
+    speedIndex: number;
+    timeToInteractive: number;
+  };
 }
 
 export default function TechnicalTab({ 
   pageSpeedData, 
   schemaData, 
-  mobileData 
+  mobileData,
+  url
 }: TechnicalTabProps) {
+  const [pageSpeedMetrics, setPageSpeedMetrics] = useState<PageSpeedMetrics | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch real PageSpeed metrics when URL is provided
+  useEffect(() => {
+    if (url) {
+      fetchPageSpeedData(url);
+    }
+  }, [url]);
+  
+  // Function to fetch PageSpeed data from our API
+  const fetchPageSpeedData = async (siteUrl: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await axios.get(`/api/pagespeed?url=${encodeURIComponent(siteUrl)}`);
+      setPageSpeedMetrics(response.data);
+      
+      console.log("PageSpeed data fetched:", response.data);
+    } catch (err) {
+      console.error("Error fetching PageSpeed data:", err);
+      setError("Failed to fetch PageSpeed metrics");
+    } finally {
+      setLoading(false);
+    }
+  };
   // Helper function to get color based on score
   const getScoreColor = (score: number) => {
     if (score >= 90) return "bg-green-500";
@@ -143,12 +197,27 @@ export default function TechnicalTab({
           <div className="flex items-center justify-between mb-3">
             <h5 className="text-sm font-medium text-gray-700">Page Speed</h5>
             <div className="flex items-center space-x-3">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800`}>
-                Mobile: 59/100
-              </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
-                Desktop: 100/100
-              </span>
+              {loading ? (
+                <span className="text-xs text-gray-500">Loading PageSpeed data...</span>
+              ) : (
+                <>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                    ${(pageSpeedMetrics?.mobile.score || 59) >= 90 ? 'bg-green-100 text-green-800' : 
+                      (pageSpeedMetrics?.mobile.score || 59) >= 70 ? 'bg-blue-100 text-blue-800' : 
+                      (pageSpeedMetrics?.mobile.score || 59) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+                      'bg-red-100 text-red-800'}`}>
+                    Mobile: {pageSpeedMetrics?.mobile.score || 59}/100
+                  </span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                    ${(pageSpeedMetrics?.desktop.score || 100) >= 90 ? 'bg-green-100 text-green-800' : 
+                      (pageSpeedMetrics?.desktop.score || 100) >= 70 ? 'bg-blue-100 text-blue-800' : 
+                      (pageSpeedMetrics?.desktop.score || 100) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+                      'bg-red-100 text-red-800'}`}>
+                    Desktop: {pageSpeedMetrics?.desktop.score || 100}/100
+                  </span>
+                </>
+              )}
+              {error && <span className="text-xs text-red-500">{error}</span>}
             </div>
           </div>
           
