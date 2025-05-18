@@ -283,11 +283,14 @@ export default function TechnicalTab({
             <div className="text-xs text-gray-500 mb-1">Overall Speed Score</div>
             <div className="flex items-center">
               <div className="flex-grow">
-                <Progress 
-                  value={pageSpeedData.score} 
-                  className="h-3"
-                  indicatorClassName={getScoreColor(pageSpeedData.score)}
-                />
+                <div className="relative h-3 w-full overflow-hidden rounded-full bg-gray-200">
+                  <div 
+                    className={`h-full absolute top-0 left-0 transition-all ${getScoreColor(pageSpeedData.score)}`} 
+                    style={{ 
+                      width: `${Math.min(pageSpeedData.score, 100)}%`
+                    }}
+                  />
+                </div>
               </div>
               <div className="ml-3 text-lg font-semibold text-gray-800">{pageSpeedData.score}</div>
             </div>

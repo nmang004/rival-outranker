@@ -145,15 +145,19 @@ export default function MetaTagsTab({ data }: MetaTagsTabProps) {
               <span>60</span>
               <span>90</span>
             </div>
-            <Progress 
-              value={Math.min((data.titleLength || 0) / 0.9, 100)} 
-              className="h-2"
-              indicatorClassName={`${
-                (data.titleLength || 0) < 30 || (data.titleLength || 0) > 60
-                  ? "bg-yellow-500"
-                  : "bg-green-500"
-              }`}
-            />
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+              {/* Custom Progress bar with correct coloring based on character count */}
+              <div 
+                className={`h-full absolute top-0 left-0 transition-all ${
+                  (data.titleLength || 0) < 30 ? "bg-yellow-500" : 
+                  (data.titleLength || 0) > 60 ? "bg-red-500" : 
+                  "bg-green-500"
+                }`} 
+                style={{ 
+                  width: `${Math.min((data.titleLength || 0) / 0.9, 100)}%`
+                }}
+              />
+            </div>
           </div>
         </div>
         
