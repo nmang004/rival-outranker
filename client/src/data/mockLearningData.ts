@@ -540,6 +540,113 @@ export const mockRecommendations = [
 ];
 
 // Calculate progress summary based on user progress
+// Mock achievements for the gamification system
+export const mockAchievements = [
+  {
+    id: "first-lesson",
+    title: "First Steps",
+    description: "Completed your first lesson",
+    icon: "BookOpen",
+    category: "lesson" as const,
+    trigger: {
+      type: "lessons_completed" as const,
+      threshold: 1
+    },
+    rewardPoints: 10,
+    imageUrl: undefined
+  },
+  {
+    id: "quiz-master",
+    title: "Quiz Master",
+    description: "Achieved 100% on your first quiz",
+    icon: "Award",
+    category: "quiz" as const,
+    trigger: {
+      type: "quiz_score" as const,
+      threshold: 100
+    },
+    rewardPoints: 25,
+    imageUrl: undefined
+  },
+  {
+    id: "module-complete",
+    title: "Module Mastery",
+    description: "Completed an entire module",
+    icon: "CheckCircle2",
+    category: "module" as const,
+    trigger: {
+      type: "module_complete" as const,
+      threshold: 1
+    },
+    rewardPoints: 50,
+    imageUrl: undefined
+  },
+  {
+    id: "seo-fundamentals",
+    title: "SEO Foundation Builder",
+    description: "Mastered the SEO Fundamentals module",
+    icon: "Trophy",
+    category: "module" as const,
+    trigger: {
+      type: "module_complete" as const,
+      threshold: 1,
+      moduleId: 1
+    },
+    rewardPoints: 75,
+    imageUrl: undefined
+  },
+  {
+    id: "keyword-researcher",
+    title: "Keyword Detective",
+    description: "Mastered the Keyword Research module",
+    icon: "Search",
+    category: "module" as const,
+    trigger: {
+      type: "module_complete" as const,
+      threshold: 1,
+      moduleId: 2
+    },
+    rewardPoints: 75,
+    imageUrl: undefined
+  },
+  {
+    id: "learning-streak",
+    title: "Consistent Learner",
+    description: "Completed lessons for 5 consecutive days",
+    icon: "Flame",
+    category: "streak" as const,
+    trigger: {
+      type: "streak_days" as const,
+      threshold: 5
+    },
+    rewardPoints: 100,
+    imageUrl: undefined
+  },
+  {
+    id: "seo-journey",
+    title: "SEO Journey",
+    description: "Completed 10 SEO lessons",
+    icon: "MapPin",
+    category: "milestone" as const,
+    trigger: {
+      type: "lessons_completed" as const,
+      threshold: 10
+    },
+    rewardPoints: 125,
+    imageUrl: undefined
+  }
+];
+
+// Mock user achievements - which achievements the user has unlocked
+export const mockUserAchievements = [
+  {
+    userId: "user123",
+    achievementId: "first-lesson",
+    unlockedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    seen: true
+  }
+];
+
 export function generateProgressSummary() {
   // Get completed lessons
   const completedLessons = mockUserProgress.filter(p => p.status === 'completed');

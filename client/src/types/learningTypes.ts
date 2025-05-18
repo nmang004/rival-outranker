@@ -95,6 +95,30 @@ export interface ProgressSummary {
   }>;
 }
 
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: 'module' | 'lesson' | 'quiz' | 'streak' | 'milestone';
+  trigger: {
+    type: 'module_complete' | 'lessons_completed' | 'quiz_score' | 'streak_days' | 'engagement';
+    threshold: number;
+    moduleId?: number;
+    condition?: string;
+  };
+  rewardPoints: number;
+  unlockedAt?: string;
+  imageUrl?: string;
+}
+
+export interface UserAchievement {
+  userId: string;
+  achievementId: string;
+  unlockedAt: string;
+  seen: boolean;
+}
+
 export interface LearningRecommendation {
   id: number;
   userId: string;
