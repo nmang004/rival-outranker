@@ -500,7 +500,6 @@ function ResultsPageSkeleton({ url, message }: { url: string, message?: string }
   return (
     <div className="px-4 sm:px-0">
       <div className="bg-white shadow rounded-lg p-6 mb-6">
-        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">SEO Assessment Results</h2>
