@@ -23,11 +23,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2, BookOpen, Award, Lightbulb, BookMarked, Clock } from "lucide-react";
 
 // Types for learning paths
+// Define the type to match our mock data
 interface LearningModule {
   id: number;
   title: string;
   description: string;
-  imageUrl?: string;
+  imageUrl?: string | undefined;
   difficulty: string;
   estimatedTime: number;
   prerequisiteIds: number[];
@@ -171,11 +172,6 @@ export default function LearningPathsPage() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-2 text-lg">Loading learning materials...</span>
-        </div>
-      ) : (modulesError || pathsError) ? (
-        <div className="bg-red-50 text-red-800 p-4 rounded-md">
-          <p className="font-medium">Failed to load learning content</p>
-          <p className="text-sm">Please try again later or contact support if the issue persists.</p>
         </div>
       ) : (
         <>
