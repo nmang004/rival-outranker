@@ -329,6 +329,9 @@ export default function ModuleDetailPage() {
       completedAt: new Date().toISOString(),
       lastAccessedAt: new Date().toISOString()
     });
+    
+    // Check for achievements
+    checkForAchievements('completed', lessonId);
   };
   
   // Create a sorted list of lessons, respecting the sortOrder
@@ -383,8 +386,82 @@ export default function ModuleDetailPage() {
     );
   }
   
+  // Function to check for and trigger achievements when completing lessons or modules
+  const checkForAchievements = (status: 'in_progress' | 'completed', lessonId: number) => {
+    if (status !== 'completed' || !isAuthenticated) return;
+    
+    // First lesson completed achievement
+    const completedLessons = userProgress.filter(p => p.status === 'completed');
+    if (completedLessons.length === 0) {
+      const firstLessonAchievement = mockAchievements.find(a => a.id === "first-lesson");
+      if (firstLessonAchievement) {
+        setTimeout(() => {
+          setCurrentAchievement(firstLessonAchievement);
+          setShowAchievement(true);
+        }, 1500);
+      }
+    }
+    
+    // Check if this completion finishes the module
+    const moduleCompletedLessons = completedLessons.filter(p => p.moduleId === moduleId).length;
+    const totalModuleLessons = lessons.filter(l => l.moduleId === moduleId).length;
+    
+    if (moduleCompletedLessons + 1 === totalModuleLessons) {
+      // Module completion achievement
+      const moduleAchievement = mockAchievements.find(a => 
+        a.id === "module-complete" || 
+        (a.trigger.moduleId === moduleId && a.trigger.type === "module_complete")
+      );
+      if (moduleAchievement) {
+        setTimeout(() => {
+          setCurrentAchievement(moduleAchievement);
+          setShowAchievement(true);
+        }, 1500);
+      }
+    }
+    
+    // Learning milestone achievements (10 lessons)
+    if (completedLessons.length + 1 === 10) {
+      const milestoneAchievement = mockAchievements.find(a => a.id === "seo-journey");
+      if (milestoneAchievement) {
+        setTimeout(() => {
+          setCurrentAchievement(milestoneAchievement);
+          setShowAchievement(true);
+        }, 1500);
+      }
+    }
+  };
+  
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Achievement notification popup */}
+      {currentAchievement && (
+        <AchievementUnlocked
+          achievement={currentAchievement}
+          isOpen={showAchievement}
+          onClose={() => setShowAchievement(false)}
+        />
+      )}
+      
+      {/* Quiz completion dialog */}
+      {selectedLesson && (
+        <QuizCompleted
+          isOpen={showQuizCompleted}
+          onClose={() => setShowQuizCompleted(false)}
+          score={quizScore}
+          passingScore={quizPassingScore}
+          moduleTitle={module?.title || ''}
+          lessonTitle={selectedLesson.title}
+          pointsEarned={quizScore >= quizPassingScore ? 50 : 0}
+          onContinue={() => {
+            setShowQuizCompleted(false);
+            if (quizScore >= quizPassingScore) {
+              handleCompleteLesson(selectedLesson.id);
+            }
+          }}
+        />
+      )}
+      
       <div className="mb-6">
         <Link href="/learning">
           <Button variant="outline" size="sm">
@@ -752,6 +829,9 @@ export default function ModuleDetailPage() {
                                 description: "You can come back and take the quiz later.",
                                 variant: "default",
                               });
+                              
+                              // Even though skipped, mark as seen
+                              setShowQuizCompleted(false);
                             }}
                           >
                             Skip Quiz
