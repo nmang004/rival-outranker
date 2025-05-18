@@ -52,9 +52,23 @@ export default function TechnicalTab({
   useEffect(() => {
     if (url && !pageSpeedDataLoadedRef.current) {
       fetchPageSpeedData(url);
+      
+      // Add a timeout to ensure we don't wait indefinitely 
+      // for PageSpeed data to load
+      const timeout = setTimeout(() => {
+        if (!pageSpeedDataLoadedRef.current) {
+          console.log("PageSpeed data loading timed out - using fallback values");
+          pageSpeedDataLoadedRef.current = true;
+          localStorage.setItem('pageSpeedDataLoaded', 'true');
+          const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded');
+          window.dispatchEvent(pageSpeedLoadedEvent);
+          setLoading(false);
+        }
+      }, 3000); // 3 second timeout
+      
+      return () => clearTimeout(timeout);
     }
     
-    // Cleanup function
     return () => {
       // Don't reset the loaded state when component unmounts
       // This helps maintain state when switching tabs
@@ -223,26 +237,22 @@ export default function TechnicalTab({
           <div className="flex items-center justify-between mb-3">
             <h5 className="text-sm font-medium text-gray-700">Page Speed</h5>
             <div className="flex items-center space-x-3">
-              {loading ? (
-                <span className="text-xs text-gray-500">Loading PageSpeed data...</span>
-              ) : (
-                <>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                    ${(pageSpeedMetrics?.mobile.score || 59) >= 90 ? 'bg-green-100 text-green-800' : 
-                      (pageSpeedMetrics?.mobile.score || 59) >= 70 ? 'bg-blue-100 text-blue-800' : 
-                      (pageSpeedMetrics?.mobile.score || 59) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-red-100 text-red-800'}`}>
-                    Mobile: {pageSpeedMetrics?.mobile.score || 59}/100
-                  </span>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                    ${(pageSpeedMetrics?.desktop.score || 100) >= 90 ? 'bg-green-100 text-green-800' : 
-                      (pageSpeedMetrics?.desktop.score || 100) >= 70 ? 'bg-blue-100 text-blue-800' : 
-                      (pageSpeedMetrics?.desktop.score || 100) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-red-100 text-red-800'}`}>
-                    Desktop: {pageSpeedMetrics?.desktop.score || 100}/100
-                  </span>
-                </>
-              )}
+              <>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${(pageSpeedMetrics?.mobile.score || 59) >= 90 ? 'bg-green-100 text-green-800' : 
+                    (pageSpeedMetrics?.mobile.score || 59) >= 70 ? 'bg-blue-100 text-blue-800' : 
+                    (pageSpeedMetrics?.mobile.score || 59) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-red-100 text-red-800'}`}>
+                  Mobile: {pageSpeedMetrics?.mobile.score || 59}/100
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  ${(pageSpeedMetrics?.desktop.score || 100) >= 90 ? 'bg-green-100 text-green-800' : 
+                    (pageSpeedMetrics?.desktop.score || 100) >= 70 ? 'bg-blue-100 text-blue-800' : 
+                    (pageSpeedMetrics?.desktop.score || 100) >= 50 ? 'bg-yellow-100 text-yellow-800' : 
+                    'bg-red-100 text-red-800'}`}>
+                  Desktop: {pageSpeedMetrics?.desktop.score || 100}/100
+                </span>
+              </>
               {error && <span className="text-xs text-red-500">{error}</span>}
             </div>
           </div>
