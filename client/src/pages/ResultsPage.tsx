@@ -267,6 +267,25 @@ export default function ResultsPage() {
     );
   }
   
+  // Check if PageSpeed data is still loading
+  const pageSpeedLoading = 
+    !data.pageSpeedAnalysis || 
+    data.pageSpeedAnalysis.score === undefined || 
+    (typeof data.pageSpeedAnalysis.lcp === 'undefined' && 
+     typeof data.pageSpeedAnalysis.fid === 'undefined' && 
+     typeof data.pageSpeedAnalysis.cls === 'undefined' && 
+     typeof data.pageSpeedAnalysis.ttfb === 'undefined');
+  
+  // If PageSpeed data is still loading, show loading skeleton
+  if (pageSpeedLoading) {
+    return (
+      <ResultsPageSkeleton 
+        url={selectedUrl} 
+        message="Fetching performance metrics from PageSpeed Insights..."
+      />
+    );
+  }
+  
   // Wait for PageSpeed data to load before showing results
   // This ensures we display actual data rather than placeholders
   const forceShowResults = false;
