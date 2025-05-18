@@ -53,23 +53,41 @@ export const getQueryFn: <T>(options: {
         return null;
       }
       
-      const res = await fetch(queryKey[0], {
-        credentials: "include",
-      });
+      let res;
+      try {
+        res = await fetch(queryKey[0], {
+          credentials: "include",
+        });
+      } catch (error) {
+        console.error("Fetch error:", error);
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        throw error;
+      }
 
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {
         return null;
       }
 
-      await throwIfResNotOk(res);
-      
-      // Check if the response is empty
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        return null;
+      try {
+        await throwIfResNotOk(res);
+        
+        // Check if the response is empty or not JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          return null;
+        }
+        
+        const data = await res.json();
+        return data;
+      } catch (error) {
+        console.error("Response processing error:", error);
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        throw error;
       }
-      
-      return await res.json();
     } catch (error) {
       console.error("Query fetch error:", error);
       if (unauthorizedBehavior === "returnNull") {
