@@ -83,6 +83,32 @@ export default {
           "0%": { opacity: "0" },
           "100%": { opacity: "1" },
         },
+        progress: {
+          "0%": { width: "0%" },
+          "20%": { width: "20%" },
+          "40%": { width: "40%" },
+          "60%": { width: "60%" },
+          "80%": { width: "80%" },
+          "100%": { width: "100%" },
+        },
+        bounce: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "bounce-delayed": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { 
+            opacity: "1", 
+            boxShadow: "0 0 0 0 rgba(59, 130, 246, 0.5)" 
+          },
+          "50%": { 
+            opacity: "0.8", 
+            boxShadow: "0 0 0 8px rgba(59, 130, 246, 0)" 
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -92,6 +118,9 @@ export default {
         "bounce-delay-300": "bounce 1.5s infinite 0.3s",
         "bounce-delay-600": "bounce 1.5s infinite 0.6s",
         "fadeIn": "fadeIn 0.5s ease-in-out",
+        "progress": "progress 15s ease-in-out forwards",
+        "bounce-delayed": "bounce-delayed 2s infinite",
+        "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },

@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Globe, Clock, BarChart, Loader2 } from "lucide-react";
+import { Globe, Clock, BarChart, Loader2, Gauge, Zap, Search, Check } from "lucide-react";
 
 // Create context to track PageSpeed data loading
 export const PageSpeedContext = createContext<{
@@ -465,21 +465,121 @@ export default function ResultsPage() {
 }
 
 function ResultsPageSkeleton({ url, message }: { url: string, message?: string }) {
+  // State to track the current analysis step
+  const [currentStep, setCurrentStep] = useState(0);
+  const totalSteps = 5;
+  
+  // Analysis steps
+  const analysisSteps = [
+    { title: "Fetching Website Content", icon: Globe, color: "text-blue-500", description: "Retrieving webpage content for analysis..." },
+    { title: "Analyzing On-Page SEO", icon: Search, color: "text-green-500", description: "Examining meta tags, headings, and content structure..." },
+    { title: "Checking Mobile Friendliness", icon: Clock, color: "text-purple-500", description: "Testing responsiveness and mobile compatibility..." },
+    { title: "Gathering Performance Data", icon: Gauge, color: "text-orange-500", description: message || "Fetching metrics from Google PageSpeed Insights..." },
+    { title: "Generating Final Report", icon: BarChart, color: "text-indigo-500", description: "Compiling results and preparing recommendations..." }
+  ];
+
+  // Progress to next step every few seconds
+  useEffect(() => {
+    // Only progress if we haven't reached the final step
+    if (currentStep < totalSteps - 1) {
+      const timer = setTimeout(() => {
+        setCurrentStep(prev => prev + 1);
+      }, 3000); // Progress every 3 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
+  // Calculate overall progress percentage
+  const progressPercentage = ((currentStep + 1) / totalSteps) * 100;
+  
+  // Get current step data
+  const currentStepData = analysisSteps[currentStep];
+  const StepIcon = currentStepData.icon;
+  
   return (
     <div className="px-4 sm:px-0">
       <div className="bg-white shadow rounded-lg p-6 mb-6">
-        {message && (
-          <div className="flex items-center justify-center mb-4 p-2 bg-blue-50 text-blue-600 rounded">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            <span>{message}</span>
+        {/* Loading animation container */}
+        <div className="flex flex-col items-center justify-center mb-8">
+          <div className="flex items-center justify-center relative mb-6">
+            {/* Animated gauge/speedometer */}
+            <div className="relative w-32 h-32">
+              <div className="absolute inset-0 rounded-full border-8 border-gray-100"></div>
+              <div 
+                className="absolute inset-0 rounded-full border-8 border-transparent border-t-blue-500 animate-spin" 
+                style={{animationDuration: '3s'}}
+              ></div>
+              <div className="absolute inset-4 rounded-full bg-white flex items-center justify-center">
+                <StepIcon className={`h-10 w-10 ${currentStepData.color}`} />
+              </div>
+            </div>
+            
+            {/* Completion indicators for steps */}
+            <div className="absolute flex items-center justify-center w-full h-full">
+              {analysisSteps.map((step, index) => (
+                <div 
+                  key={index}
+                  className={`absolute rounded-full transition-all duration-500 ${
+                    index < currentStep 
+                      ? 'bg-green-100 border border-green-300' 
+                      : index === currentStep 
+                        ? 'bg-blue-100 border border-blue-300 animate-pulse' 
+                        : 'bg-gray-100 border border-gray-200'
+                  }`}
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    transform: `rotate(${(index * 72)}deg) translateX(70px)`
+                  }}
+                >
+                  {index < currentStep && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <Check className="h-2 w-2 text-green-500" />
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+          
+          {/* Step indicator */}
+          <div className="flex items-center justify-center mb-4 text-sm text-gray-500">
+            <span className="font-medium text-blue-600">Step {currentStep + 1}</span>
+            <span className="mx-2">of</span>
+            <span>{totalSteps}</span>
+          </div>
+          
+          {/* Loading message */}
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{currentStepData.title}</h3>
+            <p className="text-gray-500 max-w-md">
+              {currentStepData.description}
+            </p>
+            
+            {/* Progress bar */}
+            <div className="mt-4 w-full max-w-md mx-auto">
+              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300 ease-out" 
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between mt-1 text-xs text-gray-500">
+                <span>0%</span>
+                <span>{Math.round(progressPercentage)}%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">SEO Assessment Results</h2>
             <p className="text-gray-500 text-sm mt-1">{url}</p>
             <div className="text-xs text-gray-500 mt-1">
-              Analyzing...
+              Analysis in progress...
             </div>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
