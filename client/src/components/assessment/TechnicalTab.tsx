@@ -348,9 +348,7 @@ export default function TechnicalTab({
               mobileData.overallScore.score >= 50 ? 'bg-yellow-100 text-yellow-800' : 
               'bg-red-100 text-red-800'
             }`}>
-              Score: {mobileData.isMobileFriendly === false ? 
-                Math.floor(35 + Math.random() * 15) : 
-                Math.min(70, mobileData.overallScore.score || 65)}/100
+              Score: {mobileData.overallScore.score}/100
             </span>
           </div>
           

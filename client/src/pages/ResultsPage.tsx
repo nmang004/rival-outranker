@@ -113,10 +113,8 @@ export default function ResultsPage() {
   
   // Update overall score to reflect more realistic mobile scores
   if (data.overallScore && data.mobileAnalysis) {
-    // Calculate the mobile score the same way we display it
-    const mobileScore = data.mobileAnalysis.isMobileFriendly === false ? 
-      Math.floor(35 + Math.random() * 15) : 
-      Math.min(70, data.mobileAnalysis.overallScore.score || 65);
+    // Use the actual mobile score value without artificially limiting it
+    const mobileScore = data.mobileAnalysis.overallScore.score || 50;
     
     // Recalculate the overall score with the updated mobile score
     // This assumes mobile is weighted similarly to other factors 
