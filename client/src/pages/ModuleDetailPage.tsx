@@ -106,11 +106,20 @@ interface UserLearningProgress {
 }
 
 export default function ModuleDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const moduleId = parseInt(id);
+  const { slug } = useParams<{ slug: string }>();
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("overview");
+  
+  // Find module by slug instead of id
+  const getModuleBySlug = (moduleSlug: string) => {
+    return mockModules.find(m => 
+      m.title.toLowerCase().replace(/\s+/g, '-') === moduleSlug
+    );
+  };
+  
+  const foundModule = getModuleBySlug(slug || "");
+  const moduleId = foundModule?.id || 1;
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
