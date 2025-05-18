@@ -110,16 +110,17 @@ export default function NavBar() {
                             <span>PDF Analyzer</span>
                           </div>
                         </Link>
+                        <Link href="/backlinks">
+                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                            <LinkIcon className="h-4 w-4 mr-2.5 text-primary" />
+                            <span>Backlink Analyzer</span>
+                          </div>
+                        </Link>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <Link href="/backlinks">
-                <div className={linkClass("/backlinks")}>
-                  <LinkIcon className="h-4 w-4 mr-2" /> Backlinks
-                </div>
-              </Link>
               <Link href="/learning">
                 <div className={linkClass("/learning")}>
                   <BookOpen className="h-4 w-4 mr-2" /> Learning

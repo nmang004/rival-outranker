@@ -53,40 +53,53 @@ export const getQueryFn: <T>(options: {
         return null;
       }
       
-      let res;
+      // Using more defensive fetch approach with better error handling
+      let response;
       try {
-        res = await fetch(queryKey[0], {
+        response = await fetch(queryKey[0], {
           credentials: "include",
         });
       } catch (error) {
-        console.error("Fetch error:", error);
+        console.error("Network error:", error);
         if (unauthorizedBehavior === "returnNull") {
           return null;
         }
         throw error;
       }
 
-      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        return null;
+      // Handle 401 unauthorized early
+      if (response.status === 401) {
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        throw new Error("Unauthorized");
       }
-
+      
+      // Handle non-OK responses
+      if (!response.ok) {
+        console.error(`HTTP error: ${response.status} ${response.statusText}`);
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      
+      // Check for empty or non-JSON responses
       try {
-        await throwIfResNotOk(res);
-        
-        // Check if the response is empty or not JSON
-        const contentType = res.headers.get('content-type');
+        const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
+          console.warn("Response is not JSON");
           return null;
         }
         
-        const data = await res.json();
+        const data = await response.json();
         return data;
-      } catch (error) {
-        console.error("Response processing error:", error);
+      } catch (jsonError) {
+        console.error("JSON parsing error:", jsonError);
         if (unauthorizedBehavior === "returnNull") {
           return null;
         }
-        throw error;
+        throw jsonError;
       }
     } catch (error) {
       console.error("Query fetch error:", error);
