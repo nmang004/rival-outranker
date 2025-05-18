@@ -57,16 +57,21 @@ export default function ResultsPage() {
   useEffect(() => {
     // Function to handle the custom event that checks for formatting info
     const handlePageSpeedLoaded = (event: Event) => {
-      console.log("PageSpeed data loaded event received");
+      console.log("PageSpeed data loaded event received in ResultsPage");
       
       // Check if the event includes formatting information
       const customEvent = event as CustomEvent;
+      
       if (customEvent.detail && customEvent.detail.formatted) {
-        console.log("PageSpeed metrics are properly formatted");
-        // Add a delay to ensure all components have time to update
-        setTimeout(() => {
-          setPageSpeedLoaded(true);
-        }, 1500); // Longer delay to ensure metrics are displayed with proper units
+        console.log("PageSpeed metrics are properly formatted - will show results page");
+        
+        // PageSpeed data is properly formatted - set loaded state to true
+        setPageSpeedLoaded(true);
+      } else if (customEvent.detail && (customEvent.detail.error || customEvent.detail.timeout)) {
+        console.log("PageSpeed data failed to load (error or timeout) - showing results anyway");
+        
+        // Either there was an error or a timeout - we need to move forward
+        setPageSpeedLoaded(true);
       } else {
         console.log("PageSpeed data loaded but waiting for proper formatting");
         // Don't set isPageSpeedLoaded to true yet - will wait for properly formatted metrics
@@ -76,16 +81,19 @@ export default function ResultsPage() {
     // Register event listener with type assertion to handle CustomEvent
     window.addEventListener('pageSpeedDataLoaded', handlePageSpeedLoaded as EventListener);
     
-    // Clear localStorage on component mount
+    // Clear localStorage on component mount to reset state
     if (selectedUrl) {
+      console.log("Clearing pageSpeedDataLoaded from localStorage for new URL:", selectedUrl);
       localStorage.removeItem('pageSpeedDataLoaded');
+      // Also reset the loaded state when URL changes
+      setPageSpeedLoaded(false);
     }
     
     // Cleanup
     return () => {
       window.removeEventListener('pageSpeedDataLoaded', handlePageSpeedLoaded as EventListener);
     };
-  }, []);
+  }, [selectedUrl]); // Add selectedUrl as dependency to reset state when URL changes
   
   // Redirect to home if no URL is provided
   useEffect(() => {

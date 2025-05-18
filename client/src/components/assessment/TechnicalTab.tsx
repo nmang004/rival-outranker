@@ -52,20 +52,39 @@ export default function TechnicalTab({
   // Fetch real PageSpeed metrics when URL is provided
   useEffect(() => {
     if (url && !pageSpeedDataLoadedRef.current) {
+      console.log("TechnicalTab - Starting PageSpeed data fetch for URL:", url);
+      
+      // Reset loading state for new URL
+      setLoading(true);
+      setMetricsFormatted(false);
+      setPageSpeedMetrics(null);
+      
+      // Start fetching the data
       fetchPageSpeedData(url);
       
       // Add a timeout to ensure we don't wait indefinitely 
       // for PageSpeed data to load
       const timeout = setTimeout(() => {
         if (!pageSpeedDataLoadedRef.current) {
-          console.log("PageSpeed data loading timed out - using fallback values");
+          console.log("TechnicalTab - PageSpeed data loading timed out after 10 seconds");
+          
+          // Mark as loaded to prevent repeated API calls
           pageSpeedDataLoadedRef.current = true;
+          
+          // Let the ResultsPage know we're done waiting
           localStorage.setItem('pageSpeedDataLoaded', 'true');
-          const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded');
-          window.dispatchEvent(pageSpeedLoadedEvent);
+          
+          // Dispatch event with timeout information
+          const pageSpeedTimeoutEvent = new CustomEvent('pageSpeedDataLoaded', {
+            detail: { formatted: false, timeout: true }
+          });
+          window.dispatchEvent(pageSpeedTimeoutEvent);
+          console.log("TechnicalTab - Dispatched timeout event for PageSpeed data");
+          
+          // End loading state
           setLoading(false);
         }
-      }, 3000); // 3 second timeout
+      }, 10000); // 10 second timeout before showing incomplete data
       
       return () => clearTimeout(timeout);
     }
