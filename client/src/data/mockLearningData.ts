@@ -879,6 +879,7 @@ import { localBusinessSEOLessons } from "./localBusinessSEOLessons";
 import { onPageSEOLessons } from "./onPageSEOLessons";
 import { technicalSEOLessons } from "./technicalSEOLessons";
 import { analyticsSEOLessons } from "./analyticsSEOLessons";
+import { keywordResearchLessons } from "./keywordResearchLessons";
 
 // Add all the new lessons to the original mockLessons array
 // First, extend the array with local business SEO lessons
@@ -887,8 +888,10 @@ mockLessons.push(...localBusinessSEOLessons);
 mockLessons.push(...onPageSEOLessons);
 // Add technical SEO lessons 
 mockLessons.push(...technicalSEOLessons);
-// Finally add analytics SEO lessons
+// Add analytics SEO lessons
 mockLessons.push(...analyticsSEOLessons);
+// Add keyword research lessons
+mockLessons.push(...keywordResearchLessons);
 
 // Calculate progress summary based on user progress
 // Mock achievements for the gamification system
