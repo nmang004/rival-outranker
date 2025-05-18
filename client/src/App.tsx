@@ -33,6 +33,7 @@ import DirectAdminDashboard from "@/pages/DirectAdminDashboard";
 // Learning Path Pages
 import LearningPathsPage from "@/pages/LearningPathsPage";
 import ModuleDetailPage from "@/pages/ModuleDetailPage";
+import AchievementDemoPage from "@/pages/AchievementDemoPage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import SeoBuddy from "@/components/SeoBuddy";
@@ -70,6 +71,7 @@ function Router() {
             {/* Learning Path Routes */}
             <Route path="/learning" component={LearningPathsPage} />
             <Route path="/modules/:slug" component={ModuleDetailPage} />
+            <Route path="/achievement-demo" component={AchievementDemoPage} />
             <Route component={NotFound} />
           </Switch>
         </div>
