@@ -96,7 +96,13 @@ export default function TechnicalTab({
         data.mobile.timeToFirstByte !== undefined && 
         typeof data.mobile.timeToFirstByte === 'number';
       
-      setPageSpeedMetrics(data);
+      // Only set the metrics once they're fully loaded and properly formatted
+      if (hasValidFormat) {
+        setPageSpeedMetrics(data);
+      } else {
+        // Don't update state with incomplete data to avoid showing N/A values
+        console.log("Received incomplete PageSpeed data, waiting for complete data");
+      }
       
       console.log("PageSpeed data fetched:", data);
       console.log("Metrics properly formatted:", hasValidFormat);
@@ -111,14 +117,23 @@ export default function TechnicalTab({
         // Notify parent using localStorage and dispatch a custom event
         localStorage.setItem('pageSpeedDataLoaded', 'true');
         
-        // Dispatch custom event to notify that PageSpeed data is loaded with proper formatting
-        const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded', { 
-          detail: { formatted: true } 
-        });
-        window.dispatchEvent(pageSpeedLoadedEvent);
-        console.log("PageSpeed data loaded event dispatched with properly formatted metrics");
+        // Add a slight delay before dispatching the event
+        // This ensures all UI updates are complete before proceeding
+        setTimeout(() => {
+          // Dispatch custom event to notify that PageSpeed data is loaded with proper formatting
+          const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded', { 
+            detail: { formatted: true } 
+          });
+          window.dispatchEvent(pageSpeedLoadedEvent);
+          console.log("PageSpeed data loaded event dispatched with properly formatted metrics");
+          
+          // Only set loading to false AFTER we've dispatched the event
+          // This ensures the "Loading..." indicator stays visible until data is ready
+          setLoading(false);
+        }, 500);
       } else {
         console.log("PageSpeed metrics received but not properly formatted yet");
+        // Don't set loading to false yet - keep showing loading indicator
         // Try again after a short delay if metrics aren't properly formatted
         setTimeout(() => {
           if (!pageSpeedDataLoadedRef.current) {
@@ -126,9 +141,6 @@ export default function TechnicalTab({
           }
         }, 2000);
       }
-      
-      // Always update loading state
-      setLoading(false);
     } catch (err) {
       console.error("Error fetching PageSpeed data:", err);
       setError("Failed to fetch PageSpeed metrics");
@@ -136,10 +148,17 @@ export default function TechnicalTab({
       // Even in case of error, mark as loaded to prevent repeated retries
       pageSpeedDataLoadedRef.current = true;
       localStorage.setItem('pageSpeedDataLoaded', 'true');
-      window.dispatchEvent(new CustomEvent('pageSpeedDataLoaded'));
-    } finally {
+      
+      // Dispatch event with error information
+      const pageSpeedErrorEvent = new CustomEvent('pageSpeedDataLoaded', {
+        detail: { formatted: false, error: true }
+      });
+      window.dispatchEvent(pageSpeedErrorEvent);
+      
+      // Set loading to false since we had an error
       setLoading(false);
     }
+    // No finally block - we're controlling when to set loading=false based on data quality
   };
   // Helper function to get color based on score
   const getScoreColor = (score: number) => {
@@ -151,7 +170,8 @@ export default function TechnicalTab({
 
   // Helper function to format milliseconds for display
   const formatMs = (ms?: number) => {
-    if (ms === undefined) return "N/A";
+    if (loading) return "Loading...";
+    if (ms === undefined) return "Loading..."; // Keep showing "Loading..." instead of "N/A"
     if (ms < 1000) return `${ms.toFixed(0)}ms`;
     return `${(ms / 1000).toFixed(2)}s`;
   };
