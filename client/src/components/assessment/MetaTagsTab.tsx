@@ -23,7 +23,14 @@ export default function MetaTagsTab({ data }: MetaTagsTabProps) {
     
     const length = data.descriptionLength || 0;
     if (length < 70) return { status: "too-short", message: "Description is too short (< 70 chars)" };
-    if (length > 160) return { status: "too-long", message: "Description is too long (> 160 chars)" };
+    // Meta descriptions can be up to 320 characters but recommended limit is 160
+    if (length > 160) {
+      // For descriptions between 160-320, show warning but don't mark as error
+      return { 
+        status: length > 320 ? "too-long" : "long-but-ok", 
+        message: length > 320 ? "Description is too long (> 320 chars)" : "Description is long (may be truncated)"
+      };
+    }
     
     return { status: "good", message: "Description length is optimal" };
   };
@@ -206,9 +213,10 @@ export default function MetaTagsTab({ data }: MetaTagsTabProps) {
               value={Math.min((data.descriptionLength || 0) / 3.2, 100)} 
               className="h-2"
               indicatorClassName={`${
-                (data.descriptionLength || 0) < 70 || (data.descriptionLength || 0) > 160
-                  ? "bg-yellow-500"
-                  : "bg-green-500"
+                (data.descriptionLength || 0) < 70 ? "bg-yellow-500" :
+                (data.descriptionLength || 0) > 320 ? "bg-red-500" :
+                (data.descriptionLength || 0) > 160 ? "bg-yellow-500" :
+                "bg-green-500"
               }`}
             />
           </div>
