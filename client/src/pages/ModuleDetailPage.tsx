@@ -1,6 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
+import { 
+  mockModules, 
+  mockLessons, 
+  mockUserProgress 
+} from "@/data/mockLearningData";
 import { 
   Card, 
   CardContent, 
@@ -92,76 +97,104 @@ export default function ModuleDetailPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Fetch the module details
-  const { 
-    data: module, 
-    isLoading: isModuleLoading,
-    error: moduleError
-  } = useQuery<LearningModule>({
-    queryKey: [`/api/learning/modules/${moduleId}`],
-    enabled: !isNaN(moduleId),
-  });
+  // Use local mock data instead of API calls
+  const [module, setModule] = useState<LearningModule | null>(null);
+  const [lessons, setLessons] = useState<LearningLesson[]>([]);
+  const [userProgress, setUserProgress] = useState<UserLearningProgress[]>([]);
+  const [selectedLesson, setSelectedLesson] = useState<LearningLesson | null>(null);
+  const [quizzes, setQuizzes] = useState<LessonQuiz[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [updateProgressIsPending, setUpdateProgressIsPending] = useState(false);
   
-  // Fetch the lessons for this module
-  const { 
-    data: lessons, 
-    isLoading: isLessonsLoading,
-    error: lessonsError
-  } = useQuery<LearningLesson[]>({
-    queryKey: [`/api/learning/modules/${moduleId}/lessons`],
-    enabled: !isNaN(moduleId),
-  });
+  // Load module and lessons data
+  useEffect(() => {
+    if (isNaN(moduleId)) return;
+    
+    const timer = setTimeout(() => {
+      // Find module data
+      const foundModule = mockModules.find(m => m.id === moduleId);
+      if (foundModule) {
+        setModule(foundModule as LearningModule);
+      }
+      
+      // Find lessons for this module
+      const moduleFilteredLessons = mockLessons
+        .filter(l => l.moduleId === moduleId)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      setLessons(moduleFilteredLessons as LearningLesson[]);
+      
+      // Find progress data if authenticated
+      if (isAuthenticated) {
+        const filteredProgress = mockUserProgress.filter(p => p.moduleId === moduleId);
+        setUserProgress(filteredProgress as UserLearningProgress[]);
+      }
+      
+      setIsLoading(false);
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [moduleId, isAuthenticated]);
   
-  // Fetch the user's progress for this module (if authenticated)
-  const { 
-    data: userProgress,
-    isLoading: isProgressLoading,
-    error: progressError
-  } = useQuery<UserLearningProgress[]>({
-    queryKey: [`/api/learning/progress/modules/${moduleId}`],
-    enabled: isAuthenticated && !isNaN(moduleId),
-  });
+  // Load selected lesson data
+  useEffect(() => {
+    if (selectedLessonId === null) return;
+    
+    const foundLesson = mockLessons.find(l => l.id === selectedLessonId);
+    if (foundLesson) {
+      setSelectedLesson(foundLesson as LearningLesson);
+    }
+    
+    // Mock quizzes (empty for now)
+    setQuizzes([]);
+  }, [selectedLessonId]);
   
-  // Fetch the selected lesson details
-  const {
-    data: selectedLesson,
-    isLoading: isLessonLoading,
-    error: lessonError
-  } = useQuery<LearningLesson>({
-    queryKey: [`/api/learning/lessons/${selectedLessonId}`],
-    enabled: selectedLessonId !== null,
-  });
-  
-  // Fetch quizzes for the selected lesson
-  const {
-    data: quizzes,
-    isLoading: isQuizzesLoading,
-    error: quizzesError
-  } = useQuery<LessonQuiz[]>({
-    queryKey: [`/api/learning/lessons/${selectedLessonId}/quizzes`],
-    enabled: selectedLessonId !== null,
-  });
-  
-  // Mutation to update user progress
-  const updateProgressMutation = useMutation({
-    mutationFn: (progressData: any) => {
-      return apiRequest('/api/learning/progress', progressData, 'POST');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/learning/progress/modules/${moduleId}`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/learning/progress/summary'] });
-    },
-    onError: (error) => {
+  // Mock mutation to update progress
+  const handleUpdateProgress = (progressData: any) => {
+    setUpdateProgressIsPending(true);
+    
+    // Simulate API call delay
+    setTimeout(() => {
+      // Update local progress state
+      if (progressData.status === 'completed') {
+        const existingProgressIndex = userProgress.findIndex(p => 
+          p.moduleId === progressData.moduleId && p.lessonId === progressData.lessonId
+        );
+        
+        if (existingProgressIndex >= 0) {
+          const updatedProgress = [...userProgress];
+          updatedProgress[existingProgressIndex] = {
+            ...updatedProgress[existingProgressIndex],
+            status: 'completed',
+            completionPercentage: 100,
+            completedAt: new Date().toISOString(),
+            lastAccessedAt: new Date().toISOString()
+          };
+          setUserProgress(updatedProgress);
+        } else {
+          const newProgress = {
+            id: Math.floor(Math.random() * 10000),
+            userId: "user-123",
+            moduleId: progressData.moduleId,
+            lessonId: progressData.lessonId,
+            status: 'completed',
+            completionPercentage: 100,
+            startedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
+            lastAccessedAt: new Date().toISOString()
+          };
+          setUserProgress(prev => [...prev, newProgress]);
+        }
+      }
+      
+      setUpdateProgressIsPending(false);
+      
       toast({
-        title: "Error updating progress",
-        description: "Failed to update your learning progress. Please try again.",
-        variant: "destructive",
+        title: "Progress updated",
+        description: "Your learning progress has been saved.",
+        variant: "default",
       });
-    },
-  });
-  
-  // Loading states
-  const isLoading = isModuleLoading || isLessonsLoading || (isAuthenticated && isProgressLoading);
+    }, 500);
+  };
   
   // Helper functions
   const getDifficultyColor = (difficulty: string) => {
@@ -229,17 +262,11 @@ export default function ModuleDetailPage() {
       return;
     }
     
-    updateProgressMutation.mutate({
+    handleUpdateProgress({
       moduleId,
       lessonId,
       status: 'completed',
       completionPercentage: 100
-    });
-    
-    toast({
-      title: "Lesson completed!",
-      description: "Your progress has been updated.",
-      variant: "default",
     });
   };
   
