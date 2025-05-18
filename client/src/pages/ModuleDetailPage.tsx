@@ -309,15 +309,7 @@ export default function ModuleDetailPage() {
   };
   
   const handleCompleteLesson = (lessonId: number) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to track your progress.",
-        variant: "default",
-      });
-      return;
-    }
-    
+    // Store temporary progress for non-authenticated users
     updateProgress({
       id: Math.floor(Math.random() * 10000), // Generate a temporary ID
       userId: isAuthenticated ? "user123" : "guest",
@@ -330,8 +322,17 @@ export default function ModuleDetailPage() {
       lastAccessedAt: new Date().toISOString()
     });
     
-    // Check for achievements
-    checkForAchievements('completed', lessonId);
+    // Show different messages based on authentication status
+    if (!isAuthenticated) {
+      toast({
+        title: "Progress saved temporarily",
+        description: "Sign in to permanently save your progress across sessions.",
+        variant: "default",
+      });
+    } else {
+      // Only check for achievements if authenticated
+      checkForAchievements('completed', lessonId);
+    }
   };
   
   // Create a sorted list of lessons, respecting the sortOrder
