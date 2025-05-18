@@ -153,23 +153,28 @@ export default function LearningCompanion({
     return <BookOpen className="h-6 w-6 text-blue-500" />;
   };
   
-  // Elephant SVG icon for the mascot
+  // More cartoon-like elephant icon for better visibility
   const ElephantIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Background circle */}
-      <circle cx="256" cy="256" r="256" fill="#8c52ff" />
+      <circle cx="50" cy="50" r="50" fill="#8c52ff" />
       
-      {/* Elephant body - white for contrast */}
-      <path d="M382,180c-25,0-65,35-75,65c-30-25-75-45-150-45v150c50,0,85,20,130,45l20,15h110V230C417,200,407,180,382,180z" fill="white" />
+      {/* Elephant face */}
+      <ellipse cx="50" cy="50" rx="30" ry="32" fill="#f0f0f0" />
       
-      {/* Elephant trunk */}
-      <path d="M195,210c0-15-13-25-28-25s-28,10-28,25v110c0,15,13,25,28,25s28-10,28-25V210z" fill="white" />
+      {/* Ears */}
+      <ellipse cx="20" cy="45" rx="15" ry="20" fill="#f0f0f0" />
+      <ellipse cx="80" cy="45" rx="15" ry="20" fill="#f0f0f0" />
       
-      {/* Elephant ear */}
-      <path d="M100,180c-10-6-20-2-25,8c-5,10-2,22,8,28c15,6,35,10,35,30s-20,24-35,30c-10,6-13,18-8,28c5,10,15,14,25,8c40-20,68-35,68-66S140,200,100,180z" fill="white" />
+      {/* Eyes */}
+      <circle cx="40" cy="40" r="4" fill="#333" />
+      <circle cx="60" cy="40" r="4" fill="#333" />
       
-      {/* Elephant eye */}
-      <circle cx="340" cy="260" r="15" fill="#333333" />
+      {/* Trunk */}
+      <path d="M50,50 Q50,65 40,72 Q38,75 40,78" stroke="#333" strokeWidth="6" fill="none" strokeLinecap="round" />
+      
+      {/* Smile */}
+      <path d="M40,55 Q50,62 60,55" stroke="#333" strokeWidth="2" fill="none" />
     </svg>
   );
   
