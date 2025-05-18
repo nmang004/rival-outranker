@@ -433,6 +433,88 @@ export default function TechnicalTab({
                 <XCircle className="h-4 w-4 text-red-500" />
               )}
             </div>
+            
+            {mobileData.coreWebVitals && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                <h6 className="text-xs font-semibold text-gray-700 mb-2">Core Web Vitals</h6>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500">First Contentful Paint</div>
+                    <div className="flex items-center mt-1">
+                      <div className={`text-sm font-medium ${
+                        parseFloat(mobileData.coreWebVitals.firstContentfulPaint) < 2.5 
+                          ? 'text-green-600' 
+                          : parseFloat(mobileData.coreWebVitals.firstContentfulPaint) < 4.0 
+                            ? 'text-amber-600' 
+                            : 'text-red-600'
+                      }`}>
+                        {mobileData.coreWebVitals.firstContentfulPaint}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-xs text-gray-500">Largest Contentful Paint</div>
+                    <div className="flex items-center mt-1">
+                      <div className={`text-sm font-medium ${
+                        parseFloat(mobileData.coreWebVitals.largestContentfulPaint) < 4.0 
+                          ? 'text-green-600' 
+                          : parseFloat(mobileData.coreWebVitals.largestContentfulPaint) < 6.0 
+                            ? 'text-amber-600' 
+                            : 'text-red-600'
+                      }`}>
+                        {mobileData.coreWebVitals.largestContentfulPaint}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-xs text-gray-500">Cumulative Layout Shift</div>
+                    <div className="flex items-center mt-1">
+                      <div className={`text-sm font-medium ${
+                        mobileData.coreWebVitals.cumulativeLayoutShift < 0.15 
+                          ? 'text-green-600' 
+                          : mobileData.coreWebVitals.cumulativeLayoutShift < 0.25 
+                            ? 'text-amber-600' 
+                            : 'text-red-600'
+                      }`}>
+                        {mobileData.coreWebVitals.cumulativeLayoutShift}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-xs text-gray-500">Total Blocking Time</div>
+                    <div className="flex items-center mt-1">
+                      <div className={`text-sm font-medium ${
+                        parseInt(mobileData.coreWebVitals.totalBlockingTime) < 150 
+                          ? 'text-green-600' 
+                          : parseInt(mobileData.coreWebVitals.totalBlockingTime) < 300 
+                            ? 'text-amber-600' 
+                            : 'text-red-600'
+                      }`}>
+                        {mobileData.coreWebVitals.totalBlockingTime}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="col-span-2">
+                    <div className="text-xs text-gray-500">Speed Index</div>
+                    <div className="flex items-center mt-1">
+                      <div className={`text-sm font-medium ${
+                        parseFloat(mobileData.coreWebVitals.speedIndex) < 3.5 
+                          ? 'text-green-600' 
+                          : parseFloat(mobileData.coreWebVitals.speedIndex) < 5.5 
+                            ? 'text-amber-600' 
+                            : 'text-red-600'
+                      }`}>
+                        {mobileData.coreWebVitals.speedIndex}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
