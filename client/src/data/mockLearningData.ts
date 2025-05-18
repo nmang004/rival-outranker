@@ -1,7 +1,14 @@
 // Mock data for the learning path feature
 // This will be replaced with real API data later
+import { 
+  LearningModule, 
+  LearningLesson, 
+  LearningPath,
+  UserLearningProgress,
+  LearningRecommendation
+} from "@/types/learningTypes";
 
-export const mockModules = [
+export const mockModules: LearningModule[] = [
   {
     id: 1,
     title: "SEO Fundamentals",
@@ -320,12 +327,12 @@ export const mockLessons = [
   }
 ];
 
-export const mockLearningPaths = [
+export const mockLearningPaths: LearningPath[] = [
   {
     id: 1,
     name: "SEO Essentials",
     description: "Master the fundamentals of search engine optimization to improve your website's visibility in search results and drive more organic traffic.",
-    imageUrl: null,
+    imageUrl: undefined,
     targetAudience: "Beginners",
     isActive: true,
     moduleIds: [1, 2, 3, 8]

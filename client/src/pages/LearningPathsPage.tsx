@@ -22,64 +22,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, BookOpen, Award, Lightbulb, BookMarked, Clock } from "lucide-react";
 
-// Types for learning paths
-// Define the type to match our mock data
-interface LearningModule {
-  id: number;
-  title: string;
-  description: string;
-  imageUrl?: string | undefined;
-  difficulty: string;
-  estimatedTime: number;
-  prerequisiteIds: number[];
-  sortOrder: number;
-  isActive: boolean;
-}
-
-interface LearningPath {
-  id: number;
-  name: string;
-  description: string;
-  imageUrl?: string;
-  targetAudience?: string;
-  isActive: boolean;
-}
-
-interface ProgressSummary {
-  userId: string;
-  overallProgress: {
-    totalModules: number;
-    completedModules: number;
-    inProgressModules: number;
-    notStartedModules: number;
-    totalLessons: number;
-    completedLessons: number;
-    percentComplete: number;
-  };
-  moduleProgress: Array<{
-    moduleId: number;
-    moduleTitle: string;
-    moduleDifficulty: string;
-    totalLessons: number;
-    completedLessons: number;
-    inProgressLessons: number;
-    notStartedLessons: number;
-    percentComplete: number;
-    status: 'completed' | 'in_progress' | 'not_started';
-  }>;
-}
-
-interface LearningRecommendation {
-  id: number;
-  userId: string;
-  moduleId: number;
-  reasonCode: string;
-  reasonText: string;
-  priority: number;
-  analysisId?: number;
-  isCompleted: boolean;
-  isDismmised: boolean;
-}
+// Import types from our shared types file
+import {
+  LearningModule,
+  LearningPath,
+  ProgressSummary,
+  LearningRecommendation
+} from "@/types/learningTypes";
 
 export default function LearningPathsPage() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();

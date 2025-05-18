@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
+import {
+  LearningModule,
+  LearningLesson,
+  LessonQuiz,
+  QuizQuestion,
+  UserLearningProgress
+} from "@/types/learningTypes";
 import { 
   mockModules, 
   mockLessons, 
