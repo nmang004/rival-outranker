@@ -47,7 +47,13 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     try {
-      const res = await fetch(queryKey[0] as string, {
+      // Safely handle potentially undefined or non-string queryKey
+      if (!queryKey || !queryKey[0] || typeof queryKey[0] !== 'string') {
+        console.error('Invalid queryKey:', queryKey);
+        return null;
+      }
+      
+      const res = await fetch(queryKey[0], {
         credentials: "include",
       });
 
@@ -56,6 +62,13 @@ export const getQueryFn: <T>(options: {
       }
 
       await throwIfResNotOk(res);
+      
+      // Check if the response is empty
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        return null;
+      }
+      
       return await res.json();
     } catch (error) {
       console.error("Query fetch error:", error);

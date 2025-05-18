@@ -329,41 +329,55 @@ export default function ModuleDetailPage() {
   };
   
   const handleCompleteLesson = (lessonId: number) => {
-    // Store temporary progress for non-authenticated users
-    updateProgress({
-      id: Math.floor(Math.random() * 10000), // Generate a temporary ID
-      userId: isAuthenticated ? "user123" : "guest",
-      moduleId,
-      lessonId,
-      status: 'completed',
-      completionPercentage: 100,
-      startedAt: new Date().toISOString(),
-      completedAt: new Date().toISOString(),
-      lastAccessedAt: new Date().toISOString()
-    });
-    
-    // Switch back to the lessons tab after completion
-    setActiveTab('lessons');
-    setSelectedLessonId(null);
-    
-    // Show different messages based on authentication status
-    if (!isAuthenticated) {
-      toast({
-        title: "Progress saved temporarily",
-        description: "Sign in to permanently save your progress across sessions.",
-        variant: "default",
-      });
-    } else {
-      // Only check for achievements if authenticated
-      checkForAchievements('completed', lessonId);
+    // Prevent accidentally marking multiple lessons as complete by ensuring only the currently selected lesson gets marked
+    if (selectedLessonId !== lessonId) {
+      console.log('Warning: Attempted to complete a lesson that is not currently selected');
+      return;
     }
     
-    // Show success message
-    toast({
-      title: "Lesson completed!",
-      description: "Great job! You've completed this lesson.",
-      variant: "default",
-    });
+    // Find existing progress for this lesson to prevent duplicate completions
+    const existingProgress = userProgress.find(p => 
+      p.moduleId === moduleId && p.lessonId === lessonId && p.status === 'completed'
+    );
+    
+    // Only update if not already completed
+    if (!existingProgress) {
+      // Store progress for users
+      updateProgress({
+        id: Math.floor(Math.random() * 10000), // Generate a temporary ID
+        userId: isAuthenticated ? "user123" : "guest",
+        moduleId,
+        lessonId,
+        status: 'completed',
+        completionPercentage: 100,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        lastAccessedAt: new Date().toISOString()
+      });
+      
+      // Show different messages based on authentication status
+      if (!isAuthenticated) {
+        toast({
+          title: "Progress saved temporarily",
+          description: "Sign in to permanently save your progress across sessions.",
+          variant: "default",
+        });
+      } else {
+        // Only check for achievements if authenticated
+        checkForAchievements('completed', lessonId);
+      }
+      
+      // Show success message with animation
+      toast({
+        title: "🎉 Lesson completed!",
+        description: "Great job! You've completed this lesson.",
+        variant: "default",
+      });
+    }
+    
+    // Always switch back to the lessons tab after completion
+    setActiveTab('lessons');
+    setSelectedLessonId(null);
   };
   
   // Create a sorted list of lessons, respecting the sortOrder
