@@ -12,6 +12,13 @@ export interface LearningModule {
   isActive: boolean;
 }
 
+export interface LearningResource {
+  title: string;
+  url: string;
+  type: 'article' | 'video' | 'tool' | 'guide' | 'ebook';
+  description: string;
+}
+
 export interface LearningLesson {
   id: number;
   moduleId: number;
@@ -19,9 +26,12 @@ export interface LearningLesson {
   description: string;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
   estimatedTime: number;
   sortOrder: number;
   isActive: boolean;
+  quiz?: LessonQuiz;
+  additionalResources?: LearningResource[];
 }
 
 export interface LearningPath {

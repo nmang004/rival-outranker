@@ -619,28 +619,27 @@ export default function ModuleDetailPage() {
                       <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
                     </div>
                     
-                    {quizzes && quizzes.length > 0 && (
+                    {selectedLesson.quiz && (
                       <div className="mt-8 border-t pt-6">
                         <h3 className="text-xl font-bold mb-4">Knowledge Check</h3>
                         <div className="space-y-6">
-                          {quizzes.map((quiz) => (
-                            <div key={quiz.id} className="bg-gray-50 p-4 rounded-md">
-                              <h4 className="font-medium mb-3">{quiz.question}</h4>
+                          {selectedLesson.quiz.questions.map((question) => (
+                            <div key={question.id} className="bg-gray-50 p-4 rounded-md">
+                              <h4 className="font-medium mb-3">{question.text}</h4>
                               <div className="space-y-2">
-                                {/* This would need to be expanded into a proper interactive quiz component */}
-                                {quiz.options.map((option, index) => (
+                                {question.options.map((option, index) => (
                                   <div 
                                     key={index} 
                                     className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-100"
                                   >
                                     <input 
                                       type="radio" 
-                                      name={`quiz-${quiz.id}`} 
-                                      id={`quiz-${quiz.id}-option-${index}`} 
+                                      name={`question-${question.id}`} 
+                                      id={`question-${question.id}-option-${index}`} 
                                       className="h-4 w-4"
                                     />
                                     <label 
-                                      htmlFor={`quiz-${quiz.id}-option-${index}`}
+                                      htmlFor={`question-${question.id}-option-${index}`}
                                       className="flex-grow cursor-pointer"
                                     >
                                       {option}

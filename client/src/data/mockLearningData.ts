@@ -163,7 +163,70 @@ export const mockLessons: LearningLesson[] = [
       <p>Understanding these fundamentals will help you build a strong foundation for your SEO strategy.</p>`,
     estimatedTime: 15,
     sortOrder: 1,
-    isActive: true
+    isActive: true,
+    quiz: {
+      id: 1001,
+      lessonId: 101,
+      questions: [
+        {
+          id: 10001,
+          text: "What is the primary goal of SEO?",
+          options: [
+            "To increase website loading speed",
+            "To increase the quantity and quality of organic traffic to a website",
+            "To create more backlinks from other websites",
+            "To reduce ad spending on paid search"
+          ],
+          correctOptionIndex: 1,
+          explanation: "The primary goal of SEO is to increase both the quantity and quality of traffic coming to your website through organic (non-paid) search engine results."
+        },
+        {
+          id: 10002,
+          text: "Which of these is NOT one of the core components of SEO discussed in the lesson?",
+          options: [
+            "Technical SEO",
+            "On-page SEO",
+            "Paid advertising",
+            "Off-page SEO"
+          ],
+          correctOptionIndex: 2,
+          explanation: "Paid advertising is not considered a component of SEO, which focuses exclusively on organic (non-paid) methods of improving visibility in search results."
+        },
+        {
+          id: 10003,
+          text: "What is the first step in how search engines process web content?",
+          options: [
+            "Ranking",
+            "Crawling",
+            "Indexing",
+            "Serving"
+          ],
+          correctOptionIndex: 1,
+          explanation: "The first step in the search engine process is crawling, where search bots discover and scan web pages before they can be indexed and ranked."
+        }
+      ],
+      passingScore: 70
+    },
+    additionalResources: [
+      {
+        title: "Google's Search Engine Optimization Starter Guide",
+        url: "https://developers.google.com/search/docs/fundamentals/seo-starter-guide",
+        type: "guide",
+        description: "Official guide from Google covering SEO fundamentals and best practices"
+      },
+      {
+        title: "How Search Engines Work: Crawling, Indexing, and Ranking",
+        url: "https://moz.com/beginners-guide-to-seo/how-search-engines-operate",
+        type: "article",
+        description: "In-depth explanation of search engine operations from Moz's Beginner's Guide to SEO"
+      },
+      {
+        title: "The Three Pillars of SEO (Technical, On-Page, Off-Page)",
+        url: "https://www.semrush.com/blog/the-three-pillars-of-seo/",
+        type: "article",
+        description: "Detailed breakdown of the three core components of effective SEO"
+      }
+    ]
   },
   {
     id: 102,
