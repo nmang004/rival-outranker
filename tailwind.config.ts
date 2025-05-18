@@ -109,6 +109,70 @@ export default {
             boxShadow: "0 0 0 8px rgba(59, 130, 246, 0)" 
           },
         },
+        "sparkle": {
+          "0%": { 
+            transform: "scale(1) rotate(0deg)", 
+            opacity: "1" 
+          },
+          "50%": { 
+            transform: "scale(1.2) rotate(180deg)", 
+            opacity: "0.7" 
+          },
+          "100%": { 
+            transform: "scale(1) rotate(360deg)", 
+            opacity: "1" 
+          }
+        },
+        "float": {
+          "0%, 100%": { 
+            transform: "translateY(0) translateX(0)" 
+          },
+          "25%": { 
+            transform: "translateY(-10px) translateX(5px)" 
+          },
+          "50%": { 
+            transform: "translateY(0) translateX(10px)" 
+          },
+          "75%": { 
+            transform: "translateY(10px) translateX(5px)" 
+          }
+        },
+        "celebrate": {
+          "0%": { 
+            transform: "scale(1) rotate(0deg)", 
+            filter: "brightness(100%)" 
+          },
+          "25%": { 
+            transform: "scale(1.1) rotate(-5deg)", 
+            filter: "brightness(110%)" 
+          },
+          "50%": { 
+            transform: "scale(1.2) rotate(0deg)", 
+            filter: "brightness(120%)" 
+          },
+          "75%": { 
+            transform: "scale(1.1) rotate(5deg)", 
+            filter: "brightness(110%)" 
+          },
+          "100%": { 
+            transform: "scale(1) rotate(0deg)", 
+            filter: "brightness(100%)" 
+          }
+        },
+        "badge-pop": {
+          "0%": { 
+            transform: "scale(0)", 
+            opacity: "0" 
+          },
+          "70%": { 
+            transform: "scale(1.1)", 
+            opacity: "1" 
+          },
+          "100%": { 
+            transform: "scale(1)", 
+            opacity: "1" 
+          }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -121,6 +185,10 @@ export default {
         "progress": "progress 15s ease-in-out forwards",
         "bounce-delayed": "bounce-delayed 2s infinite",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "sparkle": "sparkle 2s ease-in-out infinite",
+        "float": "float 6s ease-in-out infinite",
+        "celebrate": "celebrate 1.5s ease-in-out",
+        "badge-pop": "badge-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards",
       },
     },
   },
