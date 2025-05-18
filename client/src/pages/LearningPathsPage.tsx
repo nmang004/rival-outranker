@@ -1,6 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { 
+  mockModules, 
+  mockLearningPaths, 
+  mockRecommendations,
+  generateProgressSummary 
+} from "@/data/mockLearningData";
 import { 
   Card, 
   CardContent, 
@@ -78,49 +84,25 @@ export default function LearningPathsPage() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("all-modules");
   
-  // Fetch all modules
-  const { 
-    data: modules, 
-    isLoading: isModulesLoading,
-    error: modulesError
-  } = useQuery({
-    queryKey: ["/api/learning/modules"],
-    enabled: true,
-  });
+  // Use local mock data instead of API calls for now
+  const [modules, setModules] = useState(mockModules);
+  const [paths, setPaths] = useState(mockLearningPaths);
+  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
+  const [recommendations, setRecommendations] = useState<LearningRecommendation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch all learning paths
-  const { 
-    data: paths, 
-    isLoading: isPathsLoading,
-    error: pathsError
-  } = useQuery({
-    queryKey: ["/api/learning/paths"],
-    enabled: true,
-  });
-  
-  // Fetch user progress (only if authenticated)
-  const { 
-    data: progressSummary,
-    isLoading: isProgressLoading,
-    error: progressError
-  } = useQuery<ProgressSummary>({
-    queryKey: ["/api/learning/progress/summary"],
-    enabled: isAuthenticated,
-  });
-  
-  // Fetch user recommendations (only if authenticated)
-  const { 
-    data: recommendations,
-    isLoading: isRecommendationsLoading,
-    error: recommendationsError
-  } = useQuery<LearningRecommendation[]>({
-    queryKey: ["/api/learning/recommendations"],
-    enabled: isAuthenticated,
-  });
-  
-  // Loading states
-  const isLoading = isModulesLoading || isPathsLoading || 
-                    (isAuthenticated && (isProgressLoading || isRecommendationsLoading));
+  // Simulate loading the data
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isAuthenticated) {
+        setProgressSummary(generateProgressSummary() as ProgressSummary);
+        setRecommendations(mockRecommendations);
+      }
+      setIsLoading(false);
+    }, 800); // Add a small delay to simulate API loading
+    
+    return () => clearTimeout(timer);
+  }, [isAuthenticated]);
                     
   // Helper functions
   const getDifficultyColor = (difficulty: string) => {

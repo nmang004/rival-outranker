@@ -75,7 +75,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PageSpeed Insights API route
   app.use('/api/pagespeed', pagespeedRouter);
   
-  // Learning path routes will be added here once ready
+  // Learning path routes - temporarily disabled while we fix implementation
+  /* Temporarily disabled while we fix ES module import issues
+  import learningPathRouter from './routes/learningPathRouter';
+  app.use('/api/learning', learningPathRouter);
+  */
   
   // Setup middleware for keyword-related endpoints
   app.use('/api/keyword-research', trackApiUsage('dataforseo'));

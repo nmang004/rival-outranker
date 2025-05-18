@@ -14,7 +14,8 @@ import {
   BarChart,
   Search,
   FileUp,
-  Link as LinkIcon
+  Link as LinkIcon,
+  BookOpen
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -117,6 +118,11 @@ export default function NavBar() {
               <Link href="/backlinks">
                 <div className={linkClass("/backlinks")}>
                   <LinkIcon className="h-4 w-4 mr-2" /> Backlinks
+                </div>
+              </Link>
+              <Link href="/learning">
+                <div className={linkClass("/learning")}>
+                  <BookOpen className="h-4 w-4 mr-2" /> Learning
                 </div>
               </Link>
               <Link href="/history">
@@ -224,6 +230,14 @@ export default function NavBar() {
                 <div className="flex items-center">
                   <LinkIcon className="h-4 w-4 mr-2.5 text-primary/80" /> 
                   <span>Backlink Tracker</span>
+                </div>
+              </div>
+            </Link>
+            <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
+              <div className={mobileLinkClass("/learning")}>
+                <div className="flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2.5 text-primary/80" /> 
+                  <span>SEO Learning Paths</span>
                 </div>
               </div>
             </Link>
