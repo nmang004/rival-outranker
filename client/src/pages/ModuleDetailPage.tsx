@@ -244,7 +244,9 @@ export default function ModuleDetailPage() {
       // Mark the lesson as in progress if it's not already
       const lessonProgress = getLessonProgress(lessonId);
       if (!lessonProgress || lessonProgress.status === 'not_started') {
-        updateProgressMutation.mutate({
+        updateProgress({
+          id: Math.floor(Math.random() * 10000), // Generate a temporary ID for now
+          userId: isAuthenticated ? "user123" : "guest",
           moduleId,
           lessonId,
           status: 'in_progress',
@@ -264,11 +266,16 @@ export default function ModuleDetailPage() {
       return;
     }
     
-    handleUpdateProgress({
+    updateProgress({
+      id: Math.floor(Math.random() * 10000), // Generate a temporary ID
+      userId: isAuthenticated ? "user123" : "guest",
       moduleId,
       lessonId,
       status: 'completed',
-      completionPercentage: 100
+      completionPercentage: 100,
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      lastAccessedAt: new Date().toISOString()
     });
   };
   
@@ -625,9 +632,8 @@ export default function ModuleDetailPage() {
                     
                     <Button 
                       onClick={() => handleCompleteLesson(selectedLesson.id)}
-                      disabled={updateProgressMutation.isPending}
                     >
-                      {updateProgressMutation.isPending ? (
+                      {false ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Updating...
