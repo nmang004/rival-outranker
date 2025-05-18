@@ -588,10 +588,78 @@ function ResultsPageSkeleton({ url, message }: { url: string, message?: string }
           </div>
         </div>
         
-        <div className="flex items-center justify-center p-12">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
-            <p className="mt-4 text-sm text-gray-500">Analyzing your website. This process may take up to 30 seconds...</p>
+        <div className="flex items-center justify-center p-6">
+          <div className="flex flex-col items-center justify-center max-w-lg w-full">
+            {/* Animated gauge/speedometer */}
+            <div className="flex items-center justify-center relative mb-6">
+              <div className="relative w-24 h-24">
+                <div className="absolute inset-0 rounded-full border-8 border-gray-100"></div>
+                <div 
+                  className="absolute inset-0 rounded-full border-8 border-transparent border-t-blue-500 animate-spin" 
+                  style={{animationDuration: '3s'}}
+                ></div>
+                <div className="absolute inset-4 rounded-full bg-white flex items-center justify-center">
+                  <StepIcon className={`h-8 w-8 ${currentStepData.color}`} />
+                </div>
+              </div>
+              
+              {/* Completion indicators for steps */}
+              <div className="absolute flex items-center justify-center w-full h-full">
+                {analysisSteps.map((step, index) => (
+                  <div 
+                    key={index}
+                    className={`absolute rounded-full transition-all duration-500 ${
+                      index < currentStep 
+                        ? 'bg-green-100 border border-green-300' 
+                        : index === currentStep 
+                          ? 'bg-blue-100 border border-blue-300 animate-pulse' 
+                          : 'bg-gray-100 border border-gray-200'
+                    }`}
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      transform: `rotate(${(index * 72)}deg) translateX(50px)`
+                    }}
+                  >
+                    {index < currentStep && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <Check className="h-2 w-2 text-green-500" />
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Step indicator */}
+            <div className="flex items-center justify-center mb-2 text-sm text-gray-500">
+              <span className="font-medium text-blue-600">Step {currentStep + 1}</span>
+              <span className="mx-2">of</span>
+              <span>{totalSteps}</span>
+            </div>
+            
+            {/* Loading message */}
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-gray-900 mb-1">{currentStepData.title}</h3>
+              <p className="text-gray-500 text-sm max-w-md">
+                {currentStepData.description}
+              </p>
+              
+              {/* Progress bar */}
+              <div className="mt-4 w-full max-w-md mx-auto">
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300 ease-out" 
+                    style={{ width: `${progressPercentage}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between mt-1 text-xs text-gray-500">
+                  <span>0%</span>
+                  <span>{Math.round(progressPercentage)}%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
