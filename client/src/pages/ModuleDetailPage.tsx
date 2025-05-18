@@ -150,7 +150,46 @@ export default function ModuleDetailPage() {
     setQuizzes([]);
   }, [selectedLessonId]);
   
-  // Mock mutation to update progress
+  // Function to update user progress locally
+  const updateProgress = (newProgress: any) => {
+    // Make sure status is one of the valid options
+    const validStatus = ['not_started', 'in_progress', 'completed'].includes(newProgress.status)
+      ? newProgress.status
+      : 'in_progress';
+      
+    const formattedProgress = {
+      ...newProgress,
+      status: validStatus,
+      startedAt: newProgress.startedAt || new Date().toISOString(),
+      completedAt: newProgress.completedAt || (validStatus === 'completed' ? new Date().toISOString() : undefined),
+      lastAccessedAt: new Date().toISOString()
+    };
+    
+    const progressExists = userProgress.some(p => 
+      p.moduleId === newProgress.moduleId && p.lessonId === newProgress.lessonId
+    );
+    
+    // Update or add progress
+    if (progressExists) {
+      setUserProgress(prev => prev.map(p => 
+        (p.moduleId === newProgress.moduleId && p.lessonId === newProgress.lessonId) 
+          ? { ...p, ...formattedProgress } 
+          : p
+      ));
+    } else {
+      setUserProgress(prev => [...prev, formattedProgress]);
+    }
+    
+    toast({
+      title: "Progress updated",
+      description: isAuthenticated 
+        ? "Your learning progress has been saved." 
+        : "Sign in to save your progress across sessions.",
+      variant: "default",
+    });
+  };
+  
+  // Mock mutation to update progress (keeping for compatibility)
   const handleUpdateProgress = (progressData: any) => {
     setUpdateProgressIsPending(true);
     
