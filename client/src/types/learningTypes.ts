@@ -100,16 +100,18 @@ export interface Achievement {
   title: string;
   description: string;
   icon: string;
-  category: 'module' | 'lesson' | 'quiz' | 'streak' | 'milestone';
   trigger: {
-    type: 'module_complete' | 'lessons_completed' | 'quiz_score' | 'streak_days' | 'engagement';
-    threshold: number;
+    type: 'module_complete' | 'first_lesson' | 'quiz_complete' | 'streak' | 'achievement' | 'milestone';
     moduleId?: number;
-    condition?: string;
+    lessonId?: number;
+    quizId?: number;
+    score?: number;
+    days?: number;
   };
   rewardPoints: number;
   unlockedAt?: string;
   imageUrl?: string;
+  category?: 'module' | 'lesson' | 'quiz' | 'streak' | 'milestone';
 }
 
 export interface UserAchievement {

@@ -1,10 +1,17 @@
-import React, { useEffect, useRef } from 'react';
-import { CheckCircle2, Award, Trophy, PartyPopper, Sparkles, Star } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import { Trophy, Award, XCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import useSound from 'use-sound';
+import { Progress } from '@/components/ui/progress';
 
 interface QuizCompletedProps {
   isOpen: boolean;
@@ -19,186 +26,185 @@ interface QuizCompletedProps {
 
 export default function QuizCompleted({ 
   isOpen, 
-  onClose, 
-  score, 
-  passingScore, 
-  moduleTitle, 
+  onClose,
+  score,
+  passingScore,
+  moduleTitle,
   lessonTitle,
-  pointsEarned = 50,
-  onContinue 
+  pointsEarned = 0,
+  onContinue
 }: QuizCompletedProps) {
-  const confettiRef = useRef<HTMLDivElement>(null);
+  const [showPoints, setShowPoints] = useState(false);
+  const passed = score >= passingScore;
   
-  // Add sound effects for quiz completion
+  // Configure sound effects based on pass/fail
   const [playSuccessSound] = useSound('/sounds/quiz-passed.mp3', { 
     volume: 0.5,
     interrupt: true
   });
   
-  const [playPointsSound] = useSound('/sounds/points-earned.mp3', {
-    volume: 0.4,
+  const [playFailSound] = useSound('/sounds/lesson-completed.mp3', { 
+    volume: 0.3,
     interrupt: true
   });
   
+  // Create confetti animation when quiz is passed successfully
   useEffect(() => {
-    if (isOpen && score >= passingScore) {
-      // Play success sound
-      playSuccessSound();
-      
-      // Play points sound with slight delay
-      setTimeout(() => {
-        playPointsSound();
-      }, 800);
-      
-      // Trigger enhanced confetti effect for passing the quiz
-      setTimeout(() => {
-        // Create confetti effect with custom colors and shapes
-        const myCanvas = document.createElement('canvas');
-        document.body.appendChild(myCanvas);
-        myCanvas.style.position = 'fixed';
-        myCanvas.style.inset = '0';
-        myCanvas.style.width = '100vw';
-        myCanvas.style.height = '100vh';
-        myCanvas.style.zIndex = '999999';
-        myCanvas.style.pointerEvents = 'none';
+    if (isOpen) {
+      if (passed) {
+        // Play success sound
+        playSuccessSound();
         
-        const myConfetti = confetti.create(myCanvas, {
-          resize: true,
-          useWorker: true
-        });
-        
-        // First wave of confetti
-        myConfetti({
-          particleCount: 80,
-          spread: 100,
-          origin: { y: 0.6 },
-          colors: ['#FFD700', '#FFFF00', '#FAFAD2'],
-          shapes: ['star', 'circle'],
-          ticks: 100
-        });
-        
-        // Second wave of confetti with different colors after a delay
+        // Create celebratory confetti for successful quiz completion
         setTimeout(() => {
-          myConfetti({
-            particleCount: 60,
-            angle: 60,
-            spread: 80,
-            origin: { x: 0, y: 0.6 },
-            colors: ['#5D3FD3', '#9370DB', '#E6E6FA']
-          });
+          const canvasConfettiConfig = {
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          };
           
-          myConfetti({
-            particleCount: 60,
-            angle: 120,
-            spread: 80,
-            origin: { x: 1, y: 0.6 },
-            colors: ['#32CD32', '#7CFC00', '#98FB98']
-          });
-        }, 1000);
-        
-        // Remove the canvas after animations complete
-        setTimeout(() => {
-          document.body.removeChild(myCanvas);
-        }, 4000);
-      }, 200);
+          confetti(canvasConfettiConfig);
+        }, 300);
+      } else {
+        // Play failure sound
+        playFailSound();
+      }
+      
+      // Show points after a brief delay
+      const timer = setTimeout(() => {
+        setShowPoints(true);
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timer);
+        setShowPoints(false);
+      };
     }
-  }, [isOpen, score, passingScore, playSuccessSound, playPointsSound]);
-
-  const isPassed = score >= passingScore;
+  }, [isOpen, passed, playSuccessSound, playFailSound]);
   
   const handleContinue = () => {
-    onClose();
     if (onContinue) {
       onContinue();
     }
+    onClose();
+  };
+  
+  // Get the appropriate message and styling based on the score
+  const getScoreMessage = () => {
+    if (score >= 95) return { text: "Outstanding!", color: "text-green-500" };
+    if (score >= 85) return { text: "Great job!", color: "text-green-500" };
+    if (score >= passingScore) return { text: "Good work!", color: "text-green-500" };
+    return { text: "Try again", color: "text-amber-500" };
+  };
+  
+  const scoreMessage = getScoreMessage();
+  
+  // Get the appropriate Progress bar color based on the score
+  const getProgressColor = () => {
+    if (score >= 85) return "bg-green-200 dark:bg-green-800";
+    if (score >= passingScore) return "bg-green-100 dark:bg-green-900";
+    return "bg-amber-100 dark:bg-amber-900";
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-center">
-          <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-full ${isPassed ? 'bg-gradient-to-r from-amber-300 to-yellow-500 animate-celebrate' : 'bg-blue-100'} my-2 transition-all duration-500`} ref={confettiRef}>
-            {isPassed ? (
-              <Trophy className="h-12 w-12 text-white drop-shadow-md" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent 
+        className={cn(
+          "sm:max-w-md",
+          passed 
+            ? "border-2 border-green-500/30 bg-gradient-to-b from-background to-green-950/5" 
+            : "border-2 border-amber-500/30 bg-gradient-to-b from-background to-amber-950/5",
+          "animate-badge-pop"
+        )}
+      >
+        <DialogHeader className="space-y-3 text-center">
+          <div 
+            className={cn(
+              "mx-auto h-20 w-20 rounded-full flex items-center justify-center shadow-lg",
+              passed 
+                ? "bg-gradient-to-b from-green-200 to-green-300 dark:from-green-800 dark:to-green-700" 
+                : "bg-gradient-to-b from-amber-200 to-amber-300 dark:from-amber-800 dark:to-amber-700"
+            )}
+          >
+            {passed ? (
+              <Trophy className="h-10 w-10 text-green-700 dark:text-green-300" />
             ) : (
-              <CheckCircle2 className="h-12 w-12 text-blue-500" />
+              <XCircle className="h-10 w-10 text-amber-700 dark:text-amber-300" />
             )}
           </div>
-          <DialogTitle className={`text-2xl text-center ${isPassed ? 'animate-fadeIn' : ''}`}>
-            {isPassed ? 'Quiz Completed! 🎉' : 'Quiz Attempt'}
-          </DialogTitle>
-          <div className={`${isPassed ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-transparent bg-clip-text font-bold text-xl mb-2 animate-pulse-glow' : 'text-muted-foreground'}`}>
-            {isPassed ? '★ Achievement Unlocked ★' : ''}
-          </div>
-          <DialogDescription className="text-lg">
-            {isPassed 
-              ? `Congratulations! You've mastered the "${lessonTitle}" lesson in the ${moduleTitle} module.` 
-              : `You didn't quite reach the passing score. Keep learning and try again!`}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex flex-col items-center py-4 space-y-4">
-          <div className="w-full space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Your Score</span>
-              <span className={`font-medium ${isPassed ? 'text-green-600' : 'text-amber-600'}`}>{score}%</span>
-            </div>
-            <Progress value={score} className={`h-2 ${isPassed ? 'bg-green-100' : 'bg-amber-100'} transition-all duration-1000`} />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0%</span>
-              <span>Passing: {passingScore}%</span>
-              <span>100%</span>
-            </div>
-          </div>
           
-          {isPassed && (
-            <div className="flex flex-col items-center gap-2 mt-4">
-              <div className="flex flex-col sm:flex-row items-center gap-2 animate-badge-pop">
-                <div className="flex items-center gap-1">
-                  <Award className="h-5 w-5 text-amber-500 animate-sparkle" />
-                  <span className="font-semibold text-primary bg-gradient-to-r from-amber-400 to-amber-600 text-transparent bg-clip-text">+{pointsEarned} Points Earned!</span>
-                </div>
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 text-yellow-500 animate-sparkle" />
-                  <Star className="h-5 w-5 text-yellow-500 animate-bounce-delayed" />
-                  <Star className="h-4 w-4 text-yellow-500 animate-sparkle" />
+          <DialogTitle 
+            className={cn(
+              "text-xl font-bold",
+              passed 
+                ? "bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent" 
+                : "bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent"
+            )}
+          >
+            Quiz Completed
+          </DialogTitle>
+          
+          <DialogDescription className="text-center">
+            <div className="text-foreground font-medium mb-1">
+              {moduleTitle}
+            </div>
+            <div className="text-sm text-muted-foreground mb-4">
+              {lessonTitle}
+            </div>
+            
+            {/* Score display */}
+            <div className="mt-6 space-y-4">
+              <div className="flex justify-between text-sm font-medium">
+                <span>Your score</span>
+                <span className={scoreMessage.color}>{score}%</span>
+              </div>
+              
+              <div className="w-full space-y-2">
+                <Progress 
+                  value={score} 
+                  className={cn("h-3", getProgressColor())} 
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0%</span>
+                  <span>Passing: {passingScore}%</span>
+                  <span>100%</span>
                 </div>
               </div>
               
-              <div className="flex justify-center mt-3 gap-2">
-                <div className="animate-float">
-                  <PartyPopper className="h-6 w-6 text-primary" />
-                </div>
-                <div className="animate-bounce-delayed">
-                  <Sparkles className="h-6 w-6 text-yellow-500" />
-                </div>
-                <div className="animate-float" style={{ animationDelay: '0.5s' }}>
-                  <PartyPopper className="h-6 w-6 text-primary" />
-                </div>
+              <div className={cn(
+                "font-bold text-lg", 
+                scoreMessage.color
+              )}>
+                {scoreMessage.text}
               </div>
+              
+              {/* Points earned animation */}
+              {passed && pointsEarned > 0 && (
+                <div className={cn(
+                  "mt-4 bg-primary/5 p-3 rounded-lg border border-primary/10",
+                  showPoints ? "animate-fadeIn" : "opacity-0"
+                )}>
+                  <div className="text-sm font-medium text-primary flex items-center justify-center gap-2">
+                    <Award className="h-4 w-4" />
+                    <span>+ {pointsEarned} points earned</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </DialogDescription>
+        </DialogHeader>
         
-        <DialogFooter className="flex justify-center gap-2">
-          {!isPassed && (
-            <Button variant="outline" onClick={onClose}>
-              Try Again
-            </Button>
-          )}
+        <div className="flex justify-center">
           <Button 
+            className={cn(
+              "mt-2 px-8",
+              !passed && "bg-amber-600 hover:bg-amber-700"
+            )}
             onClick={handleContinue}
-            className={`${isPassed ? 'bg-gradient-to-r from-primary to-indigo-600 hover:from-indigo-600 hover:to-primary transition-all duration-500 transform hover:scale-105' : ''}`}
           >
-            {isPassed ? (
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Continue Learning
-                <Star className="h-4 w-4 animate-pulse" />
-              </span>
-            ) : 'Review Lesson'}
+            {passed ? "Continue" : "Try Again"}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

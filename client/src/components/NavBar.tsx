@@ -15,7 +15,8 @@ import {
   Search,
   FileUp,
   Link as LinkIcon,
-  BookOpen
+  BookOpen,
+  Trophy
 } from "lucide-react";
 import { UserAccountButton } from "@/components/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -239,6 +240,14 @@ export default function NavBar() {
                 <div className="flex items-center">
                   <BookOpen className="h-4 w-4 mr-2.5 text-primary/80" /> 
                   <span>SEO Learning Paths</span>
+                </div>
+              </div>
+            </Link>
+            <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
+              <div className={mobileLinkClass("/achievement-demo")}>
+                <div className="flex items-center">
+                  <Trophy className="h-4 w-4 mr-2.5 text-primary/80" /> 
+                  <span>Achievement Demo</span>
                 </div>
               </div>
             </Link>
