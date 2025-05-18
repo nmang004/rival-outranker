@@ -10,6 +10,18 @@ import {
   mockAchievements 
 } from "@/data/mockLearningData";
 import { 
+  localBusinessSEOLessons 
+} from "@/data/localBusinessSEOLessons";
+import { 
+  onPageSEOLessons 
+} from "@/data/onPageSEOLessons";
+import { 
+  technicalSEOLessons 
+} from "@/data/technicalSEOLessons";
+import { 
+  analyticsSEOLessons 
+} from "@/data/analyticsSEOLessons";
+import { 
   Card, 
   CardContent, 
   CardDescription, 
@@ -131,8 +143,16 @@ export default function ModuleDetailPage() {
         setModule(foundModule as LearningModule);
       }
       
-      // Find lessons for this module
-      const moduleFilteredLessons = mockLessons
+      // Find lessons for this module - combine from all sources
+      const allLessons = [
+        ...mockLessons,
+        ...localBusinessSEOLessons,
+        ...onPageSEOLessons,
+        ...technicalSEOLessons,
+        ...analyticsSEOLessons
+      ];
+      
+      const moduleFilteredLessons = allLessons
         .filter(l => l.moduleId === moduleId)
         .sort((a, b) => a.sortOrder - b.sortOrder);
       setLessons(moduleFilteredLessons as LearningLesson[]);

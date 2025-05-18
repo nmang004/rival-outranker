@@ -880,14 +880,15 @@ import { onPageSEOLessons } from "./onPageSEOLessons";
 import { technicalSEOLessons } from "./technicalSEOLessons";
 import { analyticsSEOLessons } from "./analyticsSEOLessons";
 
-// Add all SEO lessons to a combined lessons array
-export const allLessons = [
-  ...mockLessons,
-  ...localBusinessSEOLessons,
-  ...onPageSEOLessons,
-  ...technicalSEOLessons,
-  ...analyticsSEOLessons
-];
+// Add all the new lessons to the original mockLessons array
+// First, extend the array with local business SEO lessons
+mockLessons.push(...localBusinessSEOLessons);
+// Then add on-page SEO lessons
+mockLessons.push(...onPageSEOLessons);
+// Add technical SEO lessons 
+mockLessons.push(...technicalSEOLessons);
+// Finally add analytics SEO lessons
+mockLessons.push(...analyticsSEOLessons);
 
 // Calculate progress summary based on user progress
 // Mock achievements for the gamification system
