@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
-import {
-  LearningModule,
-  LearningLesson,
-  LessonQuiz,
-  QuizQuestion,
-  UserLearningProgress
-} from "@/types/learningTypes";
+// Import types directly from mock data as we're currently using those
+import type { QuizQuestion } from "@/types/learningTypes";
 import { 
   mockModules, 
   mockLessons, 
@@ -531,7 +526,7 @@ export default function ModuleDetailPage() {
             </TabsContent>
             
             <TabsContent value="lesson" className="space-y-4">
-              {isLessonLoading || !selectedLesson ? (
+              {isLoading || !selectedLesson ? (
                 <div className="flex items-center justify-center h-64">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   <span className="ml-2 text-lg">Loading lesson content...</span>

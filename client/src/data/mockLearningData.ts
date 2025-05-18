@@ -110,7 +110,7 @@ export const mockModules: LearningModule[] = [
   }
 ];
 
-export const mockLessons = [
+export const mockLessons: LearningLesson[] = [
   // Module 1: SEO Fundamentals
   {
     id: 101,
