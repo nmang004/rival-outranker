@@ -69,7 +69,7 @@ function Router() {
             <Route path="/direct-admin" component={DirectAdminDashboard} />
             {/* Learning Path Routes */}
             <Route path="/learning" component={LearningPathsPage} />
-            <Route path="/learning/modules/:id" component={ModuleDetailPage} />
+            <Route path="/modules/:slug" component={ModuleDetailPage} />
             <Route component={NotFound} />
           </Switch>
         </div>

@@ -197,7 +197,7 @@ export default function LearningPathsPage() {
                           <p className="text-sm">{recommendation.reasonText}</p>
                         </CardContent>
                         <CardFooter>
-                          <Link href={`/learning/modules/${recommendedModule.id}`}>
+                          <Link href={`/modules/${recommendedModule.title.toLowerCase().replace(/\s+/g, '-')}`}>
                             <Button className="w-full">Start Learning</Button>
                           </Link>
                         </CardFooter>
