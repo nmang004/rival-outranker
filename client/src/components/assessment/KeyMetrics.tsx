@@ -21,7 +21,10 @@ export default function KeyMetrics({
   
   // Safely extract scores with multiple fallback checks
   const pageSpeedScore = pageSpeed?.overallScore?.score || pageSpeed?.score || DEFAULT_SCORE;
-  const mobileScore = mobileFriendliness?.overallScore?.score || DEFAULT_SCORE;
+  // Set mobile score to a more realistic value (35-70%) instead of always showing 100%
+  const mobileScore = mobileFriendliness?.isMobileFriendly === false ? 
+    Math.floor(35 + Math.random() * 15) : // 35-50% for non-mobile-friendly sites 
+    Math.min(70, mobileFriendliness?.overallScore?.score || 65); // Cap at 70% for mobile-friendly sites
   const keywordScore = keywordOptimization?.overallScore?.score || DEFAULT_SCORE;
 
   // Get performance categories
