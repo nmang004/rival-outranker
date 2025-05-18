@@ -298,7 +298,7 @@ export default function ResultsPage() {
       setForceShowResults(true);
       // Also set PageSpeed as loaded to maintain consistent state
       setPageSpeedLoaded(true);
-    }, 12000); // 12 seconds maximum wait time
+    }, 120000); // 120 seconds maximum wait time
     
     return () => clearTimeout(timer);
   }, [selectedUrl]);
