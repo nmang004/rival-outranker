@@ -406,6 +406,33 @@ export default function TechnicalTab({
                 <XCircle className="h-4 w-4 text-red-500" />
               )}
             </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">No Intrusive Interstitials</span>
+              {mobileData.hasInterstitials ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Images Optimized for Mobile</span>
+              {mobileData.optimizedImages ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Mobile-Optimized Navigation</span>
+              {mobileData.mobileNavigation ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
           </div>
         </div>
       </div>
