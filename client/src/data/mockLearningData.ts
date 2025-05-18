@@ -340,14 +340,206 @@ export const mockLessons: LearningLesson[] = [
     isActive: true
   },
 
-  // Module 2: Keyword Research Mastery (first 2 lessons only as examples)
+  // Module 2: Keyword Research Mastery
   {
     id: 201,
     moduleId: 2,
     title: "Understanding Keyword Types and Intent",
     description: "Learn about different keyword categories and search intent.",
     content: `<h2>Keyword Types and Search Intent</h2>
-      <p>Effective keyword research begins with understanding the different types of keywords and the intentions behind them.</p>
+      <p>Effective keyword research begins with understanding the different types of keywords and the intentions behind searchers when they type queries into search engines.</p>
+      
+      <h3>The Hierarchy of Keywords</h3>
+      
+      <h4>By Length and Specificity</h4>
+      <ul>
+        <li><strong>Head Keywords (Short-tail)</strong>
+          <ul>
+            <li>1-2 words in length</li>
+            <li>High search volume (1,000+ monthly searches)</li>
+            <li>Extremely competitive</li>
+            <li>Low conversion rates</li>
+            <li>Examples: "shoes", "SEO", "marketing"</li>
+          </ul>
+        </li>
+        <li><strong>Body Keywords (Mid-tail)</strong>
+          <ul>
+            <li>2-3 words in length</li>
+            <li>Moderate search volume (100-1,000 monthly searches)</li>
+            <li>Moderate competition</li>
+            <li>Better conversion potential</li>
+            <li>Examples: "running shoes", "SEO tools", "content marketing"</li>
+          </ul>
+        </li>
+        <li><strong>Long-tail Keywords</strong>
+          <ul>
+            <li>4+ words in length</li>
+            <li>Lower search volume (10-100 monthly searches)</li>
+            <li>Lower competition</li>
+            <li>High conversion potential</li>
+            <li>Examples: "best trail running shoes for flat feet", "how to fix technical SEO issues", "content marketing strategy for small businesses"</li>
+          </ul>
+        </li>
+      </ul>
+      
+      <div class="info-box" style="background: #f0f7ff; border-left: 4px solid #3498db; padding: 15px; margin: 20px 0;">
+        <h4 style="margin-top: 0; color: #3498db;">Strategy Tip</h4>
+        <p>For new websites or those with limited domain authority, focus initially on long-tail keywords. As your site gains authority, gradually target more competitive mid-tail and head keywords.</p>
+      </div>
+      
+      <h3>Understanding Search Intent</h3>
+      <p>Google's algorithm has become increasingly sophisticated at understanding the "why" behind a search query. Optimizing for intent is now more important than optimizing for specific keywords.</p>
+      
+      <h4>The Four Main Types of Search Intent</h4>
+      
+      <table border="1" cellpadding="8" style="width:100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background-color:#f5f5f5; font-weight: bold;">
+          <td>Intent Type</td>
+          <td>User Goal</td>
+          <td>Keyword Indicators</td>
+          <td>Content Types</td>
+          <td>Examples</td>
+        </tr>
+        <tr>
+          <td><strong>Informational</strong></td>
+          <td>To learn or find information</td>
+          <td>"how to", "what is", "guide", "tutorial", question words</td>
+          <td>Blog posts, guides, tutorials, videos, infographics, FAQs</td>
+          <td>"how to perform keyword research", "what is domain authority", "guide to technical SEO"</td>
+        </tr>
+        <tr>
+          <td><strong>Navigational</strong></td>
+          <td>To find a specific website or page</td>
+          <td>Brand names, product names, website names</td>
+          <td>Homepage, about page, login page, specific tools</td>
+          <td>"Facebook login", "Amazon customer service", "Moz Link Explorer"</td>
+        </tr>
+        <tr>
+          <td><strong>Commercial</strong></td>
+          <td>To research before purchase</td>
+          <td>"best", "top", "review", "vs", "comparison"</td>
+          <td>Comparison pages, reviews, listicles, case studies</td>
+          <td>"best SEO tools 2025", "Ahrefs vs Semrush", "iPhone 15 reviews"</td>
+        </tr>
+        <tr>
+          <td><strong>Transactional</strong></td>
+          <td>To complete an action or purchase</td>
+          <td>"buy", "discount", "deal", "price", "order", "coupon"</td>
+          <td>Product pages, pricing pages, landing pages, checkout pages</td>
+          <td>"buy Ahrefs subscription", "WordPress hosting discount", "order iPhone 15 Pro"</td>
+        </tr>
+      </table>
+      
+      <h3>Aligning Content with Intent</h3>
+      <p>One of the biggest mistakes in SEO is creating content that doesn't match the dominant intent behind a keyword. For example:</p>
+      <ul>
+        <li>Creating a product page for an informational keyword</li>
+        <li>Writing a tutorial for a transactional keyword</li>
+      </ul>
+      
+      <p>To identify the dominant intent for a keyword:</p>
+      <ol>
+        <li>Search the keyword in Google</li>
+        <li>Examine the top 5-10 ranking pages</li>
+        <li>Identify the common content format and angle</li>
+        <li>Create content that matches this pattern while bringing unique value</li>
+      </ol>
+      
+      <div class="warning-box" style="background: #fff5f5; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0;">
+        <h4 style="margin-top: 0; color: #e74c3c;">Common Mistake</h4>
+        <p>Don't try to rank a sales page for an informational query. Users looking for information will bounce quickly from overtly sales-focused content, sending negative user signals to Google.</p>
+      </div>
+      
+      <h3>Micro-Intentions and Search Refinement</h3>
+      <p>Beyond the four main categories, searchers often have specific micro-intentions that can be addressed in content:</p>
+      <ul>
+        <li><strong>Comparison Intent:</strong> Evaluating options ("iPhone vs. Samsung")</li>
+        <li><strong>Price Intent:</strong> Understanding costs ("Ahrefs pricing")</li>
+        <li><strong>Location Intent:</strong> Finding local options ("SEO agency near me")</li>
+        <li><strong>Time Intent:</strong> Seeking recent information ("SEO trends 2025")</li>
+        <li><strong>Process Intent:</strong> Understanding how something works ("how Google algorithm works")</li>
+      </ul>
+      
+      <p>Understanding and catering to these nuanced intentions can significantly improve the relevance and performance of your content in search results.</p>`,
+    estimatedTime: 30,
+    sortOrder: 1,
+    isActive: true,
+    quiz: {
+      id: 2101,
+      lessonId: 201,
+      questions: [
+        {
+          id: 21001,
+          text: "Which type of keyword typically has the highest conversion potential?",
+          options: [
+            "Head keywords",
+            "Body keywords",
+            "Long-tail keywords",
+            "Branded keywords"
+          ],
+          correctOptionIndex: 2,
+          explanation: "Long-tail keywords have the highest conversion potential because they are more specific and usually indicate a user who knows exactly what they're looking for, often further along in the buying journey."
+        },
+        {
+          id: 21002,
+          text: "What type of search intent would the query 'how to fix crawl errors' most likely represent?",
+          options: [
+            "Navigational intent",
+            "Informational intent",
+            "Commercial intent",
+            "Transactional intent"
+          ],
+          correctOptionIndex: 1,
+          explanation: "The query 'how to fix crawl errors' demonstrates informational intent because the user is seeking knowledge about solving a specific problem rather than making a purchase or looking for a specific website."
+        },
+        {
+          id: 21003,
+          text: "Which of these strategies is recommended for websites with limited domain authority?",
+          options: [
+            "Focus primarily on head keywords",
+            "Target only branded keywords",
+            "Begin with long-tail keywords and gradually move to more competitive terms",
+            "Ignore keyword research entirely and focus only on backlinks"
+          ],
+          correctOptionIndex: 2,
+          explanation: "For new websites or those with limited domain authority, it's recommended to focus initially on long-tail keywords (which are less competitive) and gradually target more competitive terms as the site gains authority."
+        },
+        {
+          id: 21004,
+          text: "What is the recommended way to identify the dominant intent for a keyword?",
+          options: [
+            "Guess based on the keyword length",
+            "Analyze the top ranking pages for the keyword in search results",
+            "Always assume informational intent for longer keywords",
+            "Use the number of monthly searches as the only indicator"
+          ],
+          correctOptionIndex: 1,
+          explanation: "The most effective way to identify the dominant intent behind a keyword is to search for it in Google and analyze the content format and angle of the top-ranking pages."
+        }
+      ],
+      passingScore: 75
+    },
+    additionalResources: [
+      {
+        title: "Search Intent Guide for SEO",
+        url: "https://ahrefs.com/blog/search-intent/",
+        type: "article",
+        description: "Comprehensive guide to understanding and optimizing for search intent"
+      },
+      {
+        title: "How to Find Long-Tail Keywords",
+        url: "https://backlinko.com/hub/seo/long-tail-keywords",
+        type: "guide",
+        description: "Strategies for identifying valuable long-tail keyword opportunities"
+      },
+      {
+        title: "Keyword Intent Analysis Tutorial",
+        url: "https://www.youtube.com/watch?v=D5eh9MgYlpU",
+        type: "video",
+        description: "Practical demonstration of analyzing and categorizing keyword intent"
+      }
+    ]
+  },
       <h3>Keyword Types by Length</h3>
       <ul>
         <li><strong>Short-tail keywords:</strong> 1-2 words, high volume, high competition (e.g., "SEO tools")</li>
