@@ -54,10 +54,23 @@ export default function TechnicalTab({
   
   // Try to get cached PageSpeed data from session storage
   const getCachedPageSpeedData = (urlToCache: string) => {
+    if (!urlToCache) return null;
+    
     try {
       const cacheKey = getPageSpeedCacheKey(urlToCache);
       const cachedData = sessionStorage.getItem(cacheKey);
-      return cachedData ? JSON.parse(cachedData) : null;
+      
+      if (!cachedData) return null;
+      
+      // Parse the data and validate it has the required format
+      const parsedData = JSON.parse(cachedData);
+      const isValid = parsedData && 
+        parsedData.mobile && 
+        typeof parsedData.mobile.largestContentfulPaint === 'number' &&
+        typeof parsedData.mobile.cumulativeLayoutShift === 'number' &&
+        typeof parsedData.mobile.timeToFirstByte === 'number';
+        
+      return isValid ? parsedData : null;
     } catch (error) {
       console.error("Error retrieving cached PageSpeed data:", error);
       return null;
