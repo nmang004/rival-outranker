@@ -540,33 +540,176 @@ export const mockLessons: LearningLesson[] = [
       }
     ]
   },
-      <h3>Keyword Types by Length</h3>
-      <ul>
-        <li><strong>Short-tail keywords:</strong> 1-2 words, high volume, high competition (e.g., "SEO tools")</li>
-        <li><strong>Mid-tail keywords:</strong> 3-4 words, moderate volume and competition (e.g., "best SEO tools 2025")</li>
-        <li><strong>Long-tail keywords:</strong> 5+ words, lower volume but higher conversion potential (e.g., "best free SEO tools for small business websites")</li>
-      </ul>
-      <h3>Search Intent Categories</h3>
-      <p>Understanding why someone is searching is crucial for targeting the right keywords:</p>
-      <ul>
-        <li><strong>Informational:</strong> Seeking information or answers (e.g., "how to improve website SEO")</li>
-        <li><strong>Navigational:</strong> Looking for a specific website (e.g., "Google Analytics login")</li>
-        <li><strong>Commercial investigation:</strong> Researching before making a purchase (e.g., "best SEO software reviews")</li>
-        <li><strong>Transactional:</strong> Ready to make a purchase or take action (e.g., "buy Ahrefs subscription")</li>
-      </ul>
-      <h3>Mapping Keywords to the Customer Journey</h3>
-      <p>Different keyword types align with different stages of the customer journey:</p>
-      <ul>
-        <li><strong>Awareness stage:</strong> Informational keywords (e.g., "what is technical SEO")</li>
-        <li><strong>Consideration stage:</strong> Commercial investigation keywords (e.g., "Semrush vs Ahrefs")</li>
-        <li><strong>Decision stage:</strong> Transactional keywords (e.g., "Ahrefs discount code")</li>
-      </ul>`,
-    estimatedTime: 25,
-    sortOrder: 1,
-    isActive: true
-  },
   {
     id: 202,
+    moduleId: 2,
+    title: "Keyword Research Tools and Techniques",
+    description: "Learn how to use various tools and methods to find valuable keywords for your website.",
+    content: `<h2>Keyword Research Tools and Techniques</h2>
+      <p>Effective keyword research requires both the right tools and strategic techniques to discover opportunities your competitors might miss.</p>
+      
+      <h3>Essential Keyword Research Tools</h3>
+      
+      <h4>Free Tools</h4>
+      <ul>
+        <li><strong>Google Keyword Planner:</strong> Provides search volume data and keyword suggestions directly from Google. While primarily designed for advertisers, it's valuable for organic SEO as well.</li>
+        <li><strong>Google Search Console:</strong> Shows which keywords are actually driving traffic to your site, along with impression data, click-through rates, and average positions.</li>
+        <li><strong>Google Trends:</strong> Reveals the relative popularity of keywords over time and by region, helping identify seasonal patterns and emerging topics.</li>
+        <li><strong>AnswerThePublic:</strong> Visualizes questions and prepositions related to your seed keywords, excellent for content ideation.</li>
+        <li><strong>Keyword Surfer:</strong> A free Chrome extension that shows search volume data directly in Google search results.</li>
+      </ul>
+      
+      <h4>Paid Tools</h4>
+      <ul>
+        <li><strong>Ahrefs Keywords Explorer:</strong> Comprehensive data including keyword difficulty, click metrics, parent topic analysis, and SERP feature analysis.</li>
+        <li><strong>SEMrush:</strong> Offers keyword gap analysis, organic research, and competitive intelligence.</li>
+        <li><strong>Moz Keyword Explorer:</strong> Provides keyword opportunity scores and SERP analysis tools.</li>
+        <li><strong>Mangools KWFinder:</strong> User-friendly interface with accurate keyword difficulty scores, particularly good for local SEO.</li>
+      </ul>
+      
+      <div class="tip-box" style="background: #f5fff5; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0;">
+        <h4 style="margin-top: 0; color: #4caf50;">Pro Tip</h4>
+        <p>Start with free tools and move to paid options as your SEO strategy matures. For most small to medium businesses, a combination of Google Keyword Planner, Google Search Console, and one premium tool like Ahrefs or SEMrush is sufficient.</p>
+      </div>
+      
+      <h3>Proven Keyword Research Techniques</h3>
+      
+      <h4>1. Competitor Keyword Analysis</h4>
+      <p>Identify keywords your competitors are ranking for but you aren't by:</p>
+      <ol>
+        <li>Identifying your top 3-5 competitors</li>
+        <li>Using Ahrefs, SEMrush, or similar tools to analyze their organic keywords</li>
+        <li>Filtering for keywords with good traffic potential but manageable difficulty</li>
+        <li>Prioritizing keywords relevant to your business goals</li>
+      </ol>
+      
+      <h4>2. Content Gap Analysis</h4>
+      <p>Find keywords that multiple competitors rank for but you don't by:</p>
+      <ol>
+        <li>Using Ahrefs' Content Gap tool or SEMrush's Keyword Gap feature</li>
+        <li>Entering multiple competitor domains and your own</li>
+        <li>Focusing on keywords with consistent competitor rankings</li>
+      </ol>
+      
+      <h4>3. "Also Rank For" Method</h4>
+      <p>Discover related keywords by:</p>
+      <ol>
+        <li>Finding a page ranking well for your target keyword</li>
+        <li>Analyzing what other keywords that page ranks for</li>
+        <li>Incorporating these related terms into your content</li>
+      </ol>
+      
+      <h4>4. Question-Based Keyword Research</h4>
+      <p>Target informational queries by:</p>
+      <ol>
+        <li>Using tools like AnswerThePublic, AlsoAsked.com, or the "People Also Ask" section in Google</li>
+        <li>Organizing questions by search intent and topic clusters</li>
+        <li>Creating comprehensive content that answers these questions</li>
+      </ol>
+      
+      <h4>5. SERP Analysis Technique</h4>
+      <p>Understand what Google considers relevant for a keyword by:</p>
+      <ol>
+        <li>Analyzing the current top 10 results for your target keyword</li>
+        <li>Identifying content types, formats, and topics that consistently appear</li>
+        <li>Creating content that matches search intent while providing unique value</li>
+      </ol>
+      
+      <h3>Building an Effective Keyword Strategy</h3>
+      <p>After gathering keywords, organize them into a strategic framework:</p>
+      <ol>
+        <li><strong>Categorize by topic:</strong> Group related keywords into thematic clusters</li>
+        <li><strong>Prioritize by opportunity:</strong> Consider a balance of search volume, competition, and conversion potential</li>
+        <li><strong>Map to content types:</strong> Align keywords with appropriate content formats (blog posts, product pages, etc.)</li>
+        <li><strong>Create a content calendar:</strong> Schedule content creation based on priority and resources</li>
+        <li><strong>Track performance:</strong> Monitor rankings, traffic, and conversions to refine your strategy</li>
+      </ol>
+      
+      <div class="important-box" style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+        <h4 style="margin-top: 0; color: #ffc107;">Remember</h4>
+        <p>Keyword research is not a one-time activity but an ongoing process. Search behavior changes, new opportunities emerge, and competitive landscapes evolve. Review and update your keyword strategy quarterly.</p>
+      </div>`,
+    estimatedTime: 35,
+    sortOrder: 2,
+    isActive: true,
+    quiz: {
+      id: 2201,
+      lessonId: 202,
+      questions: [
+        {
+          id: 22001,
+          text: "Which free tool provides data on keywords that are already driving traffic to your website?",
+          options: [
+            "Google Keyword Planner",
+            "Google Search Console",
+            "Google Trends",
+            "AnswerThePublic"
+          ],
+          correctOptionIndex: 1,
+          explanation: "Google Search Console shows which keywords are already driving traffic to your site, along with important metrics like impressions, clicks, and average position."
+        },
+        {
+          id: 22002,
+          text: "What is the main benefit of conducting a competitor keyword analysis?",
+          options: [
+            "It automatically improves your rankings",
+            "It identifies keywords your competitors rank for but you don't",
+            "It guarantees higher search volume",
+            "It eliminates the need for content creation"
+          ],
+          correctOptionIndex: 1,
+          explanation: "The main benefit of competitor keyword analysis is discovering keywords that your competitors are ranking for but you aren't, revealing potential opportunities for your SEO strategy."
+        },
+        {
+          id: 22003,
+          text: "What should you analyze when performing SERP analysis for a target keyword?",
+          options: [
+            "Only the domain authority of ranking websites",
+            "Only the word count of ranking content",
+            "Content types, formats, and topics that consistently appear in top results",
+            "Only the number of backlinks to ranking pages"
+          ],
+          correctOptionIndex: 2,
+          explanation: "When performing SERP analysis, you should analyze the content types, formats, and topics that consistently appear in the top results to understand what Google considers relevant for that keyword."
+        },
+        {
+          id: 22004,
+          text: "How often should you review and update your keyword strategy?",
+          options: [
+            "Once every 3-5 years",
+            "Never, once it's set it's permanent",
+            "Quarterly",
+            "Only when rankings drop significantly"
+          ],
+          correctOptionIndex: 2,
+          explanation: "Keyword research is an ongoing process, not a one-time activity. It's recommended to review and update your keyword strategy quarterly as search behavior changes, new opportunities emerge, and competitive landscapes evolve."
+        }
+      ],
+      passingScore: 75
+    },
+    additionalResources: [
+      {
+        title: "How to Do Keyword Research for SEO: A Beginner's Guide",
+        url: "https://www.semrush.com/blog/keyword-research-guide-for-seo/",
+        type: "guide",
+        description: "Comprehensive walkthrough of keyword research fundamentals"
+      },
+      {
+        title: "How to Find Low-Competition Keywords for SEO",
+        url: "https://ahrefs.com/blog/find-low-competition-keywords/",
+        type: "article",
+        description: "Strategies for identifying easier ranking opportunities"
+      },
+      {
+        title: "Keyword Research: The Ultimate Guide (2025 Edition)",
+        url: "https://backlinko.com/keyword-research",
+        type: "guide",
+        description: "Advanced techniques and case studies"
+      }
+    ]
+  },
+  {
+    id: 203,
     moduleId: 2,
     title: "Keyword Research Process",
     description: "Step-by-step approach to discovering valuable keywords.",
@@ -729,6 +872,15 @@ export const mockRecommendations = [
     isCompleted: false,
     isDismmised: false
   }
+];
+
+// Import International SEO Lessons
+import { internationalSEOLessons } from "./internationalSEOLessons";
+
+// Add International SEO Lessons to all lessons
+export const allLessons = [
+  ...mockLessons,
+  ...internationalSEOLessons
 ];
 
 // Calculate progress summary based on user progress
