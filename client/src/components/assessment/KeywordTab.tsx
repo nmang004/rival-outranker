@@ -43,10 +43,19 @@ export default function KeywordTab({ data, analysisId, url }: KeywordTabProps) {
   };
   
   const handleUpdateKeyword = async () => {
+    console.log("Update keyword - analysisId:", analysisId);
+    console.log("Update keyword - url:", url);
+    console.log("Update keyword - new keyword:", newKeyword);
+    
     if (!analysisId || !url || !newKeyword.trim()) {
+      let missingItems = [];
+      if (!analysisId) missingItems.push("Analysis ID");
+      if (!url) missingItems.push("URL");
+      if (!newKeyword.trim()) missingItems.push("Keyword");
+      
       toast({
         title: "Error",
-        description: "Missing required information to update the keyword.",
+        description: `Missing required information: ${missingItems.join(", ")}`,
         variant: "destructive"
       });
       return;
