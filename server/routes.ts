@@ -28,6 +28,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
 import { getOpenAIResponse } from "./services/openaiService";
 import { directAdminRouter } from "./routes/directAdmin";
+import { fetchPageSpeedMetrics } from "./services/pageSpeedService";
 import {
   getKeywordData as getGoogleAdsKeywordData,
   getKeywordSuggestions as getGoogleAdsKeywordSuggestions,
