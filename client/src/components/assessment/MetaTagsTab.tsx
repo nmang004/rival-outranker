@@ -23,14 +23,8 @@ export default function MetaTagsTab({ data }: MetaTagsTabProps) {
     
     const length = data.descriptionLength || 0;
     if (length < 70) return { status: "too-short", message: "Description is too short (< 70 chars)" };
-    // Meta descriptions can be up to 320 characters but recommended limit is 160
-    if (length > 160) {
-      // For descriptions between 160-320, show warning but don't mark as error
-      return { 
-        status: length > 320 ? "too-long" : "long-but-ok", 
-        message: length > 320 ? "Description is too long (> 320 chars)" : "Description is long (may be truncated)"
-      };
-    }
+    if (length > 320) return { status: "too-long", message: "Description is too long (> 320 chars)" };
+    if (length > 160) return { status: "long-but-ok", message: "Description is long (may be truncated)" };
     
     return { status: "good", message: "Description length is optimal" };
   };
@@ -209,16 +203,20 @@ export default function MetaTagsTab({ data }: MetaTagsTabProps) {
               <span>160</span>
               <span>320</span>
             </div>
-            <Progress 
-              value={Math.min((data.descriptionLength || 0) / 3.2, 100)} 
-              className="h-2"
-              indicatorClassName={`${
-                (data.descriptionLength || 0) < 70 ? "bg-yellow-500" :
-                (data.descriptionLength || 0) > 320 ? "bg-red-500" :
-                (data.descriptionLength || 0) > 160 ? "bg-yellow-500" :
-                "bg-green-500"
-              }`}
-            />
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+              {/* Custom Progress bar with correct coloring based on character count */}
+              <div 
+                className={`h-full absolute top-0 left-0 transition-all ${
+                  (data.descriptionLength || 0) < 70 ? "bg-yellow-500" :
+                  (data.descriptionLength || 0) > 320 ? "bg-red-500" :
+                  (data.descriptionLength || 0) > 160 ? "bg-yellow-500" :
+                  "bg-green-500"
+                }`} 
+                style={{ 
+                  width: `${Math.min((data.descriptionLength || 0) / 3.2, 100)}%`
+                }}
+              />
+            </div>
           </div>
         </div>
         
