@@ -341,6 +341,16 @@ export const mobileAnalysisSchema = z.object({
   viewportSet: z.boolean(),
   textSizeAppropriate: z.boolean(),
   tapTargetsAppropriate: z.boolean(),
+  hasInterstitials: z.boolean().optional(),
+  optimizedImages: z.boolean().optional(),
+  mobileNavigation: z.boolean().optional(),
+  coreWebVitals: z.object({
+    firstContentfulPaint: z.string().optional(),
+    largestContentfulPaint: z.string().optional(),
+    cumulativeLayoutShift: z.number().optional(),
+    totalBlockingTime: z.string().optional(),
+    speedIndex: z.string().optional()
+  }).optional(),
   overallScore: seoScoreSchema,
 });
 
