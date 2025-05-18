@@ -623,7 +623,7 @@ export default function ModuleDetailPage() {
                         
                         return (
                           <div 
-                            key={lesson.id} 
+                            key={`main-lesson-${lesson.id}`} 
                             className={`p-4 border rounded-md ${isCompleted ? 'border-green-200 bg-green-50' : ''}`}
                           >
                             <div className="flex justify-between items-start">
@@ -1003,7 +1003,7 @@ export default function ModuleDetailPage() {
                   
                   return (
                     <div 
-                      key={lesson.id}
+                      key={`sidebar-lesson-${lesson.id}`}
                       className={`p-2 border rounded text-sm cursor-pointer hover:bg-gray-50 ${isActive ? 'border-blue-300 bg-blue-50' : ''} ${isCompleted ? 'border-green-200' : ''}`}
                       onClick={() => handleStartLesson(lesson.id)}
                     >
