@@ -41,8 +41,9 @@ export default function TechnicalTab({
   url
 }: TechnicalTabProps) {
   const [pageSpeedMetrics, setPageSpeedMetrics] = useState<PageSpeedMetrics | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metricsFormatted, setMetricsFormatted] = useState(false);
   
   // Create a global variable to track if PageSpeed data has been loaded
   // This will prevent repeated API calls when switching tabs
@@ -80,22 +81,54 @@ export default function TechnicalTab({
     try {
       setLoading(true);
       setError(null);
+      setMetricsFormatted(false);
       
       const response = await axios.get(`/api/pagespeed?url=${encodeURIComponent(siteUrl)}`);
-      setPageSpeedMetrics(response.data);
       
-      console.log("PageSpeed data fetched:", response.data);
+      // Check if metrics are properly formatted before setting them
+      const data = response.data;
+      const hasValidFormat = data && 
+        data.mobile && 
+        data.mobile.largestContentfulPaint !== undefined && 
+        typeof data.mobile.largestContentfulPaint === 'number' &&
+        data.mobile.cumulativeLayoutShift !== undefined && 
+        typeof data.mobile.cumulativeLayoutShift === 'number' &&
+        data.mobile.timeToFirstByte !== undefined && 
+        typeof data.mobile.timeToFirstByte === 'number';
       
-      // Mark as loaded to prevent repeated API calls
-      pageSpeedDataLoadedRef.current = true;
+      setPageSpeedMetrics(data);
       
-      // Notify parent using localStorage and dispatch a custom event
-      localStorage.setItem('pageSpeedDataLoaded', 'true');
+      console.log("PageSpeed data fetched:", data);
+      console.log("Metrics properly formatted:", hasValidFormat);
       
-      // Dispatch custom event to notify that PageSpeed data is loaded
-      const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded');
-      window.dispatchEvent(pageSpeedLoadedEvent);
-      console.log("PageSpeed data loaded event dispatched");
+      // Only mark as fully loaded if metrics are properly formatted
+      if (hasValidFormat) {
+        setMetricsFormatted(true);
+        
+        // Mark as loaded to prevent repeated API calls
+        pageSpeedDataLoadedRef.current = true;
+        
+        // Notify parent using localStorage and dispatch a custom event
+        localStorage.setItem('pageSpeedDataLoaded', 'true');
+        
+        // Dispatch custom event to notify that PageSpeed data is loaded with proper formatting
+        const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded', { 
+          detail: { formatted: true } 
+        });
+        window.dispatchEvent(pageSpeedLoadedEvent);
+        console.log("PageSpeed data loaded event dispatched with properly formatted metrics");
+      } else {
+        console.log("PageSpeed metrics received but not properly formatted yet");
+        // Try again after a short delay if metrics aren't properly formatted
+        setTimeout(() => {
+          if (!pageSpeedDataLoadedRef.current) {
+            fetchPageSpeedData(siteUrl);
+          }
+        }, 2000);
+      }
+      
+      // Always update loading state
+      setLoading(false);
     } catch (err) {
       console.error("Error fetching PageSpeed data:", err);
       setError("Failed to fetch PageSpeed metrics");

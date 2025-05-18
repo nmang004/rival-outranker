@@ -264,17 +264,19 @@ export default function ResultsPage() {
     );
   }
   
-  // Check if PageSpeed data is still loading
-  const pageSpeedLoading = 
-    !data.pageSpeedAnalysis || 
-    data.pageSpeedAnalysis.score === undefined || 
-    (typeof data.pageSpeedAnalysis.lcp === 'undefined' && 
-     typeof data.pageSpeedAnalysis.fid === 'undefined' && 
-     typeof data.pageSpeedAnalysis.cls === 'undefined' && 
-     typeof data.pageSpeedAnalysis.ttfb === 'undefined');
+  // Check if PageSpeed data is still loading or not properly formatted
+  const hasValidPageSpeedFormat = data.pageSpeedAnalysis && 
+    data.pageSpeedAnalysis.lcp !== undefined && 
+    typeof data.pageSpeedAnalysis.lcp === 'number' &&
+    data.pageSpeedAnalysis.cls !== undefined && 
+    typeof data.pageSpeedAnalysis.cls === 'number' &&
+    data.pageSpeedAnalysis.ttfb !== undefined && 
+    typeof data.pageSpeedAnalysis.ttfb === 'number';
   
-  // If PageSpeed data is still loading and we haven't forced it to show, show loading skeleton
-  if (pageSpeedLoading && !isPageSpeedLoaded) {
+  // Always show loading skeleton if PageSpeed data isn't properly formatted yet
+  // This ensures we only show results when we have actual metrics with proper formatting
+  if (!hasValidPageSpeedFormat && !isPageSpeedLoaded) {
+    console.log("PageSpeed data not fully loaded yet, showing loading screen");
     return (
       <ResultsPageSkeleton 
         url={selectedUrl} 
