@@ -34,8 +34,8 @@ export const mockModules: LearningModule[] = [
   {
     id: 3,
     title: "On-Page SEO Optimization",
-    description: "Master the art of optimizing individual web pages to rank higher and earn more relevant traffic. Learn about title tags, meta descriptions, content optimization, internal linking, and other critical on-page factors.",
-    imageUrl: null,
+    description: "Master the art of optimizing individual web pages to rank higher and earn more relevant traffic. This comprehensive module covers title tag optimization, meta description crafting, heading structure, content optimization, keyword placement, internal linking strategies, image optimization, URL structure, schema markup implementation, and user engagement metrics improvement techniques.",
+    imageUrl: undefined,
     difficulty: "Intermediate",
     estimatedTime: 150,
     prerequisiteIds: [1, 2],
@@ -46,7 +46,7 @@ export const mockModules: LearningModule[] = [
     id: 4,
     title: "Technical SEO Essentials",
     description: "Understand the technical aspects of SEO including site speed, mobile optimization, structured data, XML sitemaps, robots.txt, and website architecture. Learn how to identify and fix common technical SEO issues.",
-    imageUrl: null,
+    imageUrl: undefined,
     difficulty: "Intermediate",
     estimatedTime: 180,
     prerequisiteIds: [1],
@@ -57,7 +57,7 @@ export const mockModules: LearningModule[] = [
     id: 5,
     title: "Link Building Strategies",
     description: "Learn proven tactics to build high-quality backlinks to your website. Explore content-based link building, outreach techniques, guest posting, broken link building, and how to evaluate link quality.",
-    imageUrl: null,
+    imageUrl: undefined,
     difficulty: "Advanced",
     estimatedTime: 210,
     prerequisiteIds: [1, 3],
@@ -68,7 +68,7 @@ export const mockModules: LearningModule[] = [
     id: 6,
     title: "Local SEO Optimization",
     description: "Master the techniques for improving your business's visibility in local search results. Learn about Google My Business, local citations, review management, and location-specific keyword optimization.",
-    imageUrl: null,
+    imageUrl: undefined,
     difficulty: "Intermediate",
     estimatedTime: 120,
     prerequisiteIds: [1, 2, 3],
@@ -77,11 +77,11 @@ export const mockModules: LearningModule[] = [
   },
   {
     id: 7,
-    title: "E-commerce SEO",
-    description: "Discover specialized SEO techniques for online stores. Learn about product page optimization, category page structure, handling duplicate content, and implementing schema markup for products.",
-    imageUrl: null,
+    title: "International SEO & Multilingual Optimization",
+    description: "Learn how to expand your online presence globally with effective international SEO strategies. Master hreflang implementation, country-specific domains, language targeting, and cultural considerations for global markets.",
+    imageUrl: undefined,
     difficulty: "Advanced",
-    estimatedTime: 240,
+    estimatedTime: 210,
     prerequisiteIds: [1, 2, 3, 4],
     sortOrder: 7,
     isActive: true
@@ -89,8 +89,8 @@ export const mockModules: LearningModule[] = [
   {
     id: 8,
     title: "SEO Analytics & Reporting",
-    description: "Learn how to measure the effectiveness of your SEO efforts using tools like Google Analytics and Search Console. Understand key performance metrics, create custom dashboards, and generate actionable reports.",
-    imageUrl: null,
+    description: "Master the art of SEO measurement and reporting with Google Analytics and Search Console. Learn to track organic traffic, monitor keyword rankings, analyze user behavior, identify high-performing content, track conversions, and create dashboards that demonstrate ROI to stakeholders.",
+    imageUrl: undefined,
     difficulty: "Intermediate",
     estimatedTime: 150,
     prerequisiteIds: [1],
@@ -99,9 +99,9 @@ export const mockModules: LearningModule[] = [
   },
   {
     id: 9,
-    title: "Mobile SEO Optimization",
-    description: "Master the techniques for optimizing your website for mobile users. Learn about responsive design, mobile-first indexing, AMP pages, and mobile user experience best practices.",
-    imageUrl: null, 
+    title: "Mobile SEO & Core Web Vitals",
+    description: "Master the techniques for optimizing your website for mobile users and meeting Google's Core Web Vitals requirements. Learn about responsive design, mobile-first indexing, page speed optimization, CLS reduction, FID improvements, and mobile UX best practices that directly impact search rankings.",
+    imageUrl: undefined, 
     difficulty: "Advanced",
     estimatedTime: 180,
     prerequisiteIds: [1, 4],
@@ -118,14 +118,49 @@ export const mockLessons: LearningLesson[] = [
     title: "What is SEO?",
     description: "Introduction to search engine optimization and why it matters.",
     content: `<h2>Introduction to Search Engine Optimization</h2>
-      <p>Search Engine Optimization (SEO) is the practice of increasing the quantity and quality of traffic to your website through organic search engine results.</p>
+      <p>Search Engine Optimization (SEO) is the practice of increasing the quantity and quality of traffic to your website through organic search engine results. Unlike paid advertising, SEO focuses on improving your site's visibility in unpaid search results.</p>
+      
+      <h3>Why SEO Matters for Your Business</h3>
+      <p>SEO is essential for several reasons:</p>
+      <ul>
+        <li><strong>Increased Visibility:</strong> Higher rankings mean more eyes on your content</li>
+        <li><strong>Credibility & Trust:</strong> Users trust websites that appear at the top of search results</li>
+        <li><strong>Better User Experience:</strong> Good SEO practices improve website usability</li>
+        <li><strong>Cost-Effectiveness:</strong> Once established, organic traffic continues without per-click costs</li>
+        <li><strong>Competitive Advantage:</strong> Outranking competitors can significantly impact market share</li>
+      </ul>
+      
       <h3>Core Components of SEO:</h3>
       <ul>
-        <li><strong>Technical SEO:</strong> Ensuring your website is crawlable and meets technical requirements</li>
-        <li><strong>On-page SEO:</strong> Optimizing individual pages through content and HTML source code</li>
-        <li><strong>Off-page SEO:</strong> External signals like backlinks that indicate your site's quality</li>
+        <li><strong>Technical SEO:</strong> Ensuring your website is crawlable, indexable, and meets technical requirements including site speed, mobile-friendliness, and secure connections</li>
+        <li><strong>On-page SEO:</strong> Optimizing individual pages through content quality, keyword usage, meta tags, heading structure, and internal linking</li>
+        <li><strong>Off-page SEO:</strong> Building external signals like backlinks, social mentions, and online reputation that indicate your site's authority and relevance</li>
+        <li><strong>User Experience:</strong> Creating content that satisfies user intent and provides a positive interaction with your site</li>
       </ul>
-      <p>Search engines like Google use complex algorithms to determine which pages to show for specific search queries. Understanding these algorithms is key to SEO success.</p>`,
+      
+      <h3>How Search Engines Work</h3>
+      <p>Search engines like Google use complex algorithms to determine which pages to show for specific search queries. These algorithms consider hundreds of factors and are constantly evolving. The basic process includes:</p>
+      <ol>
+        <li><strong>Crawling:</strong> Search engines send bots to discover and scan web pages</li>
+        <li><strong>Indexing:</strong> Content is analyzed and stored in the search engine's database</li>
+        <li><strong>Ranking:</strong> When a user searches, the engine determines the most relevant results based on numerous factors</li>
+        <li><strong>Serving:</strong> Results are presented to the user, often with additional features like rich snippets</li>
+      </ol>
+      
+      <h3>Key Ranking Factors</h3>
+      <p>While Google doesn't reveal all ranking factors, we know these elements are important:</p>
+      <ul>
+        <li>Content relevance and quality</li>
+        <li>Backlink quantity and quality</li>
+        <li>Mobile-friendliness</li>
+        <li>Page speed and performance</li>
+        <li>User behavior metrics (click-through rates, time on page, etc.)</li>
+        <li>Secure website (HTTPS)</li>
+        <li>Site structure and navigation</li>
+        <li>Content freshness and updates</li>
+      </ul>
+      
+      <p>Understanding these fundamentals will help you build a strong foundation for your SEO strategy.</p>`,
     estimatedTime: 15,
     sortOrder: 1,
     isActive: true
@@ -341,7 +376,7 @@ export const mockLearningPaths: LearningPath[] = [
     id: 2,
     name: "Technical SEO Specialist",
     description: "Become an expert in the technical aspects of SEO including site architecture, page speed optimization, mobile-friendliness, and structured data.",
-    imageUrl: null,
+    imageUrl: undefined,
     targetAudience: "Intermediate",
     isActive: true,
     moduleIds: [4, 9, 8]
@@ -350,7 +385,7 @@ export const mockLearningPaths: LearningPath[] = [
     id: 3,
     name: "E-commerce SEO",
     description: "Learn specialized SEO techniques for online stores, including product page optimization, category structures, and conversion-focused strategies.",
-    imageUrl: null,
+    imageUrl: undefined,
     targetAudience: "Business Owners",
     isActive: true,
     moduleIds: [1, 2, 7, 8]
