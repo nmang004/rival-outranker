@@ -8,7 +8,8 @@ import {
   Zap, 
   Sparkles, 
   Heart, 
-  Star 
+  Star,
+  Pencil
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -152,8 +153,19 @@ export default function LearningCompanion({
     return <BookOpen className="h-6 w-6 text-blue-500" />;
   };
   
+  // Elephant SVG icon for the mascot
+  const ElephantIcon = () => (
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19.5,8c-1.5,0-3.5,1.5-4,3c-2-1.5-4-3-8-3v8c3,0,5,1.5,7,3l1,1h6V12C22,10,21,8,19.5,8z" fill="#8c52ff" />
+      <path d="M9.5,10c0-0.8-0.7-1.5-1.5-1.5S6.5,9.2,6.5,10v6c0,0.8,0.7,1.5,1.5,1.5s1.5-0.7,1.5-1.5V10z" fill="#8c52ff" />
+      <path d="M9.5,4C8.7,4,8,4.7,8,5.5h0C8,6.3,8.7,7,9.5,7h0C10.3,7,11,6.3,11,5.5h0C11,4.7,10.3,4,9.5,4z" fill="#8c52ff" />
+      <path d="M3.1,8.4C2.6,8.1,2,8.3,1.7,8.9c-0.3,0.6-0.1,1.2,0.4,1.5C2.9,10.7,4,10.9,4,12c0,1.2-1.1,1.3-1.9,1.6C1.6,13.9,1.4,14.5,1.7,15c0.3,0.5,0.9,0.7,1.4,0.4c2.2-1.1,3.9-2,3.9-3.4C7,10.5,5.3,9.6,3.1,8.4z" fill="#8c52ff" />
+      <circle cx="17.5" cy="14.5" r="1" fill="white" />
+    </svg>
+  );
+  
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -161,56 +173,61 @@ export default function LearningCompanion({
               <PopoverTrigger asChild>
                 <Button 
                   size="lg" 
-                  className={`h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-blue-400 to-blue-600 ${isWiggling ? 'animate-bounce-slow' : ''}`}
+                  className={`h-16 w-16 rounded-full shadow-lg bg-gradient-to-br from-purple-400 to-purple-600 ${isWiggling ? 'animate-bounce-slow' : ''}`}
                   onClick={() => {
                     playClick();
                     setIsOpen(!isOpen);
                   }}
                 >
                   <div className="animate-float">
-                    {getContextualIcon()}
+                    <ElephantIcon />
                   </div>
                 </Button>
               </PopoverTrigger>
               <PopoverContent 
                 side="top" 
-                align="start" 
-                className="w-72 p-4 bg-white border border-primary/20 shadow-lg animate-fadeIn"
+                align="end" 
+                className="w-72 p-4 bg-white border border-purple-200 shadow-lg animate-fadeIn rounded-xl"
               >
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    {icon}
-                    <p className="font-medium text-sm">SEO Learning Buddy</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-purple-600 font-medium text-sm mr-1.5">Ellie</span> 
+                      <span className="text-gray-500 text-xs">the SEO Elephant</span>
+                    </div>
+                    <div className="flex items-center">
+                      {icon}
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <p className="text-sm text-gray-700">{message}</p>
                   </div>
                   
                   {(moduleTitle || lessonTitle) && (
-                    <div className="bg-muted/30 p-2 rounded-md">
+                    <div className="bg-white p-2 rounded-md border border-purple-100">
                       {moduleTitle && (
-                        <p className="text-xs text-muted-foreground">
-                          <span className="font-medium">Module:</span> {moduleTitle}
+                        <p className="text-xs text-gray-600">
+                          <span className="font-medium text-purple-600">Module:</span> {moduleTitle}
                         </p>
                       )}
                       {lessonTitle && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          <span className="font-medium">Current:</span> {lessonTitle}
+                        <p className="text-xs text-gray-600 mt-1">
+                          <span className="font-medium text-purple-600">Current:</span> {lessonTitle}
                         </p>
                       )}
                     </div>
                   )}
                   
-                  <div className="pt-1">
-                    <p className="text-sm">{message}</p>
-                  </div>
-                  
                   {progress > 0 && (
                     <div className="mt-2 text-xs">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-purple-100 rounded-full h-2.5">
                         <div 
-                          className="bg-primary h-2 rounded-full"
+                          className="bg-purple-500 h-2.5 rounded-full"
                           style={{ width: `${progress}%` }}
                         ></div>
                       </div>
-                      <div className="mt-1 flex justify-between text-muted-foreground">
+                      <div className="mt-1 flex justify-between text-gray-600">
                         <span>{progress}% complete</span>
                         <span className="flex items-center">
                           <Sparkles className="h-3 w-3 mr-1 text-amber-500" />
@@ -224,7 +241,7 @@ export default function LearningCompanion({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="text-xs"
+                      className="text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                       onClick={() => setIsOpen(false)}
                     >
                       Close
@@ -232,7 +249,7 @@ export default function LearningCompanion({
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="text-xs ml-2"
+                      className="text-xs ml-2 border-purple-200 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                       onClick={() => setMessage(getRandomMessage())}
                     >
                       <Zap className="h-3 w-3 mr-1" />
@@ -244,7 +261,7 @@ export default function LearningCompanion({
             </Popover>
           </TooltipTrigger>
           <TooltipContent side="right">
-            <p>SEO Learning Buddy</p>
+            <p>Ellie the SEO Elephant</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

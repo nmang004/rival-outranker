@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
+import LearningCompanion from "@/components/learning/LearningCompanion";
 // Import types directly from mock data as we're currently using those
 import type { QuizQuestion, Achievement } from "@/types/learningTypes";
 import { 
