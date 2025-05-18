@@ -257,15 +257,19 @@ export default function ResultsPage() {
     return null;
   }
 
-  // Show loading state if data is not yet available, being fetched, or waiting for PageSpeed data
-  if (isLoading || !apiResponse || !apiResponse.results || !isPageSpeedLoaded) {
+  // Show loading state if data is not yet available or being fetched
+  if (isLoading || !apiResponse || !apiResponse.results) {
     return (
       <ResultsPageSkeleton 
         url={selectedUrl} 
-        message={!isLoading && !isPageSpeedLoaded ? "Fetching PageSpeed metrics from Google..." : undefined}
+        message={undefined}
       />
     );
   }
+  
+  // Force show results regardless of PageSpeed data loading status
+  // This allows the page to proceed even if PageSpeed data takes longer
+  const forceShowResults = true;
   
   // If the analysis failed to retrieve content or was incomplete, show a custom error message
   const hasError = data.weaknesses?.length === 1 && 
