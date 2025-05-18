@@ -49,9 +49,48 @@ export default function TechnicalTab({
   // This will prevent repeated API calls when switching tabs
   const pageSpeedDataLoadedRef = useRef(false);
   
+  // Create session storage key for this specific URL
+  const getPageSpeedCacheKey = (urlToCache: string) => `pageSpeedData_${urlToCache}`;
+  
+  // Try to get cached PageSpeed data from session storage
+  const getCachedPageSpeedData = (urlToCache: string) => {
+    try {
+      const cacheKey = getPageSpeedCacheKey(urlToCache);
+      const cachedData = sessionStorage.getItem(cacheKey);
+      return cachedData ? JSON.parse(cachedData) : null;
+    } catch (error) {
+      console.error("Error retrieving cached PageSpeed data:", error);
+      return null;
+    }
+  };
+  
   // Fetch real PageSpeed metrics when URL is provided
   useEffect(() => {
-    if (url && !pageSpeedDataLoadedRef.current) {
+    if (!url) return;
+    
+    // Check if we have cached data for this URL
+    const cachedData = getCachedPageSpeedData(url);
+    
+    if (cachedData) {
+      // Use cached data instead of making a new API call
+      console.log("TechnicalTab - Using cached PageSpeed data for URL:", url);
+      setPageSpeedMetrics(cachedData);
+      setLoading(false);
+      setMetricsFormatted(true);
+      pageSpeedDataLoadedRef.current = true;
+      
+      // Dispatch event to notify that the data is loaded from cache
+      const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded', {
+        detail: { formatted: true }
+      });
+      window.dispatchEvent(pageSpeedLoadedEvent);
+      localStorage.setItem('pageSpeedDataLoaded', 'true');
+      
+      return;
+    }
+    
+    // No cached data, so fetch fresh data
+    if (!pageSpeedDataLoadedRef.current) {
       console.log("TechnicalTab - Starting PageSpeed data fetch for URL:", url);
       
       // Reset loading state for new URL
@@ -88,11 +127,6 @@ export default function TechnicalTab({
       
       return () => clearTimeout(timeout);
     }
-    
-    return () => {
-      // Don't reset the loaded state when component unmounts
-      // This helps maintain state when switching tabs
-    };
   }, [url]);
   
   // Function to fetch PageSpeed data from our API
