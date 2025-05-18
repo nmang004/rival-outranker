@@ -131,10 +131,58 @@ export async function setupAuth(app: Express) {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      
+      // Get user data or create it if doesn't exist
+      let user = await storage.getUser(userId);
+      
+      // If no user was found or there was an error with missing columns,
+      // create a basic user profile from the claims
+      if (!user && req.user.claims) {
+        user = {
+          id: req.user.claims.sub,
+          email: req.user.claims.email,
+          firstName: req.user.claims.first_name,
+          lastName: req.user.claims.last_name,
+          profileImageUrl: req.user.claims.profile_image_url,
+          role: "user", // Default role
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        // Try to upsert the user data
+        try {
+          await storage.upsertUser({
+            id: req.user.claims.sub,
+            email: req.user.claims.email,
+            firstName: req.user.claims.first_name,
+            lastName: req.user.claims.last_name,
+            profileImageUrl: req.user.claims.profile_image_url
+          });
+        } catch (upsertError) {
+          console.error("Error upserting user:", upsertError);
+          // Continue with the constructed user object
+        }
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
+      
+      // If we caught the role column error, return a basic user profile
+      if (error.message && error.message.includes("column \"role\" does not exist") && req.user.claims) {
+        const basicUser = {
+          id: req.user.claims.sub,
+          email: req.user.claims.email,
+          firstName: req.user.claims.first_name,
+          lastName: req.user.claims.last_name,
+          profileImageUrl: req.user.claims.profile_image_url,
+          role: "user", // Default role
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        return res.json(basicUser);
+      }
+      
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });

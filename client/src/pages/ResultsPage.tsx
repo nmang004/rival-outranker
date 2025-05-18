@@ -51,10 +51,7 @@ export default function ResultsPage() {
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
   
   // State to track PageSpeed data loading
-  const [isPageSpeedLoaded, setPageSpeedLoaded] = useState(() => {
-    // Check if PageSpeed data is already loaded (from localStorage)
-    return localStorage.getItem('pageSpeedDataLoaded') === 'true';
-  });
+  const [isPageSpeedLoaded, setPageSpeedLoaded] = useState(false);
   
   // Listen for PageSpeed data loaded event
   useEffect(() => {
@@ -276,8 +273,8 @@ export default function ResultsPage() {
      typeof data.pageSpeedAnalysis.cls === 'undefined' && 
      typeof data.pageSpeedAnalysis.ttfb === 'undefined');
   
-  // If PageSpeed data is still loading, show loading skeleton
-  if (pageSpeedLoading) {
+  // If PageSpeed data is still loading and we haven't forced it to show, show loading skeleton
+  if (pageSpeedLoading && !isPageSpeedLoaded) {
     return (
       <ResultsPageSkeleton 
         url={selectedUrl} 
