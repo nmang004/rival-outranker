@@ -340,62 +340,74 @@ export default function TechnicalTab({
             <div className="bg-white p-3 rounded border border-gray-200">
               <div className="text-xs text-gray-500 mb-1">Cumulative Layout Shift</div>
               <div className="text-lg font-medium text-gray-800">
-                {!pageSpeedMetrics && loading ? "0.15" : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0.15)?.toFixed(3)}
+                {loading ? "Loading..." : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || 0).toFixed(3)}
               </div>
-              <Badge 
-                variant="outline"
-                className={`mt-1 ${
-                  (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.1 
-                    ? "bg-green-50 text-green-700 border-green-200" 
-                    : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.25 
-                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                      : "bg-red-50 text-red-700 border-red-200"
-                }`}
-              >
-                {(pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.1 
-                  ? <CheckCircle className="h-3 w-3 mr-1" /> 
-                  : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.25 
-                    ? <AlertTriangle className="h-3 w-3 mr-1" />
-                    : <XCircle className="h-3 w-3 mr-1" />
-                }
-                {(pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.1 
-                  ? "Good" 
-                  : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.25 
-                    ? "Needs Improvement"
-                    : "Poor"
-                }
-              </Badge>
+              {loading ? (
+                <Badge variant="outline" className="mt-1 bg-gray-50 text-gray-500 border-gray-200">
+                  Loading...
+                </Badge>
+              ) : (
+                <Badge 
+                  variant="outline"
+                  className={`mt-1 ${
+                    pageSpeedMetrics?.mobile.cumulativeLayoutShift <= 0.1 
+                      ? "bg-green-50 text-green-700 border-green-200" 
+                      : pageSpeedMetrics?.mobile.cumulativeLayoutShift <= 0.25 
+                        ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                        : "bg-red-50 text-red-700 border-red-200"
+                  }`}
+                >
+                  {pageSpeedMetrics?.mobile.cumulativeLayoutShift <= 0.1 
+                    ? <CheckCircle className="h-3 w-3 mr-1" /> 
+                    : pageSpeedMetrics?.mobile.cumulativeLayoutShift <= 0.25 
+                      ? <AlertTriangle className="h-3 w-3 mr-1" />
+                      : <XCircle className="h-3 w-3 mr-1" />
+                  }
+                  {pageSpeedMetrics?.mobile.cumulativeLayoutShift <= 0.1 
+                    ? "Good" 
+                    : pageSpeedMetrics?.mobile.cumulativeLayoutShift <= 0.25 
+                      ? "Needs Improvement"
+                      : "Poor"
+                  }
+                </Badge>
+              )}
             </div>
             
             {/* TTFB */}
             <div className="bg-white p-3 rounded border border-gray-200">
               <div className="text-xs text-gray-500 mb-1">Time to First Byte</div>
               <div className="text-lg font-medium text-gray-800">
-                {!pageSpeedMetrics && loading ? "380ms" : formatMs(pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 380)}
+                {loading ? "Loading..." : formatMs(pageSpeedMetrics?.mobile.timeToFirstByte)}
               </div>
-              <Badge 
-                variant="outline"
-                className={`mt-1 ${
-                  (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 600 
-                    ? "bg-green-50 text-green-700 border-green-200" 
-                    : (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 1000 
-                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                      : "bg-red-50 text-red-700 border-red-200"
-                }`}
-              >
-                {(pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 600 
-                  ? <CheckCircle className="h-3 w-3 mr-1" /> 
-                  : (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 1000 
-                    ? <AlertTriangle className="h-3 w-3 mr-1" />
-                    : <XCircle className="h-3 w-3 mr-1" />
-                }
-                {(pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 600 
-                  ? "Good" 
-                  : (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 1000 
-                    ? "Needs Improvement"
-                    : "Poor"
-                }
-              </Badge>
+              {loading ? (
+                <Badge variant="outline" className="mt-1 bg-gray-50 text-gray-500 border-gray-200">
+                  Loading...
+                </Badge>
+              ) : (
+                <Badge 
+                  variant="outline"
+                  className={`mt-1 ${
+                    pageSpeedMetrics?.mobile.timeToFirstByte <= 600 
+                      ? "bg-green-50 text-green-700 border-green-200" 
+                      : pageSpeedMetrics?.mobile.timeToFirstByte <= 1000 
+                        ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                        : "bg-red-50 text-red-700 border-red-200"
+                  }`}
+                >
+                  {pageSpeedMetrics?.mobile.timeToFirstByte <= 600 
+                    ? <CheckCircle className="h-3 w-3 mr-1" /> 
+                    : pageSpeedMetrics?.mobile.timeToFirstByte <= 1000 
+                      ? <AlertTriangle className="h-3 w-3 mr-1" />
+                      : <XCircle className="h-3 w-3 mr-1" />
+                  }
+                  {pageSpeedMetrics?.mobile.timeToFirstByte <= 600 
+                    ? "Good" 
+                    : pageSpeedMetrics?.mobile.timeToFirstByte <= 1000 
+                      ? "Needs Improvement"
+                      : "Poor"
+                  }
+                </Badge>
+              )}
             </div>
           </div>
           
