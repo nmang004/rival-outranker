@@ -104,9 +104,9 @@ export default function KeyMetrics({
                   size="sm"
                   variant="badge"
                   showText={true}
-                  label={mobileCategory === 'excellent' ? 'Perfect' : 
-                          mobileCategory === 'good' ? 'Good' : 
-                          mobileCategory === 'needs-work' ? 'Needs Work' : 'Poor'}
+                  label={mobileScore >= 70 ? 'Good' : 
+                          mobileScore >= 55 ? 'Average' : 
+                          mobileScore >= 40 ? 'Needs Work' : 'Poor'}
                   tooltipText="Mobile optimization is crucial for rankings in Google's mobile-first index"
                 />
               </div>
