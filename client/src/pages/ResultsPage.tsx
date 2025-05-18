@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Globe, Clock, BarChart } from "lucide-react";
+import { Globe, Clock, BarChart, Loader2 } from "lucide-react";
+
+// Create context to track PageSpeed data loading
+export const PageSpeedContext = createContext<{
+  isPageSpeedLoaded: boolean;
+  setPageSpeedLoaded: (loaded: boolean) => void;
+}>({
+  isPageSpeedLoaded: false,
+  setPageSpeedLoaded: () => {},
+});
 
 export default function ResultsPage() {
   const search = useSearch();
@@ -39,6 +48,9 @@ export default function ResultsPage() {
   
   // For recent analyses dropdown
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
+  
+  // State to track PageSpeed data loading
+  const [isPageSpeedLoaded, setPageSpeedLoaded] = useState(false);
   
   // Redirect to home if no URL is provided
   useEffect(() => {
