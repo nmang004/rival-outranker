@@ -38,7 +38,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Allow cookies over HTTP in development
+      secure: process.env.NODE_ENV === 'production', // Only use secure in production
       sameSite: 'lax',
       maxAge: sessionTtl,
     },
@@ -92,7 +92,7 @@ export async function setupAuth(app: Express) {
         name: `replitauth:${domain}`,
         config,
         scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
+        callbackURL: `${process.env.NODE_ENV === 'production' ? 'https' : 'http'}://${domain}/api/callback`,
       },
       verify,
     );
@@ -121,7 +121,7 @@ export async function setupAuth(app: Express) {
       res.redirect(
         client.buildEndSessionUrl(config, {
           client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+          post_logout_redirect_uri: `${process.env.NODE_ENV === 'production' ? 'https' : 'http'}://${req.hostname}`,
         }).href
       );
     });
