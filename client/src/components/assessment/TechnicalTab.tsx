@@ -75,11 +75,13 @@ export default function TechnicalTab({
       // Mark as loaded to prevent repeated API calls
       pageSpeedDataLoadedRef.current = true;
       
-      // Notify parent using localStorage as a simple communication channel
+      // Notify parent using localStorage and dispatch a custom event
       localStorage.setItem('pageSpeedDataLoaded', 'true');
       
-      // Dispatch a custom event that the ResultsPage can listen for
-      window.dispatchEvent(new CustomEvent('pageSpeedDataLoaded'));
+      // Dispatch custom event to notify that PageSpeed data is loaded
+      const pageSpeedLoadedEvent = new CustomEvent('pageSpeedDataLoaded');
+      window.dispatchEvent(pageSpeedLoadedEvent);
+      console.log("PageSpeed data loaded event dispatched");
     } catch (err) {
       console.error("Error fetching PageSpeed data:", err);
       setError("Failed to fetch PageSpeed metrics");
