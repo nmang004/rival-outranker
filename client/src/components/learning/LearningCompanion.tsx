@@ -155,12 +155,21 @@ export default function LearningCompanion({
   
   // Elephant SVG icon for the mascot
   const ElephantIcon = () => (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M19.5,8c-1.5,0-3.5,1.5-4,3c-2-1.5-4-3-8-3v8c3,0,5,1.5,7,3l1,1h6V12C22,10,21,8,19.5,8z" fill="#8c52ff" />
-      <path d="M9.5,10c0-0.8-0.7-1.5-1.5-1.5S6.5,9.2,6.5,10v6c0,0.8,0.7,1.5,1.5,1.5s1.5-0.7,1.5-1.5V10z" fill="#8c52ff" />
-      <path d="M9.5,4C8.7,4,8,4.7,8,5.5h0C8,6.3,8.7,7,9.5,7h0C10.3,7,11,6.3,11,5.5h0C11,4.7,10.3,4,9.5,4z" fill="#8c52ff" />
-      <path d="M3.1,8.4C2.6,8.1,2,8.3,1.7,8.9c-0.3,0.6-0.1,1.2,0.4,1.5C2.9,10.7,4,10.9,4,12c0,1.2-1.1,1.3-1.9,1.6C1.6,13.9,1.4,14.5,1.7,15c0.3,0.5,0.9,0.7,1.4,0.4c2.2-1.1,3.9-2,3.9-3.4C7,10.5,5.3,9.6,3.1,8.4z" fill="#8c52ff" />
-      <circle cx="17.5" cy="14.5" r="1" fill="white" />
+    <svg width="40" height="40" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Background circle */}
+      <circle cx="256" cy="256" r="256" fill="#8c52ff" />
+      
+      {/* Elephant body - white for contrast */}
+      <path d="M382,180c-25,0-65,35-75,65c-30-25-75-45-150-45v150c50,0,85,20,130,45l20,15h110V230C417,200,407,180,382,180z" fill="white" />
+      
+      {/* Elephant trunk */}
+      <path d="M195,210c0-15-13-25-28-25s-28,10-28,25v110c0,15,13,25,28,25s28-10,28-25V210z" fill="white" />
+      
+      {/* Elephant ear */}
+      <path d="M100,180c-10-6-20-2-25,8c-5,10-2,22,8,28c15,6,35,10,35,30s-20,24-35,30c-10,6-13,18-8,28c5,10,15,14,25,8c40-20,68-35,68-66S140,200,100,180z" fill="white" />
+      
+      {/* Elephant eye */}
+      <circle cx="340" cy="260" r="15" fill="#333333" />
     </svg>
   );
   
