@@ -37,6 +37,7 @@ import AchievementDemoPage from "@/pages/AchievementDemoPage";
 import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 import SeoBuddy from "@/components/SeoBuddy";
+import LearningCompanion from "@/components/learning/LearningCompanion";
 
 function Router() {
   return (
@@ -77,7 +78,8 @@ function Router() {
         </div>
       </main>
       <Footer />
-      {/* SEO Buddy helper */}
+      {/* Conditionally show SEO Buddy or Learning Companion */}
+      <LearningCompanion />
       <SeoBuddy />
     </div>
   );

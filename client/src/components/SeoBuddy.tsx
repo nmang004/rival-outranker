@@ -63,6 +63,14 @@ const buddyFaces = ["(◠‿◠)", "(⌐■_■)", "(◕‿◕)", "ʕ•ᴥ•ʔ
 
 export default function SeoBuddy() {
   const [location] = useLocation();
+  
+  // Hide SEO Buddy on learning pages - these will use the Learning Companion instead
+  const isLearningPage = location.includes('/learning') || 
+                         location.includes('/modules/') || 
+                         location.includes('/achievement-demo');
+                         
+  if (isLearningPage) return null;
+  
   const [expanded, setExpanded] = useState(false);
   const [showBuddy, setShowBuddy] = useState(true);
   const [currentTip, setCurrentTip] = useState(0);

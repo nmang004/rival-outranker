@@ -486,8 +486,28 @@ export default function ModuleDetailPage() {
     }
   };
   
+  // Calculate overall progress for the Learning Companion
+  const calculateOverallProgress = () => {
+    if (!module || !lessons || !userProgress) return 0;
+    const totalLessons = lessons.filter(l => l.moduleId === moduleId).length;
+    if (totalLessons === 0) return 0;
+    
+    const completedLessons = userProgress.filter(
+      p => p.moduleId === moduleId && p.status === 'completed'
+    ).length;
+    
+    return Math.round((completedLessons / totalLessons) * 100);
+  };
+  
   return (
     <div className="container mx-auto py-8 px-4">
+      {/* Learning Companion with context */}
+      <LearningCompanion 
+        moduleTitle={module?.title}
+        lessonTitle={selectedLesson?.title}
+        progress={calculateOverallProgress()}
+      />
+      
       {/* Achievement notification popup */}
       {currentAchievement && (
         <AchievementUnlocked
