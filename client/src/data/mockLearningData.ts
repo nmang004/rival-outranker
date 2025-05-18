@@ -874,13 +874,19 @@ export const mockRecommendations = [
   }
 ];
 
-// Import International SEO Lessons
-import { internationalSEOLessons } from "./internationalSEOLessons";
+// Import all SEO lesson modules
+import { localBusinessSEOLessons } from "./localBusinessSEOLessons";
+import { onPageSEOLessons } from "./onPageSEOLessons";
+import { technicalSEOLessons } from "./technicalSEOLessons";
+import { analyticsSEOLessons } from "./analyticsSEOLessons";
 
-// Add International SEO Lessons to all lessons
+// Add all SEO lessons to a combined lessons array
 export const allLessons = [
   ...mockLessons,
-  ...internationalSEOLessons
+  ...localBusinessSEOLessons,
+  ...onPageSEOLessons,
+  ...technicalSEOLessons,
+  ...analyticsSEOLessons
 ];
 
 // Calculate progress summary based on user progress
