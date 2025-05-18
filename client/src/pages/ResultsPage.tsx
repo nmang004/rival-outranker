@@ -23,14 +23,18 @@ import {
 } from "@/components/ui/select";
 import { Globe, Clock, BarChart, Loader2, Gauge, Zap, Search, Check } from "lucide-react";
 
-// Create context to track PageSpeed data loading
-export const PageSpeedContext = createContext<{
+// Create context to track PageSpeed data loading - move outside of component
+// to fix hot module replacement issues
+const PageSpeedContext = createContext<{
   isPageSpeedLoaded: boolean;
   setPageSpeedLoaded: (loaded: boolean) => void;
 }>({
   isPageSpeedLoaded: false,
   setPageSpeedLoaded: () => {},
 });
+
+// Export the context separately
+export { PageSpeedContext };
 
 export default function ResultsPage() {
   const search = useSearch();
@@ -283,12 +287,18 @@ export default function ResultsPage() {
     
     // Reset forcing flag when URL changes
     setForceShowResults(false);
+    setPageSpeedLoaded(false);
+    
+    // Reset localStorage state to clear any stale pageSpeedDataLoaded flags
+    localStorage.removeItem('pageSpeedDataLoaded');
     
     // Safety timeout: if PageSpeed data takes too long, show results anyway
     const timer = setTimeout(() => {
       console.log("Timeout reached, forcing results to show");
       setForceShowResults(true);
-    }, 15000); // 15 seconds maximum wait time
+      // Also set PageSpeed as loaded to maintain consistent state
+      setPageSpeedLoaded(true);
+    }, 12000); // 12 seconds maximum wait time
     
     return () => clearTimeout(timer);
   }, [selectedUrl]);
@@ -310,11 +320,15 @@ export default function ResultsPage() {
     typeof data.pageSpeedAnalysis.cls === 'number' &&
     typeof data.pageSpeedAnalysis.ttfb === 'number';
   
+  // Always capture when we enter these branches for debugging
+  console.log("Decision point - forceShowResults:", forceShowResults);
+  console.log("Decision point - isPageSpeedLoaded:", isPageSpeedLoaded);
+  console.log("Decision point - hasValidPageSpeedFormat:", hasValidPageSpeedFormat);
+  
   // Show PageSpeed loading indicator if:
-  // 1. PageSpeed data isn't properly formatted AND
-  // 2. PageSpeed loading event hasn't fired AND
-  // 3. We haven't hit the timeout to force showing results
-  if (!forceShowResults && !isPageSpeedLoaded && !hasValidPageSpeedFormat) {
+  // 1. We haven't forced showing results via timeout AND
+  // 2. Either the PageSpeed data isn't loaded properly OR the data isn't formatted with proper units
+  if (!forceShowResults && (!isPageSpeedLoaded || !hasValidPageSpeedFormat)) {
     console.log("PageSpeed data not fully loaded yet, showing loading screen");
     return (
       <ResultsPageSkeleton 
@@ -323,6 +337,8 @@ export default function ResultsPage() {
       />
     );
   }
+  
+  console.log("*** ALL CONDITIONS MET - SHOWING RESULTS PAGE ***");
   
   // If the analysis failed to retrieve content or was incomplete, show a custom error message
   const hasError = data.weaknesses?.length === 1 && 
