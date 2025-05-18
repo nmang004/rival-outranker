@@ -903,8 +903,19 @@ class Analyzer {
     
     return {
       isMobileFriendly,
-      hasViewport,
-      hasResponsiveDesign,
+      viewportSet: hasViewport,
+      textSizeAppropriate,
+      tapTargetsAppropriate,
+      hasInterstitials,
+      optimizedImages,
+      mobileNavigation: hasMobileNav,
+      coreWebVitals: {
+        firstContentfulPaint: Math.round(firstContentfulPaint * 10) / 10 + 's',
+        largestContentfulPaint: Math.round(largestContentfulPaint * 10) / 10 + 's',
+        cumulativeLayoutShift: Math.round(cumulativeLayoutShift * 100) / 100,
+        totalBlockingTime: Math.round(totalBlockingTime) + 'ms',
+        speedIndex: Math.round(speedIndex * 10) / 10 + 's'
+      },
       overallScore: { score, category }
     };
   }
