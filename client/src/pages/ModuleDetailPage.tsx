@@ -510,33 +510,33 @@ export default function ModuleDetailPage() {
       
       <div className="mb-6">
         <Link href="/learning">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="group transition-all duration-300 hover:shadow-md">
+            <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             Back to Learning Paths
           </Button>
         </Link>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">{module.title}</h1>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Badge variant="outline" className={getDifficultyColor(module.difficulty)}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <div className="mb-6 bg-gradient-primary p-6 rounded-lg border shadow-sm animate-fadeIn">
+            <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">{module.title}</h1>
+            <div className="flex flex-wrap gap-2 items-center mt-3">
+              <Badge variant="outline" className={`${getDifficultyColor(module.difficulty)} transition-all duration-300 hover:shadow-md`}>
                 {module.difficulty}
               </Badge>
-              <div className="flex items-center text-gray-500 text-sm">
+              <div className="flex items-center text-gray-500">
                 <Clock className="h-4 w-4 mr-1" />
                 {formatTime(module.estimatedTime)}
               </div>
             </div>
           </div>
           
-          <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="lessons">Lessons</TabsTrigger>
-              {selectedLessonId && <TabsTrigger value="lesson">Current Lesson</TabsTrigger>}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4 p-1 bg-primary/10 rounded-lg">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">Overview</TabsTrigger>
+              <TabsTrigger value="lessons" className="data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">Lessons</TabsTrigger>
+              {selectedLessonId && <TabsTrigger value="lesson" className="data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">Current Lesson</TabsTrigger>}
             </TabsList>
             
             <TabsContent value="overview" className="space-y-4">
@@ -588,15 +588,15 @@ export default function ModuleDetailPage() {
               </Card>
             </TabsContent>
             
-            <TabsContent value="lessons" className="space-y-4">
-              <Card>
-                <CardHeader>
+            <TabsContent value="lessons" className="space-y-4 animate-fadeIn">
+              <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-all">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
                   <CardTitle>Module Lessons</CardTitle>
                   <CardDescription>
                     Complete all lessons to master the module
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   {isLoading ? (
                     <div className="flex items-center justify-center h-32">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
