@@ -161,19 +161,19 @@ export default function LearningCompanion({
       marginTop: '5px'
     }}>
       <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Background circle */}
-        <circle cx="50" cy="50" r="45" fill="#8c52ff" />
+        {/* Background circle - sage green */}
+        <circle cx="50" cy="50" r="45" fill="#7da687" />
         
-        {/* Body - gray with slight blue tint for a cartoon look */}
-        <ellipse cx="50" cy="53" rx="37" ry="35" fill="#b8c4e8" />
+        {/* Body - light sage green for a cute look */}
+        <ellipse cx="50" cy="53" rx="37" ry="35" fill="#b5d5c5" />
         
         {/* Very large ears */}
-        <ellipse cx="20" cy="42" rx="17" ry="22" fill="#b8c4e8" transform="rotate(-5 20 42)" />
-        <ellipse cx="80" cy="42" rx="17" ry="22" fill="#b8c4e8" transform="rotate(5 80 42)" />
+        <ellipse cx="20" cy="42" rx="17" ry="22" fill="#b5d5c5" transform="rotate(-5 20 42)" />
+        <ellipse cx="80" cy="42" rx="17" ry="22" fill="#b5d5c5" transform="rotate(5 80 42)" />
         
-        {/* Inner ears - pink */}
-        <ellipse cx="23" cy="42" rx="12" ry="15" fill="#ffc0cb" transform="rotate(-5 23 42)" />
-        <ellipse cx="77" cy="42" rx="12" ry="15" fill="#ffc0cb" transform="rotate(5 77 42)" />
+        {/* Inner ears - lighter green */}
+        <ellipse cx="23" cy="42" rx="12" ry="15" fill="#d2e7d6" transform="rotate(-5 23 42)" />
+        <ellipse cx="77" cy="42" rx="12" ry="15" fill="#d2e7d6" transform="rotate(5 77 42)" />
         
         {/* Large cute cartoon eyes */}
         <ellipse cx="40" cy="40" rx="7" ry="8" fill="white" />
@@ -191,14 +191,14 @@ export default function LearningCompanion({
         
         {/* Cute trunk */}
         <path d="M50,55 Q50,75 45,82 Q43,88 47,90" 
-              stroke="#a3aed0" 
+              stroke="#97b8a3" 
               strokeWidth="9" 
               fill="none" 
               strokeLinecap="round" />
         
         {/* Cute smile */}
         <path d="M35,58 Q50,65 65,58" 
-              stroke="#5d6b98" 
+              stroke="#5a7765" 
               strokeWidth="3" 
               fill="none" 
               strokeLinecap="round" />
@@ -215,7 +215,7 @@ export default function LearningCompanion({
               <PopoverTrigger asChild>
                 <Button 
                   size="lg" 
-                  className={`h-16 w-16 rounded-full shadow-lg bg-gradient-to-br from-purple-400 to-purple-600 ${isWiggling ? 'animate-bounce-slow' : ''}`}
+                  className={`h-16 w-16 rounded-full shadow-lg bg-gradient-to-br from-green-400 to-green-600 ${isWiggling ? 'animate-bounce-slow' : ''}`}
                   onClick={() => {
                     playClick();
                     setIsOpen(!isOpen);
