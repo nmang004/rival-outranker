@@ -153,28 +153,34 @@ export default function LearningCompanion({
     return <BookOpen className="h-6 w-6 text-blue-500" />;
   };
   
-  // More cartoon-like elephant icon for better visibility
+  // Super cute big elephant icon
   const ElephantIcon = () => (
     <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Background circle */}
       <circle cx="50" cy="50" r="50" fill="#8c52ff" />
       
-      {/* Elephant face */}
-      <ellipse cx="50" cy="50" rx="30" ry="32" fill="#f0f0f0" />
+      {/* Elephant head - taking up most of the circle */}
+      <ellipse cx="50" cy="52" rx="40" ry="38" fill="#f5f5f5" />
       
-      {/* Ears */}
-      <ellipse cx="20" cy="45" rx="15" ry="20" fill="#f0f0f0" />
-      <ellipse cx="80" cy="45" rx="15" ry="20" fill="#f0f0f0" />
+      {/* Big floppy ears */}
+      <ellipse cx="22" cy="40" rx="20" ry="25" fill="#f5f5f5" />
+      <ellipse cx="78" cy="40" rx="20" ry="25" fill="#f5f5f5" />
       
-      {/* Eyes */}
-      <circle cx="40" cy="40" r="4" fill="#333" />
-      <circle cx="60" cy="40" r="4" fill="#333" />
+      {/* Cute big eyes with highlights */}
+      <circle cx="38" cy="42" r="7" fill="#333" />
+      <circle cx="62" cy="42" r="7" fill="#333" />
+      <circle cx="40" cy="40" r="2" fill="white" />
+      <circle cx="64" cy="40" r="2" fill="white" />
+      
+      {/* Cute cheeks */}
+      <circle cx="30" cy="55" r="5" fill="#ffb6c1" opacity="0.6" />
+      <circle cx="70" cy="55" r="5" fill="#ffb6c1" opacity="0.6" />
       
       {/* Trunk */}
-      <path d="M50,50 Q50,65 40,72 Q38,75 40,78" stroke="#333" strokeWidth="6" fill="none" strokeLinecap="round" />
+      <path d="M50,53 Q50,72 43,80 Q41,84 44,86" stroke="#333" strokeWidth="8" fill="none" strokeLinecap="round" />
       
-      {/* Smile */}
-      <path d="M40,55 Q50,62 60,55" stroke="#333" strokeWidth="2" fill="none" />
+      {/* Happy smile */}
+      <path d="M38,60 Q50,68 62,60" stroke="#333" strokeWidth="3" fill="none" strokeLinecap="round" />
     </svg>
   );
   
