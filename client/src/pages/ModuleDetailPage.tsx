@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 // Import types directly from mock data as we're currently using those
-import type { QuizQuestion } from "@/types/learningTypes";
+import type { QuizQuestion, Achievement } from "@/types/learningTypes";
 import { 
   mockModules, 
   mockLessons, 
-  mockUserProgress 
+  mockUserProgress,
+  mockAchievements 
 } from "@/data/mockLearningData";
 import { 
   Card, 
@@ -34,10 +35,13 @@ import {
   BookMarked,
   Info,
   Lock,
-  AlertCircle
+  AlertCircle,
+  Trophy
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import QuizCompleted from "@/components/learning/QuizCompleted";
+import AchievementUnlocked from "@/components/learning/AchievementUnlocked";
 
 // Types for learning module content
 interface LearningModule {
@@ -108,6 +112,13 @@ export default function ModuleDetailPage() {
   const [lessonQuizCompleted, setLessonQuizCompleted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [updateProgressIsPending, setUpdateProgressIsPending] = useState(false);
+  
+  // Quiz completion and achievement state
+  const [showQuizCompleted, setShowQuizCompleted] = useState<boolean>(false);
+  const [quizScore, setQuizScore] = useState<number>(0);
+  const [quizPassingScore, setQuizPassingScore] = useState<number>(70);
+  const [showAchievement, setShowAchievement] = useState<boolean>(false);
+  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   
   // Load module and lessons data
   useEffect(() => {
@@ -704,19 +715,29 @@ export default function ModuleDetailPage() {
                               const score = Math.round((correctAnswers / totalQuestions) * 100);
                               const passed = score >= selectedLesson.quiz.passingScore;
                               
+                              // Set the quiz score and passing score for the completion screen
+                              setQuizScore(score);
+                              setQuizPassingScore(selectedLesson.quiz.passingScore);
+                              
                               if (passed) {
                                 setLessonQuizCompleted(true);
-                                toast({
-                                  title: "Quiz Completed!",
-                                  description: `You scored ${score}%. You can now mark this lesson as completed.`,
-                                  variant: "default",
-                                });
+                                
+                                // Show the quiz completion screen
+                                setShowQuizCompleted(true);
+                                
+                                // Check if user has unlocked the "Quiz Master" achievement for 100% score
+                                if (score === 100) {
+                                  const quizMasterAchievement = mockAchievements.find(a => a.id === "quiz-master");
+                                  if (quizMasterAchievement) {
+                                    setTimeout(() => {
+                                      setCurrentAchievement(quizMasterAchievement);
+                                      setShowAchievement(true);
+                                    }, 1500); // Show achievement after quiz completion dialog
+                                  }
+                                }
                               } else {
-                                toast({
-                                  title: "Quiz Failed",
-                                  description: `You scored ${score}%. Required score: ${selectedLesson.quiz.passingScore}%. Please try again.`,
-                                  variant: "destructive",
-                                });
+                                // Still show completion screen, but with failed message
+                                setShowQuizCompleted(true);
                               }
                             }}
                           >
