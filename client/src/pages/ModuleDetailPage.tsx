@@ -143,11 +143,10 @@ export default function ModuleDetailPage() {
   
   // Load module and lessons data
   useEffect(() => {
-    if (isNaN(moduleId)) return;
+    if (!moduleId) return;
     
     const timer = setTimeout(() => {
-      // Find module data
-      const foundModule = mockModules.find(m => m.id === moduleId);
+      // Module is already found by slug in the component initialization
       if (foundModule) {
         setModule(foundModule as LearningModule);
       }

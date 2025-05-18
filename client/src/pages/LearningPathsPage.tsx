@@ -493,7 +493,7 @@ export default function LearningPathsPage() {
                         )}
                       </CardContent>
                       <CardFooter>
-                        <Link href={`/learning/modules/${module.id}`} className="w-full">
+                        <Link href={`/modules/${module.title.toLowerCase().replace(/\s+/g, '-')}`} className="w-full">
                           <Button className="w-full">
                             {moduleProgress?.status === 'in_progress' ? (
                               <>
