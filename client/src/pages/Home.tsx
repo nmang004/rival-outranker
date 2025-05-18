@@ -84,32 +84,37 @@ export default function Home() {
   });
 
   const pollForResults = async (url: string, isDeepContentAnalysis: boolean = false) => {
-    console.log("Skipping polling and redirecting directly to results page");
+    console.log("Starting analysis and showing loading screen for PageSpeed data");
     
     // Start analysis progress animation
     setAnalysisProgress(10);
     
-    // Show a small animation for user experience
+    // Show a proper loading animation with progress
+    const interval = setInterval(() => {
+      setAnalysisProgress(prev => {
+        // Slowly increase up to 85% to show progress while PageSpeed data loads
+        if (prev < 85) {
+          return prev + 5;
+        }
+        return prev;
+      });
+    }, 1000);
+    
     setTimeout(() => {
-      setAnalysisProgress(50);
+      // Include target keyword in the URL if provided
+      const targetKeyword = document.getElementById('targetKeyword') as HTMLInputElement;
+      const keywordParam = targetKeyword && targetKeyword.value.trim() 
+        ? `&targetKeyword=${encodeURIComponent(targetKeyword.value.trim())}` 
+        : '';
       
-      // After a small delay, redirect directly to results page
-      setTimeout(() => {
-        setAnalysisProgress(100);
+      // Clear interval before redirecting
+      clearInterval(interval);
+      setAnalysisProgress(100);
         
-        // Directly redirect to the results page without polling
-        // This avoids the additional confirmation/submission screen
-        console.log('Redirecting immediately to results page');
-        
-        // Include target keyword in the URL if provided
-        const targetKeyword = document.getElementById('targetKeyword') as HTMLInputElement;
-        const keywordParam = targetKeyword && targetKeyword.value.trim() 
-          ? `&targetKeyword=${encodeURIComponent(targetKeyword.value.trim())}` 
-          : '';
-          
-        setLocation(`/results?url=${encodeURIComponent(url)}${keywordParam}`);
-      }, 500);
-    }, 300);
+      // Redirect to loading screen that will properly wait for PageSpeed data
+      console.log('Redirecting to results page with loading indicator');
+      setLocation(`/results?url=${encodeURIComponent(url)}${keywordParam}`);
+    }, 3000); // Wait 3 seconds before redirecting to results page
   };
 
   const handleSubmit = async (url: string, keyword?: string) => {
