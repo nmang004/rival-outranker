@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+
 import OverallScore from "@/components/assessment/OverallScore";
 import KeyMetrics from "@/components/assessment/KeyMetrics";
 import SummarySection from "@/components/assessment/SummarySection";
@@ -256,9 +257,14 @@ export default function ResultsPage() {
     return null;
   }
 
-  // Show loading state if data is not yet available or is being fetched
-  if (isLoading || !apiResponse || !apiResponse.results) {
-    return <ResultsPageSkeleton url={selectedUrl} />;
+  // Show loading state if data is not yet available, being fetched, or waiting for PageSpeed data
+  if (isLoading || !apiResponse || !apiResponse.results || !isPageSpeedLoaded) {
+    return (
+      <ResultsPageSkeleton 
+        url={selectedUrl} 
+        message={!isLoading && !isPageSpeedLoaded ? "Fetching PageSpeed metrics from Google..." : undefined}
+      />
+    );
   }
   
   // If the analysis failed to retrieve content or was incomplete, show a custom error message
@@ -458,10 +464,16 @@ export default function ResultsPage() {
   );
 }
 
-function ResultsPageSkeleton({ url }: { url: string }) {
+function ResultsPageSkeleton({ url, message }: { url: string, message?: string }) {
   return (
     <div className="px-4 sm:px-0">
       <div className="bg-white shadow rounded-lg p-6 mb-6">
+        {message && (
+          <div className="flex items-center justify-center mb-4 p-2 bg-blue-50 text-blue-600 rounded">
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            <span>{message}</span>
+          </div>
+        )}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">SEO Assessment Results</h2>
