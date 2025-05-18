@@ -20,6 +20,10 @@ interface AssessmentTabsProps {
 
 export default function AssessmentTabs({ data, initialTab = "keyword" }: AssessmentTabsProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Log analysis ID for debugging
+  console.log("AssessmentTabs - analysisId:", data.id);
+  console.log("AssessmentTabs - url:", data.url);
 
   return (
     <div className="bg-white shadow sm:rounded-md">
@@ -78,7 +82,7 @@ export default function AssessmentTabs({ data, initialTab = "keyword" }: Assessm
         
         <TabsContent value="keyword" className="p-0 mt-0">
           <KeywordTab 
-            data={data.keywordAnalysis} 
+            data={data.keywordAnalysis}
             analysisId={data.id} 
             url={data.url} 
           />

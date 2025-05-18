@@ -91,7 +91,12 @@ export default function ResultsPage() {
   });
   
   // Extract the actual analysis data from the response
-  const data = apiResponse && 'results' in apiResponse ? apiResponse.results : {};
+  // Make sure to include the analysis ID in the data passed to components
+  const data = apiResponse ? {
+    ...apiResponse.results,
+    id: apiResponse.id,
+    url: apiResponse.url
+  } : {};
   
   // Create default empty arrays if missing to avoid rendering issues
   if (!data.strengths) data.strengths = [];
