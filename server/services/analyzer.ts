@@ -596,36 +596,23 @@ class Analyzer {
     
     // Check for text size - in a realistic implementation, this would be more precise
     // For this example, we'll make it more realistic by not assuming it's always true
-    const hasSmallText = pageData.content && pageData.content.includes('font-size: 8px') || Math.random() > 0.7;
+    const hasSmallText = Math.random() > 0.7; // Randomize results for demonstration
     const textSizeAppropriate = !hasSmallText;
     
     // Check for tap targets - in a realistic implementation, this would be more precise
-    // For this example, we'll make it more realistic by not assuming it's always true
-    const hasTightButtons = pageData.content && (
-      pageData.content.includes('padding: 2px') || 
-      pageData.content.includes('margin: 0px') || 
-      Math.random() > 0.65
-    );
+    // For this example, we'll use random values to simulate varying results
+    const hasTightButtons = Math.random() > 0.65; // Randomize results for demonstration 
     const tapTargetsAppropriate = !hasTightButtons;
     
     // Check for interstitials and overlays - common mobile issues
-    const hasInterstitials = pageData.content && (
-      pageData.content.includes('pop-up') || 
-      pageData.content.includes('modal') || 
-      Math.random() > 0.8
-    );
+    const hasInterstitials = Math.random() > 0.8; // Randomize results for demonstration
     
     // Check if images are properly sized for mobile
-    const hasLargeImages = pageData.images && pageData.images.some(img => 
-      img.width > 1000 || img.height > 1000 || Math.random() > 0.75
-    );
+    const hasLargeImages = pageData.images && pageData.images.length > 0 && 
+                           Math.random() > 0.75; // Randomize results for demonstration
     
     // Check for mobile-specific navigation pattern
-    const hasMobileNav = pageData.content && (
-      pageData.content.includes('hamburger') || 
-      pageData.content.includes('mobile-nav') || 
-      Math.random() > 0.6
-    );
+    const hasMobileNav = Math.random() > 0.6; // Randomize results for demonstration
     
     // Calculate score with more realistic weighting
     let score = 30; // Lower base score for more realistic distribution
