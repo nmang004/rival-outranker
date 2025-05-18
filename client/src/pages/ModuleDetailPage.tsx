@@ -104,7 +104,8 @@ export default function ModuleDetailPage() {
   const [lessons, setLessons] = useState<LearningLesson[]>([]);
   const [userProgress, setUserProgress] = useState<UserLearningProgress[]>([]);
   const [selectedLesson, setSelectedLesson] = useState<LearningLesson | null>(null);
-  const [quizzes, setQuizzes] = useState<LessonQuiz[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<{[questionId: number]: number}>({});
+  const [lessonQuizCompleted, setLessonQuizCompleted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [updateProgressIsPending, setUpdateProgressIsPending] = useState(false);
   
@@ -146,8 +147,9 @@ export default function ModuleDetailPage() {
       setSelectedLesson(foundLesson as LearningLesson);
     }
     
-    // Mock quizzes (empty for now)
-    setQuizzes([]);
+    // Reset quiz state when a new lesson is selected
+    setQuizAnswers({});
+    setLessonQuizCompleted(false);
   }, [selectedLessonId]);
   
   // Function to update user progress locally
@@ -619,6 +621,31 @@ export default function ModuleDetailPage() {
                       <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
                     </div>
                     
+                    {selectedLesson.additionalResources && selectedLesson.additionalResources.length > 0 && (
+                      <div className="mt-8 border-t pt-6">
+                        <h3 className="text-xl font-bold mb-4">Additional Resources</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {selectedLesson.additionalResources.map((resource, idx) => (
+                            <div key={idx} className="border rounded-md p-4 hover:border-primary transition-colors">
+                              <h4 className="font-medium mb-1">{resource.title}</h4>
+                              <p className="text-sm text-muted-foreground mb-3">{resource.description}</p>
+                              <div className="flex items-center justify-between">
+                                <Badge variant="outline">{resource.type}</Badge>
+                                <a 
+                                  href={resource.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-primary hover:underline"
+                                >
+                                  Visit Resource →
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     {selectedLesson.quiz && (
                       <div className="mt-8 border-t pt-6">
                         <h3 className="text-xl font-bold mb-4">Knowledge Check</h3>
@@ -637,6 +664,13 @@ export default function ModuleDetailPage() {
                                       name={`question-${question.id}`} 
                                       id={`question-${question.id}-option-${index}`} 
                                       className="h-4 w-4"
+                                      onChange={() => {
+                                        setQuizAnswers(prev => ({
+                                          ...prev,
+                                          [question.id]: index
+                                        }));
+                                      }}
+                                      checked={quizAnswers[question.id] === index}
                                     />
                                     <label 
                                       htmlFor={`question-${question.id}-option-${index}`}
@@ -652,8 +686,55 @@ export default function ModuleDetailPage() {
                         </div>
                         
                         <div className="mt-6">
-                          <Button className="mr-2">Check Answers</Button>
-                          <Button variant="outline">Skip Quiz</Button>
+                          <Button 
+                            className="mr-2"
+                            onClick={() => {
+                              if (!selectedLesson.quiz) return;
+                              
+                              // Calculate score
+                              const totalQuestions = selectedLesson.quiz.questions.length;
+                              let correctAnswers = 0;
+                              
+                              selectedLesson.quiz.questions.forEach(question => {
+                                if (quizAnswers[question.id] === question.correctOptionIndex) {
+                                  correctAnswers++;
+                                }
+                              });
+                              
+                              const score = Math.round((correctAnswers / totalQuestions) * 100);
+                              const passed = score >= selectedLesson.quiz.passingScore;
+                              
+                              if (passed) {
+                                setLessonQuizCompleted(true);
+                                toast({
+                                  title: "Quiz Completed!",
+                                  description: `You scored ${score}%. You can now mark this lesson as completed.`,
+                                  variant: "default",
+                                });
+                              } else {
+                                toast({
+                                  title: "Quiz Failed",
+                                  description: `You scored ${score}%. Required score: ${selectedLesson.quiz.passingScore}%. Please try again.`,
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            Check Answers
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setLessonQuizCompleted(true);
+                              toast({
+                                title: "Quiz Skipped",
+                                description: "You can come back and take the quiz later.",
+                                variant: "default",
+                              });
+                            }}
+                          >
+                            Skip Quiz
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -670,6 +751,7 @@ export default function ModuleDetailPage() {
                     
                     <Button 
                       onClick={() => handleCompleteLesson(selectedLesson.id)}
+                      disabled={selectedLesson.quiz && !lessonQuizCompleted}
                     >
                       {false ? (
                         <>
