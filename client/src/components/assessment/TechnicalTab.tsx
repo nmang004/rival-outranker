@@ -142,12 +142,14 @@ export default function TechnicalTab({
         <div className="md:col-span-2 bg-gray-50 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <h5 className="text-sm font-medium text-gray-700">Page Speed</h5>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              // Based on your PageSpeed Insights screenshot showing a score of 59
-              'bg-yellow-100 text-yellow-800'
-            }`}>
-              Score: 59/100
-            </span>
+            <div className="flex items-center space-x-3">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800`}>
+                Mobile: 59/100
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
+                Desktop: 100/100
+              </span>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -456,58 +458,123 @@ export default function TechnicalTab({
             
             {mobileData.coreWebVitals && (
               <div className="mt-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                <h6 className="text-xs font-semibold text-gray-700 mb-2">Core Web Vitals</h6>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h6 className="text-xs font-semibold text-gray-700">Mobile Metrics</h6>
+                  <span className="text-xs text-gray-500">Score: 59/100</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   <div>
-                    <div className="text-xs text-gray-500">First Contentful Paint</div>
+                    <div className="text-xs text-gray-500">Largest Contentful Paint</div>
                     <div className="flex items-center mt-1">
-                      <div className="text-sm font-medium text-amber-600">
-                        3.1s
+                      <div className="text-sm font-medium text-red-600">
+                        14.04s
                       </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        Poor
+                      </span>
                     </div>
                   </div>
                   
                   <div>
-                    <div className="text-xs text-gray-500">Largest Contentful Paint</div>
+                    <div className="text-xs text-gray-500">First Input Delay</div>
                     <div className="flex items-center mt-1">
                       <div className="text-sm font-medium text-amber-600">
-                        4.2s
+                        149ms
                       </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                        Needs Improvement
+                      </span>
                     </div>
                   </div>
                   
                   <div>
                     <div className="text-xs text-gray-500">Cumulative Layout Shift</div>
                     <div className="flex items-center mt-1">
+                      <div className="text-sm font-medium text-amber-600">
+                        0.135
+                      </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                        Needs Improvement
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="text-xs text-gray-500">Time to First Byte</div>
+                    <div className="flex items-center mt-1">
                       <div className="text-sm font-medium text-green-600">
-                        0.06
+                        325ms
                       </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        Good
+                      </span>
                     </div>
                   </div>
-                  
-                  <div>
-                    <div className="text-xs text-gray-500">Total Blocking Time</div>
-                    <div className="flex items-center mt-1">
-                      <div className="text-sm font-medium text-amber-600">
-                        240ms
+                </div>
+                
+                <div className="border-t border-gray-200 pt-3 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h6 className="text-xs font-semibold text-gray-700">Desktop Metrics</h6>
+                    <span className="text-xs text-gray-500">Score: 100/100</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs text-gray-500">First Contentful Paint</div>
+                      <div className="flex items-center mt-1">
+                        <div className="text-sm font-medium text-green-600">
+                          0.4s
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Good
+                        </span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-xs text-gray-500">Speed Index</div>
-                    <div className="flex items-center mt-1">
-                      <div className="text-sm font-medium text-amber-600">
-                        4.3s
+                    
+                    <div>
+                      <div className="text-xs text-gray-500">Largest Contentful Paint</div>
+                      <div className="flex items-center mt-1">
+                        <div className="text-sm font-medium text-green-600">
+                          0.7s
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Good
+                        </span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-xs text-gray-500">Time to Interactive</div>
-                    <div className="flex items-center mt-1">
-                      <div className="text-sm font-medium text-amber-600">
-                        5.1s
+                    
+                    <div>
+                      <div className="text-xs text-gray-500">Cumulative Layout Shift</div>
+                      <div className="flex items-center mt-1">
+                        <div className="text-sm font-medium text-green-600">
+                          0.001
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Good
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-xs text-gray-500">Total Blocking Time</div>
+                      <div className="flex items-center mt-1">
+                        <div className="text-sm font-medium text-green-600">
+                          0ms
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Good
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-xs text-gray-500">Speed Index</div>
+                      <div className="flex items-center mt-1">
+                        <div className="text-sm font-medium text-green-600">
+                          0.8s
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Good
+                        </span>
                       </div>
                     </div>
                   </div>
