@@ -342,6 +342,10 @@ export default function ModuleDetailPage() {
       lastAccessedAt: new Date().toISOString()
     });
     
+    // Switch back to the lessons tab after completion
+    setActiveTab('lessons');
+    setSelectedLessonId(null);
+    
     // Show different messages based on authentication status
     if (!isAuthenticated) {
       toast({
@@ -353,6 +357,13 @@ export default function ModuleDetailPage() {
       // Only check for achievements if authenticated
       checkForAchievements('completed', lessonId);
     }
+    
+    // Show success message
+    toast({
+      title: "Lesson completed!",
+      description: "Great job! You've completed this lesson.",
+      variant: "default",
+    });
   };
   
   // Create a sorted list of lessons, respecting the sortOrder
