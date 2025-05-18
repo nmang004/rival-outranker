@@ -267,9 +267,9 @@ export default function ResultsPage() {
     );
   }
   
-  // Force show results regardless of PageSpeed data loading status
-  // This allows the page to proceed even if PageSpeed data takes longer
-  const forceShowResults = true;
+  // Wait for PageSpeed data to load before showing results
+  // This ensures we display actual data rather than placeholders
+  const forceShowResults = false;
   
   // If the analysis failed to retrieve content or was incomplete, show a custom error message
   const hasError = data.weaknesses?.length === 1 && 
