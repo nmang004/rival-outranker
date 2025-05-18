@@ -152,6 +152,16 @@ export default function TechnicalTab({
       // Only set the metrics once they're fully loaded and properly formatted
       if (hasValidFormat) {
         setPageSpeedMetrics(data);
+        
+        // Store the data in session storage for future use
+        try {
+          const cacheKey = getPageSpeedCacheKey(siteUrl);
+          sessionStorage.setItem(cacheKey, JSON.stringify(data));
+          console.log("PageSpeed data cached in session storage for URL:", siteUrl);
+        } catch (cacheError) {
+          console.error("Failed to cache PageSpeed data:", cacheError);
+          // Continue even if caching fails
+        }
       } else {
         // Don't update state with incomplete data to avoid showing N/A values
         console.log("Received incomplete PageSpeed data, waiting for complete data");
