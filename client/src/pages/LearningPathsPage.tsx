@@ -275,7 +275,7 @@ export default function LearningPathsPage() {
                         )}
                       </CardContent>
                       <CardFooter>
-                        <Link href={`/learning/modules/${module.id}`} className="w-full">
+                        <Link href={`/modules/${module.title.toLowerCase().replace(/\s+/g, '-')}`} className="w-full">
                           <Button className="w-full">
                             {moduleProgress?.status === 'completed' ? (
                               <>
@@ -354,7 +354,7 @@ export default function LearningPathsPage() {
                         )}
                       </CardContent>
                       <CardFooter>
-                        <Link href={`/learning/modules/${module.id}`} className="w-full">
+                        <Link href={`/modules/${module.title.toLowerCase().replace(/\s+/g, '-')}`} className="w-full">
                           <Button className="w-full">
                             <BookOpen className="h-4 w-4 mr-2" />
                             Continue Learning
@@ -420,7 +420,7 @@ export default function LearningPathsPage() {
                         )}
                       </CardContent>
                       <CardFooter>
-                        <Link href={`/learning/modules/${module.id}`} className="w-full">
+                        <Link href={`/modules/${module.title.toLowerCase().replace(/\s+/g, '-')}`} className="w-full">
                           <Button className="w-full" variant="outline">
                             <Award className="h-4 w-4 mr-2" />
                             Review Module
