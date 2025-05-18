@@ -153,35 +153,57 @@ export default function LearningCompanion({
     return <BookOpen className="h-6 w-6 text-blue-500" />;
   };
   
-  // Super cute big elephant icon
+  // Super cute cartoon elephant icon
   const ElephantIcon = () => (
-    <svg width="50" height="50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Background circle */}
-      <circle cx="50" cy="50" r="50" fill="#8c52ff" />
-      
-      {/* Elephant head - taking up most of the circle */}
-      <ellipse cx="50" cy="52" rx="40" ry="38" fill="#f5f5f5" />
-      
-      {/* Big floppy ears */}
-      <ellipse cx="22" cy="40" rx="20" ry="25" fill="#f5f5f5" />
-      <ellipse cx="78" cy="40" rx="20" ry="25" fill="#f5f5f5" />
-      
-      {/* Cute big eyes with highlights */}
-      <circle cx="38" cy="42" r="7" fill="#333" />
-      <circle cx="62" cy="42" r="7" fill="#333" />
-      <circle cx="40" cy="40" r="2" fill="white" />
-      <circle cx="64" cy="40" r="2" fill="white" />
-      
-      {/* Cute cheeks */}
-      <circle cx="30" cy="55" r="5" fill="#ffb6c1" opacity="0.6" />
-      <circle cx="70" cy="55" r="5" fill="#ffb6c1" opacity="0.6" />
-      
-      {/* Trunk */}
-      <path d="M50,53 Q50,72 43,80 Q41,84 44,86" stroke="#333" strokeWidth="8" fill="none" strokeLinecap="round" />
-      
-      {/* Happy smile */}
-      <path d="M38,60 Q50,68 62,60" stroke="#333" strokeWidth="3" fill="none" strokeLinecap="round" />
-    </svg>
+    <div style={{ 
+      transform: 'scale(2.0)',
+      transformOrigin: 'center',
+      marginTop: '5px'
+    }}>
+      <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Background circle */}
+        <circle cx="50" cy="50" r="45" fill="#8c52ff" />
+        
+        {/* Body - gray with slight blue tint for a cartoon look */}
+        <ellipse cx="50" cy="53" rx="37" ry="35" fill="#b8c4e8" />
+        
+        {/* Very large ears */}
+        <ellipse cx="20" cy="42" rx="17" ry="22" fill="#b8c4e8" transform="rotate(-5 20 42)" />
+        <ellipse cx="80" cy="42" rx="17" ry="22" fill="#b8c4e8" transform="rotate(5 80 42)" />
+        
+        {/* Inner ears - pink */}
+        <ellipse cx="23" cy="42" rx="12" ry="15" fill="#ffc0cb" transform="rotate(-5 23 42)" />
+        <ellipse cx="77" cy="42" rx="12" ry="15" fill="#ffc0cb" transform="rotate(5 77 42)" />
+        
+        {/* Large cute cartoon eyes */}
+        <ellipse cx="40" cy="40" rx="7" ry="8" fill="white" />
+        <ellipse cx="60" cy="40" rx="7" ry="8" fill="white" />
+        <ellipse cx="40" cy="42" rx="4" ry="5" fill="#000" />
+        <ellipse cx="60" cy="42" rx="4" ry="5" fill="#000" />
+        
+        {/* Eye highlights */}
+        <circle cx="42" cy="39" r="2" fill="white" />
+        <circle cx="62" cy="39" r="2" fill="white" />
+        
+        {/* Rosy cheeks */}
+        <circle cx="29" cy="54" r="5" fill="#ff9aac" opacity="0.7" />
+        <circle cx="71" cy="54" r="5" fill="#ff9aac" opacity="0.7" />
+        
+        {/* Cute trunk */}
+        <path d="M50,55 Q50,75 45,82 Q43,88 47,90" 
+              stroke="#a3aed0" 
+              strokeWidth="9" 
+              fill="none" 
+              strokeLinecap="round" />
+        
+        {/* Cute smile */}
+        <path d="M35,58 Q50,65 65,58" 
+              stroke="#5d6b98" 
+              strokeWidth="3" 
+              fill="none" 
+              strokeLinecap="round" />
+      </svg>
+    </div>
   );
   
   return (
