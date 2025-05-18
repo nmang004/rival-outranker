@@ -62,15 +62,8 @@ const buddyQuotes = {
 const buddyFaces = ["(◠‿◠)", "(⌐■_■)", "(◕‿◕)", "ʕ•ᴥ•ʔ", "(•‿•)"];
 
 export default function SeoBuddy() {
+  // Initialize all React hooks at the top level - to maintain proper hook order
   const [location] = useLocation();
-  
-  // Hide SEO Buddy on learning pages - these will use the Learning Companion instead
-  const isLearningPage = location.includes('/learning') || 
-                         location.includes('/modules/') || 
-                         location.includes('/achievement-demo');
-                         
-  if (isLearningPage) return null;
-  
   const [expanded, setExpanded] = useState(false);
   const [showBuddy, setShowBuddy] = useState(true);
   const [currentTip, setCurrentTip] = useState(0);
@@ -79,6 +72,13 @@ export default function SeoBuddy() {
   const [buddyFace, setBuddyFace] = useState(buddyFaces[0]);
   const [showChatBot, setShowChatBot] = useState(false);
   const [showBestPractices, setShowBestPractices] = useState(false);
+  
+  // Hide SEO Buddy on learning pages - these will use the Learning Companion instead
+  const isLearningPage = location.includes('/learning') || 
+                         location.includes('/modules/') || 
+                         location.includes('/achievement-demo');
+                         
+  if (isLearningPage) return null;
   
   // Determine which tips to show based on current page
   const getTipsForLocation = () => {
