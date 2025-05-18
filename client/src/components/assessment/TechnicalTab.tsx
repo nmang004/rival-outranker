@@ -65,8 +65,13 @@ export default function TechnicalTab({
   };
   
   // Fetch real PageSpeed metrics when URL is provided
+  // Set initial component state - important!
   useEffect(() => {
     if (!url) return;
+    
+    // Always reset loading state when mounting with a URL
+    setLoading(true);
+    setMetricsFormatted(false);
     
     // Check if we have cached data for this URL
     const cachedData = getCachedPageSpeedData(url);
@@ -74,6 +79,8 @@ export default function TechnicalTab({
     if (cachedData) {
       // Use cached data instead of making a new API call
       console.log("TechnicalTab - Using cached PageSpeed data for URL:", url);
+      
+      // Immediately update the UI with the cached data
       setPageSpeedMetrics(cachedData);
       setLoading(false);
       setMetricsFormatted(true);
@@ -85,6 +92,7 @@ export default function TechnicalTab({
       });
       window.dispatchEvent(pageSpeedLoadedEvent);
       localStorage.setItem('pageSpeedDataLoaded', 'true');
+      console.log("TechnicalTab - Successfully set PageSpeed data from cache");
       
       return;
     }
@@ -93,12 +101,7 @@ export default function TechnicalTab({
     if (!pageSpeedDataLoadedRef.current) {
       console.log("TechnicalTab - Starting PageSpeed data fetch for URL:", url);
       
-      // Reset loading state for new URL
-      setLoading(true);
-      setMetricsFormatted(false);
-      setPageSpeedMetrics(null);
-      
-      // Start fetching the data
+      // Start fetching the data (loading state is already set)
       fetchPageSpeedData(url);
       
       // Add a timeout to ensure we don't wait indefinitely 
@@ -123,7 +126,7 @@ export default function TechnicalTab({
           // End loading state
           setLoading(false);
         }
-      }, 10000); // 10 second timeout before showing incomplete data
+      }, 120000); // 2 minute timeout before showing incomplete data
       
       return () => clearTimeout(timeout);
     }
