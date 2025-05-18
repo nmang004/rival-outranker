@@ -50,7 +50,32 @@ export default function ResultsPage() {
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
   
   // State to track PageSpeed data loading
-  const [isPageSpeedLoaded, setPageSpeedLoaded] = useState(false);
+  const [isPageSpeedLoaded, setPageSpeedLoaded] = useState(() => {
+    // Check if PageSpeed data is already loaded (from localStorage)
+    return localStorage.getItem('pageSpeedDataLoaded') === 'true';
+  });
+  
+  // Listen for PageSpeed data loaded event
+  useEffect(() => {
+    // Function to handle the custom event
+    const handlePageSpeedLoaded = () => {
+      console.log("PageSpeed data loaded event received");
+      setPageSpeedLoaded(true);
+    };
+    
+    // Register event listener
+    window.addEventListener('pageSpeedDataLoaded', handlePageSpeedLoaded);
+    
+    // Clear localStorage on component mount
+    if (selectedUrl) {
+      localStorage.removeItem('pageSpeedDataLoaded');
+    }
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('pageSpeedDataLoaded', handlePageSpeedLoaded);
+    };
+  }, []);
   
   // Redirect to home if no URL is provided
   useEffect(() => {

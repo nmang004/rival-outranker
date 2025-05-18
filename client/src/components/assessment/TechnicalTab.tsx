@@ -2,7 +2,7 @@ import { PageSpeedAnalysis, SchemaMarkupAnalysis, MobileAnalysis } from "@shared
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 interface TechnicalTabProps {
@@ -44,11 +44,21 @@ export default function TechnicalTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Create a global variable to track if PageSpeed data has been loaded
+  // This will prevent repeated API calls when switching tabs
+  const pageSpeedDataLoadedRef = useRef(false);
+  
   // Fetch real PageSpeed metrics when URL is provided
   useEffect(() => {
-    if (url) {
+    if (url && !pageSpeedDataLoadedRef.current) {
       fetchPageSpeedData(url);
     }
+    
+    // Cleanup function
+    return () => {
+      // Don't reset the loaded state when component unmounts
+      // This helps maintain state when switching tabs
+    };
   }, [url]);
   
   // Function to fetch PageSpeed data from our API
@@ -61,9 +71,23 @@ export default function TechnicalTab({
       setPageSpeedMetrics(response.data);
       
       console.log("PageSpeed data fetched:", response.data);
+      
+      // Mark as loaded to prevent repeated API calls
+      pageSpeedDataLoadedRef.current = true;
+      
+      // Notify parent using localStorage as a simple communication channel
+      localStorage.setItem('pageSpeedDataLoaded', 'true');
+      
+      // Dispatch a custom event that the ResultsPage can listen for
+      window.dispatchEvent(new CustomEvent('pageSpeedDataLoaded'));
     } catch (err) {
       console.error("Error fetching PageSpeed data:", err);
       setError("Failed to fetch PageSpeed metrics");
+      
+      // Even in case of error, mark as loaded to prevent repeated retries
+      pageSpeedDataLoadedRef.current = true;
+      localStorage.setItem('pageSpeedDataLoaded', 'true');
+      window.dispatchEvent(new CustomEvent('pageSpeedDataLoaded'));
     } finally {
       setLoading(false);
     }
