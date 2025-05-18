@@ -52,24 +52,61 @@ export default function TechnicalTab({
   // Create session storage key for this specific URL
   const getPageSpeedCacheKey = (urlToCache: string) => `pageSpeedData_${urlToCache}`;
   
+  // Helper function to create dummy PageSpeed data for debugging
+  const createDummyPageSpeedData = () => {
+    return {
+      mobile: {
+        score: 59,
+        firstContentfulPaint: 1.4,
+        largestContentfulPaint: 14.04,
+        firstInputDelay: 149,
+        cumulativeLayoutShift: 0.135,
+        timeToFirstByte: 325,
+        totalBlockingTime: 179,
+        speedIndex: 2.2
+      },
+      desktop: {
+        score: 100,
+        firstContentfulPaint: 0.4,
+        largestContentfulPaint: 0.7,
+        cumulativeLayoutShift: 0.001,
+        totalBlockingTime: 0,
+        speedIndex: 0.8,
+        timeToInteractive: 0.9
+      }
+    };
+  };
+
   // Try to get cached PageSpeed data from session storage
   const getCachedPageSpeedData = (urlToCache: string) => {
     if (!urlToCache) return null;
+    
+    // For debugging - commented out to ensure we use real data
+    // return createDummyPageSpeedData();
     
     try {
       const cacheKey = getPageSpeedCacheKey(urlToCache);
       const cachedData = sessionStorage.getItem(cacheKey);
       
-      if (!cachedData) return null;
+      if (!cachedData) {
+        console.log("No cached data found for URL:", urlToCache);
+        return null;
+      }
       
       // Parse the data and validate it has the required format
       const parsedData = JSON.parse(cachedData);
+      console.log("Retrieved cached PageSpeed data:", parsedData);
+      
       const isValid = parsedData && 
         parsedData.mobile && 
         typeof parsedData.mobile.largestContentfulPaint === 'number' &&
         typeof parsedData.mobile.cumulativeLayoutShift === 'number' &&
         typeof parsedData.mobile.timeToFirstByte === 'number';
         
+      if (!isValid) {
+        console.log("Cached PageSpeed data is invalid or incomplete");
+      }
+      
       return isValid ? parsedData : null;
     } catch (error) {
       console.error("Error retrieving cached PageSpeed data:", error);
@@ -177,10 +214,13 @@ export default function TechnicalTab({
       setError(null);
       setMetricsFormatted(false);
       
+      console.log("Fetching fresh PageSpeed data for URL:", siteUrl);
       const response = await axios.get(`/api/pagespeed?url=${encodeURIComponent(siteUrl)}`);
       
       // Check if metrics are properly formatted before setting them
       const data = response.data;
+      console.log("PageSpeed API Response:", data);
+      
       const hasValidFormat = data && 
         data.mobile && 
         data.mobile.largestContentfulPaint !== undefined && 
@@ -190,8 +230,11 @@ export default function TechnicalTab({
         data.mobile.timeToFirstByte !== undefined && 
         typeof data.mobile.timeToFirstByte === 'number';
       
+      console.log("PageSpeed data has valid format:", hasValidFormat);
+      
       // Only set the metrics once they're fully loaded and properly formatted
       if (hasValidFormat) {
+        console.log("Setting PageSpeed metrics to UI");
         setPageSpeedMetrics(data);
         
         // Store the data in session storage for future use
