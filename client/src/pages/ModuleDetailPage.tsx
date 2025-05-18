@@ -312,7 +312,7 @@ export default function ModuleDetailPage() {
     );
   }
   
-  if (moduleError || !module) {
+  if (!module) {
     return (
       <div className="container mx-auto py-8 px-4">
         <div className="bg-red-50 text-red-800 p-6 rounded-md">
@@ -420,12 +420,12 @@ export default function ModuleDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isLessonsLoading ? (
+                  {isLoading ? (
                     <div className="flex items-center justify-center h-32">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       <span className="ml-2">Loading lessons...</span>
                     </div>
-                  ) : lessonsError || !sortedLessons || sortedLessons.length === 0 ? (
+                  ) : !sortedLessons || sortedLessons.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">No lessons found for this module.</p>
                     </div>
