@@ -225,26 +225,28 @@ export default function TechnicalTab({
             {/* LCP */}
             <div className="bg-white p-3 rounded border border-gray-200">
               <div className="text-xs text-gray-500 mb-1">Largest Contentful Paint</div>
-              <div className="text-lg font-medium text-gray-800">{formatMs(pageSpeedData.lcp)}</div>
+              <div className="text-lg font-medium text-gray-800">
+                {loading ? "Loading..." : formatMs(pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp)}
+              </div>
               <Badge 
                 variant="outline"
                 className={`mt-1 ${
-                  (pageSpeedData.lcp || 0) <= 2500 
+                  (pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp || 0) <= 2500 
                     ? "bg-green-50 text-green-700 border-green-200" 
-                    : (pageSpeedData.lcp || 0) <= 4000 
+                    : (pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp || 0) <= 4000 
                       ? "bg-yellow-50 text-yellow-700 border-yellow-200"
                       : "bg-red-50 text-red-700 border-red-200"
                 }`}
               >
-                {(pageSpeedData.lcp || 0) <= 2500 
+                {(pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp || 0) <= 2500 
                   ? <CheckCircle className="h-3 w-3 mr-1" /> 
-                  : (pageSpeedData.lcp || 0) <= 4000 
+                  : (pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp || 0) <= 4000 
                     ? <AlertTriangle className="h-3 w-3 mr-1" />
                     : <XCircle className="h-3 w-3 mr-1" />
                 }
-                {(pageSpeedData.lcp || 0) <= 2500 
+                {(pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp || 0) <= 2500 
                   ? "Good" 
-                  : (pageSpeedData.lcp || 0) <= 4000 
+                  : (pageSpeedMetrics?.mobile.largestContentfulPaint || pageSpeedData.lcp || 0) <= 4000 
                     ? "Needs Improvement"
                     : "Poor"
                 }
@@ -254,26 +256,28 @@ export default function TechnicalTab({
             {/* FID */}
             <div className="bg-white p-3 rounded border border-gray-200">
               <div className="text-xs text-gray-500 mb-1">First Input Delay</div>
-              <div className="text-lg font-medium text-gray-800">{formatMs(pageSpeedData.fid)}</div>
+              <div className="text-lg font-medium text-gray-800">
+                {loading ? "Loading..." : formatMs(pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid)}
+              </div>
               <Badge 
                 variant="outline"
                 className={`mt-1 ${
-                  (pageSpeedData.fid || 0) <= 100 
+                  (pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid || 0) <= 100 
                     ? "bg-green-50 text-green-700 border-green-200" 
-                    : (pageSpeedData.fid || 0) <= 300 
+                    : (pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid || 0) <= 300 
                       ? "bg-yellow-50 text-yellow-700 border-yellow-200"
                       : "bg-red-50 text-red-700 border-red-200"
                 }`}
               >
-                {(pageSpeedData.fid || 0) <= 100 
+                {(pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid || 0) <= 100 
                   ? <CheckCircle className="h-3 w-3 mr-1" /> 
-                  : (pageSpeedData.fid || 0) <= 300 
+                  : (pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid || 0) <= 300 
                     ? <AlertTriangle className="h-3 w-3 mr-1" />
                     : <XCircle className="h-3 w-3 mr-1" />
                 }
-                {(pageSpeedData.fid || 0) <= 100 
+                {(pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid || 0) <= 100 
                   ? "Good" 
-                  : (pageSpeedData.fid || 0) <= 300 
+                  : (pageSpeedMetrics?.mobile.firstInputDelay || pageSpeedData.fid || 0) <= 300 
                     ? "Needs Improvement"
                     : "Poor"
                 }
@@ -283,26 +287,28 @@ export default function TechnicalTab({
             {/* CLS */}
             <div className="bg-white p-3 rounded border border-gray-200">
               <div className="text-xs text-gray-500 mb-1">Cumulative Layout Shift</div>
-              <div className="text-lg font-medium text-gray-800">{pageSpeedData.cls?.toFixed(3) || "N/A"}</div>
+              <div className="text-lg font-medium text-gray-800">
+                {loading ? "Loading..." : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls)?.toFixed(3) || "N/A"}
+              </div>
               <Badge 
                 variant="outline"
                 className={`mt-1 ${
-                  (pageSpeedData.cls || 0) <= 0.1 
+                  (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.1 
                     ? "bg-green-50 text-green-700 border-green-200" 
-                    : (pageSpeedData.cls || 0) <= 0.25 
+                    : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.25 
                       ? "bg-yellow-50 text-yellow-700 border-yellow-200"
                       : "bg-red-50 text-red-700 border-red-200"
                 }`}
               >
-                {(pageSpeedData.cls || 0) <= 0.1 
+                {(pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.1 
                   ? <CheckCircle className="h-3 w-3 mr-1" /> 
-                  : (pageSpeedData.cls || 0) <= 0.25 
+                  : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.25 
                     ? <AlertTriangle className="h-3 w-3 mr-1" />
                     : <XCircle className="h-3 w-3 mr-1" />
                 }
-                {(pageSpeedData.cls || 0) <= 0.1 
+                {(pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.1 
                   ? "Good" 
-                  : (pageSpeedData.cls || 0) <= 0.25 
+                  : (pageSpeedMetrics?.mobile.cumulativeLayoutShift || pageSpeedData.cls || 0) <= 0.25 
                     ? "Needs Improvement"
                     : "Poor"
                 }
@@ -312,26 +318,28 @@ export default function TechnicalTab({
             {/* TTFB */}
             <div className="bg-white p-3 rounded border border-gray-200">
               <div className="text-xs text-gray-500 mb-1">Time to First Byte</div>
-              <div className="text-lg font-medium text-gray-800">{formatMs(pageSpeedData.ttfb)}</div>
+              <div className="text-lg font-medium text-gray-800">
+                {loading ? "Loading..." : formatMs(pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb)}
+              </div>
               <Badge 
                 variant="outline"
                 className={`mt-1 ${
-                  (pageSpeedData.ttfb || 0) <= 600 
+                  (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 600 
                     ? "bg-green-50 text-green-700 border-green-200" 
-                    : (pageSpeedData.ttfb || 0) <= 1000 
+                    : (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 1000 
                       ? "bg-yellow-50 text-yellow-700 border-yellow-200"
                       : "bg-red-50 text-red-700 border-red-200"
                 }`}
               >
-                {(pageSpeedData.ttfb || 0) <= 600 
+                {(pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 600 
                   ? <CheckCircle className="h-3 w-3 mr-1" /> 
-                  : (pageSpeedData.ttfb || 0) <= 1000 
+                  : (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 1000 
                     ? <AlertTriangle className="h-3 w-3 mr-1" />
                     : <XCircle className="h-3 w-3 mr-1" />
                 }
-                {(pageSpeedData.ttfb || 0) <= 600 
+                {(pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 600 
                   ? "Good" 
-                  : (pageSpeedData.ttfb || 0) <= 1000 
+                  : (pageSpeedMetrics?.mobile.timeToFirstByte || pageSpeedData.ttfb || 0) <= 1000 
                     ? "Needs Improvement"
                     : "Poor"
                 }
@@ -344,15 +352,21 @@ export default function TechnicalTab({
             <div className="flex items-center">
               <div className="flex-grow">
                 <div className="relative h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                  <div 
-                    className={`h-full absolute top-0 left-0 transition-all ${getScoreColor(pageSpeedData.score)}`} 
-                    style={{ 
-                      width: `${Math.min(pageSpeedData.score, 100)}%`
-                    }}
-                  />
+                  {loading ? (
+                    <div className="h-full w-1/4 absolute top-0 left-0 animate-pulse bg-gray-400"></div>
+                  ) : (
+                    <div 
+                      className={`h-full absolute top-0 left-0 transition-all ${getScoreColor(pageSpeedMetrics?.mobile.score || pageSpeedData.score)}`} 
+                      style={{ 
+                        width: `${Math.min(pageSpeedMetrics?.mobile.score || pageSpeedData.score, 100)}%`
+                      }}
+                    />
+                  )}
                 </div>
               </div>
-              <div className="ml-3 text-lg font-semibold text-gray-800">{pageSpeedData.score}</div>
+              <div className="ml-3 text-lg font-semibold text-gray-800">
+                {loading ? "..." : pageSpeedMetrics?.mobile.score || pageSpeedData.score}
+              </div>
             </div>
           </div>
         </div>
