@@ -1,10 +1,10 @@
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200">
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <footer className="bg-white border-t border-secondary/10">
+      <div className="high-res-layout py-4 sm:py-6 md:py-8">
         <div className="md:flex md:items-center md:justify-between">
-          <div className="flex justify-center md:justify-start space-x-6">
-            <a href="#" className="text-gray-400 hover:text-gray-500">
+          <div className="flex justify-center md:justify-start space-x-4 sm:space-x-6">
+            <a href="#" className="text-secondary/70 hover:text-secondary">
               <span className="sr-only">Facebook</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +52,7 @@ export default function Footer() {
             </a>
           </div>
           <div className="mt-8 md:mt-0">
-            <p className="text-center text-sm text-gray-500">&copy; {new Date().getFullYear()} SEO Analyzer. All rights reserved.</p>
+            <p className="text-center text-sm text-gray-500">&copy; {new Date().getFullYear()} Rival Outranker. All rights reserved.</p>
           </div>
         </div>
       </div>

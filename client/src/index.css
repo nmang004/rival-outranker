@@ -254,12 +254,30 @@
       @apply text-4xl;
     }
     
+    h3 {
+      @apply text-2xl;
+    }
+    
     body {
       @apply text-lg;
     }
+    
+    /* Increase button and input sizes for 4K */
+    button, 
+    .btn, 
+    input, 
+    select, 
+    textarea {
+      @apply text-lg;
+    }
+    
+    /* Larger icons for 4K */
+    svg {
+      @apply scale-125;
+    }
   }
   
-  /* Mobile optimization */
+  /* Enhanced Mobile optimization */
   @media (max-width: 640px) {
     .mobile-padding {
       @apply px-3 py-4;
@@ -267,6 +285,35 @@
     
     .mobile-text-center {
       @apply text-center;
+    }
+    
+    /* Stack elements for better mobile experience */
+    .mobile-stack {
+      @apply flex-col gap-4;
+    }
+    
+    /* Full width elements on mobile */
+    .mobile-full-width {
+      @apply w-full;
+    }
+    
+    /* Reduce font sizes on mobile */
+    h1 {
+      @apply text-3xl;
+    }
+    
+    h2 {
+      @apply text-xl;
+    }
+    
+    /* Adjust spacing for mobile */
+    .card, .card-container {
+      @apply p-4 mx-3;
+    }
+    
+    /* Make buttons more touchable */
+    button, .button, a.button {
+      @apply min-h-[44px] min-w-[44px];
     }
   }
   

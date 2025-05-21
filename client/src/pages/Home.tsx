@@ -241,11 +241,11 @@ export default function Home() {
             <button 
               type="button"
               onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-              className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-primary/10 hover:bg-slate-100 transition-colors"
+              className="w-full flex items-center justify-between p-3 sm:p-4 bg-slate-50 rounded-lg border border-secondary/10 hover:bg-slate-100 transition-colors"
             >
               <div className="flex items-center">
-                <div className="rounded-full p-1.5 bg-primary/10 mr-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                <div className="rounded-full p-1.5 bg-secondary/10 mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-secondary">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                   </svg>
                 </div>

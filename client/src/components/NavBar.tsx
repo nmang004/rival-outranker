@@ -56,7 +56,7 @@ export default function NavBar() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/">
                 <div className="flex items-center cursor-pointer">
-                  <span className="gradient-heading text-xl truncate max-w-[160px] sm:max-w-full">Rival Outranker</span>
+                  <span className="gradient-heading text-lg sm:text-xl md:text-2xl truncate max-w-[160px] sm:max-w-full">Rival Outranker</span>
                 </div>
               </Link>
             </div>
