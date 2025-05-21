@@ -63,7 +63,7 @@ export default function NavBar() {
                 </div>
               </Link>
             </div>
-            <div className="hidden sm:flex h-full items-center gap-2">
+            <div className="hidden sm:flex h-full items-center gap-2 ml-6">
               <div className="relative group">
                 <Link href="/">
                   <div className={linkClass("/")}>
@@ -95,11 +95,6 @@ export default function NavBar() {
                   </div>
                 </div>
               </div>
-              <Link href="/keyword-research">
-                <div className={linkClass("/keyword-research")}>
-                  <Search className="h-4 w-4 mr-2" /> Keyword Research
-                </div>
-              </Link>
               
               <div className="relative group">
                 <Link href="/rival-audit">
@@ -138,6 +133,12 @@ export default function NavBar() {
                   </div>
                 </div>
               </div>
+              
+              <Link href="/keyword-research">
+                <div className={linkClass("/keyword-research")}>
+                  <Search className="h-4 w-4 mr-2" /> Keyword Research
+                </div>
+              </Link>
 
             </div>
           </div>
