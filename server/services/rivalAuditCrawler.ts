@@ -2861,15 +2861,54 @@ class RivalAuditCrawler {
     const items: AuditItem[] = [];
     const servicePages = site.servicePages;
     
-    // Check if there are service pages
+    // Get the primary service categories 
+    const primaryServices = new Set<string>();
+    
+    // Extract service categories from URLs and titles
+    servicePages.forEach(page => {
+      const pathSegments = new URL(page.url).pathname.split('/').filter(Boolean);
+      
+      // Try to identify the primary service from the URL structure
+      if (pathSegments.length >= 1) {
+        const possibleService = pathSegments[0].toLowerCase();
+        const serviceDirectories = [
+          'heating', 'cooling', 'air-conditioning', 'ac', 'hvac', 'plumbing',
+          'electrical', 'indoor-air-quality', 'air-quality'
+        ];
+        
+        if (serviceDirectories.includes(possibleService)) {
+          primaryServices.add(possibleService);
+        }
+      }
+      
+      // Also check titles for primary service mentions
+      const title = page.title.toLowerCase();
+      if (title.includes('heating') || title.includes('furnace') || title.includes('boiler')) {
+        primaryServices.add('heating');
+      }
+      if (title.includes('air conditioning') || title.includes('ac') || title.includes('cooling')) {
+        primaryServices.add('air-conditioning');
+      }
+      if (title.includes('plumbing')) {
+        primaryServices.add('plumbing');
+      }
+      if (title.includes('electrical')) {
+        primaryServices.add('electrical');
+      }
+    });
+    
+    // Make a formatted list of primary services found
+    const servicesFoundList = Array.from(primaryServices).join(', ');
+    
+    // Check if there are service pages for each primary service
     items.push({
       name: "Has a single Service Page for each primary service?",
       description: "Each main service should have its own page",
       status: servicePages.length > 0 ? 'OK' : 'OFI',
       importance: 'High',
       notes: servicePages.length === 0 ? "No dedicated service pages found" : 
-             servicePages.length === 1 ? "Only one service page found" :
-             `Found ${servicePages.length} service pages`
+             servicePages.length < 3 ? "Only a few service pages found" :
+             `Found ${servicePages.length} service pages. Primary services: ${servicesFoundList}`
     });
     
     if (servicePages.length > 0) {
