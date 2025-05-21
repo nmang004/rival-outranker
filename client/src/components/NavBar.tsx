@@ -38,18 +38,18 @@ export default function NavBar() {
   
   const linkClass = (path: string) => {
     return isActiveLink(path)
-      ? "border-primary text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium h-full"
-      : "border-transparent text-muted-foreground hover:border-primary/50 hover:text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium transition-colors h-full";
+      ? "border-secondary text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium h-full"
+      : "border-transparent text-muted-foreground hover:border-secondary/50 hover:text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium transition-colors h-full";
   };
   
   const mobileLinkClass = (path: string) => {
     return isActiveLink(path)
-      ? "bg-muted border-primary text-primary block pl-4 pr-4 py-2 border-l-4 text-base font-medium"
-      : "border-transparent text-muted-foreground hover:bg-muted/50 hover:border-primary/50 hover:text-foreground block pl-4 pr-4 py-2 border-l-4 text-base font-medium transition-colors";
+      ? "bg-muted border-secondary text-secondary block pl-4 pr-4 py-2 border-l-4 text-base font-medium"
+      : "border-transparent text-muted-foreground hover:bg-muted/50 hover:border-secondary/50 hover:text-foreground block pl-4 pr-4 py-2 border-l-4 text-base font-medium transition-colors";
   };
 
   return (
-    <nav className="bg-white border-b border-primary/10 shadow-sm">
+    <nav className="bg-white border-b border-secondary/10 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -77,7 +77,7 @@ export default function NavBar() {
                       <div className="py-1">
                         <Link href="/deep-content">
                           <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <FileText className="h-4 w-4 mr-2.5 text-primary" />
+                            <FileText className="h-4 w-4 mr-2.5 text-secondary" />
                             <span>Deep Content</span>
                           </div>
                         </Link>

@@ -176,14 +176,14 @@ export default function Home() {
         <div className="absolute top-20 right-[10%] opacity-20">
           <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
             <path d="M60 0C26.863 0 0 26.863 0 60s26.863 60 60 60 60-26.863 60-60S93.137 0 60 0zm0 100c-22.091 0-40-17.909-40-40s17.909-40 40-40 40 17.909 40 40-17.909 40-40 40z" 
-                  fill="currentColor" className="text-primary/40" />
+                  fill="currentColor" className="text-secondary/40" />
           </svg>
         </div>
         
         <div className="absolute bottom-[20%] left-[5%] opacity-20 rotate-45 hidden md:block">
           <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" className="text-primary/70" />
-            <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" className="text-primary/70" />
+            <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2" className="text-secondary/70" />
+            <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" className="text-secondary/70" />
           </svg>
         </div>
       </div>
