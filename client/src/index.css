@@ -200,15 +200,15 @@
 @layer components {
   /* Rival Digital brand gradient styles */
   .gradient-heading {
-    @apply bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent font-bold;
+    @apply bg-gradient-to-r from-secondary via-secondary/90 to-secondary/80 bg-clip-text text-transparent font-bold;
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-secondary to-secondary/70 bg-clip-text text-transparent;
   }
   
   .gradient-border {
-    @apply border border-transparent bg-gradient-to-r from-primary/30 to-primary/10 bg-clip-border;
+    @apply border border-transparent bg-gradient-to-r from-secondary/30 to-secondary/10 bg-clip-border;
   }
   
   /* Rival Digital brand button styles */

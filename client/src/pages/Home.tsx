@@ -165,12 +165,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-white to-primary/5 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-secondary/5 via-white to-primary/5 relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-primary/5 blur-3xl"></div>
-        <div className="absolute top-1/3 right-0 w-80 h-80 rounded-full bg-primary/5 blur-3xl"></div>
-        <div className="absolute bottom-0 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-secondary/5 blur-3xl"></div>
+        <div className="absolute top-1/3 right-0 w-80 h-80 rounded-full bg-secondary/5 blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 rounded-full bg-secondary/5 blur-3xl"></div>
         
         {/* Decorative patterns */}
         <div className="absolute top-20 right-[10%] opacity-20">
@@ -217,8 +217,8 @@ export default function Home() {
           
           <div className="text-left mb-6">
             <div className="flex items-center">
-              <div className="rounded-full p-3 bg-primary/10 mr-4 animate-pulse-slow">
-                <Search className="w-5 h-5 text-primary" />
+              <div className="rounded-full p-3 bg-secondary/10 mr-4 animate-pulse-slow">
+                <Search className="w-5 h-5 text-secondary" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold gradient-text">Analyze Your Website</h3>
