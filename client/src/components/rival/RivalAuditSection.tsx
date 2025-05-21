@@ -51,14 +51,24 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const getSectionNameFromTitle = (sectionTitle: string): string => {
     const titleMap: Record<string, string> = {
       "On-Page Audit": "onPage",
+      "On-Page": "onPage",
       "Structure & Navigation Audit": "structureNavigation",
+      "Structure & Navigation": "structureNavigation",
       "Contact Page Audit": "contactPage",
+      "Contact Page": "contactPage",
       "Service Pages Audit": "servicePages",
+      "Service Pages": "servicePages",
       "Location Pages Audit": "locationPages",
-      "Service Area Pages Audit": "serviceAreaPages"
+      "Location Pages": "locationPages",
+      "Service Area Pages Audit": "serviceAreaPages",
+      "Service Area Pages": "serviceAreaPages"
     };
     
-    return titleMap[sectionTitle] || sectionTitle.toLowerCase().replace(/\s+/g, '').replace(/&/g, 'And');
+    const result = titleMap[sectionTitle];
+    if (!result) {
+      console.log(`No mapping found for section title: "${sectionTitle}"`);
+    }
+    return result || "onPage"; // Default to onPage if no mapping found
   };
   
   // Group items by categories
