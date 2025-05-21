@@ -95,6 +95,12 @@ export default function NavBar() {
                   </div>
                 </div>
               </div>
+              <Link href="/keyword-research">
+                <div className={linkClass("/keyword-research")}>
+                  <Search className="h-4 w-4 mr-2" /> Keyword Research
+                </div>
+              </Link>
+              
               <div className="relative group">
                 <Link href="/rival-audit">
                   <div className={linkClass("/rival-audit")}>
@@ -113,12 +119,6 @@ export default function NavBar() {
                           <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
                             <BarChart className="h-4 w-4 mr-2.5 text-primary" />
                             <span>Basic Rank Tracker</span>
-                          </div>
-                        </Link>
-                        <Link href="/keyword-research">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <Search className="h-4 w-4 mr-2.5 text-primary" />
-                            <span>Keyword Research</span>
                           </div>
                         </Link>
                         <Link href="/pdf-analyzer">
