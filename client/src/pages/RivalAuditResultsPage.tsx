@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -469,46 +464,80 @@ export default function RivalAuditResultsPage() {
             updatedSummary={updatedSummary}
           />
         ) : (
-          <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid sm:grid-cols-6 mb-4 h-auto p-1">
-              <TabsTrigger value="summary" className="text-xs sm:text-sm py-2">
-                <LineChart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Summary</span>
-                <span className="sm:hidden">Sum</span>
-              </TabsTrigger>
-              <TabsTrigger value="onPage" className="text-xs sm:text-sm py-2">
-                <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">On-Page</span>
-                <span className="sm:hidden">Page</span>
-              </TabsTrigger>
-              <TabsTrigger value="structure" className="text-xs sm:text-sm py-2">
-                <ClipboardCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Structure</span>
-                <span className="sm:hidden">Struct</span>
-              </TabsTrigger>
-              <TabsTrigger value="contactPage" className="text-xs sm:text-sm py-2">
-                <Phone className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Contact</span>
-                <span className="sm:hidden">Cont</span>
-              </TabsTrigger>
-              <TabsTrigger value="servicePages" className="text-xs sm:text-sm py-2">
-                <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Services</span>
-                <span className="sm:hidden">Serv</span>
-              </TabsTrigger>
-              <TabsTrigger value="locationPages" className="text-xs sm:text-sm py-2">
-                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Locations</span>
-                <span className="sm:hidden">Loc</span>
-              </TabsTrigger>
-              {audit.serviceAreaPages && (
-                <TabsTrigger value="serviceAreaPages" className="text-xs sm:text-sm py-2">
-                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Service Areas</span>
-                  <span className="sm:hidden">S.Areas</span>
-                </TabsTrigger>
-              )}
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="mb-6">
+              <div className="flex items-center gap-3">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full md:w-[280px]">
+                    <SelectValue>
+                      {activeTab === "summary" && <div className="flex items-center"><LineChart className="h-4 w-4 mr-2" />Summary</div>}
+                      {activeTab === "onPage" && <div className="flex items-center"><Globe className="h-4 w-4 mr-2" />On-Page</div>}
+                      {activeTab === "structure" && <div className="flex items-center"><ClipboardCheck className="h-4 w-4 mr-2" />Structure</div>}
+                      {activeTab === "contactPage" && <div className="flex items-center"><Phone className="h-4 w-4 mr-2" />Contact</div>}
+                      {activeTab === "servicePages" && <div className="flex items-center"><Briefcase className="h-4 w-4 mr-2" />Services</div>}
+                      {activeTab === "locationPages" && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />Locations</div>}
+                      {activeTab === "serviceAreaPages" && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />Service Areas</div>}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="summary">
+                      <div className="flex items-center">
+                        <LineChart className="h-4 w-4 mr-2 text-primary" />
+                        <span>Summary</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="onPage">
+                      <div className="flex items-center">
+                        <Globe className="h-4 w-4 mr-2 text-primary" />
+                        <span>On-Page</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="structure">
+                      <div className="flex items-center">
+                        <ClipboardCheck className="h-4 w-4 mr-2 text-primary" />
+                        <span>Structure</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="contactPage">
+                      <div className="flex items-center">
+                        <Phone className="h-4 w-4 mr-2 text-primary" />
+                        <span>Contact</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="servicePages">
+                      <div className="flex items-center">
+                        <Briefcase className="h-4 w-4 mr-2 text-primary" />
+                        <span>Services</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="locationPages">
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 mr-2 text-primary" />
+                        <span>Locations</span>
+                      </div>
+                    </SelectItem>
+                    {audit.serviceAreaPages && (
+                      <SelectItem value="serviceAreaPages">
+                        <div className="flex items-center">
+                          <MapPin className="h-4 w-4 mr-2 text-primary" />
+                          <span>Service Areas</span>
+                        </div>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-md">
+                  <span className="font-medium">{activeTab === "summary" ? "Viewing Summary" : 
+                      activeTab === "onPage" ? "Viewing On-Page SEO" :
+                      activeTab === "structure" ? "Viewing Structure & Navigation" :
+                      activeTab === "contactPage" ? "Viewing Contact Page" :
+                      activeTab === "servicePages" ? "Viewing Service Pages" :
+                      activeTab === "locationPages" ? "Viewing Location Pages" :
+                      "Viewing Service Area Pages"}</span>
+                </div>
+              </div>
+            </div>
             
             <TabsContent value="summary" className="mt-0">
               <RivalAuditSummary audit={audit} updatedSummary={updatedSummary} />
