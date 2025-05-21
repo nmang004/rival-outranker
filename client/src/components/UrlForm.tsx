@@ -275,7 +275,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "", 
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Button 
                     type="submit" 
-                    className="px-8 py-3 h-[48px] bg-gradient-to-r from-primary to-primary/70 hover:shadow-md transition-all duration-300"
+                    className="px-8 py-3 h-[48px] bg-secondary hover:bg-secondary/90 text-white font-semibold hover:shadow-md transition-all duration-300"
                     disabled={isLoading || !url.trim()}
                   >
                     {isLoading ? (
@@ -491,7 +491,7 @@ export default function UrlForm({ onSubmit, isLoading = false, initialUrl = "", 
                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Button 
                     type="submit" 
-                    className="px-8 py-3 h-[48px] bg-gradient-to-r from-primary to-primary/70 hover:shadow-md transition-all duration-300"
+                    className="px-8 py-3 h-[48px] bg-secondary hover:bg-secondary/90 text-white font-semibold hover:shadow-md transition-all duration-300"
                     disabled={isLoading || (urls.length === 0 && !url.trim())}
                   >
                     {isLoading ? (

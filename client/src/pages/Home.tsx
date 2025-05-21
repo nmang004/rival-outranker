@@ -199,7 +199,7 @@ export default function Home() {
         </div>
         
         <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent leading-tight animate-fade-in">
-          SEO Best Practices Assessment
+          Rival Outranker
         </h1>
         
         <h2 className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in">
