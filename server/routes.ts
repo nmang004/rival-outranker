@@ -1368,19 +1368,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Audit not found" });
       }
       
-      const audit = auditCache[auditId];
+      const audit = { ...auditCache[auditId] };
       
-      // Check if service pages exist but audit items show N/A
-      if (audit.servicePages.items.length > 0 && 
-          audit.servicePages.items.some(item => item.status === 'N/A')) {
+      // Make sure the service pages section exists
+      if (!audit.servicePages || !audit.servicePages.items) {
+        return res.status(200).json({ 
+          success: false, 
+          message: "No service page items found" 
+        });
+      }
+      
+      // Check if there are any service page items marked as N/A that need updating
+      // We'll update them all regardless, assuming the user clicked the button intentionally
+      const needsUpdate = audit.servicePages.items.some(item => item.status === 'N/A');
+      
+      if (needsUpdate) {
+        console.log("Updating service page analysis items from N/A to actionable statuses");
         
         // Update service page audit items to reflect the fact that service pages exist
-        audit.servicePages.items.forEach(item => {
+        audit.servicePages.items = audit.servicePages.items.map(item => {
           if (item.status === 'N/A') {
-            item.status = 'OFI';
-            item.description = item.description.replace('N/A - No service pages detected', 'Feature could improve service page effectiveness');
-            item.notes = "Consider adding this feature to enhance service page effectiveness";
+            return {
+              ...item,
+              status: 'OFI', 
+              description: item.description.includes('N/A - No service pages detected') 
+                ? item.description.replace('N/A - No service pages detected', 'Feature could improve service page effectiveness')
+                : item.description,
+              notes: "Consider adding this feature to enhance service page effectiveness"
+            };
           }
+          return item;
         });
         
         // Recalculate summary counts
@@ -1391,6 +1408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Count all statuses across all sections
         const countStatuses = (items) => {
+          if (!items) return;
+          
           items.forEach(item => {
             if (item.status === 'Priority OFI') priorityOfiCount++;
             else if (item.status === 'OFI') ofiCount++;
@@ -1399,11 +1418,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         };
         
-        countStatuses(audit.onPage.items);
-        countStatuses(audit.structureNavigation.items);
-        countStatuses(audit.contactPage.items);
-        countStatuses(audit.servicePages.items);
-        countStatuses(audit.locationPages.items);
+        // Safely count statuses from each section
+        countStatuses(audit.onPage?.items);
+        countStatuses(audit.structureNavigation?.items);
+        countStatuses(audit.contactPage?.items);
+        countStatuses(audit.servicePages?.items);
+        countStatuses(audit.locationPages?.items);
         if (audit.serviceAreaPages) {
           countStatuses(audit.serviceAreaPages.items);
         }
@@ -1417,21 +1437,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           total: priorityOfiCount + ofiCount + okCount + naCount
         };
         
-        return res.json({ 
+        // Update the cache with our modified audit
+        auditCache[auditId] = audit;
+        
+        return res.status(200).json({ 
           success: true, 
           message: "Service page analysis updated",
           updatedAudit: audit
         });
       }
       
-      return res.json({ 
+      return res.status(200).json({ 
         success: false, 
         message: "No N/A service page items found to update" 
       });
       
     } catch (error) {
       console.error("Error analyzing service pages:", error);
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(200).json({ 
+        success: false, 
+        message: "An error occurred during service page analysis"
+      });
     }
   });
 
@@ -1455,6 +1481,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!validStatuses.includes(status)) {
         return res.status(400).json({ error: "Invalid status value" });
       }
+      
+      // Special handling for service pages: if this is the Service Pages section and status is changing from N/A,
+      // analyze any other service pages still marked as N/A
+      const isServicePageSection = sectionName === "servicePages";
       
       // Check if we have cached results for this ID
       if (!auditCache[auditId]) {
@@ -1586,6 +1616,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Generating fresh audit for ${url} with ID ${auditId}`);
           const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          
+          // Automatically analyze service pages if they exist but are marked as N/A
+          if (auditResults.servicePages && 
+              auditResults.servicePages.items && 
+              auditResults.servicePages.items.some(item => item.status === 'N/A') &&
+              auditResults.servicePages.items.find(item => item.name === "Has a single Service Page for each primary service?")?.status === 'OK') {
+            
+            console.log("Automatically analyzing service pages detected in audit");
+            
+            // Update service page audit items to reflect the fact that service pages exist
+            auditResults.servicePages.items.forEach(item => {
+              if (item.status === 'N/A') {
+                item.status = 'OFI';
+                item.description = item.description.replace('N/A - No service pages detected', 'Feature could improve service page effectiveness');
+                item.notes = "Consider adding this feature to enhance service page effectiveness";
+              }
+            });
+            
+            // Recalculate summary counts
+            let priorityOfiCount = 0;
+            let ofiCount = 0;
+            let okCount = 0;
+            let naCount = 0;
+            
+            // Count all statuses across all sections
+            const countStatuses = (items) => {
+              items.forEach(item => {
+                if (item.status === 'Priority OFI') priorityOfiCount++;
+                else if (item.status === 'OFI') ofiCount++;
+                else if (item.status === 'OK') okCount++;
+                else if (item.status === 'N/A') naCount++;
+              });
+            };
+            
+            countStatuses(auditResults.onPage.items);
+            countStatuses(auditResults.structureNavigation.items);
+            countStatuses(auditResults.contactPage.items);
+            countStatuses(auditResults.servicePages.items);
+            countStatuses(auditResults.locationPages.items);
+            if (auditResults.serviceAreaPages) {
+              countStatuses(auditResults.serviceAreaPages.items);
+            }
+            
+            // Update summary
+            auditResults.summary = {
+              priorityOfiCount,
+              ofiCount,
+              okCount,
+              naCount,
+              total: priorityOfiCount + ofiCount + okCount + naCount
+            };
+            
+            console.log("Service pages automatically analyzed");
+          }
           
           // Update the cache
           auditCache[auditId] = auditResults;
