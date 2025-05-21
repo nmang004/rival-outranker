@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select,
   SelectContent,
@@ -20,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { AuditItem, AuditStatus, SeoImportance } from "@shared/schema";
 import { AlertCircle, AlertTriangle, CheckCircle, CircleHelp, Search, Filter, ArrowUpDown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import QuickStatusChange from "./QuickStatusChange";
 
 interface RivalAuditSectionProps {
   title: string;
@@ -28,6 +29,7 @@ interface RivalAuditSectionProps {
 }
 
 export default function RivalAuditSection({ title, description, items }: RivalAuditSectionProps) {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [importanceFilter, setImportanceFilter] = useState<string | null>(null);
@@ -38,6 +40,26 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const [editNotes, setEditNotes] = useState<string>("");
   const [editStatus, setEditStatus] = useState<AuditStatus>("OK");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [currentItemForStatusChange, setCurrentItemForStatusChange] = useState<AuditItem | null>(null);
+  
+  // Get URL params to extract the audit ID
+  const urlParams = new URLSearchParams(window.location.search);
+  const auditId = urlParams.get('id') || "";
+  
+  // Get proper section name for API calls
+  const getSectionNameFromTitle = (sectionTitle: string): string => {
+    const titleMap: Record<string, string> = {
+      "On-Page Audit": "onPage",
+      "Structure & Navigation Audit": "structureNavigation",
+      "Contact Page Audit": "contactPage",
+      "Service Pages Audit": "servicePages",
+      "Location Pages Audit": "locationPages",
+      "Service Area Pages Audit": "serviceAreaPages"
+    };
+    
+    return titleMap[sectionTitle] || sectionTitle.toLowerCase().replace(/\s+/g, '').replace(/&/g, 'And');
+  };
   
   // Group items by categories
   const itemCategories = useMemo(() => {
@@ -102,36 +124,71 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "N/A":
         return <CircleHelp className="h-4 w-4 text-gray-500" />;
+      default:
+        return <CircleHelp className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  // Get status badge styling
-  const getStatusBadge = (status: AuditStatus) => {
-    switch (status) {
+  // Get status badge styling with click handler for quick updates
+  const getStatusBadge = (item: AuditItem, clickable: boolean = true) => {
+    // Open the status change dialog when clicked
+    const handleStatusClick = (e: React.MouseEvent) => {
+      if (!clickable) return;
+      e.stopPropagation();
+      
+      // Set up for quick edit
+      setCurrentItemForStatusChange(item);
+      setStatusDialogOpen(true);
+    };
+    
+    const badgeProps = clickable ? {
+      onClick: handleStatusClick,
+      style: { cursor: 'pointer' }
+    } : {};
+    
+    switch (item.status) {
       case "Priority OFI":
         return (
-          <Badge variant="outline" className="border-destructive bg-destructive/10 text-destructive">
-            {status}
+          <Badge 
+            variant="outline" 
+            className={`border-destructive bg-destructive/10 text-destructive ${clickable ? 'hover:opacity-80' : ''}`}
+            {...badgeProps}
+          >
+            {item.status}
           </Badge>
         );
       case "OFI":
         return (
-          <Badge variant="outline" className="border-yellow-500 bg-yellow-500/10 text-yellow-600">
-            {status}
+          <Badge 
+            variant="outline" 
+            className={`border-yellow-500 bg-yellow-500/10 text-yellow-600 ${clickable ? 'hover:opacity-80' : ''}`}
+            {...badgeProps}
+          >
+            {item.status}
           </Badge>
         );
       case "OK":
         return (
-          <Badge variant="outline" className="border-green-500 bg-green-500/10 text-green-600">
-            {status}
+          <Badge 
+            variant="outline" 
+            className={`border-green-500 bg-green-500/10 text-green-600 ${clickable ? 'hover:opacity-80' : ''}`}
+            {...badgeProps}
+          >
+            {item.status}
           </Badge>
         );
       case "N/A":
         return (
-          <Badge variant="outline" className="border-gray-500 bg-gray-500/10 text-gray-600">
-            {status}
+          <Badge 
+            variant="outline" 
+            className={`border-gray-500 bg-gray-500/10 text-gray-600 ${clickable ? 'hover:opacity-80' : ''}`}
+            {...badgeProps}
+          >
+            {item.status}
           </Badge>
         );
+      default:
+        return null;
     }
   };
 
@@ -156,6 +213,8 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
             {importance}
           </Badge>
         );
+      default:
+        return null;
     }
   };
 
@@ -229,16 +288,16 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     setEditStatus(item.status);
   };
 
-  const handleSaveItem = async (item: AuditItem, sectionName: string) => {
+  const handleSaveItem = async (item: AuditItem) => {
     try {
       setIsUpdating(true);
       
-      // Get URL params to extract the audit ID
-      const urlParams = new URLSearchParams(window.location.search);
-      const auditId = urlParams.get('id');
-      
       if (!auditId) {
-        console.error("No audit ID found in URL params");
+        toast({
+          title: "Error",
+          description: "No audit ID found in URL params",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -247,6 +306,9 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
       const newNotes = editNotes !== undefined ? editNotes : item.notes || "";
       
       console.log("Saving item with status:", newStatus);
+      
+      // Convert title to proper section name for API
+      const sectionName = getSectionNameFromTitle(title);
       
       // Send update to the backend
       const response = await fetch(`/api/rival-audit/${auditId}/update-item`, {
@@ -275,6 +337,13 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
       // This will trigger a re-render with the updated data
       setEditModeItem(null);
       
+      // Show success toast
+      toast({
+        title: "Item updated",
+        description: `Status changed to ${newStatus}`,
+        duration: 3000,
+      });
+      
       // Force a re-render of the parent component with updated summary
       if (typeof window !== 'undefined') {
         // Create and dispatch a custom event that the parent can listen for
@@ -289,7 +358,11 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
       }
     } catch (error) {
       console.error("Error updating item:", error);
-      alert("Failed to update item. Please try again.");
+      toast({
+        title: "Failed to update item",
+        description: "Please try again or reload the page",
+        variant: "destructive"
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -297,6 +370,15 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
 
   const handleCancelEdit = () => {
     setEditModeItem(null);
+  };
+
+  // Handle item update from the QuickStatusChange dialog
+  const handleItemUpdated = (updatedItem: AuditItem) => {
+    // Find and update the item in the items array
+    const itemIndex = items.findIndex(item => item.name === updatedItem.name);
+    if (itemIndex !== -1) {
+      items[itemIndex] = updatedItem;
+    }
   };
 
   return (
@@ -407,288 +489,292 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
             <Accordion type="multiple" className="rounded-b-md">
               {filteredItems.length > 0 ? (
                 filteredItems.map((item, index) => (
-                  <AccordionItem key={`list-${index}`} value={`item-${index}`}>
-                    <AccordionTrigger className="grid grid-cols-12 gap-2 sm:gap-4 px-2 sm:px-4 py-3 hover:no-underline text-sm sm:text-base">
-                      <div className="col-span-12 sm:col-span-5 font-medium flex flex-wrap items-center">
-                        {getStatusIcon(item.status)}
-                        <span className="ml-2 text-left truncate">{item.name}</span>
-                        <div className="flex space-x-2 mt-1 sm:hidden w-full ml-6">
-                          {getStatusBadge(item.status)}
+                  <AccordionItem 
+                    value={`item-${index}`} 
+                    key={`${item.name}-${index}`}
+                    className="border-b last:border-b-0"
+                  >
+                    <AccordionTrigger className="py-3 px-2 sm:px-4 hover:no-underline">
+                      <div className="grid grid-cols-12 gap-2 sm:gap-4 w-full text-left">
+                        <div className="col-span-12 sm:col-span-5 flex items-center gap-2">
+                          <span className="flex-shrink-0">{getStatusIcon(item.status)}</span>
+                          <span className="text-xs sm:text-sm font-medium line-clamp-1">{item.name}</span>
+                          
+                          <div className="sm:hidden ml-auto space-x-2">
+                            {getStatusBadge(item, true)}
+                            <span className="hidden xs:inline-block">{getImportanceBadge(item.importance)}</span>
+                          </div>
+                        </div>
+                        <div className="hidden sm:flex col-span-2 items-center">
+                          {getStatusBadge(item, true)}
+                        </div>
+                        <div className="hidden sm:flex col-span-2 items-center">
                           {getImportanceBadge(item.importance)}
                         </div>
-                      </div>
-                      <div className="hidden sm:block col-span-2">
-                        {getStatusBadge(item.status)}
-                      </div>
-                      <div className="hidden sm:block col-span-2">
-                        {getImportanceBadge(item.importance)}
-                      </div>
-                      <div className="hidden sm:block col-span-3 truncate text-muted-foreground">
-                        {item.notes ? item.notes.substring(0, 50) + (item.notes.length > 50 ? "..." : "") : "No notes"}
+                        <div className="hidden sm:block col-span-3 text-xs text-muted-foreground line-clamp-1">
+                          {item.notes || "No notes"}
+                        </div>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="px-4 py-3 border-t">
-                      <div className="grid grid-cols-12 gap-6">
-                        <div className="col-span-12 md:col-span-8 space-y-4">
+                    <AccordionContent className="px-2 sm:px-4 pb-3">
+                      {editModeItem === item.name ? (
+                        // Edit mode
+                        <div className="space-y-3 pl-6">
                           <div>
-                            <h4 className="font-medium">Description</h4>
-                            <p className="text-muted-foreground mt-1">
-                              {item.description || "No description provided"}
+                            <h4 className="text-sm font-semibold mb-1">Description</h4>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Status</h4>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge 
+                                variant="outline" 
+                                className={`border-destructive bg-destructive/10 text-destructive cursor-pointer ${editStatus === "Priority OFI" ? 'ring-2 ring-destructive' : ''}`}
+                                onClick={() => setEditStatus("Priority OFI")}
+                              >
+                                Priority OFI
+                              </Badge>
+                              <Badge 
+                                variant="outline" 
+                                className={`border-yellow-500 bg-yellow-500/10 text-yellow-600 cursor-pointer ${editStatus === "OFI" ? 'ring-2 ring-yellow-500' : ''}`}
+                                onClick={() => setEditStatus("OFI")}
+                              >
+                                OFI
+                              </Badge>
+                              <Badge 
+                                variant="outline" 
+                                className={`border-green-500 bg-green-500/10 text-green-600 cursor-pointer ${editStatus === "OK" ? 'ring-2 ring-green-500' : ''}`}
+                                onClick={() => setEditStatus("OK")}
+                              >
+                                OK
+                              </Badge>
+                              <Badge 
+                                variant="outline" 
+                                className={`border-gray-500 bg-gray-500/10 text-gray-600 cursor-pointer ${editStatus === "N/A" ? 'ring-2 ring-gray-500' : ''}`}
+                                onClick={() => setEditStatus("N/A")}
+                              >
+                                N/A
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Notes</h4>
+                            <Textarea 
+                              value={editNotes} 
+                              onChange={(e) => setEditNotes(e.target.value)} 
+                              placeholder="Add notes about this audit item..."
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                          
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="outline" onClick={handleCancelEdit}>
+                              Cancel
+                            </Button>
+                            <Button 
+                              onClick={() => handleSaveItem(item)}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? "Saving..." : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        // View mode
+                        <div className="space-y-3 pl-6">
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Description</h4>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Status</h4>
+                            {getStatusBadge(item, true)}
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Notes</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {item.notes || "No notes added yet"}
                             </p>
                           </div>
-                        </div>
-                        <div className="col-span-12 md:col-span-4 space-y-4">
-                          <div>
-                            {editModeItem === item.name ? (
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Status</h4>
-                                  <Select
-                                    value={editStatus}
-                                    onValueChange={(value: AuditStatus) => setEditStatus(value)}
-                                  >
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Priority OFI">
-                                        <div className="flex items-center">
-                                          <AlertCircle className="h-4 w-4 text-destructive mr-2" />
-                                          Priority OFI
-                                        </div>
-                                      </SelectItem>
-                                      <SelectItem value="OFI">
-                                        <div className="flex items-center">
-                                          <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                                          OFI
-                                        </div>
-                                      </SelectItem>
-                                      <SelectItem value="OK">
-                                        <div className="flex items-center">
-                                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                          OK
-                                        </div>
-                                      </SelectItem>
-                                      <SelectItem value="N/A">
-                                        <div className="flex items-center">
-                                          <CircleHelp className="h-4 w-4 text-gray-500 mr-2" />
-                                          N/A
-                                        </div>
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                <div>
-                                  <h4 className="font-medium mb-2">Notes</h4>
-                                  <Textarea 
-                                    value={editNotes} 
-                                    onChange={(e) => setEditNotes(e.target.value)}
-                                    placeholder="Add notes about this audit item..."
-                                    className="min-h-[100px]"
-                                  />
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    onClick={() => handleSaveItem(item, "onPage")}
-                                    disabled={isUpdating}
-                                  >
-                                    {isUpdating ? "Saving..." : "Save"}
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    onClick={handleCancelEdit}
-                                    disabled={isUpdating}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="font-medium mb-2">Status</h4>
-                                  <div className="flex items-center gap-2">
-                                    {getStatusIcon(item.status)}
-                                    {getStatusBadge(item.status)}
-                                  </div>
-                                </div>
-                                
-                                <div>
-                                  <h4 className="font-medium mb-2">Notes</h4>
-                                  <p className="text-muted-foreground">
-                                    {item.notes || "No notes added yet"}
-                                  </p>
-                                </div>
-                                
-                                <Button size="sm" variant="outline" onClick={() => handleEditClick(item)}>
-                                  Edit Item
-                                </Button>
-                              </div>
-                            )}
+                          
+                          <div className="flex justify-end">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleEditClick(item)}
+                            >
+                              Edit Item
+                            </Button>
                           </div>
                         </div>
-                      </div>
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                 ))
               ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  No audit items found matching your filters
+                <div className="px-4 py-8 text-center text-muted-foreground text-sm">
+                  No matching items found. Try adjusting your filters.
                 </div>
               )}
             </Accordion>
           </div>
         ) : (
-          // Category view
-          <Tabs defaultValue="UX/CTA" className="w-full">
-            <TabsList className="grid grid-cols-5 mb-4">
-              <TabsTrigger value="UX/CTA">UX/CTA ({filteredAndSortedItems.filteredCategories["UX/CTA"].length})</TabsTrigger>
-              <TabsTrigger value="On-Page">On-Page ({filteredAndSortedItems.filteredCategories["On-Page"].length})</TabsTrigger>
-              <TabsTrigger value="Footer">Footer ({filteredAndSortedItems.filteredCategories["Footer"].length})</TabsTrigger>
-              <TabsTrigger value="Content">Content ({filteredAndSortedItems.filteredCategories["Content"].length})</TabsTrigger>
-              <TabsTrigger value="Other">Other ({filteredAndSortedItems.filteredCategories["Other"].length})</TabsTrigger>
-            </TabsList>
-            
-            {Object.keys(filteredAndSortedItems.filteredCategories).map(category => (
-              <TabsContent key={category} value={category} className="mt-0">
-                <div className="border rounded-md">
-                  <div className="bg-muted px-4 py-2 rounded-t-md grid grid-cols-12 gap-4 font-medium text-sm">
-                    <div className="col-span-5">Name</div>
-                    <div className="col-span-2">Status</div>
-                    <div className="col-span-2">Importance</div>
-                    <div className="col-span-3">Notes</div>
-                  </div>
-                  
-                  <Accordion type="multiple" className="rounded-b-md">
-                    {filteredAndSortedItems.filteredCategories[category].length > 0 ? (
-                      filteredAndSortedItems.filteredCategories[category].map((item, index) => (
-                        <AccordionItem key={`${category}-${index}`} value={`${category}-${index}`}>
-                          <AccordionTrigger className="grid grid-cols-12 gap-4 px-4 py-3 hover:no-underline">
-                            <div className="col-span-5 font-medium flex items-center">
-                              {getStatusIcon(item.status)}
-                              <span className="ml-2 text-left">{item.name}</span>
-                            </div>
-                            <div className="col-span-2">
-                              {getStatusBadge(item.status)}
-                            </div>
-                            <div className="col-span-2">
-                              {getImportanceBadge(item.importance)}
-                            </div>
-                            <div className="col-span-3 truncate text-muted-foreground">
-                              {item.notes ? item.notes.substring(0, 50) + (item.notes.length > 50 ? "..." : "") : "No notes"}
+          // Categories view
+          <div className="space-y-6">
+            {Object.entries(filteredAndSortedItems.filteredCategories)
+              .filter(([_, items]) => items.length > 0)
+              .map(([category, categoryItems]) => (
+                <div key={category} className="space-y-2">
+                  <h3 className="text-lg font-medium">{category}</h3>
+                  <div className="border rounded-md">
+                    <div className="bg-muted px-4 py-2 rounded-t-md flex justify-between">
+                      <div className="font-medium">Item</div>
+                      <div className="flex gap-4">
+                        <div>Status</div>
+                        <div>Importance</div>
+                      </div>
+                    </div>
+                    <Accordion type="multiple" className="rounded-b-md">
+                      {categoryItems.map((item, index) => (
+                        <AccordionItem 
+                          value={`${category}-item-${index}`} 
+                          key={`${category}-${item.name}-${index}`}
+                          className="border-b last:border-b-0"
+                        >
+                          <AccordionTrigger className="py-3 px-4 hover:no-underline">
+                            <div className="flex justify-between w-full items-center">
+                              <div className="flex items-center gap-2">
+                                <span>{getStatusIcon(item.status)}</span>
+                                <span className="text-sm font-medium">{item.name}</span>
+                              </div>
+                              <div className="flex gap-4 items-center">
+                                {getStatusBadge(item, true)}
+                                {getImportanceBadge(item.importance)}
+                              </div>
                             </div>
                           </AccordionTrigger>
-                          <AccordionContent className="px-4 py-3 border-t">
-                            <div className="grid grid-cols-12 gap-6">
-                              <div className="col-span-12 md:col-span-8 space-y-4">
+                          <AccordionContent className="px-4 pb-3">
+                            {editModeItem === item.name ? (
+                              // Edit mode
+                              <div className="space-y-3 pl-6">
                                 <div>
-                                  <h4 className="font-medium">Description</h4>
-                                  <p className="text-muted-foreground mt-1">
-                                    {item.description || "No description provided"}
+                                  <h4 className="text-sm font-semibold mb-1">Description</h4>
+                                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                                </div>
+                                
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-1">Status</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`border-destructive bg-destructive/10 text-destructive cursor-pointer ${editStatus === "Priority OFI" ? 'ring-2 ring-destructive' : ''}`}
+                                      onClick={() => setEditStatus("Priority OFI")}
+                                    >
+                                      Priority OFI
+                                    </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`border-yellow-500 bg-yellow-500/10 text-yellow-600 cursor-pointer ${editStatus === "OFI" ? 'ring-2 ring-yellow-500' : ''}`}
+                                      onClick={() => setEditStatus("OFI")}
+                                    >
+                                      OFI
+                                    </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`border-green-500 bg-green-500/10 text-green-600 cursor-pointer ${editStatus === "OK" ? 'ring-2 ring-green-500' : ''}`}
+                                      onClick={() => setEditStatus("OK")}
+                                    >
+                                      OK
+                                    </Badge>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`border-gray-500 bg-gray-500/10 text-gray-600 cursor-pointer ${editStatus === "N/A" ? 'ring-2 ring-gray-500' : ''}`}
+                                      onClick={() => setEditStatus("N/A")}
+                                    >
+                                      N/A
+                                    </Badge>
+                                  </div>
+                                </div>
+                                
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-1">Notes</h4>
+                                  <Textarea 
+                                    value={editNotes} 
+                                    onChange={(e) => setEditNotes(e.target.value)} 
+                                    placeholder="Add notes about this audit item..."
+                                    className="min-h-[80px]"
+                                  />
+                                </div>
+                                
+                                <div className="flex justify-end gap-2 pt-2">
+                                  <Button variant="outline" onClick={handleCancelEdit}>
+                                    Cancel
+                                  </Button>
+                                  <Button 
+                                    onClick={() => handleSaveItem(item)}
+                                    disabled={isUpdating}
+                                  >
+                                    {isUpdating ? "Saving..." : "Save"}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // View mode
+                              <div className="space-y-3 pl-6">
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-1">Description</h4>
+                                  <p className="text-sm text-muted-foreground">{item.description}</p>
+                                </div>
+                                
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-1">Status</h4>
+                                  {getStatusBadge(item, true)}
+                                </div>
+                                
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-1">Notes</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {item.notes || "No notes added yet"}
                                   </p>
                                 </div>
-                              </div>
-                              <div className="col-span-12 md:col-span-4 space-y-4">
-                                <div>
-                                  {editModeItem === item.name ? (
-                                    <div className="space-y-4">
-                                      <div>
-                                        <h4 className="font-medium mb-2">Status</h4>
-                                        <Select
-                                          value={editStatus}
-                                          onValueChange={(value: AuditStatus) => setEditStatus(value)}
-                                        >
-                                          <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select status" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="Priority OFI">
-                                              <div className="flex items-center">
-                                                <AlertCircle className="h-4 w-4 text-destructive mr-2" />
-                                                Priority OFI
-                                              </div>
-                                            </SelectItem>
-                                            <SelectItem value="OFI">
-                                              <div className="flex items-center">
-                                                <AlertTriangle className="h-4 w-4 text-yellow-500 mr-2" />
-                                                OFI
-                                              </div>
-                                            </SelectItem>
-                                            <SelectItem value="OK">
-                                              <div className="flex items-center">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                                                OK
-                                              </div>
-                                            </SelectItem>
-                                            <SelectItem value="N/A">
-                                              <div className="flex items-center">
-                                                <CircleHelp className="h-4 w-4 text-gray-500 mr-2" />
-                                                N/A
-                                              </div>
-                                            </SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                      
-                                      <div>
-                                        <h4 className="font-medium mb-2">Notes</h4>
-                                        <Textarea 
-                                          value={editNotes} 
-                                          onChange={(e) => setEditNotes(e.target.value)}
-                                          placeholder="Add notes about this audit item..."
-                                          className="min-h-[100px]"
-                                        />
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <Button 
-                                          size="sm" 
-                                          onClick={() => handleSaveItem(item, title.toLowerCase().replace(/\s+/g, ''))}
-                                          disabled={isUpdating}
-                                        >
-                                          {isUpdating ? "Saving..." : "Save"}
-                                        </Button>
-                                        <Button 
-                                          size="sm" 
-                                          variant="outline" 
-                                          onClick={handleCancelEdit}
-                                          disabled={isUpdating}
-                                        >
-                                          Cancel
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      <p className="text-muted-foreground">
-                                        {item.notes || "No notes added yet"}
-                                      </p>
-                                      <Button size="sm" variant="outline" onClick={() => handleEditClick(item)}>
-                                        Edit Notes
-                                      </Button>
-                                    </div>
-                                  )}
+                                
+                                <div className="flex justify-end">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => handleEditClick(item)}
+                                  >
+                                    Edit Item
+                                  </Button>
                                 </div>
                               </div>
-                            </div>
+                            )}
                           </AccordionContent>
                         </AccordionItem>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No audit items found in this category matching your filters
-                      </div>
-                    )}
-                  </Accordion>
+                      ))}
+                    </Accordion>
+                  </div>
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+              ))}
+          </div>
         )}
       </CardContent>
+
+      {/* Quick Status Change Dialog */}
+      {currentItemForStatusChange && (
+        <QuickStatusChange
+          item={currentItemForStatusChange}
+          auditId={auditId}
+          sectionName={getSectionNameFromTitle(title)}
+          open={statusDialogOpen}
+          onOpenChange={setStatusDialogOpen}
+          onSuccess={handleItemUpdated}
+        />
+      )}
     </Card>
   );
 }
