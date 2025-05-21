@@ -317,7 +317,10 @@ class RivalAuditCrawler {
       /(\/|-)furnace(-|\/)/i,
       /(\/|-)boiler(-|\/)/i,
       /(\/|-)thermostat(-|\/)/i,
-      /(\/|-)duct(-|\/)/i
+      /(\/|-)duct(-|\/)/i,
+      /(\/|-)indoor-air-quality(-|\/)/i,
+      /(\/|-)plumbing(-|\/)/i,
+      /(\/|-)electrical(-|\/)/i
     ];
     
     const locationPagePatterns = [
@@ -673,7 +676,9 @@ class RivalAuditCrawler {
     // Define comprehensive service directory and term lists for accurate detection
     const serviceDirectories = [
       'services', 'service', 'products', 'solutions', 'offerings', 
-      'capabilities', 'what-we-do', 'what-we-offer', 'our-services'
+      'capabilities', 'what-we-do', 'what-we-offer', 'our-services',
+      'heating', 'cooling', 'air-conditioning', 'ac', 'hvac', 'plumbing',
+      'electrical', 'indoor-air-quality', 'air-quality'
     ];
     
     const specificServiceTerms = [
@@ -700,17 +705,36 @@ class RivalAuditCrawler {
       'mini-split', 'central-air', 'zoned', 'multi-zone', 'smart', 'wifi'
     ];
     
-    // Pattern 1: Direct service directory structure
-    // Example: /services/*, /products/*, etc.
-    if (pathSegments.length >= 1 && serviceDirectories.includes(pathSegments[0])) {
-      // If it's in a service directory but doesn't contain location indicators,
-      // it's likely a service page
-      if (!this.containsLocationIndicator(path)) {
-        return true;
+    // Pattern 1: Multi-level service directory detection
+    // This handles nested paths like /air-conditioning/ac-repair/ or /heating/boiler-repair/
+    if (pathSegments.length >= 1) {
+      // Check if any path segment is a service directory
+      for (const segment of pathSegments) {
+        if (serviceDirectories.includes(segment)) {
+          if (!this.containsLocationIndicator(path)) {
+            return true;
+          }
+        }
       }
     }
     
-    // Pattern 2: Specific service in URL that's not in a location-based path
+    // Pattern 2: Nested service pages detection
+    // Example: /air-conditioning/ac-repair/, /heating/boiler-repair/
+    if (pathSegments.length >= 2) {
+      // Check all adjacent segment pairs for service category + specific service patterns
+      for (let i = 0; i < pathSegments.length - 1; i++) {
+        const categorySegment = pathSegments[i];
+        const serviceSegment = pathSegments[i + 1];
+        
+        // Check if this is a service category followed by a specific service
+        if (serviceDirectories.includes(categorySegment) && 
+            specificServiceTerms.some(term => serviceSegment.includes(term))) {
+          return true;
+        }
+      }
+    }
+    
+    // Pattern 3: Specific service in URL that's not in a location-based path
     // Example: /ac-repair/, /furnace-installation/, etc.
     if (pathSegments.length >= 1 && 
         !this.containsLocationIndicator(path) &&
