@@ -57,6 +57,8 @@ const buddyQuotes = {
 // SEO character faces
 const buddyFaces = ["(◠‿◠)", "(⌐■_■)", "(◕‿◕)", "ʕ•ᴥ•ʔ", "(•‿•)"];
 
+// Chat components used in this file
+
 // Main SEO Buddy Component for non-learning pages
 function MainSeoBuddy() {
   const [expanded, setExpanded] = useState(false);
@@ -141,15 +143,17 @@ function MainSeoBuddy() {
               </p>
               <div className="flex justify-between text-xs">
                 <button 
-                  onClick={() => setShowChatBot(true)}
-                  className="text-primary hover:text-primary/80"
+                  onClick={() => alert("Ask a question feature will be available soon!")}
+                  className="text-primary hover:text-primary/80 flex items-center gap-1"
                 >
+                  <MessageSquare className="h-3 w-3" />
                   Ask a question
                 </button>
                 <button 
-                  onClick={() => setShowBestPractices(true)}
-                  className="text-primary hover:text-primary/80"
+                  onClick={() => alert("SEO tips feature will be available soon!")}
+                  className="text-primary hover:text-primary/80 flex items-center gap-1"
                 >
+                  <Lightbulb className="h-3 w-3" />
                   SEO tips
                 </button>
               </div>
@@ -163,7 +167,7 @@ function MainSeoBuddy() {
               isWaving ? 'animate-wave' : ''
             } ${isShaking ? 'animate-wiggle' : ''}`}
           >
-            <span className="text-lg">{buddyFace}</span>
+            <span className="text-lg font-bold">{buddyFace}</span>
           </button>
         </div>
       )}
