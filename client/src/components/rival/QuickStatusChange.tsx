@@ -59,7 +59,7 @@ export default function QuickStatusChange({
       
       const result = await response.json();
       
-      // Update the item in the local state
+      // Create updated item with new status and notes
       const updatedItem = {
         ...item,
         status: editStatus,
@@ -89,9 +89,20 @@ export default function QuickStatusChange({
             summary: result.summary,
             oldStatus: result.oldStatus,
             newStatus: result.newStatus,
+            updatedAt: new Date().getTime(), // Add timestamp for forcing rerenders
           } 
         });
-        window.dispatchEvent(updateEvent);
+        
+        // Dispatch event with a slight delay to ensure UI updates
+        setTimeout(() => {
+          window.dispatchEvent(updateEvent);
+        }, 50);
+        
+        // Force a re-render of the summary component directly
+        document.querySelectorAll('.audit-summary-container').forEach(el => {
+          el.classList.add('updating');
+          setTimeout(() => el.classList.remove('updating'), 300);
+        });
       }
     } catch (error) {
       console.error("Error updating item:", error);
