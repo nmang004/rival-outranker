@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { X, RefreshCw, HelpCircle, Lightbulb, MessageSquare } from 'lucide-react';
 import { useLocation } from 'wouter';
+import SeoBuddyChatInterface from './SeoBuddyChatInterface';
+import { AnimatePresence, motion } from 'framer-motion';
 
 // SEO buddy quotes for different pages
 const buddyQuotes = {
@@ -119,6 +121,68 @@ function MainSeoBuddy() {
     <div className="fixed bottom-4 right-4 z-40">
       {showBuddy && (
         <div className="flex flex-col items-end space-y-2">
+          {/* SEO Buddy Chat Interface */}
+          <AnimatePresence>
+            {showChatBot && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] h-[450px] overflow-hidden"
+              >
+                <SeoBuddyChatInterface onClose={() => setShowChatBot(false)} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* SEO Best Practices Interface */}
+          <AnimatePresence>
+            {showBestPractices && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] max-h-[450px] overflow-auto"
+              >
+                <div className="p-3 border-b bg-gradient-to-r from-primary/10 to-primary/5 flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Lightbulb className="w-3.5 h-3.5 text-primary mr-1" />
+                    <span className="text-xs font-medium">SEO Best Practices</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowBestPractices(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-4 space-y-4 text-sm">
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-primary">On-Page SEO Tips</h3>
+                    <ul className="list-disc list-inside text-xs space-y-1 text-gray-700">
+                      <li>Use descriptive, keyword-rich title tags (under 60 characters)</li>
+                      <li>Create unique meta descriptions (under 155 characters)</li>
+                      <li>Optimize images with descriptive alt text</li>
+                      <li>Use header tags (H1, H2, H3) to structure content</li>
+                      <li>Ensure content is comprehensive and high-quality</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-primary">Technical SEO Tips</h3>
+                    <ul className="list-disc list-inside text-xs space-y-1 text-gray-700">
+                      <li>Improve page speed (compress images, minify code)</li>
+                      <li>Ensure site is mobile-friendly</li>
+                      <li>Fix broken links and crawl errors</li>
+                      <li>Use HTTPS for secure browsing</li>
+                      <li>Create and submit XML sitemaps</li>
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Main SEO Buddy Interface */}
           {expanded && (
             <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs animate-fadeIn">
               <div className="flex items-center justify-between mb-2">
@@ -143,14 +207,20 @@ function MainSeoBuddy() {
               </p>
               <div className="flex justify-between text-xs">
                 <button 
-                  onClick={() => alert("Ask a question feature will be available soon!")}
+                  onClick={() => {
+                    setShowChatBot(true);
+                    setExpanded(false);
+                  }}
                   className="text-primary hover:text-primary/80 flex items-center gap-1"
                 >
                   <MessageSquare className="h-3 w-3" />
                   Ask a question
                 </button>
                 <button 
-                  onClick={() => alert("SEO tips feature will be available soon!")}
+                  onClick={() => {
+                    setShowBestPractices(true);
+                    setExpanded(false);
+                  }}
                   className="text-primary hover:text-primary/80 flex items-center gap-1"
                 >
                   <Lightbulb className="h-3 w-3" />
