@@ -449,9 +449,19 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
           
           window.dispatchEvent(updateEvent);
           
-          // Force a refresh of the current component
-          setSearchTerm(searchTerm + " ");
-          setTimeout(() => setSearchTerm(searchTerm.trim()), 10);
+          // Update local items array to trigger refresh
+          if (title.includes("Service Pages") && result.updatedAudit.servicePages?.items) {
+            // We need to apply the updates directly to our component's data
+            // Apply the following change to force update our view
+            setTimeout(() => {
+              // Force window reload to guarantee refresh
+              window.location.reload();
+            }, 1500);
+          } else {
+            // Force a refresh of the current component
+            setSearchTerm(searchTerm + " ");
+            setTimeout(() => setSearchTerm(searchTerm.trim()), 10);
+          }
         }
         
         toast({
