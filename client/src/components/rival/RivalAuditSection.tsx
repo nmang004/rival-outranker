@@ -680,13 +680,27 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                           </div>
                           
                           <div>
-                            <h4 className="text-sm font-semibold mb-1">Notes</h4>
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="text-sm font-semibold">Notes</h4>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <span>{editNotes.length} chars</span>
+                                {editNotes.length === 0 ? (
+                                  <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                ) : (
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
+                                )}
+                              </div>
+                            </div>
                             <Textarea 
                               value={editNotes} 
                               onChange={(e) => setEditNotes(e.target.value)} 
-                              placeholder="Add notes about this audit item..."
-                              className="min-h-[80px]"
+                              placeholder="Add detailed notes about this audit item to help your team understand the issue and take action..."
+                              className="min-h-[120px] focus:border-primary"
                             />
+                            <div className="text-xs text-muted-foreground mt-1 flex justify-between">
+                              <span>Use detailed notes to explain reasoning behind status changes</span>
+                              <span>{new Date().toLocaleDateString()}</span>
+                            </div>
                           </div>
                           
                           <div className="flex justify-end gap-2 pt-2">
@@ -715,10 +729,28 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                           </div>
                           
                           <div>
-                            <h4 className="text-sm font-semibold mb-1">Notes</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {item.notes || "No notes added yet"}
-                            </p>
+                            <div className="flex justify-between items-center mb-1">
+                              <h4 className="text-sm font-semibold">Notes</h4>
+                              {item.notes && (
+                                <Badge variant="outline" className="text-xs px-2 py-0">
+                                  {item.notes.length} chars
+                                </Badge>
+                              )}
+                            </div>
+                            {item.notes ? (
+                              <div className="bg-muted/30 p-3 rounded-md border border-muted relative">
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {item.notes}
+                                </p>
+                                <span className="absolute top-1 right-1 text-xs text-muted-foreground opacity-70">
+                                  {new Date().toLocaleDateString()}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="bg-muted/20 p-3 rounded-md border border-dashed border-muted flex items-center justify-center">
+                                <p className="text-sm text-muted-foreground italic">No notes added yet</p>
+                              </div>
+                            )}
                           </div>
                           
                           <div className="flex justify-end">
