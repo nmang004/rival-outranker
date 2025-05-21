@@ -10,12 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { 
   Select,
   SelectContent,
@@ -27,6 +21,7 @@ import { AuditItem, AuditStatus, SeoImportance } from "@shared/schema";
 import { AlertCircle, AlertTriangle, CheckCircle, CircleHelp, Search, Filter, ArrowUpDown, BarChart4, FileText, Map, MapPin, FileCheck, ListChecks } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuickStatusChange from "./QuickStatusChange";
+import RivalAuditTabs from "./RivalAuditTabs";
 
 interface RivalAuditSectionProps {
   title: string;
@@ -483,6 +478,457 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     }
   };
 
+  // Render summary tab content
+  const renderSummaryTab = () => {
+    return (
+      <div className="border rounded-md p-4 space-y-4">
+        <h3 className="text-lg font-semibold">Summary Dashboard</h3>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
+            <span className="text-xs text-muted-foreground mb-1">Priority OFIs</span>
+            <span className="text-2xl font-bold text-destructive">
+              {items.filter(item => item.status === "Priority OFI").length}
+            </span>
+          </div>
+          <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
+            <span className="text-xs text-muted-foreground mb-1">OFIs</span>
+            <span className="text-2xl font-bold text-yellow-600">
+              {items.filter(item => item.status === "OFI").length}
+            </span>
+          </div>
+          <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
+            <span className="text-xs text-muted-foreground mb-1">OK</span>
+            <span className="text-2xl font-bold text-green-600">
+              {items.filter(item => item.status === "OK").length}
+            </span>
+          </div>
+          <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
+            <span className="text-xs text-muted-foreground mb-1">N/A</span>
+            <span className="text-2xl font-bold text-gray-500">
+              {items.filter(item => item.status === "N/A").length}
+            </span>
+          </div>
+        </div>
+        
+        <div className="border rounded-md p-4">
+          <h4 className="text-sm font-semibold mb-3">Priority OFIs</h4>
+          {items.filter(item => item.status === "Priority OFI").length > 0 ? (
+            <div className="space-y-2">
+              {items.filter(item => item.status === "Priority OFI").map((item, index) => (
+                <div key={`${item.name}-${index}`} className="flex items-center">
+                  <AlertCircle className="h-4 w-4 text-destructive mr-2" />
+                  <span className="text-sm">{item.name}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground italic">No Priority OFIs found</div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render main tab content (list or categories)
+  const renderMainContent = () => {
+    return (
+      <div>
+        <div className="flex mb-4 space-x-2">
+          <Button 
+            variant={currentView === "list" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setCurrentView("list")}
+            className="flex items-center"
+          >
+            <ArrowUpDown className="mr-1 h-4 w-4" />
+            List
+          </Button>
+          <Button 
+            variant={currentView === "categories" ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setCurrentView("categories")}
+            className="flex items-center"
+          >
+            <Filter className="mr-1 h-4 w-4" />
+            Categories
+          </Button>
+        </div>
+        
+        {currentView === "list" ? (
+          // List view
+          <div className="border rounded-md">
+            <div className="bg-muted px-2 sm:px-4 py-2 rounded-t-md grid grid-cols-12 gap-2 sm:gap-4 font-medium text-xs sm:text-sm">
+              <div className="col-span-12 sm:col-span-5 flex items-center cursor-pointer" onClick={() => toggleSort("name")}>
+                Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                <div className="flex ml-auto space-x-2 sm:hidden text-[10px]">
+                  <span className="px-2" onClick={(e) => { e.stopPropagation(); toggleSort("status"); }}>
+                    Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
+                  </span>
+                  <span className="px-2" onClick={(e) => { e.stopPropagation(); toggleSort("importance"); }}>
+                    Imp. {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}
+                  </span>
+                </div>
+              </div>
+              <div className="hidden sm:flex col-span-2 items-center cursor-pointer" onClick={() => toggleSort("status")}>
+                Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
+              </div>
+              <div className="hidden sm:flex col-span-2 items-center cursor-pointer" onClick={() => toggleSort("importance")}>
+                Importance {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}
+              </div>
+              <div className="hidden sm:block col-span-3">Notes</div>
+            </div>
+            
+            <Accordion type="multiple" className="rounded-b-md">
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item, index) => (
+                  <AccordionItem 
+                    value={`item-${index}`} 
+                    key={`${item.name}-${index}`}
+                    className="border-b last:border-b-0"
+                  >
+                    <AccordionTrigger className="py-3 px-2 sm:px-4 hover:no-underline">
+                      <div className="grid grid-cols-12 gap-2 sm:gap-4 w-full text-left">
+                        <div className="col-span-12 sm:col-span-5 flex items-center gap-2">
+                          <span className="flex-shrink-0">{getStatusIcon(item.status)}</span>
+                          <span className="text-xs sm:text-sm font-medium line-clamp-1">{item.name}</span>
+                          
+                          <div className="sm:hidden ml-auto space-x-2">
+                            {getStatusBadge(item, true)}
+                            <span className="hidden xs:inline-block">{getImportanceBadge(item.importance)}</span>
+                          </div>
+                        </div>
+                        <div className="hidden sm:flex col-span-2 items-center">
+                          {getStatusBadge(item, true)}
+                        </div>
+                        <div className="hidden sm:flex col-span-2 items-center">
+                          {getImportanceBadge(item.importance)}
+                        </div>
+                        <div className="hidden sm:block col-span-3 text-xs text-muted-foreground line-clamp-1">
+                          {item.notes || "No notes"}
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-2 sm:px-4 pb-3">
+                      {editModeItem === item.name ? (
+                        // Edit mode
+                        <div className="space-y-3 pl-6">
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Description</h4>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Status</h4>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge 
+                                variant={editStatus === "Priority OFI" ? "default" : "outline"} 
+                                className="cursor-pointer border-destructive hover:bg-destructive/10"
+                                onClick={() => setEditStatus("Priority OFI")}
+                              >
+                                Priority OFI
+                              </Badge>
+                              <Badge 
+                                variant={editStatus === "OFI" ? "default" : "outline"} 
+                                className="cursor-pointer border-yellow-500 hover:bg-yellow-500/10"
+                                onClick={() => setEditStatus("OFI")}
+                              >
+                                OFI
+                              </Badge>
+                              <Badge 
+                                variant={editStatus === "OK" ? "default" : "outline"} 
+                                className="cursor-pointer border-green-500 hover:bg-green-500/10"
+                                onClick={() => setEditStatus("OK")}
+                              >
+                                OK
+                              </Badge>
+                              <Badge 
+                                variant={editStatus === "N/A" ? "default" : "outline"} 
+                                className="cursor-pointer border-gray-500 hover:bg-gray-500/10"
+                                onClick={() => setEditStatus("N/A")}
+                              >
+                                N/A
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="text-sm font-semibold">Notes</h4>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <span>{editNotes.length} chars</span>
+                                {editNotes.length === 0 ? (
+                                  <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                ) : (
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
+                                )}
+                              </div>
+                            </div>
+                            <Textarea 
+                              value={editNotes} 
+                              onChange={(e) => setEditNotes(e.target.value)} 
+                              placeholder="Add detailed notes about this audit item to help your team understand the issue and take action..."
+                              className="min-h-[120px] focus:border-primary"
+                            />
+                            <div className="text-xs text-muted-foreground mt-1 flex justify-between">
+                              <span>Use detailed notes to explain reasoning behind status changes</span>
+                              <span>{new Date().toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="outline" onClick={handleCancelEdit}>
+                              Cancel
+                            </Button>
+                            <Button 
+                              onClick={() => handleSaveItem(item)}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? "Saving..." : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        // View mode
+                        <div className="space-y-3 pl-6">
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Description</h4>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold mb-1">Status</h4>
+                            {getStatusBadge(item, true)}
+                          </div>
+                          
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <h4 className="text-sm font-semibold">Notes</h4>
+                              {item.notes && (
+                                <Badge variant="outline" className="text-xs px-2 py-0">
+                                  {item.notes.length} chars
+                                </Badge>
+                              )}
+                            </div>
+                            {item.notes ? (
+                              <div className="bg-muted/30 p-3 rounded-md border border-muted relative">
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {item.notes}
+                                </p>
+                                <span className="absolute top-1 right-1 text-xs text-muted-foreground opacity-70">
+                                  {new Date().toLocaleDateString()}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="bg-muted/20 p-3 rounded-md border border-dashed border-muted flex items-center justify-center">
+                                <p className="text-sm text-muted-foreground italic">No notes added yet</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex justify-end">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="flex items-center text-xs"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  No items match your search or filter criteria
+                </div>
+              )}
+            </Accordion>
+          </div>
+        ) : (
+          // Categories view
+          <div>
+            <div className="space-y-6">
+              {Object.keys(filteredAndSortedItems.filteredCategories).map((category) => {
+                const categoryItems = filteredAndSortedItems.filteredCategories[category];
+                
+                // Only show categories that have items after filtering
+                if (categoryItems.length === 0) return null;
+                
+                return (
+                  <div key={category}>
+                    <h3 className="text-base font-semibold mb-2 flex items-center">
+                      <span>{category}</span>
+                      <Badge variant="outline" className="ml-2 text-xs bg-muted">
+                        {categoryItems.length} {categoryItems.length === 1 ? 'item' : 'items'}
+                      </Badge>
+                    </h3>
+                    
+                    <div className="border rounded-md">
+                      <Accordion type="multiple" className="rounded-md">
+                        {categoryItems.map((item, index) => (
+                          <AccordionItem 
+                            value={`${category}-item-${index}`} 
+                            key={`${category}-${item.name}-${index}`}
+                            className="border-b last:border-b-0"
+                          >
+                            <AccordionTrigger className="p-3 hover:no-underline">
+                              <div className="flex items-center gap-2 w-full text-left">
+                                <span className="flex-shrink-0">{getStatusIcon(item.status)}</span>
+                                <span className="text-sm font-medium">{item.name}</span>
+                                <div className="ml-auto flex space-x-2 items-center">
+                                  {getStatusBadge(item, true)}
+                                  <span className="hidden sm:inline-block">{getImportanceBadge(item.importance)}</span>
+                                </div>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-3 pb-3">
+                              {editModeItem === item.name ? (
+                                // Edit mode (same as in list view)
+                                <div className="space-y-3 pl-6">
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-1">Description</h4>
+                                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-1">Status</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Badge 
+                                        variant={editStatus === "Priority OFI" ? "default" : "outline"} 
+                                        className="cursor-pointer border-destructive hover:bg-destructive/10"
+                                        onClick={() => setEditStatus("Priority OFI")}
+                                      >
+                                        Priority OFI
+                                      </Badge>
+                                      <Badge 
+                                        variant={editStatus === "OFI" ? "default" : "outline"} 
+                                        className="cursor-pointer border-yellow-500 hover:bg-yellow-500/10"
+                                        onClick={() => setEditStatus("OFI")}
+                                      >
+                                        OFI
+                                      </Badge>
+                                      <Badge 
+                                        variant={editStatus === "OK" ? "default" : "outline"} 
+                                        className="cursor-pointer border-green-500 hover:bg-green-500/10"
+                                        onClick={() => setEditStatus("OK")}
+                                      >
+                                        OK
+                                      </Badge>
+                                      <Badge 
+                                        variant={editStatus === "N/A" ? "default" : "outline"} 
+                                        className="cursor-pointer border-gray-500 hover:bg-gray-500/10"
+                                        onClick={() => setEditStatus("N/A")}
+                                      >
+                                        N/A
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <h4 className="text-sm font-semibold">Notes</h4>
+                                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <span>{editNotes.length} chars</span>
+                                        {editNotes.length === 0 ? (
+                                          <AlertTriangle className="h-3 w-3 text-amber-500" />
+                                        ) : (
+                                          <CheckCircle className="h-3 w-3 text-green-500" />
+                                        )}
+                                      </div>
+                                    </div>
+                                    <Textarea 
+                                      value={editNotes} 
+                                      onChange={(e) => setEditNotes(e.target.value)} 
+                                      placeholder="Add detailed notes about this audit item to help your team understand the issue and take action..."
+                                      className="min-h-[120px] focus:border-primary"
+                                    />
+                                    <div className="text-xs text-muted-foreground mt-1 flex justify-between">
+                                      <span>Use detailed notes to explain reasoning behind status changes</span>
+                                      <span>{new Date().toLocaleDateString()}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex justify-end gap-2 pt-2">
+                                    <Button variant="outline" onClick={handleCancelEdit}>
+                                      Cancel
+                                    </Button>
+                                    <Button 
+                                      onClick={() => handleSaveItem(item)}
+                                      disabled={isUpdating}
+                                    >
+                                      {isUpdating ? "Saving..." : "Save"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                // View mode (same as in list view)
+                                <div className="space-y-3 pl-6">
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-1">Description</h4>
+                                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-1">Status</h4>
+                                    {getStatusBadge(item, true)}
+                                  </div>
+                                  
+                                  <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <h4 className="text-sm font-semibold">Notes</h4>
+                                      {item.notes && (
+                                        <Badge variant="outline" className="text-xs px-2 py-0">
+                                          {item.notes.length} chars
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {item.notes ? (
+                                      <div className="bg-muted/30 p-3 rounded-md border border-muted relative">
+                                        <p className="text-sm whitespace-pre-wrap">
+                                          {item.notes}
+                                        </p>
+                                        <span className="absolute top-1 right-1 text-xs text-muted-foreground opacity-70">
+                                          {new Date().toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="bg-muted/20 p-3 rounded-md border border-dashed border-muted flex items-center justify-center">
+                                        <p className="text-sm text-muted-foreground italic">No notes added yet</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex justify-end">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      className="flex items-center text-xs"
+                                      onClick={() => handleEditClick(item)}
+                                    >
+                                      Edit
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-0">
@@ -505,565 +951,72 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-muted/50 w-full flex overflow-x-auto no-scrollbar mb-4 border-b rounded-none p-0 h-auto">
-            <TabsTrigger 
-              value="summary" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <BarChart4 className="h-4 w-4" />
-              <span>Summary</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="onpage" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <FileText className="h-4 w-4" />
-              <span>On-Page</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="structure" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <ListChecks className="h-4 w-4" />
-              <span>Structure</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="contact" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <AlertCircle className="h-4 w-4" />
-              <span>Contact</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="services" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <FileCheck className="h-4 w-4" />
-              <span>Services</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="locations" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <MapPin className="h-4 w-4" />
-              <span>Locations</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="service-areas" 
-              className="flex items-center gap-1.5 py-2.5 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-            >
-              <Map className="h-4 w-4" />
-              <span>Service Areas</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <div className="space-y-4 mb-6">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search audit items..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <Select value={statusFilter || ""} onValueChange={(value) => setStatusFilter(value || null)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-statuses">All Statuses</SelectItem>
-                  <SelectItem value="Priority OFI">Priority OFI</SelectItem>
-                  <SelectItem value="OFI">OFI</SelectItem>
-                  <SelectItem value="OK">OK</SelectItem>
-                  <SelectItem value="N/A">N/A</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={importanceFilter || ""} onValueChange={(value) => setImportanceFilter(value || null)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Filter by importance" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-importance">All Importance</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={sortField} onValueChange={(value: "name" | "status" | "importance") => toggleSort(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}</SelectItem>
-                  <SelectItem value="status">Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}</SelectItem>
-                  <SelectItem value="importance">Importance {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <RivalAuditTabs activeTab={activeTab} onChange={setActiveTab} />
+        
+        <div className="space-y-4 mb-6">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search audit items..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          
-          <TabsContent value="summary" className="mt-0">
-            <div className="border rounded-md p-4 space-y-4">
-              <h3 className="text-lg font-semibold">Summary Dashboard</h3>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
-                  <span className="text-xs text-muted-foreground mb-1">Priority OFIs</span>
-                  <span className="text-2xl font-bold text-destructive">
-                    {items.filter(item => item.status === "Priority OFI").length}
-                  </span>
-                </div>
-                <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
-                  <span className="text-xs text-muted-foreground mb-1">OFIs</span>
-                  <span className="text-2xl font-bold text-yellow-600">
-                    {items.filter(item => item.status === "OFI").length}
-                  </span>
-                </div>
-                <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
-                  <span className="text-xs text-muted-foreground mb-1">OK</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    {items.filter(item => item.status === "OK").length}
-                  </span>
-                </div>
-                <div className="border rounded-md p-3 bg-muted/20 flex flex-col items-center">
-                  <span className="text-xs text-muted-foreground mb-1">N/A</span>
-                  <span className="text-2xl font-bold text-gray-500">
-                    {items.filter(item => item.status === "N/A").length}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="border rounded-md p-4">
-                <h4 className="text-sm font-semibold mb-3">Priority OFIs</h4>
-                {items.filter(item => item.status === "Priority OFI").length > 0 ? (
-                  <div className="space-y-2">
-                    {items.filter(item => item.status === "Priority OFI").map((item, index) => (
-                      <div key={`${item.name}-${index}`} className="flex items-center">
-                        <AlertCircle className="h-4 w-4 text-destructive mr-2" />
-                        <span className="text-sm">{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground italic">No Priority OFIs found</div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value={activeTab !== "summary" ? activeTab : ""} className="mt-0">
-            <div className="flex mb-4 space-x-2">
-              <Button 
-                variant={currentView === "list" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setCurrentView("list")}
-                className="flex items-center"
-              >
-                <ArrowUpDown className="mr-1 h-4 w-4" />
-                List
-              </Button>
-              <Button 
-                variant={currentView === "categories" ? "default" : "outline"} 
-                size="sm" 
-                onClick={() => setCurrentView("categories")}
-                className="flex items-center"
-              >
-                <Filter className="mr-1 h-4 w-4" />
-                Categories
-              </Button>
-            </div>
-          
-            {currentView === "list" && activeTab !== "summary" ? (
-              // List view
-              <div className="border rounded-md">
-                <div className="bg-muted px-2 sm:px-4 py-2 rounded-t-md grid grid-cols-12 gap-2 sm:gap-4 font-medium text-xs sm:text-sm">
-                  <div className="col-span-12 sm:col-span-5 flex items-center cursor-pointer" onClick={() => toggleSort("name")}>
-                    Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
-                    <div className="flex ml-auto space-x-2 sm:hidden text-[10px]">
-                      <span className="px-2" onClick={(e) => { e.stopPropagation(); toggleSort("status"); }}>
-                        Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
-                      </span>
-                      <span className="px-2" onClick={(e) => { e.stopPropagation(); toggleSort("importance"); }}>
-                        Imp. {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hidden sm:flex col-span-2 items-center cursor-pointer" onClick={() => toggleSort("status")}>
-                    Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}
-                  </div>
-                  <div className="hidden sm:flex col-span-2 items-center cursor-pointer" onClick={() => toggleSort("importance")}>
-                    Importance {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}
-                  </div>
-                  <div className="hidden sm:block col-span-3">Notes</div>
-                </div>
-                
-                <Accordion type="multiple" className="rounded-b-md">
-                  {filteredItems.length > 0 ? (
-                    filteredItems.map((item, index) => (
-                      <AccordionItem 
-                        value={`item-${index}`} 
-                        key={`${item.name}-${index}`}
-                        className="border-b last:border-b-0"
-                      >
-                        <AccordionTrigger className="py-3 px-2 sm:px-4 hover:no-underline">
-                          <div className="grid grid-cols-12 gap-2 sm:gap-4 w-full text-left">
-                            <div className="col-span-12 sm:col-span-5 flex items-center gap-2">
-                              <span className="flex-shrink-0">{getStatusIcon(item.status)}</span>
-                              <span className="text-xs sm:text-sm font-medium line-clamp-1">{item.name}</span>
-                              
-                              <div className="sm:hidden ml-auto space-x-2">
-                                {getStatusBadge(item, true)}
-                                <span className="hidden xs:inline-block">{getImportanceBadge(item.importance)}</span>
-                              </div>
-                            </div>
-                            <div className="hidden sm:flex col-span-2 items-center">
-                              {getStatusBadge(item, true)}
-                            </div>
-                            <div className="hidden sm:flex col-span-2 items-center">
-                              {getImportanceBadge(item.importance)}
-                            </div>
-                            <div className="hidden sm:block col-span-3 text-xs text-muted-foreground line-clamp-1">
-                              {item.notes || "No notes"}
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-2 sm:px-4 pb-3">
-                          {editModeItem === item.name ? (
-                            // Edit mode
-                            <div className="space-y-3 pl-6">
-                              <div>
-                                <h4 className="text-sm font-semibold mb-1">Description</h4>
-                                <p className="text-sm text-muted-foreground">{item.description}</p>
-                              </div>
-                              
-                              <div>
-                                <h4 className="text-sm font-semibold mb-1">Status</h4>
-                                <div className="flex flex-wrap gap-2">
-                                  <Badge 
-                                    variant={editStatus === "Priority OFI" ? "default" : "outline"} 
-                                    className="cursor-pointer border-destructive hover:bg-destructive/10"
-                                    onClick={() => setEditStatus("Priority OFI")}
-                                  >
-                                    Priority OFI
-                                  </Badge>
-                                  <Badge 
-                                    variant={editStatus === "OFI" ? "default" : "outline"} 
-                                    className="cursor-pointer border-yellow-500 hover:bg-yellow-500/10"
-                                    onClick={() => setEditStatus("OFI")}
-                                  >
-                                    OFI
-                                  </Badge>
-                                  <Badge 
-                                    variant={editStatus === "OK" ? "default" : "outline"} 
-                                    className="cursor-pointer border-green-500 hover:bg-green-500/10"
-                                    onClick={() => setEditStatus("OK")}
-                                  >
-                                    OK
-                                  </Badge>
-                                  <Badge 
-                                    variant={editStatus === "N/A" ? "default" : "outline"} 
-                                    className="cursor-pointer border-gray-500 hover:bg-gray-500/10"
-                                    onClick={() => setEditStatus("N/A")}
-                                  >
-                                    N/A
-                                  </Badge>
-                                </div>
-                              </div>
-                              
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <h4 className="text-sm font-semibold">Notes</h4>
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <span>{editNotes.length} chars</span>
-                                    {editNotes.length === 0 ? (
-                                      <AlertTriangle className="h-3 w-3 text-amber-500" />
-                                    ) : (
-                                      <CheckCircle className="h-3 w-3 text-green-500" />
-                                    )}
-                                  </div>
-                                </div>
-                                <Textarea 
-                                  value={editNotes} 
-                                  onChange={(e) => setEditNotes(e.target.value)} 
-                                  placeholder="Add detailed notes about this audit item to help your team understand the issue and take action..."
-                                  className="min-h-[120px] focus:border-primary"
-                                />
-                                <div className="text-xs text-muted-foreground mt-1 flex justify-between">
-                                  <span>Use detailed notes to explain reasoning behind status changes</span>
-                                  <span>{new Date().toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                              
-                              <div className="flex justify-end gap-2 pt-2">
-                                <Button variant="outline" onClick={handleCancelEdit}>
-                                  Cancel
-                                </Button>
-                                <Button 
-                                  onClick={() => handleSaveItem(item)}
-                                  disabled={isUpdating}
-                                >
-                                  {isUpdating ? "Saving..." : "Save"}
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            // View mode
-                            <div className="space-y-3 pl-6">
-                              <div>
-                                <h4 className="text-sm font-semibold mb-1">Description</h4>
-                                <p className="text-sm text-muted-foreground">{item.description}</p>
-                              </div>
-                              
-                              <div>
-                                <h4 className="text-sm font-semibold mb-1">Status</h4>
-                                {getStatusBadge(item, true)}
-                              </div>
-                              
-                              <div>
-                                <div className="flex justify-between items-center mb-1">
-                                  <h4 className="text-sm font-semibold">Notes</h4>
-                                  {item.notes && (
-                                    <Badge variant="outline" className="text-xs px-2 py-0">
-                                      {item.notes.length} chars
-                                    </Badge>
-                                  )}
-                                </div>
-                                {item.notes ? (
-                                  <div className="bg-muted/30 p-3 rounded-md border border-muted relative">
-                                    <p className="text-sm whitespace-pre-wrap">
-                                      {item.notes}
-                                    </p>
-                                    <span className="absolute top-1 right-1 text-xs text-muted-foreground opacity-70">
-                                      {new Date().toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="bg-muted/20 p-3 rounded-md border border-dashed border-muted flex items-center justify-center">
-                                    <p className="text-sm text-muted-foreground italic">No notes added yet</p>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="flex justify-end">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  className="flex items-center text-xs"
-                                  onClick={() => handleEditClick(item)}
-                                >
-                                  Edit
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-muted-foreground">
-                      No items match your search or filter criteria
-                    </div>
-                  )}
-                </Accordion>
-              </div>
-            ) : (
-              // Categories view
-              <div>
-                <div className="space-y-6">
-                  {Object.keys(filteredAndSortedItems.filteredCategories).map((category) => {
-                    const categoryItems = filteredAndSortedItems.filteredCategories[category];
-                    
-                    // Only show categories that have items after filtering
-                    if (categoryItems.length === 0) return null;
-                    
-                    return (
-                      <div key={category}>
-                        <h3 className="text-base font-semibold mb-2 flex items-center">
-                          <span>{category}</span>
-                          <Badge variant="outline" className="ml-2 text-xs bg-muted">
-                            {categoryItems.length} {categoryItems.length === 1 ? 'item' : 'items'}
-                          </Badge>
-                        </h3>
-                        
-                        <div className="border rounded-md">
-                          <Accordion type="multiple" className="rounded-md">
-                            {categoryItems.map((item, index) => (
-                              <AccordionItem 
-                                value={`${category}-item-${index}`} 
-                                key={`${category}-${item.name}-${index}`}
-                                className="border-b last:border-b-0"
-                              >
-                                <AccordionTrigger className="p-3 hover:no-underline">
-                                  <div className="flex items-center gap-2 w-full text-left">
-                                    <span className="flex-shrink-0">{getStatusIcon(item.status)}</span>
-                                    <span className="text-sm font-medium">{item.name}</span>
-                                    <div className="ml-auto flex space-x-2 items-center">
-                                      {getStatusBadge(item, true)}
-                                      <span className="hidden sm:inline-block">{getImportanceBadge(item.importance)}</span>
-                                    </div>
-                                  </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="px-3 pb-3">
-                                  {editModeItem === item.name ? (
-                                    // Edit mode (same as in list view)
-                                    <div className="space-y-3 pl-6">
-                                      <div>
-                                        <h4 className="text-sm font-semibold mb-1">Description</h4>
-                                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                                      </div>
-                                      
-                                      <div>
-                                        <h4 className="text-sm font-semibold mb-1">Status</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                          <Badge 
-                                            variant={editStatus === "Priority OFI" ? "default" : "outline"} 
-                                            className="cursor-pointer border-destructive hover:bg-destructive/10"
-                                            onClick={() => setEditStatus("Priority OFI")}
-                                          >
-                                            Priority OFI
-                                          </Badge>
-                                          <Badge 
-                                            variant={editStatus === "OFI" ? "default" : "outline"} 
-                                            className="cursor-pointer border-yellow-500 hover:bg-yellow-500/10"
-                                            onClick={() => setEditStatus("OFI")}
-                                          >
-                                            OFI
-                                          </Badge>
-                                          <Badge 
-                                            variant={editStatus === "OK" ? "default" : "outline"} 
-                                            className="cursor-pointer border-green-500 hover:bg-green-500/10"
-                                            onClick={() => setEditStatus("OK")}
-                                          >
-                                            OK
-                                          </Badge>
-                                          <Badge 
-                                            variant={editStatus === "N/A" ? "default" : "outline"} 
-                                            className="cursor-pointer border-gray-500 hover:bg-gray-500/10"
-                                            onClick={() => setEditStatus("N/A")}
-                                          >
-                                            N/A
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                      
-                                      <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                          <h4 className="text-sm font-semibold">Notes</h4>
-                                          <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <span>{editNotes.length} chars</span>
-                                            {editNotes.length === 0 ? (
-                                              <AlertTriangle className="h-3 w-3 text-amber-500" />
-                                            ) : (
-                                              <CheckCircle className="h-3 w-3 text-green-500" />
-                                            )}
-                                          </div>
-                                        </div>
-                                        <Textarea 
-                                          value={editNotes} 
-                                          onChange={(e) => setEditNotes(e.target.value)} 
-                                          placeholder="Add detailed notes about this audit item to help your team understand the issue and take action..."
-                                          className="min-h-[120px] focus:border-primary"
-                                        />
-                                        <div className="text-xs text-muted-foreground mt-1 flex justify-between">
-                                          <span>Use detailed notes to explain reasoning behind status changes</span>
-                                          <span>{new Date().toLocaleDateString()}</span>
-                                        </div>
-                                      </div>
-                                      
-                                      <div className="flex justify-end gap-2 pt-2">
-                                        <Button variant="outline" onClick={handleCancelEdit}>
-                                          Cancel
-                                        </Button>
-                                        <Button 
-                                          onClick={() => handleSaveItem(item)}
-                                          disabled={isUpdating}
-                                        >
-                                          {isUpdating ? "Saving..." : "Save"}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    // View mode (same as in list view)
-                                    <div className="space-y-3 pl-6">
-                                      <div>
-                                        <h4 className="text-sm font-semibold mb-1">Description</h4>
-                                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                                      </div>
-                                      
-                                      <div>
-                                        <h4 className="text-sm font-semibold mb-1">Status</h4>
-                                        {getStatusBadge(item, true)}
-                                      </div>
-                                      
-                                      <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                          <h4 className="text-sm font-semibold">Notes</h4>
-                                          {item.notes && (
-                                            <Badge variant="outline" className="text-xs px-2 py-0">
-                                              {item.notes.length} chars
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        {item.notes ? (
-                                          <div className="bg-muted/30 p-3 rounded-md border border-muted relative">
-                                            <p className="text-sm whitespace-pre-wrap">
-                                              {item.notes}
-                                            </p>
-                                            <span className="absolute top-1 right-1 text-xs text-muted-foreground opacity-70">
-                                              {new Date().toLocaleDateString()}
-                                            </span>
-                                          </div>
-                                        ) : (
-                                          <div className="bg-muted/20 p-3 rounded-md border border-dashed border-muted flex items-center justify-center">
-                                            <p className="text-sm text-muted-foreground italic">No notes added yet</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                      
-                                      <div className="flex justify-end">
-                                        <Button 
-                                          size="sm" 
-                                          variant="outline"
-                                          className="flex items-center text-xs"
-                                          onClick={() => handleEditClick(item)}
-                                        >
-                                          Edit
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </AccordionContent>
-                              </AccordionItem>
-                            ))}
-                          </Accordion>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Select value={statusFilter || ""} onValueChange={(value) => setStatusFilter(value || null)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-statuses">All Statuses</SelectItem>
+                <SelectItem value="Priority OFI">Priority OFI</SelectItem>
+                <SelectItem value="OFI">OFI</SelectItem>
+                <SelectItem value="OK">OK</SelectItem>
+                <SelectItem value="N/A">N/A</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={importanceFilter || ""} onValueChange={(value) => setImportanceFilter(value || null)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by importance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-importance">All Importance</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={sortField} onValueChange={(value: "name" | "status" | "importance") => toggleSort(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}</SelectItem>
+                <SelectItem value="status">Status {sortField === "status" && (sortDirection === "asc" ? "↑" : "↓")}</SelectItem>
+                <SelectItem value="importance">Importance {sortField === "importance" && (sortDirection === "asc" ? "↑" : "↓")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {activeTab === "summary" ? renderSummaryTab() : renderMainContent()}
+        
+        {/* Quick Status Change Dialog */}
+        {currentItemForStatusChange && (
+          <QuickStatusChange
+            open={statusDialogOpen}
+            onOpenChange={setStatusDialogOpen}
+            item={currentItemForStatusChange}
+            onSuccess={handleItemUpdated}
+            auditId={auditId}
+            sectionName={getSectionNameFromTitle(title)}
+          />
+        )}
       </CardContent>
-      
-      {/* Quick Status Change Dialog */}
-      {currentItemForStatusChange && (
-        <QuickStatusChange
-          open={statusDialogOpen}
-          setOpen={setStatusDialogOpen}
-          item={currentItemForStatusChange}
-          onItemUpdated={handleItemUpdated}
-          auditId={auditId}
-          sectionName={getSectionNameFromTitle(title)}
-        />
-      )}
     </Card>
   );
 }
