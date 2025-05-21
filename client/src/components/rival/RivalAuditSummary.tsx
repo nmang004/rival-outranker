@@ -26,9 +26,16 @@ import { useToast } from "@/hooks/use-toast";
 
 interface RivalAuditSummaryProps {
   audit: RivalAudit;
+  updatedSummary?: {
+    priorityOfiCount: number;
+    ofiCount: number;
+    okCount: number;
+    naCount: number;
+    total?: number;
+  } | null;
 }
 
-export default function RivalAuditSummary({ audit }: RivalAuditSummaryProps) {
+export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditSummaryProps) {
   const { toast } = useToast();
   
   // Function to handle exporting to different formats
