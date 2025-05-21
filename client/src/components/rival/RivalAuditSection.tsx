@@ -10,6 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { 
   Select,
   SelectContent,
@@ -18,7 +24,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { AuditItem, AuditStatus, SeoImportance } from "@shared/schema";
-import { AlertCircle, AlertTriangle, CheckCircle, CircleHelp, Search, Filter, ArrowUpDown } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, CircleHelp, Search, Filter, ArrowUpDown, BarChart4, FileText, Map, MapPin, FileCheck, ListChecks } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import QuickStatusChange from "./QuickStatusChange";
 
@@ -34,6 +40,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [importanceFilter, setImportanceFilter] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"list" | "categories">("list");
+  const [activeTab, setActiveTab] = useState<string>("summary");
   const [sortField, setSortField] = useState<"name" | "status" | "importance">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [editModeItem, setEditModeItem] = useState<string | null>(null);
