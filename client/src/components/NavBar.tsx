@@ -83,7 +83,7 @@ export default function NavBar() {
                         </Link>
                         <Link href="/competitor-analysis">
                           <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <Users className="h-4 w-4 mr-2.5 text-primary" />
+                            <Users className="h-4 w-4 mr-2.5 text-secondary" />
                             <span>Competitors</span>
                           </div>
                         </Link>
