@@ -42,6 +42,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const [isUpdating, setIsUpdating] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [currentItemForStatusChange, setCurrentItemForStatusChange] = useState<AuditItem | null>(null);
+  const [isAnalyzingServicePages, setIsAnalyzingServicePages] = useState(false);
   
   // Get URL params to extract the audit ID
   const urlParams = new URLSearchParams(window.location.search);
@@ -403,6 +404,78 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     }
   };
 
+  // Function to analyze service pages if they're marked as N/A but exist
+  const handleAnalyzeServicePages = async () => {
+    if (!title.includes("Service Pages")) return;
+    
+    setIsAnalyzingServicePages(true);
+    
+    try {      
+      if (!auditId) {
+        toast({
+          title: "Cannot analyze service pages",
+          description: "Missing audit ID in URL",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Show loading toast
+      toast({
+        title: "Analyzing service pages",
+        description: "Updating service page analysis based on discovered pages...",
+      });
+      
+      // Call our new endpoint to analyze service pages
+      const response = await fetch(`/api/rival-audit/${auditId}/analyze-service-pages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Force update the UI with the updated audit data
+        if (result.updatedAudit) {
+          // Create an update event to notify other components
+          const updateEvent = new CustomEvent('audit-updated', { 
+            detail: { 
+              audit: result.updatedAudit,
+              updatedAt: new Date().getTime()
+            } 
+          });
+          
+          window.dispatchEvent(updateEvent);
+          
+          // Force a refresh of the current component
+          setSearchTerm(searchTerm + " ");
+          setTimeout(() => setSearchTerm(searchTerm.trim()), 10);
+        }
+        
+        toast({
+          title: "Service pages analyzed",
+          description: "Service page analysis has been updated successfully.",
+        });
+      } else {
+        toast({
+          title: "No changes needed",
+          description: result.message || "Service pages already analyzed correctly.",
+        });
+      }
+    } catch (error) {
+      console.error("Error analyzing service pages:", error);
+      toast({
+        title: "Analysis failed",
+        description: "Could not update service page analysis. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzingServicePages(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -411,25 +484,40 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
             <CardTitle>{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
-          <div className="flex space-x-2 mt-2 md:mt-0">
-            <Button 
-              variant={currentView === "list" ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setCurrentView("list")}
-              className="flex items-center"
-            >
-              <ArrowUpDown className="mr-1 h-4 w-4" />
-              List
-            </Button>
-            <Button 
-              variant={currentView === "categories" ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setCurrentView("categories")}
-              className="flex items-center"
-            >
-              <Filter className="mr-1 h-4 w-4" />
-              Categories
-            </Button>
+          <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mt-2 md:mt-0">
+            {/* Add analyze button for Service Pages section if N/A items exist */}
+            {title.includes("Service Pages") && items.some(item => item.status === "N/A") && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleAnalyzeServicePages}
+                disabled={isAnalyzingServicePages}
+                className="flex items-center"
+              >
+                {isAnalyzingServicePages ? "Analyzing..." : "Analyze Service Pages"}
+              </Button>
+            )}
+            
+            <div className="flex space-x-2">
+              <Button 
+                variant={currentView === "list" ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setCurrentView("list")}
+                className="flex items-center"
+              >
+                <ArrowUpDown className="mr-1 h-4 w-4" />
+                List
+              </Button>
+              <Button 
+                variant={currentView === "categories" ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setCurrentView("categories")}
+                className="flex items-center"
+              >
+                <Filter className="mr-1 h-4 w-4" />
+                Categories
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>

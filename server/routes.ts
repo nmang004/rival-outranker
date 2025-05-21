@@ -1354,6 +1354,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to force analysis of service pages
+  app.post("/api/rival-audit/:id/analyze-service-pages", async (req: Request, res: Response) => {
+    try {
+      const auditId = parseInt(req.params.id);
+      
+      if (isNaN(auditId)) {
+        return res.status(400).json({ error: "Invalid audit ID" });
+      }
+      
+      // Check if we have cached results for this ID
+      if (!auditCache[auditId]) {
+        return res.status(404).json({ error: "Audit not found" });
+      }
+      
+      const audit = auditCache[auditId];
+      
+      // Check if service pages exist but audit items show N/A
+      if (audit.servicePages.items.length > 0 && 
+          audit.servicePages.items.some(item => item.status === 'N/A')) {
+        
+        // Update service page audit items to reflect the fact that service pages exist
+        audit.servicePages.items.forEach(item => {
+          if (item.status === 'N/A') {
+            item.status = 'OFI';
+            item.description = item.description.replace('N/A - No service pages detected', 'Feature could improve service page effectiveness');
+            item.notes = "Consider adding this feature to enhance service page effectiveness";
+          }
+        });
+        
+        // Recalculate summary counts
+        let priorityOfiCount = 0;
+        let ofiCount = 0;
+        let okCount = 0;
+        let naCount = 0;
+        
+        // Count all statuses across all sections
+        const countStatuses = (items) => {
+          items.forEach(item => {
+            if (item.status === 'Priority OFI') priorityOfiCount++;
+            else if (item.status === 'OFI') ofiCount++;
+            else if (item.status === 'OK') okCount++;
+            else if (item.status === 'N/A') naCount++;
+          });
+        };
+        
+        countStatuses(audit.onPage.items);
+        countStatuses(audit.structureNavigation.items);
+        countStatuses(audit.contactPage.items);
+        countStatuses(audit.servicePages.items);
+        countStatuses(audit.locationPages.items);
+        if (audit.serviceAreaPages) {
+          countStatuses(audit.serviceAreaPages.items);
+        }
+        
+        // Update summary
+        audit.summary = {
+          priorityOfiCount,
+          ofiCount,
+          okCount,
+          naCount,
+          total: priorityOfiCount + ofiCount + okCount + naCount
+        };
+        
+        return res.json({ 
+          success: true, 
+          message: "Service page analysis updated",
+          updatedAudit: audit
+        });
+      }
+      
+      return res.json({ 
+        success: false, 
+        message: "No N/A service page items found to update" 
+      });
+      
+    } catch (error) {
+      console.error("Error analyzing service pages:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Endpoint to update status of an audit item
   app.post("/api/rival-audit/:id/update-item", async (req: Request, res: Response) => {
     try {
