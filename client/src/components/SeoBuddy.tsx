@@ -118,7 +118,7 @@ function MainSeoBuddy() {
   
   // Return the actual component JSX
   return (
-    <div className="fixed bottom-4 right-4 z-40 sm:bottom-4 sm:right-4 bottom-16 right-2">
+    <div className="fixed sm:bottom-4 sm:right-4 bottom-20 right-2 z-40">
       {showBuddy && (
         <div className="flex flex-col items-end space-y-2">
           {/* SEO Buddy Chat Interface */}
@@ -128,7 +128,7 @@ function MainSeoBuddy() {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] h-[450px] overflow-hidden seo-buddy-mobile-chat"
+                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] h-[450px] overflow-hidden seo-buddy-mobile-chat sm:w-[350px] sm:h-[450px] w-[90vw] h-[70vh]"
               >
                 <SeoBuddyChatInterface onClose={() => setShowChatBot(false)} />
               </motion.div>
