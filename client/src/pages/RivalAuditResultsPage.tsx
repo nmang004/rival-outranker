@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -464,7 +463,7 @@ export default function RivalAuditResultsPage() {
             updatedSummary={updatedSummary}
           />
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="w-full">
             <div className="mb-6">
               <div className="flex items-center gap-3">
                 <Select value={activeTab} onValueChange={setActiveTab}>
@@ -539,60 +538,72 @@ export default function RivalAuditResultsPage() {
               </div>
             </div>
             
-            <TabsContent value="summary" className="mt-0">
-              <RivalAuditSummary audit={audit} updatedSummary={updatedSummary} />
-            </TabsContent>
+            {activeTab === "summary" && (
+              <div className="mt-0">
+                <RivalAuditSummary audit={audit} updatedSummary={updatedSummary} />
+              </div>
+            )}
             
-            <TabsContent value="onPage" className="mt-0">
-              <RivalAuditSection 
-                title="On-Page SEO Audit" 
-                description="Analysis of meta tags, headings, content, and technical issues"
-                items={audit.onPage.items}
-              />
-            </TabsContent>
+            {activeTab === "onPage" && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="On-Page SEO Audit" 
+                  description="Analysis of meta tags, headings, content, and technical issues"
+                  items={audit.onPage.items}
+                />
+              </div>
+            )}
             
-            <TabsContent value="structure" className="mt-0">
-              <RivalAuditSection 
-                title="Structure & Navigation Audit" 
-                description="Analysis of URL structure, site navigation, page titles, headings, and meta descriptions"
-                items={audit.structureNavigation.items}
-              />
-            </TabsContent>
+            {activeTab === "structure" && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Structure & Navigation Audit" 
+                  description="Analysis of URL structure, site navigation, page titles, headings, and meta descriptions"
+                  items={audit.structureNavigation.items}
+                />
+              </div>
+            )}
             
-            <TabsContent value="contactPage" className="mt-0">
-              <RivalAuditSection 
-                title="Contact Page Audit" 
-                description="Analysis of contact information, forms, phone numbers, maps, and business details"
-                items={audit.contactPage.items}
-              />
-            </TabsContent>
+            {activeTab === "contactPage" && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Contact Page Audit" 
+                  description="Analysis of contact information, forms, phone numbers, maps, and business details"
+                  items={audit.contactPage.items}
+                />
+              </div>
+            )}
             
-            <TabsContent value="servicePages" className="mt-0">
-              <RivalAuditSection 
-                title="Service Pages Audit" 
-                description="Analysis of service descriptions, clarity, calls to action, and structure"
-                items={audit.servicePages.items}
-              />
-            </TabsContent>
+            {activeTab === "servicePages" && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Service Pages Audit" 
+                  description="Analysis of service descriptions, clarity, calls to action, and structure"
+                  items={audit.servicePages.items}
+                />
+              </div>
+            )}
             
-            <TabsContent value="locationPages" className="mt-0">
-              <RivalAuditSection 
-                title="Location Pages Audit" 
-                description="Analysis of local SEO, address information, maps, and geographic relevance"
-                items={audit.locationPages.items}
-              />
-            </TabsContent>
+            {activeTab === "locationPages" && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Location Pages Audit" 
+                  description="Analysis of local SEO, address information, maps, and geographic relevance"
+                  items={audit.locationPages.items}
+                />
+              </div>
+            )}
             
-            {audit.serviceAreaPages && (
-              <TabsContent value="serviceAreaPages" className="mt-0">
+            {activeTab === "serviceAreaPages" && audit.serviceAreaPages && (
+              <div className="mt-0">
                 <RivalAuditSection 
                   title="Service Area Pages Audit" 
                   description="Analysis of geographic targeting, city pages, and local information"
                   items={audit.serviceAreaPages.items}
                 />
-              </TabsContent>
+              </div>
             )}
-          </Tabs>
+          </div>
         )}
         
         {/* Recommendations Section - always shown at bottom */}
