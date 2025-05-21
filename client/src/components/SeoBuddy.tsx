@@ -128,12 +128,14 @@ function MainSeoBuddy() {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] h-[450px] overflow-hidden"
+                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] h-[450px] overflow-hidden seo-buddy-mobile-chat"
               >
                 <SeoBuddyChatInterface onClose={() => setShowChatBot(false)} />
               </motion.div>
             )}
           </AnimatePresence>
+          
+          {/* Mobile optimization handled via className */}
           
           {/* SEO Best Practices Interface */}
           <AnimatePresence>
