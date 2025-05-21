@@ -3,26 +3,26 @@
 @tailwind utilities;
 
 :root {
-  /* Enhanced sage green palette with complementary colors */
+  /* Rival Digital brand colors - navy blue and orange */
   --background: 0 0% 100%;
-  --foreground: 148 10% 20%;
-  --muted: 150 16% 96%;
-  --muted-foreground: 148 8% 42%;
+  --foreground: 217 100% 19%;
+  --muted: 217 30% 96%;
+  --muted-foreground: 217 30% 40%;
   --popover: 0 0% 100%;
-  --popover-foreground: 148 10% 20%;
+  --popover-foreground: 217 100% 19%;
   --card: 0 0% 100%;
-  --card-foreground: 148 10% 20%;
-  --border: 150 10% 90%;
-  --input: 150 10% 90%;
-  --primary: 150 35% 45%;
+  --card-foreground: 217 100% 19%;
+  --border: 217 10% 90%;
+  --input: 217 10% 90%;
+  --primary: 217 100% 19%; /* #002264 - navy blue */
   --primary-foreground: 0 0% 100%;
-  --secondary: 60 30% 96%;
-  --secondary-foreground: 148 10% 20%;
-  --accent: 150 35% 45%;
+  --secondary: 29 92% 58%; /* #f78d30 - orange */
+  --secondary-foreground: 0 0% 100%;
+  --accent: 29 92% 58%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 60 9.1% 97.8%;
-  --ring: 150 35% 45%;
+  --ring: 217 100% 19%;
   --radius: 0.5rem;
 }
 
@@ -198,7 +198,7 @@
 }
 
 @layer components {
-  /* Advanced gradient styles */
+  /* Rival Digital brand gradient styles */
   .gradient-heading {
     @apply bg-gradient-to-r from-primary via-primary/90 to-primary/80 bg-clip-text text-transparent font-bold;
   }
@@ -209,6 +209,15 @@
   
   .gradient-border {
     @apply border border-transparent bg-gradient-to-r from-primary/30 to-primary/10 bg-clip-border;
+  }
+  
+  /* Rival Digital brand button styles */
+  .rival-button {
+    @apply bg-secondary text-white font-semibold py-2 px-4 rounded-md hover:bg-secondary/90 transition-colors;
+  }
+  
+  .rival-button-outline {
+    @apply border-2 border-primary text-primary font-semibold py-2 px-4 rounded-md hover:bg-primary/5 transition-colors;
   }
   
   /* Large display layout optimizations */

@@ -56,10 +56,12 @@ export default function NavBar() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/">
                 <div className="flex items-center cursor-pointer">
-                  <div className="rounded-full p-1.5 bg-primary/10 mr-2">
-                    <LineChart className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="gradient-heading text-xl truncate max-w-[160px] sm:max-w-full">SEO Best Practices</span>
+                  <img 
+                    src="/assets/rival-digital-logo.png" 
+                    alt="Rival Digital" 
+                    className="h-8 mr-3" 
+                  />
+                  <span className="gradient-heading text-xl truncate max-w-[160px] sm:max-w-full">Rival Outranker</span>
                 </div>
               </Link>
             </div>
