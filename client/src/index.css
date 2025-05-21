@@ -336,7 +336,8 @@
       bottom: 0 !important;
       right: 0 !important;
       border-radius: 12px 12px 0 0 !important;
-      z-index: 50 !important;
+      z-index: 9999 !important;
+      margin-bottom: 0 !important;
     }
     
     .seo-buddy-mobile-tips {
@@ -347,7 +348,8 @@
       bottom: 0 !important;
       right: 0 !important;
       border-radius: 12px 12px 0 0 !important;
-      z-index: 50 !important;
+      z-index: 9999 !important;
+      margin-bottom: 0 !important;
     }
   }
   

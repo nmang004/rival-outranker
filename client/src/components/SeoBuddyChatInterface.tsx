@@ -100,8 +100,8 @@ export default function SeoBuddyChatInterface({ onClose, showHeader = true, onEx
   }, []);
   
   // Calculate appropriate height based on screen size and expansion state
-  const mobileHeight = isExpanded ? 'h-[350px]' : 'h-[200px]';
-  const desktopHeight = isExpanded ? 'h-[450px]' : 'h-[250px]';
+  const mobileHeight = isExpanded ? 'h-[400px]' : 'h-[300px]';
+  const desktopHeight = isExpanded ? 'h-[450px]' : 'h-[300px]';
   const chatHeight = isMobile ? mobileHeight : desktopHeight;
 
   // Common SEO questions for more natural responses

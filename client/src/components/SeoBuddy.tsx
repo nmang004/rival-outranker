@@ -118,7 +118,7 @@ function MainSeoBuddy() {
   
   // Return the actual component JSX
   return (
-    <div className="fixed bottom-4 right-4 z-40">
+    <div className="fixed bottom-4 right-4 z-40 sm:bottom-4 sm:right-4 bottom-16 right-2">
       {showBuddy && (
         <div className="flex flex-col items-end space-y-2">
           {/* SEO Buddy Chat Interface */}
