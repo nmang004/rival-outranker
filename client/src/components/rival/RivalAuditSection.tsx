@@ -388,7 +388,18 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     // Find and update the item in the items array
     const itemIndex = items.findIndex(item => item.name === updatedItem.name);
     if (itemIndex !== -1) {
-      items[itemIndex] = updatedItem;
+      // Create a new array with the updated item
+      const updatedItems = [...items];
+      updatedItems[itemIndex] = updatedItem;
+      
+      // Force update by directly modifying the items array using mutable approach
+      // This is necessary since items is passed as a prop and we can't setState on it
+      items.splice(0, items.length);
+      updatedItems.forEach(item => items.push(item));
+      
+      // Force component to re-render
+      setSearchTerm(searchTerm + " ");
+      setTimeout(() => setSearchTerm(searchTerm.trim()), 10);
     }
   };
 
