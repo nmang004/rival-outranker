@@ -203,7 +203,7 @@ export default function Home() {
         </h1>
         
         <h2 className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto animate-fade-in">
-          Analyze your website's SEO performance and get actionable recommendations to improve your rankings
+          Analyze your website's SEO performance and get actionable recommendations to Outrank your competition
         </h2>
         
         <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 md:mb-10 border border-secondary/10 relative animate-fade-in card-container fourk-width">

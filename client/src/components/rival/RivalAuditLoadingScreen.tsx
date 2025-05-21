@@ -74,7 +74,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
   return (
     <div className="space-y-6 max-w-3xl mx-auto animate-fadeIn">
       <div className="text-center mb-8 space-y-2">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
           Running Comprehensive SEO Audit
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
@@ -82,7 +82,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
         </p>
       </div>
       
-      <Card className="border border-green-100 dark:border-green-900">
+      <Card className="border border-primary/20">
         <CardContent className="pt-6">
           <div className="flex justify-between mb-2">
             <span className="text-sm font-medium">Audit Progress</span>
