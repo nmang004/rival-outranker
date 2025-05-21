@@ -91,23 +91,32 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
     return "unknown";
   };
 
-  // Total audit progress
-  const totalRelevantItems = 
-    onPageTotals.total - onPageTotals.na +
-    structureTotals.total - structureTotals.na +
-    contactTotals.total - contactTotals.na +
-    serviceTotals.total - serviceTotals.na +
-    locationTotals.total - locationTotals.na +
-    (serviceAreaTotals.total - serviceAreaTotals.na);
+  // Calculate progress using either the updated summary or the original data
+  const summary = updatedSummary || audit.summary;
   
-  const totalCompletedItems =
-    onPageTotals.ok +
-    structureTotals.ok +
-    contactTotals.ok +
-    serviceTotals.ok +
-    locationTotals.ok +
-    serviceAreaTotals.ok;
+  // Get total items
+  const totalItems = summary.total || (
+    onPageTotals.total +
+    structureTotals.total +
+    contactTotals.total +
+    serviceTotals.total +
+    locationTotals.total +
+    serviceAreaTotals.total
+  );
   
+  // Get total N/A items
+  const totalNaItems = summary.naCount;
+  
+  // Get total OK items
+  const totalOkItems = summary.okCount;
+  
+  // Calculate total relevant items (excluding N/A items)
+  const totalRelevantItems = totalItems - totalNaItems;
+  
+  // Use the OK count as completed items
+  const totalCompletedItems = totalOkItems;
+  
+  // Calculate progress percentage
   const totalProgress = totalRelevantItems > 0 
     ? (totalCompletedItems / totalRelevantItems) * 100 
     : 0;

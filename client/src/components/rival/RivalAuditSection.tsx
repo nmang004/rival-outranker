@@ -52,6 +52,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     const titleMap: Record<string, string> = {
       "On-Page Audit": "onPage",
       "On-Page": "onPage",
+      "On-Page SEO Audit": "onPage",
       "Structure & Navigation Audit": "structureNavigation",
       "Structure & Navigation": "structureNavigation",
       "Contact Page Audit": "contactPage",
