@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "wouter";
 import { AuthDialog } from "./AuthDialog";
-import { LogOut, User, Settings, History, BarChart2 } from "lucide-react";
+import { LogOut, User, Settings, History, BarChart2, BookOpen } from "lucide-react";
 
 export function UserAccountButton() {
   const { user, isAuthenticated, logout, isLoggingOut } = useAuth();
@@ -102,6 +102,12 @@ export function UserAccountButton() {
             <Link href="/profile/analyses">
               <BarChart2 className="mr-2 h-4 w-4" />
               <span>My Analyses</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/learning">
+              <BookOpen className="mr-2 h-4 w-4" />
+              <span>Learning</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>

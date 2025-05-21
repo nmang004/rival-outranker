@@ -138,16 +138,7 @@ export default function NavBar() {
                   </div>
                 </div>
               </div>
-              <Link href="/learning">
-                <div className={linkClass("/learning")}>
-                  <BookOpen className="h-4 w-4 mr-2" /> Learning
-                </div>
-              </Link>
-              <Link href="/history">
-                <div className={linkClass("/history")}>
-                  <History className="h-4 w-4 mr-2" /> History
-                </div>
-              </Link>
+
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
