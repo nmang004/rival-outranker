@@ -50,7 +50,7 @@ export default function NavBar() {
 
   return (
     <nav className="bg-white border-b border-secondary/10 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="high-res-layout">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">

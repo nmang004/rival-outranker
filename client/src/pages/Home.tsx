@@ -189,7 +189,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-20 sm:px-8 text-center relative z-10">
+      <div className="high-res-layout pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 text-center relative z-10">
         <div className="animate-float inline-block mb-6">
           <div className="bg-white p-3 rounded-full shadow-md border border-primary/10">
             <div className="rounded-full bg-primary/10 p-2">
@@ -206,11 +206,11 @@ export default function Home() {
           Analyze your website's SEO performance and get actionable recommendations to improve your rankings
         </h2>
         
-        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-xl p-8 mb-10 border border-primary/10 relative animate-fade-in">
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 mb-6 sm:mb-8 md:mb-10 border border-secondary/10 relative animate-fade-in card-container">
           {/* Card decorative elements */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/50 rounded-t-xl"></div>
-          <div className="absolute -top-4 -right-4 bg-white p-2 rounded-full shadow-lg border border-primary/10 z-10">
-            <div className="rounded-full bg-primary p-2 text-white">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-secondary to-secondary/50 rounded-t-xl"></div>
+          <div className="absolute -top-4 -right-4 bg-white p-2 rounded-full shadow-lg border border-secondary/10 z-10">
+            <div className="rounded-full bg-secondary p-2 text-white">
               <Rocket className="w-4 h-4" />
             </div>
           </div>

@@ -220,60 +220,133 @@
     @apply border-2 border-primary text-primary font-semibold py-2 px-4 rounded-md hover:bg-primary/5 transition-colors;
   }
   
-  /* Large display layout optimizations */
+  /* Enhanced layout optimizations for all screen sizes */
   .high-res-layout {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10;
   }
   
+  /* 1440p optimization */
   @media (min-width: 1440px) {
     .high-res-layout {
-      @apply max-w-screen-xl;
+      @apply max-w-[1360px] px-10;
+    }
+    
+    h1 {
+      @apply text-5xl;
+    }
+    
+    h2 {
+      @apply text-3xl;
     }
   }
   
+  /* 4K optimization */
   @media (min-width: 2560px) {
     .high-res-layout {
-      @apply max-w-screen-2xl;
+      @apply max-w-[2000px] px-16;
+    }
+    
+    h1 {
+      @apply text-6xl;
+    }
+    
+    h2 {
+      @apply text-4xl;
+    }
+    
+    body {
+      @apply text-lg;
     }
   }
   
-  /* Multi-column layouts for larger screens */
+  /* Mobile optimization */
+  @media (max-width: 640px) {
+    .mobile-padding {
+      @apply px-3 py-4;
+    }
+    
+    .mobile-text-center {
+      @apply text-center;
+    }
+  }
+  
+  /* Multi-column layouts for all screen sizes */
   .high-res-grid {
-    @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3;
+    @apply grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3;
   }
   
+  /* 1440p grid optimization */
   @media (min-width: 1440px) {
     .high-res-grid {
-      @apply lg:grid-cols-3 xl:grid-cols-4;
+      @apply lg:grid-cols-3 xl:grid-cols-4 gap-8;
     }
   }
   
+  /* 4K grid optimization */
   @media (min-width: 2560px) {
     .high-res-grid {
-      @apply xl:grid-cols-5 2xl:grid-cols-6;
+      @apply xl:grid-cols-5 2xl:grid-cols-6 gap-10;
     }
   }
   
-  /* Card animations and effects */
+  /* Card animations and effects - optimized for all screen sizes */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-md hover:border-primary/50 hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-md hover:border-secondary/50 hover:-translate-y-1;
   }
   
   .card-glow {
-    @apply hover:shadow-lg hover:shadow-primary/10 transition-all duration-300;
+    @apply hover:shadow-lg hover:shadow-secondary/10 transition-all duration-300;
   }
   
   .card-scale {
     @apply transition-transform duration-300 hover:scale-[1.02];
   }
   
-  /* Button effects */
+  /* Responsive card sizing */
+  @media (min-width: 1440px) {
+    .card-container {
+      @apply p-6;
+    }
+  }
+  
+  @media (min-width: 2560px) {
+    .card-container {
+      @apply p-8;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .card-container {
+      @apply p-4;
+    }
+  }
+  
+  /* Button effects - optimized for all screen sizes */
   .button-glow {
-    @apply hover:shadow-lg hover:shadow-primary/20 transition-all duration-300;
+    @apply hover:shadow-lg hover:shadow-secondary/20 transition-all duration-300;
   }
   
   .button-scale {
     @apply transition-transform duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  /* Responsive button sizing */
+  @media (min-width: 1440px) {
+    .button-large {
+      @apply text-lg py-3 px-6;
+    }
+  }
+  
+  @media (min-width: 2560px) {
+    .button-large {
+      @apply text-xl py-4 px-8;
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .button-large {
+      @apply w-full justify-center;
+    }
   }
   
   /* Animation utilities */
