@@ -479,7 +479,7 @@ export default function RivalAuditResultsPage() {
             </TabsList>
             
             <TabsContent value="summary" className="mt-0">
-              <RivalAuditSummary audit={audit} />
+              <RivalAuditSummary audit={audit} updatedSummary={updatedSummary} />
             </TabsContent>
             
             <TabsContent value="onPage" className="mt-0">

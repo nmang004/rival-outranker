@@ -163,21 +163,21 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4 mt-4">
               <div className="flex items-center gap-1 sm:gap-2 bg-destructive/10 p-2 rounded-md">
                 <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-                <span className="text-xs sm:text-sm font-medium">{audit.summary.priorityOfiCount} Priority</span>
+                <span className="text-xs sm:text-sm font-medium">{updatedSummary?.priorityOfiCount ?? audit.summary.priorityOfiCount} Priority</span>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 bg-yellow-500/10 p-2 rounded-md">
                 <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
-                <span className="text-xs sm:text-sm font-medium">{audit.summary.ofiCount} OFI</span>
+                <span className="text-xs sm:text-sm font-medium">{updatedSummary?.ofiCount ?? audit.summary.ofiCount} OFI</span>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/10 p-2 rounded-md">
                 <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                <span className="text-xs sm:text-sm font-medium">{audit.summary.okCount} OK</span>
+                <span className="text-xs sm:text-sm font-medium">{updatedSummary?.okCount ?? audit.summary.okCount} OK</span>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 bg-gray-500/10 p-2 rounded-md text-gray-600">
-                <span className="text-xs sm:text-sm font-medium">{audit.summary.naCount} N/A</span>
+                <span className="text-xs sm:text-sm font-medium">{updatedSummary?.naCount ?? audit.summary.naCount} N/A</span>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 bg-blue-500/10 p-2 rounded-md text-blue-600 col-span-2 sm:col-span-1">
-                <span className="text-xs sm:text-sm font-medium">{audit.summary.total || onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total} Total</span>
+                <span className="text-xs sm:text-sm font-medium">{updatedSummary?.total ?? audit.summary.total ?? (onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total)} Total</span>
               </div>
             </div>
           </div>
