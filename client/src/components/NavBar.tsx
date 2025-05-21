@@ -64,21 +64,37 @@ export default function NavBar() {
               </Link>
             </div>
             <div className="hidden sm:flex h-full items-center gap-2">
-              <Link href="/">
-                <div className={linkClass("/")}>
-                  <BarChart2 className="h-4 w-4 mr-2" /> Dashboard
+              <div className="relative group">
+                <Link href="/">
+                  <div className={linkClass("/")}>
+                    <div className="flex items-center">
+                      <BarChart2 className="h-4 w-4 mr-2" /> 
+                      <span>Dashboard</span>
+                      <ChevronDown className="h-3.5 w-3.5 ml-1.5 transition-transform duration-200 group-hover:rotate-180" />
+                    </div>
+                  </div>
+                </Link>
+                <div className="absolute left-0 top-full hidden group-hover:block hover:block z-50">
+                  <div className="pt-1.5">
+                    <div className="bg-white rounded-md shadow-xl border border-gray-100 w-60 overflow-hidden">
+                      <div className="py-1">
+                        <Link href="/deep-content">
+                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                            <FileText className="h-4 w-4 mr-2.5 text-primary" />
+                            <span>Deep Content</span>
+                          </div>
+                        </Link>
+                        <Link href="/competitor-analysis">
+                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                            <Users className="h-4 w-4 mr-2.5 text-primary" />
+                            <span>Competitors</span>
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </Link>
-              <Link href="/deep-content">
-                <div className={linkClass("/deep-content")}>
-                  <FileText className="h-4 w-4 mr-2" /> Deep Content
-                </div>
-              </Link>
-              <Link href="/competitor-analysis">
-                <button className={linkClass("/competitor-analysis") + " cursor-pointer"}>
-                  <Users className="h-4 w-4 mr-2" /> Competitors
-                </button>
-              </Link>
+              </div>
               <div className="relative group">
                 <Link href="/rival-audit">
                   <div className={linkClass("/rival-audit")}>
