@@ -130,7 +130,33 @@ export default function RivalAuditResultsPage() {
       await fetch(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&refresh=true`);
       
       // Refetch the data
-      await refetch();
+      const { data: refreshedData } = await refetch();
+      
+      // Reset the updated summary to null so it uses the new data
+      setUpdatedSummary(null);
+      
+      // Force a re-render of the summary component
+      if (refreshedData) {
+        // Create a synthetic update event to trigger UI updates
+        const updateEvent = new CustomEvent('audit-item-updated', { 
+          detail: { 
+            summary: refreshedData.summary,
+            updatedAt: new Date().getTime(),
+            isRefresh: true
+          } 
+        });
+        
+        // Dispatch the event with a slight delay
+        setTimeout(() => {
+          window.dispatchEvent(updateEvent);
+          
+          // Force UI refresh
+          document.querySelectorAll('.audit-summary-container').forEach(el => {
+            el.classList.add('updating');
+            setTimeout(() => el.classList.remove('updating'), 300);
+          });
+        }, 100);
+      }
       
       toast({
         title: "Audit refreshed",
