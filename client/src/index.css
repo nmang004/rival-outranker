@@ -243,7 +243,18 @@
   /* 4K optimization */
   @media (min-width: 2560px) {
     .high-res-layout {
-      @apply max-w-[2000px] px-16;
+      @apply max-w-[2200px] px-16;
+    }
+    
+    /* Make main container much larger on 4K */
+    .max-w-3xl {
+      @apply max-w-6xl;
+    }
+    
+    /* Special class for 4K screens */
+    .fourk-width {
+      max-width: 80%;
+      width: 80%;
     }
     
     h1 {
