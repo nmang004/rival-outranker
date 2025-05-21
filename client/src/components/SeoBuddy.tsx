@@ -144,7 +144,7 @@ function MainSeoBuddy() {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] max-h-[450px] overflow-auto"
+                className="mb-2 bg-white rounded-lg shadow-lg w-[350px] max-h-[450px] overflow-auto seo-buddy-mobile-tips"
               >
                 <div className="p-3 border-b bg-gradient-to-r from-primary/10 to-primary/5 flex justify-between items-center">
                   <div className="flex items-center">

@@ -232,27 +232,19 @@ export default function NavBar() {
           </div>
           
           <div className="mt-2">
+            <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
+              <div className={mobileLinkClass("/keyword-research")}>
+                <div className="flex items-center">
+                  <Search className="h-4 w-4 mr-2.5 text-primary/80" /> 
+                  <span>Keyword Research</span>
+                </div>
+              </div>
+            </Link>
             <Link href="/backlinks" onClick={() => setMobileMenuOpen(false)}>
               <div className={mobileLinkClass("/backlinks")}>
                 <div className="flex items-center">
                   <LinkIcon className="h-4 w-4 mr-2.5 text-primary/80" /> 
                   <span>Backlink Tracker</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/learning")}>
-                <div className="flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>SEO Learning Paths</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/achievement-demo")}>
-                <div className="flex items-center">
-                  <Trophy className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Achievement Demo</span>
                 </div>
               </div>
             </Link>
@@ -274,6 +266,22 @@ export default function NavBar() {
               <div className="ml-auto flex-shrink-0">
                 <NotificationCenter />
               </div>
+            </div>
+            
+            {/* Mobile User Menu Items */}
+            <div className="w-full border-t border-gray-100 pt-4 mt-2">
+              <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
+                <div className="flex items-center py-2 px-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <BookOpen className="h-4 w-4 mr-2.5 text-primary/70" /> 
+                  <span>SEO Learning Paths</span>
+                </div>
+              </Link>
+              <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
+                <div className="flex items-center py-2 px-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <Trophy className="h-4 w-4 mr-2.5 text-primary/70" /> 
+                  <span>Achievement Demo</span>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
