@@ -8,7 +8,6 @@ import {
   History, 
   Menu, 
   X,
-  LineChart,
   ClipboardCheck,
   ChevronDown,
   BarChart,
@@ -27,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { MobileNavMenu } from "./MobileNavMenu";
 
 export default function NavBar() {
   const [location] = useLocation();
@@ -40,12 +40,6 @@ export default function NavBar() {
     return isActiveLink(path)
       ? "border-secondary text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium h-full"
       : "border-transparent text-muted-foreground hover:border-secondary/50 hover:text-foreground inline-flex items-center px-3 py-2 border-b-2 text-sm font-medium transition-colors h-full";
-  };
-  
-  const mobileLinkClass = (path: string) => {
-    return isActiveLink(path)
-      ? "bg-muted border-secondary text-secondary block pl-4 pr-4 py-2 border-l-4 text-base font-medium"
-      : "border-transparent text-muted-foreground hover:bg-muted/50 hover:border-secondary/50 hover:text-foreground block pl-4 pr-4 py-2 border-l-4 text-base font-medium transition-colors";
   };
 
   return (
@@ -71,24 +65,27 @@ export default function NavBar() {
                     </div>
                   </div>
                 </Link>
-                <div className="absolute left-0 top-full hidden group-hover:block hover:block z-50">
-                  <div className="pt-1.5">
-                    <div className="bg-white rounded-md shadow-xl border border-gray-100 w-60 overflow-hidden">
-                      <div className="py-1">
-                        <Link href="/deep-content">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <FileText className="h-4 w-4 mr-2.5 text-secondary" />
-                            <span>Deep Content</span>
-                          </div>
-                        </Link>
-                        <Link href="/competitor-analysis">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <Users className="h-4 w-4 mr-2.5 text-secondary" />
-                            <span>Competitors</span>
-                          </div>
-                        </Link>
+                
+                <div className="absolute left-0 z-10 transform origin-top-left transition-all duration-150 scale-95 opacity-0 pointer-events-none group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto">
+                  <div className="py-1 mt-1 bg-white border border-gray-200 rounded-md shadow-lg min-w-[14rem]">
+                    <Link href="/">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <BarChart2 className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>Dashboard Overview</span>
                       </div>
-                    </div>
+                    </Link>
+                    <Link href="/deep-content-analysis">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <FileText className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>Deep Content Analysis</span>
+                      </div>
+                    </Link>
+                    <Link href="/competitor-analysis">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <Users className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>Competitor Analysis</span>
+                      </div>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -103,30 +100,36 @@ export default function NavBar() {
                     </div>
                   </div>
                 </Link>
-                <div className="absolute left-0 top-full hidden group-hover:block hover:block z-50">
-                  <div className="pt-1.5">
-                    <div className="bg-white rounded-md shadow-xl border border-gray-100 w-60 overflow-hidden">
-                      <div className="py-1">
-                        <Link href="/basic-rank-tracker">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <BarChart className="h-4 w-4 mr-2.5 text-primary" />
-                            <span>Basic Rank Tracker</span>
-                          </div>
-                        </Link>
-                        <Link href="/pdf-analyzer">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <FileUp className="h-4 w-4 mr-2.5 text-primary" />
-                            <span>PDF Analyzer</span>
-                          </div>
-                        </Link>
-                        <Link href="/backlinks">
-                          <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                            <LinkIcon className="h-4 w-4 mr-2.5 text-primary" />
-                            <span>Backlink Analyzer</span>
-                          </div>
-                        </Link>
-                      </div>
+                
+                <div className="absolute left-0 z-10 transform origin-top-left transition-all duration-150 scale-95 opacity-0 pointer-events-none group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto">
+                  <div className="py-1 mt-1 bg-white border border-gray-200 rounded-md shadow-lg min-w-[14rem]">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Audit Tools
                     </div>
+                    <Link href="/basic-rank-tracker">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <BarChart className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>Basic Rank Tracker</span>
+                      </div>
+                    </Link>
+                    <Link href="/keyword-research">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <Search className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>Keyword Research</span>
+                      </div>
+                    </Link>
+                    <Link href="/pdf-analyzer">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <FileUp className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>PDF Analyzer</span>
+                      </div>
+                    </Link>
+                    <Link href="/backlinks">
+                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                        <LinkIcon className="h-4 w-4 mr-2.5 text-primary" />
+                        <span>Backlink Analyzer</span>
+                      </div>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -152,163 +155,14 @@ export default function NavBar() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
-              <Menu className={`${mobileMenuOpen ? 'hidden' : 'block'} h-5 w-5`} aria-hidden="true" />
-              <X className={`${mobileMenuOpen ? 'block' : 'hidden'} h-5 w-5`} aria-hidden="true" />
+              <Menu className="h-5 w-5" aria-hidden="true" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div className={`${mobileMenuOpen ? 'block' : 'hidden'} sm:hidden shadow-lg`}>
-        <div className="pt-2 pb-3 bg-white border-b">
-          <div className="space-y-1">
-            <Link href="/" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/")}>
-                <div className="flex items-center">
-                  <BarChart2 className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Dashboard</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/deep-content-analysis" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/deep-content-analysis")}>
-                <div className="flex items-center">
-                  <FileText className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Deep Content Analysis</span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/competitor-analysis")}>
-                <div className="flex items-center">
-                  <Users className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Competitor Analysis</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          {/* Rival Audit Section */}
-          <div className="mt-2">
-            <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/rival-audit")}>
-                <div className="flex items-center">
-                  <ClipboardCheck className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Rival Audit</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          {/* Basic Rank Tracker */}
-          <div className="ml-4 border-l border-primary/20">
-            <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/basic-rank-tracker") + " border-l-0 py-1.5 pl-6"}>
-                <div className="flex items-center">
-                  <BarChart className="h-3.5 w-3.5 mr-2 text-primary/70" /> 
-                  <span className="text-sm">Basic Rank Tracker</span>
-                </div>
-              </div>
-            </Link>
-            
-            {/* Keyword Research */}
-            <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/keyword-research") + " border-l-0 py-1.5 pl-6"}>
-                <div className="flex items-center">
-                  <Search className="h-3.5 w-3.5 mr-2 text-primary/70" /> 
-                  <span className="text-sm">Keyword Research</span>
-                </div>
-              </div>
-            </Link>
-            
-            {/* PDF Analyzer */}
-            <Link href="/pdf-analyzer" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/pdf-analyzer") + " border-l-0 py-1.5 pl-6"}>
-                <div className="flex items-center">
-                  <FileUp className="h-3.5 w-3.5 mr-2 text-primary/70" /> 
-                  <span className="text-sm">PDF Analyzer</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          {/* Backlink Tracker */}
-          <div className="mt-2">
-            <Link href="/backlinks" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/backlinks")}>
-                <div className="flex items-center">
-                  <LinkIcon className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Backlink Tracker</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          {/* SEO Learning Paths */}
-          <div className="mt-1">
-            <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/learning")}>
-                <div className="flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>SEO Learning Paths</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          {/* Achievement Demo */}
-          <div className="mt-1">
-            <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/achievement-demo")}>
-                <div className="flex items-center">
-                  <Trophy className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Achievement Demo</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-          
-          {/* Analysis History */}
-          <div className="mt-1">
-            <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
-              <div className={mobileLinkClass("/history")}>
-                <div className="flex items-center">
-                  <History className="h-4 w-4 mr-2.5 text-primary/80" /> 
-                  <span>Analysis History</span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-        <div className="pt-4 pb-3 border-t border-primary/10 bg-white">
-          <div className="flex flex-col items-center px-4">
-            {/* Mobile User Account Info */}
-            <div className="flex w-full items-center pb-4">
-              <UserAccountButton />
-              <div className="ml-auto flex-shrink-0">
-                <NotificationCenter />
-              </div>
-            </div>
-            
-            {/* Mobile User Menu Items */}
-            <div className="w-full border-t border-gray-100 pt-4 mt-2">
-              <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
-                <div className="flex items-center py-2 px-1 text-sm text-muted-foreground hover:text-primary transition-colors">
-                  <BookOpen className="h-4 w-4 mr-2.5 text-primary/70" /> 
-                  <span>SEO Learning Paths</span>
-                </div>
-              </Link>
-              <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
-                <div className="flex items-center py-2 px-1 text-sm text-muted-foreground hover:text-primary transition-colors">
-                  <Trophy className="h-4 w-4 mr-2.5 text-primary/70" /> 
-                  <span>Achievement Demo</span>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MobileNavMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
     </nav>
   );
 }
