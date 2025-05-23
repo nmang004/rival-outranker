@@ -14,55 +14,55 @@ const API_PASSWORD = process.env.DATAFORSEO_API_PASSWORD;
  */
 async function getTaskResult(taskId: string, endpoint: string, maxAttempts: number = 10, delayMs: number = 2000): Promise<any> {
   let attempts = 0;
-  
+
   // Function to delay execution
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  
+
   while (attempts < maxAttempts) {
     attempts++;
-    
+
     try {
       console.log(`Checking task status (attempt ${attempts}/${maxAttempts})...`);
-      
+
       // Get task status
       const response = await dataForSeoClient.get(`${endpoint}/${taskId}`);
-      
+
       if (response.data?.status_code !== 20000) {
         throw new Error(`Invalid response: ${response.data?.status_message || 'Unknown error'}`);
       }
-      
+
       const taskData = response.data.tasks?.[0];
-      
+
       if (!taskData) {
         throw new Error('No task data returned');
       }
-      
+
       // Check if task is complete
       if (taskData.status_code === 20000) {
         console.log(`Task ${taskId} completed successfully`);
         return taskData;
       }
-      
+
       // Check if task failed
       if (taskData.status_code >= 40000) {
         throw new Error(`Task failed: ${taskData.status_message || 'Unknown error'}`);
       }
-      
+
       // Task is still processing, wait and try again
       console.log(`Task ${taskId} is still processing, waiting ${delayMs}ms...`);
       await delay(delayMs);
-      
+
     } catch (error: any) {
       // If it's the last attempt, throw the error
       if (attempts >= maxAttempts) {
         throw error;
       }
-      
+
       console.error(`Error checking task (attempt ${attempts}): ${error.message}`);
       await delay(delayMs);
     }
   }
-  
+
   throw new Error(`Task ${taskId} did not complete after ${maxAttempts} attempts`);
 }
 
@@ -111,7 +111,7 @@ dataForSeoClient.interceptors.request.use(
 dataForSeoClient.interceptors.response.use(
   (response) => {
     console.log('DataForSEO response status:', response.status, response.statusText);
-    
+
     // Debug response structure for development
     if (response.data && response.data.tasks) {
       const firstTask = response.data.tasks[0];
@@ -128,7 +128,7 @@ dataForSeoClient.interceptors.response.use(
         } : null
       });
     }
-    
+
     return response;
   },
   (error) => {
@@ -155,7 +155,7 @@ function processApiResponse(apiResponse: any, endpointName: string): any {
     console.error(`Empty response from ${endpointName} endpoint`);
     return null;
   }
-  
+
   // Check status code
   if (apiResponse.data.status_code !== 20000) {
     console.error(`Error from ${endpointName} endpoint:`, 
@@ -164,13 +164,13 @@ function processApiResponse(apiResponse: any, endpointName: string): any {
     );
     return null;
   }
-  
+
   // Check tasks array
   if (!apiResponse.data.tasks || apiResponse.data.tasks.length === 0) {
     console.error(`No tasks in response from ${endpointName} endpoint`);
     return null;
   }
-  
+
   // Check for errors in task status
   const task = apiResponse.data.tasks[0];
   if (task.status_code !== 20000) {
@@ -180,13 +180,13 @@ function processApiResponse(apiResponse: any, endpointName: string): any {
     );
     return null;
   }
-  
+
   // Check for results
   if (!task.result || task.result.length === 0) {
     console.error(`No results in task from ${endpointName} endpoint`);
     return null;
   }
-  
+
   // Return first result by default
   return task.result[0];
 }
@@ -201,26 +201,26 @@ function generateFallbackSuggestions(baseKeyword: string): RelatedKeyword[] {
   const prefixes = ['best', 'top', 'affordable', 'cheap', 'professional', 'emergency', 'local', 'nearby', 'trusted', 'certified'];
   const suffixes = ['service', 'services', 'company', 'companies', 'cost', 'prices', 'near me', 'reviews', '24/7', 'specialists'];
   const locationPrefixes = ['', 'city', 'downtown', 'central', 'east', 'west', 'north', 'south'];
-  
+
   // Break the keyword into parts
   const parts = baseKeyword.split(' ');
   const suggestions = [];
-  
+
   // If there's a location in the query (usually the last word), keep it for variations
   let location = '';
   if (parts.length > 1) {
     location = parts[parts.length - 1];
   }
-  
+
   // Core services/product (everything except the location)
   let core = parts.slice(0, location ? -1 : undefined).join(' ');
-  
+
   // Generate variations with prefixes
   for (const prefix of prefixes) {
     suggestions.push(`${prefix} ${baseKeyword}`);
     if (location) {
       suggestions.push(`${prefix} ${core} in ${location}`);
-      
+
       // Add some location variations
       for (const locPrefix of locationPrefixes) {
         if (locPrefix) {
@@ -229,7 +229,7 @@ function generateFallbackSuggestions(baseKeyword: string): RelatedKeyword[] {
       }
     }
   }
-  
+
   // Generate variations with suffixes
   for (const suffix of suffixes) {
     suggestions.push(`${baseKeyword} ${suffix}`);
@@ -237,15 +237,15 @@ function generateFallbackSuggestions(baseKeyword: string): RelatedKeyword[] {
       suggestions.push(`${core} ${suffix} in ${location}`);
     }
   }
-  
+
   // Remove duplicates and limit to 15 suggestions
   const uniqueSuggestions = [...new Set(suggestions)].slice(0, 15);
-  
+
   // Map to the expected format with simulated metrics
   return uniqueSuggestions.map((keyword, index) => {
     // Longer keywords typically have less volume
     const estimatedVolume = Math.max(400 - (keyword.length * 15), 50);
-    
+
     return {
       id: index + 1,
       keyword: keyword,
@@ -278,7 +278,7 @@ function generateSimulatedTrend(baseVolume: number): number[] {
     0.9,  // November
     1.15  // December (holiday season bump)
   ];
-  
+
   // Apply seasonal factors and add some random variation
   return seasonalFactors.map(factor => {
     const randomVariation = 0.9 + (Math.random() * 0.2); // 0.9-1.1 random factor
@@ -315,18 +315,29 @@ export interface RelatedKeyword {
  * @returns KeywordData object with metrics
  */
 export async function getKeywordData(keyword: string, location: number = 2840): Promise<KeywordData> {
+  // Create a simple in-memory cache with TTL
+  const requestCache = new Map<string, { data: any, timestamp: number }>();
+  const CACHE_TTL = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+  // Check cache first
+  const cacheKey = `${keyword}_${location}`;
+  const cachedData = requestCache.get(cacheKey);
+  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
+    console.log(`Using cached data for keyword: ${keyword}`);
+    return cachedData.data;
+  }
   try {
     console.log(`Fetching keyword data for "${keyword}" from DataForSEO...`);
-    
+
     // Request body for Keywords Data API formatted exactly as per DataForSEO docs
     const requestData = [{
       "keywords": [keyword],
       "location_code": location,
       "language_code": "en"
     }];
-    
+
     console.log('DataForSEO search_volume request payload:', JSON.stringify(requestData, null, 2));
-    
+
     // Use the standard endpoint with normal priority to reduce costs
     const taskPostResponse = await dataForSeoClient.post(
       '/keywords_data/google_ads/search_volume/task_post',
@@ -335,54 +346,54 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
         priority: 1  // Normal priority (lower cost)
       }))
     );
-    
+
     // Handle task post response to get the task ID
     const taskPostData = taskPostResponse.data;
-    
+
     if (!taskPostData || taskPostData.status_code !== 20000 || !taskPostData.tasks || taskPostData.tasks.length === 0) {
       throw new Error(`Invalid task post API response: ${JSON.stringify(taskPostData)}`);
     }
-    
+
     const taskId = taskPostData.tasks[0].id;
-    
+
     if (!taskId) {
       throw new Error('No task ID returned from DataForSEO');
     }
-    
+
     console.log(`DataForSEO task created with ID: ${taskId}, waiting for results...`);
-    
+
     // Wait for task to complete and get results
     const taskResult = await getTaskResult(taskId, '/keywords_data/google_ads/search_volume/task_get');
-    
+
     if (!taskResult || !taskResult.result || taskResult.result.length === 0) {
       throw new Error('No results from DataForSEO task');
     }
-    
+
     // Extract the keyword data from the result
     const keywordResult = taskResult.result[0];
-    
+
     // Extract trend data (if available)
     let trend: number[] = [];
-    
+
     if (keywordResult.monthly_searches && Array.isArray(keywordResult.monthly_searches)) {
       trend = keywordResult.monthly_searches.map((month: any) => month.search_volume || 0);
     } else if (keywordResult.search_volume_trend && Array.isArray(keywordResult.search_volume_trend)) {
       trend = keywordResult.search_volume_trend;
     }
-    
+
     // Get difficulty from the keywords_data result
     const difficultyScore = Math.round(keywordResult.keyword_difficulty || 0);
-    
+
     // Format CPC with $ symbol and 2 decimal places if present
     const formattedCpc = keywordResult.cpc 
       ? `$${parseFloat(keywordResult.cpc).toFixed(2)}` 
       : '$0.00';
-    
+
     // Try to get related keywords
     let relatedKeywords: RelatedKeyword[] = [];
     try {
       console.log('Fetching related keywords...');
-      
+
       const relatedRequestData = [{
         "data": {
           "keyword": keyword,
@@ -391,7 +402,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
           "limit": 10
         }
       }];
-      
+
       // Use standard endpoint with normal priority for related keywords
       const relatedKeywordsTaskResponse = await dataForSeoClient.post(
         '/keywords_data/google_ads/keywords_for_keywords/task_post',
@@ -400,21 +411,21 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
           priority: 1 // Normal priority (lower cost)
         }))
       );
-      
+
       // Handle task creation response
       if (relatedKeywordsTaskResponse.data?.status_code !== 20000 || 
           !relatedKeywordsTaskResponse.data?.tasks?.[0]?.id) {
         throw new Error('Failed to create task for related keywords');
       }
-      
+
       const relatedKeywordsTaskId = relatedKeywordsTaskResponse.data.tasks[0].id;
-      
+
       // Get task results
       const relatedKeywordsTaskResult = await getTaskResult(
         relatedKeywordsTaskId, 
         '/keywords_data/google_ads/keywords_for_keywords/task_get'
       );
-      
+
       // Format response to match the live endpoint format
       const relatedKeywordsResponse = { 
         data: {
@@ -423,15 +434,15 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
           tasks: [relatedKeywordsTaskResult]
         }
       };
-      
+
       console.log('DataForSEO related keywords response status:', 
         relatedKeywordsResponse.data?.status_code,
         relatedKeywordsResponse.data?.status_message);
-      
+
       // Direct access to response data
       if (relatedKeywordsResponse.data?.tasks?.[0]?.result?.[0]?.keywords) {
         const relatedItems = relatedKeywordsResponse.data.tasks[0].result[0].keywords;
-        
+
         relatedKeywords = relatedItems.map((item: any) => ({
           keyword: item.keyword,
           searchVolume: item.search_volume || 0,
@@ -444,7 +455,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       console.error('Error fetching related keywords:', relatedError);
       // Continue with empty related keywords array if this request fails
     }
-    
+
     // Construct the final result
     const result: KeywordData = {
       keyword,
@@ -455,17 +466,23 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       trend: trend.length > 0 ? trend : Array(12).fill(0),
       relatedKeywords: relatedKeywords
     };
-    
+
+    // Store in cache
+    requestCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+
     console.log('Processed keyword data:', JSON.stringify(result, null, 2));
     return result;
   } catch (error: any) {
     console.error('Error fetching keyword data from DataForSEO:', error.message || error);
-    
+
     // Log more detailed error information if available
     if (error.response?.data) {
       console.error('API error details:', JSON.stringify(error.response.data, null, 2));
     }
-    
+
     // Return a clean structure with zeros instead of generating fake data
     return {
       keyword,
@@ -495,7 +512,7 @@ export async function getCompetitorRankings(
 ) {
   try {
     console.log(`Fetching competitor rankings for "${keyword}" from DataForSEO...`);
-    
+
     // Request body for SERP API formatted exactly per DataForSEO docs
     const requestData = [{
       "keyword": keyword,
@@ -503,18 +520,18 @@ export async function getCompetitorRankings(
       "language_code": "en",
       "depth": 100 // Check deeper to find all competitors
     }];
-    
+
     console.log('DataForSEO SERP request payload:', JSON.stringify(requestData, null, 2));
-    
+
     const serpResponse = await dataForSeoClient.post(
       '/serp/google/organic/task_post',
       requestData
     );
-    
+
     console.log('DataForSEO SERP response status:', 
       serpResponse.data?.status_code,
       serpResponse.data?.status_message);
-      
+
     // Check for valid response from API
     if (!serpResponse.data || 
         serpResponse.data.status_code !== 20000 || 
@@ -522,18 +539,18 @@ export async function getCompetitorRankings(
         serpResponse.data.tasks.length === 0) {
       throw new Error(`Invalid API response: ${JSON.stringify(serpResponse.data)}`);
     }
-    
+
     const task = serpResponse.data.tasks[0];
-    
+
     if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
       throw new Error(`Task error: ${task.status_message || 'No results'}`);
     }
-    
+
     // Get organic results
     const results = task.result[0]?.items || [];
-    
+
     console.log(`Found ${results.length} search results to process`);
-    
+
     // Normalize domains for comparison (removing www., http://, etc.)
     const normalizeDomain = (url: string) => {
       try {
@@ -547,17 +564,17 @@ export async function getCompetitorRankings(
         return url;
       }
     };
-    
+
     const normalizedWebsite = normalizeDomain(website);
     const normalizedCompetitors = competitorDomains.map(normalizeDomain);
-    
+
     // Find rankings for the target website and competitors
     let websiteRanking = { position: 0, url: '' };
     const competitorRankings = [];
-    
+
     for (const result of results) {
       const resultDomain = normalizeDomain(result.url);
-      
+
       // Check if this is the target website
       if (resultDomain.includes(normalizedWebsite)) {
         websiteRanking = {
@@ -565,7 +582,7 @@ export async function getCompetitorRankings(
           url: result.url
         };
       }
-      
+
       // Check if this is a competitor
       for (const competitor of normalizedCompetitors) {
         if (resultDomain.includes(competitor)) {
@@ -578,7 +595,7 @@ export async function getCompetitorRankings(
         }
       }
     }
-    
+
     return {
       keyword,
       websiteRanking,
@@ -587,12 +604,12 @@ export async function getCompetitorRankings(
   } catch (error: any) {
     console.error('Error fetching competitor rankings from DataForSEO:', 
       error.message || error);
-    
+
     // Log specifics for debugging purposes
     if (error.response?.data) {
       console.error('API error details:', JSON.stringify(error.response.data));
     }
-    
+
     // Return basic structure to avoid undefined errors in client
     return {
       keyword,
@@ -611,14 +628,14 @@ export async function getCompetitorRankings(
 export async function getKeywordSuggestions(keyword: string, location: number = 2840): Promise<RelatedKeyword[]> {
   try {
     console.log(`Fetching keyword suggestions for "${keyword}" from DataForSEO...`);
-    
+
     // For now, generate related keywords by adding common SEO prefixes and suffixes
     // This is a temporary solution until we resolve the DataForSEO API endpoint issues
     const relatedTerms = [
       "how to", "best", "top", "affordable", "cheap", "professional", "expert", 
       "services", "near me", "company", "agency", "pricing", "cost", "reviews"
     ];
-    
+
     // Create variations of the keyword
     const variations = relatedTerms.map(term => {
       if (["how to", "best", "top", "affordable", "cheap", "professional", "expert"].includes(term)) {
@@ -627,19 +644,19 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         return `${keyword} ${term}`;
       }
     });
-    
+
     // Add the original keyword at the beginning 
     const allKeywords = [keyword, ...variations];
-    
+
     // Request body with all generated keyword variations
     const requestData = [{
       "keywords": allKeywords.slice(0, 20), // Limit to 20 to avoid quota issues
       "location_code": location,
       "language_code": "en"
     }];
-    
+
     console.log('DataForSEO keyword suggestions request payload:', JSON.stringify(requestData, null, 2));
-    
+
     // Use the standard endpoint with normal priority to reduce costs
     const suggestionsTaskResponse = await dataForSeoClient.post(
       '/keywords_data/google_ads/search_volume/task_post', 
@@ -648,21 +665,21 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         priority: 1  // Normal priority (lower cost)
       }))
     );
-    
+
     // Handle task creation response
     if (suggestionsTaskResponse.data?.status_code !== 20000 || 
         !suggestionsTaskResponse.data?.tasks?.[0]?.id) {
       throw new Error('Failed to create task for keyword suggestions');
     }
-    
+
     const suggestionsTaskId = suggestionsTaskResponse.data.tasks[0].id;
-    
+
     // Get task results
     const suggestionsTaskResult = await getTaskResult(
       suggestionsTaskId, 
       '/keywords_data/google_ads/search_volume/task_get'
     );
-    
+
     // Format response to match the live endpoint format
     const suggestionsResponse = { 
       data: {
@@ -671,11 +688,11 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         tasks: [suggestionsTaskResult]
       }
     };
-    
+
     console.log('DataForSEO suggestions response status:', 
       suggestionsResponse.data?.status_code,
       suggestionsResponse.data?.status_message);
-    
+
     // Check for valid response from API
     if (!suggestionsResponse.data || 
         suggestionsResponse.data.status_code !== 20000 || 
@@ -683,23 +700,23 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         suggestionsResponse.data.tasks.length === 0) {
       throw new Error(`Invalid API response: ${JSON.stringify(suggestionsResponse.data)}`);
     }
-    
+
     const task = suggestionsResponse.data.tasks[0];
-    
+
     if (task.status_code !== 20000 || !task.result || task.result.length === 0) {
       throw new Error(`Task error: ${task.status_message || 'No results'}`);
     }
-    
+
     // Process the results from the search_volume endpoint
     const results = task.result || [];
-    
+
     if (results.length === 0) {
       console.log("No keywords found in API response");
       return [];
     }
-    
+
     console.log(`Found ${results.length} keyword volume results`);
-    
+
     // Map the results to the expected format, skipping the original keyword
     const keywords = results
       .filter((item: any) => item.keyword !== keyword) // Filter out the original keyword
@@ -711,7 +728,7 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         cpc: item.cpc ? `$${item.cpc.toFixed(2)}` : '$0.00',
         relevance: Math.round((1 - (index / Math.min(15, results.length))) * 100) // Calculate relevance based on position
       }));
-    
+
     // If no results from API, use our generated variations
     if (keywords.length === 0) {
       return variations.map((kw, index) => ({
@@ -723,11 +740,11 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
         relevance: Math.round((1 - (index / variations.length)) * 100)
       }));
     }
-    
+
     return keywords;
   } catch (error: any) {
     console.error('Error fetching keyword suggestions from DataForSEO:', error.message);
-    
+
     // Return empty array instead of generated data
     return [];
   }
@@ -742,7 +759,7 @@ export async function checkApiHealth(): Promise<boolean> {
     // Attempt to call a simple endpoint to verify credentials and connectivity
     // Use google_ads endpoints which should be available
     const response = await dataForSeoClient.get('/keywords_data/google_ads/locations');
-    
+
     // Check if we have a valid response with data
     if (response?.data?.status_code === 20000) {
       console.log("DataForSEO API is healthy and credentials are valid");
