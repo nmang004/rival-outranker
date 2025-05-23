@@ -162,7 +162,108 @@ export default function NavBar() {
       </div>
 
       {/* Mobile menu */}
-      <MobileNavMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <div className={`${mobileMenuOpen ? 'absolute' : 'hidden'} inset-x-0 top-16 z-50 sm:hidden`}>
+        <div className="bg-white shadow-lg">
+          <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-primary/90">Rival Outranker</h2>
+            <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-full hover:bg-gray-100">
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+          
+          <div className="py-1 px-1">
+            <Link href="/" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <BarChart2 className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Dashboard</span>
+              </div>
+            </Link>
+            
+            <Link href="/deep-content-analysis" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/deep-content-analysis") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <FileText className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Deep Content Analysis</span>
+              </div>
+            </Link>
+            
+            <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/competitor-analysis") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <Users className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Competitor Analysis</span>
+              </div>
+            </Link>
+            
+            <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/rival-audit") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <ClipboardCheck className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Rival Audit</span>
+              </div>
+            </Link>
+          </div>
+          
+          {/* Indented submenu items */}
+          <div className="border-l-2 border-gray-200 ml-6 pl-2">
+            <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-2 ${isActiveLink("/basic-rank-tracker") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <BarChart className="h-4 w-4 mr-2 text-primary/80" /> 
+                <span>Basic Rank Tracker</span>
+              </div>
+            </Link>
+            
+            <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-2 ${isActiveLink("/keyword-research") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <Search className="h-4 w-4 mr-2 text-primary/80" /> 
+                <span>Keyword Research</span>
+              </div>
+            </Link>
+            
+            <Link href="/pdf-analyzer" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-2 ${isActiveLink("/pdf-analyzer") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <FileUp className="h-4 w-4 mr-2 text-primary/80" /> 
+                <span>PDF Analyzer</span>
+              </div>
+            </Link>
+          </div>
+          
+          <div className="py-1 px-1">
+            <Link href="/backlinks" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/backlinks") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <LinkIcon className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Backlink Tracker</span>
+              </div>
+            </Link>
+            
+            <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/learning") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <BookOpen className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>SEO Learning Paths</span>
+              </div>
+            </Link>
+            
+            <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/achievement-demo") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <Trophy className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Achievement Demo</span>
+              </div>
+            </Link>
+            
+            <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
+              <div className={`flex items-center py-2 px-3 ${isActiveLink("/history") ? "bg-gray-100 text-primary" : "text-gray-700 hover:bg-gray-50"}`}>
+                <History className="h-5 w-5 mr-3 text-primary/80" /> 
+                <span>Analysis History</span>
+              </div>
+            </Link>
+          </div>
+          
+          <div className="py-3 px-4 border-t border-gray-200">
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+              <button className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Log In
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
     </nav>
   );
 }
