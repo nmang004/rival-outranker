@@ -53,11 +53,20 @@ export const getQueryFn: <T>(options: {
         return null;
       }
       
+      const endpoint = queryKey[0];
+      console.log("Fetching data from:", endpoint);
+      
       // Using more defensive fetch approach with better error handling
       let response;
       try {
-        response = await fetch(queryKey[0], {
+        response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
           credentials: "include",
+          cache: "no-cache"
         });
       } catch (error) {
         console.error("Network error:", error);
