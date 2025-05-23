@@ -1,11 +1,26 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import axios from "axios";
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+// Create a custom axios instance with default settings
+const axiosInstance = axios.create({
+  withCredentials: true,
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
   }
-}
+});
+
+// Handle common axios errors
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Error:", error.message);
+    if (error.response) {
+      console.error(`Status: ${error.response.status}, Data:`, error.response.data);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export async function apiRequest<T = any>(
   url: string,
@@ -17,26 +32,23 @@ export async function apiRequest<T = any>(
   const method = options?.method || 'GET';
   const data = options?.data;
   
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  
-  // For requests like POST that might return no content
-  if (res.status === 204 || res.headers.get('content-length') === '0') {
-    return {} as T;
-  }
-  
-  // Parse JSON response body
   try {
-    return await res.json() as T;
+    if (method === 'GET') {
+      const response = await axiosInstance.get<T>(url);
+      return response.data;
+    } else {
+      const response = await axiosInstance.request<T>({
+        url,
+        method,
+        data
+      });
+      return response.data;
+    }
   } catch (error) {
-    // If JSON parsing fails, return the response object
-    return res as unknown as T;
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`${error.response.status}: ${JSON.stringify(error.response.data)}`);
+    }
+    throw error;
   }
 }
 
@@ -56,59 +68,43 @@ export const getQueryFn: <T>(options: {
       const endpoint = queryKey[0];
       console.log("Fetching data from:", endpoint);
       
-      // Using more defensive fetch approach with better error handling
-      let response;
       try {
-        response = await fetch(endpoint, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          credentials: "include",
-          cache: "no-cache"
-        });
+        const response = await axiosInstance.get<T>(endpoint);
+        return response.data;
       } catch (error) {
-        console.error("Network error:", error);
+        if (axios.isAxiosError(error)) {
+          // Handle specific error types
+          if (error.response) {
+            // The request was made and the server responded with an error status
+            if (error.response.status === 401) {
+              console.log("401 Unauthorized response received");
+              if (unauthorizedBehavior === "returnNull") {
+                return null;
+              }
+              throw new Error("Unauthorized");
+            }
+            
+            console.error(`HTTP error: ${error.response.status}`);
+            if (unauthorizedBehavior === "returnNull") {
+              return null;
+            }
+            throw new Error(`HTTP error: ${error.response.status}`);
+          } else if (error.request) {
+            // The request was made but no response was received
+            console.error("Network error: No response received");
+            if (unauthorizedBehavior === "returnNull") {
+              return null;
+            }
+            throw new Error("Network error: No response received");
+          }
+        }
+        
+        // General error handling
+        console.error("Request error:", error);
         if (unauthorizedBehavior === "returnNull") {
           return null;
         }
         throw error;
-      }
-
-      // Handle 401 unauthorized early
-      if (response.status === 401) {
-        if (unauthorizedBehavior === "returnNull") {
-          return null;
-        }
-        throw new Error("Unauthorized");
-      }
-      
-      // Handle non-OK responses
-      if (!response.ok) {
-        console.error(`HTTP error: ${response.status} ${response.statusText}`);
-        if (unauthorizedBehavior === "returnNull") {
-          return null;
-        }
-        throw new Error(`HTTP error: ${response.status}`);
-      }
-      
-      // Check for empty or non-JSON responses
-      try {
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn("Response is not JSON");
-          return null;
-        }
-        
-        const data = await response.json();
-        return data;
-      } catch (jsonError) {
-        console.error("JSON parsing error:", jsonError);
-        if (unauthorizedBehavior === "returnNull") {
-          return null;
-        }
-        throw jsonError;
       }
     } catch (error) {
       console.error("Query fetch error:", error);
