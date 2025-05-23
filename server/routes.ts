@@ -2129,28 +2129,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Use only Google Ads API for keyword data - no fallback
+      // Use DataForSEO API for keyword data
       try {
-        // Check if Google Ads API is configured
-        if (isGoogleAdsApiReady()) {
-          console.log(`Using Google Ads API for keyword data: "${keyword}"`);
-          keywordData = await getGoogleAdsKeywordData(keyword, locationCode);
-        } else {
-          // If Google Ads API is not configured, notify the user
-          const requiredSecrets = getRequiredSecrets();
-          console.log(`Google Ads API not configured, missing credentials: ${requiredSecrets.join(', ')}`);
-          
-          // Return error response with required credentials
+        console.log(`Using DataForSEO API for keyword data: "${keyword}"`);
+        
+        // Import the DataForSEO service function
+        const { getKeywordData } = await import('./services/dataForSeoService');
+        
+        // Call DataForSEO API to get keyword data
+        keywordData = await getKeywordData(keyword, locationCode);
+        
+        if (!keywordData) {
           return res.status(503).json({ 
-            message: "Google Ads API is not configured",
-            requiredSecrets: requiredSecrets 
+            message: "Failed to fetch keyword data from DataForSEO API",
+            error: "No data returned from API"
           });
         }
       } catch (apiError) {
-        console.error('Error using Google Ads API:', apiError);
+        console.error('Error using DataForSEO API:', apiError);
         // Return error as we're not using fallbacks
         return res.status(503).json({ 
-          message: "Error accessing Google Ads API",
+          message: "Error accessing DataForSEO API",
           error: apiError instanceof Error ? apiError.message : String(apiError)
         });
       }
