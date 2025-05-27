@@ -794,10 +794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If still no keyword, extract from title and h1
         if (!primaryKeyword) {
           const title = pageData.title || '';
-          The provided change improves the rival audit retrieval endpoint by logging cache misses and displaying available IDs.
-
-```typescript
-      const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
+          const h1Text = pageData.headings.h1.length > 0 ? pageData.headings.h1[0] : '';
 
           // Try to extract a business category from title or h1
           const businessTypes = [
