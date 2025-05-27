@@ -242,21 +242,13 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             size="sm"
           />
         </CardHeader>
-        <div ref={pieChartRef}>
-          {/* Header for export (hidden export button) */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 border-b">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SEO Health & Performance Dashboard</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Comprehensive view of website's SEO health with key performance metrics
-            </p>
-          </div>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="text-sm font-medium">Overall Progress</div>
-                  <div className="text-sm font-medium">{Math.round(totalProgress)}%</div>
-                </div>
+        <CardContent ref={pieChartRef}>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between mb-2">
+                <div className="text-sm font-medium">Overall Progress</div>
+                <div className="text-sm font-medium">{Math.round(totalProgress)}%</div>
+              </div>
               <Progress 
                 value={totalProgress} 
                 className={`h-3 ${
@@ -359,7 +351,6 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             </div>
             </div>
           </CardContent>
-        </div>
       </Card>
 
       {/* Category comparison chart */}
