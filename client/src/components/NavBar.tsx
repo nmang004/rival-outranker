@@ -161,62 +161,55 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Mobile menu - simpler dropdown style matching the screenshot */}
+      {/* Mobile menu - clean structure without duplicate header */}
       <div className={`${mobileMenuOpen ? 'block' : 'hidden'} sm:hidden absolute inset-x-0 top-16 bg-white shadow-lg z-40`}>
-        <div className="border-b border-gray-200 px-4 py-2 flex justify-between">
-          <h2 className="text-base font-bold text-primary">Rival Outranker</h2>
-          <button onClick={() => setMobileMenuOpen(false)} className="text-gray-400">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        
         <div className="py-2">
           <Link href="/" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <BarChart2 className="h-4 w-4 mr-3 text-primary/80" /> 
+              <BarChart2 className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Dashboard</span>
             </div>
           </Link>
           
           <Link href="/deep-content-analysis" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <FileText className="h-4 w-4 mr-3 text-primary/80" /> 
+              <FileText className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Deep Content Analysis</span>
             </div>
           </Link>
           
           <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <Users className="h-4 w-4 mr-3 text-primary/80" /> 
+              <Users className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Competitor Analysis</span>
             </div>
           </Link>
           
           <Link href="/rival-audit" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <ClipboardCheck className="h-4 w-4 mr-3 text-primary/80" /> 
+              <ClipboardCheck className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Rival Audit</span>
             </div>
           </Link>
           
           {/* Nested items under Rival Audit */}
-          <div className="border-l border-gray-100 ml-4">
+          <div className="border-l-2 border-gray-200 ml-6 pl-4">
             <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
-              <div className="flex items-center py-2 pl-7 pr-4 hover:bg-gray-50">
+              <div className="flex items-center py-2 pr-4 hover:bg-gray-50">
                 <BarChart className="h-4 w-4 mr-3 text-primary/80" /> 
                 <span className="text-gray-800">Basic Rank Tracker</span>
               </div>
             </Link>
             
             <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
-              <div className="flex items-center py-2 pl-7 pr-4 hover:bg-gray-50">
+              <div className="flex items-center py-2 pr-4 hover:bg-gray-50">
                 <Search className="h-4 w-4 mr-3 text-primary/80" /> 
                 <span className="text-gray-800">Keyword Research</span>
               </div>
             </Link>
             
             <Link href="/pdf-analyzer" onClick={() => setMobileMenuOpen(false)}>
-              <div className="flex items-center py-2 pl-7 pr-4 hover:bg-gray-50">
+              <div className="flex items-center py-2 pr-4 hover:bg-gray-50">
                 <FileUp className="h-4 w-4 mr-3 text-primary/80" /> 
                 <span className="text-gray-800">PDF Analyzer</span>
               </div>
@@ -225,39 +218,38 @@ export default function NavBar() {
           
           <Link href="/backlinks" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <LinkIcon className="h-4 w-4 mr-3 text-primary/80" /> 
+              <LinkIcon className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Backlink Tracker</span>
             </div>
           </Link>
           
           <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <BookOpen className="h-4 w-4 mr-3 text-primary/80" /> 
+              <BookOpen className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">SEO Learning Paths</span>
             </div>
           </Link>
           
           <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <Trophy className="h-4 w-4 mr-3 text-primary/80" /> 
+              <Trophy className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Achievement Demo</span>
             </div>
           </Link>
           
           <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
             <div className="flex items-center px-4 py-2 hover:bg-gray-50">
-              <History className="h-4 w-4 mr-3 text-primary/80" /> 
+              <History className="h-5 w-5 mr-3 text-primary/80" /> 
               <span className="text-gray-800">Analysis History</span>
             </div>
           </Link>
         </div>
         
         <div className="px-4 py-4 border-t border-gray-200">
-          <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-            <button className="w-full text-center py-2 border border-gray-300 rounded text-sm font-medium">
-              Log In
-            </button>
-          </Link>
+          <NotificationCenter />
+          <div className="mt-3">
+            <UserAccountButton />
+          </div>
         </div>
       </div>
     </nav>
