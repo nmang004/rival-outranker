@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { RivalAudit } from '@shared/schema';
 import {
   Card,
@@ -32,6 +32,7 @@ import {
   MapPin,
   Globe,
 } from "lucide-react";
+import { ChartExport } from "@/components/ui/chart-export";
 
 interface RivalAuditDashboardProps {
   audit: RivalAudit;
@@ -45,6 +46,9 @@ interface RivalAuditDashboardProps {
 }
 
 export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAuditDashboardProps) {
+  // Chart refs for export functionality
+  const pieChartRef = useRef<HTMLDivElement>(null);
+  const barChartRef = useRef<HTMLDivElement>(null);
   // Calculate total issues for each category
   const getCategoryTotals = (categoryItems: any[]) => {
     return {
@@ -248,8 +252,16 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
               <div className="col-span-1">
-                <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Issue Distribution</div>
-                <div className="h-[200px] sm:h-[250px]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-lg font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Issue Distribution</div>
+                  <ChartExport 
+                    chartRef={pieChartRef}
+                    filename="seo-issue-distribution"
+                    title="Export Issue Distribution Chart"
+                    size="sm"
+                  />
+                </div>
+                <div className="h-[200px] sm:h-[250px]" ref={pieChartRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -344,14 +356,22 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
 
       {/* Category comparison chart */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
-          <CardTitle>SEO Category Performance Analysis</CardTitle>
-          <CardDescription>
-            Detailed breakdown of performance across all SEO categories with issue distribution
-          </CardDescription>
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>SEO Category Performance Analysis</CardTitle>
+            <CardDescription>
+              Detailed breakdown of performance across all SEO categories with issue distribution
+            </CardDescription>
+          </div>
+          <ChartExport 
+            chartRef={barChartRef}
+            filename="seo-category-performance"
+            title="Export Category Performance Chart"
+            size="sm"
+          />
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] sm:h-[400px]">
+          <div className="h-[300px] sm:h-[400px]" ref={barChartRef}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={categoryComparisonData}
