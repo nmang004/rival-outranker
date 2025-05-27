@@ -242,13 +242,21 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             size="sm"
           />
         </CardHeader>
-        <CardContent ref={pieChartRef}>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <div className="text-sm font-medium">Overall Progress</div>
-                <div className="text-sm font-medium">{Math.round(totalProgress)}%</div>
-              </div>
+        <div ref={pieChartRef}>
+          {/* Header for export (hidden export button) */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 border-b">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SEO Health & Performance Dashboard</h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Comprehensive view of website's SEO health with key performance metrics
+            </p>
+          </div>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <div className="text-sm font-medium">Overall Progress</div>
+                  <div className="text-sm font-medium">{Math.round(totalProgress)}%</div>
+                </div>
               <Progress 
                 value={totalProgress} 
                 className={`h-3 ${
@@ -257,25 +265,24 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                   "bg-red-500/20"
                 }`}
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="col-span-1">
-                <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Issue Distribution</div>
-                <div className="h-[200px] sm:h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusDistributionData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                        nameKey="name"
-                        // External pie label removed - use legend instead
-                        label={false}
-                        labelLine={false}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                <div className="col-span-1">
+                  <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Issue Distribution</div>
+                  <div className="h-[200px] sm:h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          paddingAngle={2}
+                          dataKey="value"
+                          nameKey="name"
+                          // External pie label removed - use legend instead
+                          label={false}
+                          labelLine={false}
                       >
                         {statusDistributionData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} name={entry.name} />
@@ -327,7 +334,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                           </div>
                           <span className="ml-1 text-sm font-medium">{item.name}</span>
                         </div>
-                        <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
+                        <span className={`text-sm font-semibold px-3 py-1 rounded-full min-w-[50px] text-center ${
                           item.progress > 80 ? "bg-green-100 text-green-700" : 
                           item.progress > 60 ? "bg-emerald-100 text-emerald-700" :
                           item.progress > 40 ? "bg-yellow-100 text-yellow-700" :
@@ -350,8 +357,9 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                 </div>
               </div>
             </div>
-          </div>
-        </CardContent>
+            </div>
+          </CardContent>
+        </div>
       </Card>
 
       {/* Category comparison chart */}
