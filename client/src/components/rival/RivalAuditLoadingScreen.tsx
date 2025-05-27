@@ -29,12 +29,12 @@ const LoadingStep = ({
 }) => {
   return (
     <div className={`flex items-center gap-3 py-3 pl-2 rounded-md transition-all ${
-      isActive ? 'bg-green-50 dark:bg-green-950/30' : 
+      isActive ? 'bg-orange-50 dark:bg-orange-950/30' : 
       isComplete ? 'opacity-70' : 'opacity-40'
     }`}>
       <div className={`p-2 rounded-full ${
-        isActive ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300 animate-pulse' : 
-        isComplete ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-300' : 
+        isActive ? 'bg-orange-100 text-orange-700 dark:bg-orange-800 dark:text-orange-300 animate-pulse' : 
+        isComplete ? 'bg-orange-100 text-orange-700 dark:bg-orange-800 dark:text-orange-300' : 
         'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
       }`}>
         {icon}
@@ -90,7 +90,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
           </div>
           <Progress 
             value={progress} 
-            className="h-2.5 bg-green-100 dark:bg-green-900"
+            className="h-2.5 bg-orange-100 dark:bg-orange-900"
           />
           
           <div className="mt-8 space-y-1">
@@ -142,9 +142,9 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
       
       <div className="animate-bounce-slow flex justify-center p-6">
         <div className="flex space-x-2 opacity-70">
-          <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce-delay-0"></div>
-          <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce-delay-300"></div>
-          <div className="w-2 h-2 rounded-full bg-green-600 animate-bounce-delay-600"></div>
+          <div className="w-2 h-2 rounded-full bg-orange-600 animate-bounce-delay-0"></div>
+          <div className="w-2 h-2 rounded-full bg-orange-600 animate-bounce-delay-300"></div>
+          <div className="w-2 h-2 rounded-full bg-orange-600 animate-bounce-delay-600"></div>
         </div>
       </div>
     </div>
