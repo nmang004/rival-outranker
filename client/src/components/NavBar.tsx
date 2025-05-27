@@ -213,38 +213,6 @@ export default function NavBar() {
               <span className="text-gray-700">PDF Analyzer</span>
             </div>
           </Link>
-          
-          <Link href="/backlinks" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <LinkIcon className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">Backlink Analyzer</span>
-            </div>
-          </Link>
-          
-          {/* Other Navigation Items */}
-          <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">
-            Other Tools
-          </div>
-          <Link href="/learning" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <BookOpen className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">SEO Learning Paths</span>
-            </div>
-          </Link>
-          
-          <Link href="/achievement-demo" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <Trophy className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">Achievement Demo</span>
-            </div>
-          </Link>
-          
-          <Link href="/history" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <History className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">Analysis History</span>
-            </div>
-          </Link>
         </div>
         
         <div className="px-4 py-4 border-t border-gray-200">
