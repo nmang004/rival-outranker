@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +34,7 @@ import {
   Cell
 } from "recharts";
 import { Helmet } from "react-helmet";
+import { ChartExport } from "@/components/ui/chart-export";
 
 // API usage interface
 interface ApiUsage {
@@ -144,6 +145,12 @@ export default function AdminDashboard() {
   );
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const [loginRedirectRequired, setLoginRedirectRequired] = useState(false);
+  
+  // Chart refs for export functionality
+  const usageChartRef = useRef<HTMLDivElement>(null);
+  const providerChartRef = useRef<HTMLDivElement>(null);
+  const costChartRef = useRef<HTMLDivElement>(null);
+  const endpointChartRef = useRef<HTMLDivElement>(null);
   
   // Check for admin status
   const { data: adminStatus, isLoading: adminCheckLoading } = useQuery({
@@ -448,11 +455,19 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Time Series Chart */}
                 <Card className="col-span-1 lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>API Calls Over Time</CardTitle>
-                    <CardDescription>Daily API call volume by provider</CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div>
+                      <CardTitle>API Calls Over Time</CardTitle>
+                      <CardDescription>Daily API call volume by provider</CardDescription>
+                    </div>
+                    <ChartExport 
+                      chartRef={usageChartRef}
+                      filename="api-calls-over-time"
+                      title="Export API Calls Chart"
+                      size="sm"
+                    />
                   </CardHeader>
-                  <CardContent className="h-80">
+                  <CardContent className="h-80" ref={usageChartRef}>
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart data={timeSeriesData}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -476,11 +491,19 @@ export default function AdminDashboard() {
                 
                 {/* API Provider Usage Chart */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>API Usage by Provider</CardTitle>
-                    <CardDescription>Distribution of API calls across providers</CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div>
+                      <CardTitle>API Usage by Provider</CardTitle>
+                      <CardDescription>Distribution of API calls across providers</CardDescription>
+                    </div>
+                    <ChartExport 
+                      chartRef={providerChartRef}
+                      filename="api-usage-by-provider"
+                      title="Export Provider Usage Chart"
+                      size="sm"
+                    />
                   </CardHeader>
-                  <CardContent className="h-80">
+                  <CardContent className="h-80" ref={providerChartRef}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie

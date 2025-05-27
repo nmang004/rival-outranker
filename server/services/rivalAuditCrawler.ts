@@ -949,7 +949,7 @@ class RivalAuditCrawler {
     // Define comprehensive lists of location and service indicators for robust detection
     const locationIndicators = [
       // Common location directories
-      'areas-we-serve', 'service-areas', 'service-area', 'locations', 'service-locations',
+      'areas-we-serve', 'service-areas', 'service-area', 'our-service-area', 'locations', 'service-locations',
       // Individual cities or regions - patterns
       /(^[a-z]+(-[a-z]+)?(-[a-z]{2})?)$/, // city or city-state format
       /\d{5}/, // zip code
