@@ -528,11 +528,19 @@ export default function AdminDashboard() {
                 
                 {/* API Cost Chart */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>API Cost Distribution</CardTitle>
-                    <CardDescription>Cost breakdown by provider (USD)</CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div>
+                      <CardTitle>API Cost Distribution</CardTitle>
+                      <CardDescription>Cost breakdown by provider (USD)</CardDescription>
+                    </div>
+                    <ChartExport 
+                      chartRef={costChartRef}
+                      filename="api-cost-distribution"
+                      title="Export Cost Distribution Chart"
+                      size="sm"
+                    />
                   </CardHeader>
-                  <CardContent className="h-80">
+                  <CardContent className="h-80" ref={costChartRef}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -565,11 +573,19 @@ export default function AdminDashboard() {
                 
                 {/* Top Endpoints Chart */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Top 10 Endpoints</CardTitle>
-                    <CardDescription>Most frequently called API endpoints</CardDescription>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div>
+                      <CardTitle>Top 10 Endpoints</CardTitle>
+                      <CardDescription>Most frequently called API endpoints</CardDescription>
+                    </div>
+                    <ChartExport 
+                      chartRef={endpointChartRef}
+                      filename="top-endpoints"
+                      title="Export Endpoints Chart"
+                      size="sm"
+                    />
                   </CardHeader>
-                  <CardContent className="h-80">
+                  <CardContent className="h-80" ref={endpointChartRef}>
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsBarChart data={endpointData} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" />
