@@ -132,7 +132,7 @@ export default function ClientPresentationPage({ auditId }: ClientPresentationPa
       <Tabs defaultValue="executive-summary" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="executive-summary">Executive Summary</TabsTrigger>
-          <TabsTrigger value="roi-calculator">ROI Calculator</TabsTrigger>
+          <TabsTrigger value="strategy-timeline">SEO Strategy Timeline</TabsTrigger>
           <TabsTrigger value="competitive-analysis">Competitive Edge</TabsTrigger>
           <TabsTrigger value="presentation-tools">Export Tools</TabsTrigger>
         </TabsList>
