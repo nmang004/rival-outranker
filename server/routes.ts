@@ -22,9 +22,8 @@ import { keywordRouter } from "./routes/keywords";
 import { backlinkRouter } from "./routes/backlinks";
 import { googleAdsAuthRouter } from "./routes/googleAdsAuth";
 import { adminRouter } from "./routes/admin";
-import { optionalAuth } from "./middleware/auth";
+import { optionalAuth, authenticate } from "./middleware/auth";
 import cookieParser from "cookie-parser";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { keywordService } from "./services/keywordService";
 import { getOpenAIResponse } from "./services/openaiService";
 import { directAdminRouter } from "./routes/directAdmin";
@@ -40,13 +39,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Use cookie parser middleware
   app.use(cookieParser());
   
-  // Setup Replit Auth middleware
-  await setupAuth(app);
-  
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes  
+  app.get('/api/auth/user', authenticate, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.userId;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -67,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/google-ads-auth', trackApiUsage('google-ads'), googleAdsAuthRouter);
   
   // Admin dashboard routes
-  app.use('/api/admin', isAuthenticated, trackApiUsage('internal'), adminRouter);
+  app.use('/api/admin', authenticate, trackApiUsage('internal'), adminRouter);
   
   // Direct admin access route without authentication
   app.use('/api/direct-admin', directAdminRouter);
@@ -2029,7 +2025,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Keyword tracking API routes
   
   // Check keyword ranking (requires authentication)
-  app.post("/api/keywords/:id/check-ranking", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/keywords/:id/check-ranking", authenticate, async (req: Request, res: Response) => {
     try {
       const keywordId = parseInt(req.params.id);
       if (isNaN(keywordId)) {
@@ -2162,8 +2158,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the keyword data for future use if user is authenticated
       try {
         // Only store data if the user is authenticated
-        if (req.isAuthenticated() && req.user?.claims?.sub) {
-          const userId = req.user.claims.sub;
+        if (req.user?.userId) {
+          const userId = req.user.userId;
           console.log(`Authenticated user, storing keyword data for "${keyword}" with user ID ${userId}`);
           
           // Check if the keyword already exists
@@ -2264,7 +2260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Legacy keyword suggestions endpoint - keeps compatibility with existing code
-  app.post("/api/keywords/suggest", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/keywords/suggest", authenticate, async (req: Request, res: Response) => {
     try {
       const { baseKeyword } = req.body;
       if (!baseKeyword) {
@@ -2337,7 +2333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/rival-rank-tracker", async (req: Request, res: Response) => {
     try {
       // Get user ID from authenticated user if available, otherwise use a demo ID
-      const userId = req.isAuthenticated() ? (req.user as any).claims?.sub : "demo-user";
+      const userId = req.user?.userId || "demo-user";
       const { keywords, website, competitors = [] } = req.body;
       
       if (!keywords || !keywords.length) {
@@ -2869,8 +2865,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ipAddress = req.ip || req.socket.remoteAddress || "unknown";
       
       // Check if user is authenticated
-      if (req.isAuthenticated && req.isAuthenticated() && req.user) {
-        const userId = req.user.claims?.sub;
+      if (req.user?.userId) {
+        const userId = req.user.userId;
         if (userId) {
           // For authenticated users (100 messages per month)
           const currentCount = await storage.incrementUserChatCount(userId);

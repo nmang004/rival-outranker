@@ -2,18 +2,18 @@ import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { z } from 'zod';
 import { insertKeywordSchema, insertKeywordSuggestionSchema } from '@shared/schema';
-import { isAuthenticated } from '../replitAuth';
+import { authenticate } from '../middleware/auth';
 import { keywordService } from '../services/keywordService';
 
 export const keywordRouter = Router();
 
 // Middleware to ensure all routes require authentication
-keywordRouter.use(isAuthenticated);
+keywordRouter.use(authenticate);
 
 // Get all keywords for a user
 keywordRouter.get('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const keywords = await storage.getKeywordsByUserId(userId);
     res.json(keywords);
   } catch (error) {
@@ -41,7 +41,7 @@ keywordRouter.get('/project/:projectId', async (req: Request, res: Response) => 
 // Add a new keyword to track
 keywordRouter.post('/', async (req: Request, res: Response) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const parsedData = insertKeywordSchema.parse({
       ...req.body,
       userId
@@ -71,7 +71,7 @@ keywordRouter.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to access this keyword' });
     }
@@ -96,7 +96,7 @@ keywordRouter.put('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to update this keyword' });
     }
@@ -122,7 +122,7 @@ keywordRouter.delete('/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to delete this keyword' });
     }
@@ -148,7 +148,7 @@ keywordRouter.post('/:id/update-metrics', async (req: Request, res: Response) =>
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to update metrics for this keyword' });
     }
@@ -179,7 +179,7 @@ keywordRouter.get('/:id/metrics', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to access this keyword' });
     }
@@ -219,7 +219,7 @@ keywordRouter.get('/:id/rankings', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to access this keyword' });
     }
@@ -274,7 +274,7 @@ keywordRouter.get('/:id/competitors', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Keyword not found' });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     if (keyword.userId !== userId) {
       return res.status(403).json({ message: 'Not authorized to access this keyword' });
     }
@@ -290,7 +290,7 @@ keywordRouter.get('/:id/competitors', async (req: Request, res: Response) => {
 // Get keyword suggestions
 keywordRouter.get('/suggestions/:baseKeyword', async (req: Request, res: Response) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const baseKeyword = req.params.baseKeyword;
     const suggestions = await storage.getKeywordSuggestions(userId, baseKeyword);
     res.json(suggestions);
@@ -303,7 +303,7 @@ keywordRouter.get('/suggestions/:baseKeyword', async (req: Request, res: Respons
 // Create keyword suggestions
 keywordRouter.post('/suggestions', async (req: Request, res: Response) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const parsedData = insertKeywordSuggestionSchema.parse({
       ...req.body,
       userId

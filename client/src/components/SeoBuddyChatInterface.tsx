@@ -4,6 +4,7 @@ import {
   ChevronLeft, ExternalLink, Book, Search, X, Lightbulb, Cpu,
   AlertCircle, Lock
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,6 +42,25 @@ interface ChatUsageStatus {
   remaining: number;
   status: 'ok' | 'approaching_limit' | 'limit_reached';
 }
+
+// Safe text formatting function to prevent XSS
+const formatMessageText = (text: string): string => {
+  // First sanitize the text to remove any potential HTML
+  const sanitizedText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
+  
+  // Then apply our formatting with safe HTML
+  const formattedText = sanitizedText
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>')
+    .replace(/•/g, '&#8226;');
+  
+  // Sanitize the final HTML to ensure only safe tags are allowed
+  return DOMPurify.sanitize(formattedText, { 
+    ALLOWED_TAGS: ['strong', 'br'],
+    ALLOWED_ATTR: []
+  });
+};
 
 export default function SeoBuddyChatInterface({ onClose, showHeader = true, onExpand }: SeoBuddyChatProps) {
   const { user, isAuthenticated } = useAuth();
@@ -592,11 +612,7 @@ Would you like specific recommendations for any of these technical areas?`
               <div 
                 className="text-xs leading-snug"
                 dangerouslySetInnerHTML={{ 
-                  __html: message.text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n\n/g, '<br/><br/>')
-                    .replace(/\n/g, '<br/>')
-                    .replace(/•/g, '&#8226;')
+                  __html: formatMessageText(message.text)
                 }} 
               />
               

@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { backlinkService } from "../services/backlinkService";
-import { isAuthenticated } from "../replitAuth";
+import { authenticate } from "../middleware/auth";
 import { insertBacklinkProfileSchema } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -8,7 +8,7 @@ import { fromZodError } from "zod-validation-error";
 const router = express.Router();
 
 // Create a new backlink profile to track
-router.post("/profiles", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/profiles", authenticate, async (req: Request, res: Response) => {
   try {
     // Validate request body
     const validatedData = insertBacklinkProfileSchema.parse(req.body);
@@ -16,7 +16,7 @@ router.post("/profiles", isAuthenticated, async (req: Request, res: Response) =>
     // Create the profile
     const profile = await backlinkService.createProfile({
       ...validatedData,
-      userId: req.user?.id as string
+      userId: req.user?.userId as string
     });
     
     res.status(201).json(profile);
@@ -33,9 +33,9 @@ router.post("/profiles", isAuthenticated, async (req: Request, res: Response) =>
 });
 
 // Get all backlink profiles for the current user
-router.get("/profiles", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/profiles", authenticate, async (req: Request, res: Response) => {
   try {
-    const profiles = await backlinkService.getProfilesByUser(req.user?.id as string);
+    const profiles = await backlinkService.getProfilesByUser(req.user?.userId as string);
     res.json(profiles);
   } catch (error) {
     console.error("Error fetching backlink profiles:", error);
@@ -44,7 +44,7 @@ router.get("/profiles", isAuthenticated, async (req: Request, res: Response) => 
 });
 
 // Get a specific backlink profile
-router.get("/profiles/:id", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/profiles/:id", authenticate, async (req: Request, res: Response) => {
   try {
     const profileId = parseInt(req.params.id);
     
@@ -59,7 +59,7 @@ router.get("/profiles/:id", isAuthenticated, async (req: Request, res: Response)
     }
     
     // Verify that profile belongs to the authenticated user
-    if (profile.userId !== req.user?.id) {
+    if (profile.userId !== req.user?.userId) {
       return res.status(403).json({ error: "You don't have permission to access this profile" });
     }
     
@@ -71,7 +71,7 @@ router.get("/profiles/:id", isAuthenticated, async (req: Request, res: Response)
 });
 
 // Get backlinks for a specific profile
-router.get("/profiles/:id/backlinks", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/profiles/:id/backlinks", authenticate, async (req: Request, res: Response) => {
   try {
     const profileId = parseInt(req.params.id);
     
@@ -87,7 +87,7 @@ router.get("/profiles/:id/backlinks", isAuthenticated, async (req: Request, res:
     }
     
     // Verify that profile belongs to the authenticated user
-    if (profile.userId !== req.user?.id) {
+    if (profile.userId !== req.user?.userId) {
       return res.status(403).json({ error: "You don't have permission to access this profile" });
     }
     
@@ -113,7 +113,7 @@ router.get("/profiles/:id/backlinks", isAuthenticated, async (req: Request, res:
 });
 
 // Get outgoing links for a specific profile
-router.get("/profiles/:id/outgoing", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/profiles/:id/outgoing", authenticate, async (req: Request, res: Response) => {
   try {
     const profileId = parseInt(req.params.id);
     
@@ -129,7 +129,7 @@ router.get("/profiles/:id/outgoing", isAuthenticated, async (req: Request, res: 
     }
     
     // Verify that profile belongs to the authenticated user
-    if (profile.userId !== req.user?.id) {
+    if (profile.userId !== req.user?.userId) {
       return res.status(403).json({ error: "You don't have permission to access this profile" });
     }
     
@@ -152,7 +152,7 @@ router.get("/profiles/:id/outgoing", isAuthenticated, async (req: Request, res: 
 });
 
 // Get backlink history for a specific profile
-router.get("/profiles/:id/history", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/profiles/:id/history", authenticate, async (req: Request, res: Response) => {
   try {
     const profileId = parseInt(req.params.id);
     
@@ -168,7 +168,7 @@ router.get("/profiles/:id/history", isAuthenticated, async (req: Request, res: R
     }
     
     // Verify that profile belongs to the authenticated user
-    if (profile.userId !== req.user?.id) {
+    if (profile.userId !== req.user?.userId) {
       return res.status(403).json({ error: "You don't have permission to access this profile" });
     }
     
@@ -183,7 +183,7 @@ router.get("/profiles/:id/history", isAuthenticated, async (req: Request, res: R
 });
 
 // Discover backlinks for a domain
-router.post("/discover", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/discover", authenticate, async (req: Request, res: Response) => {
   try {
     const { domain, apiKey } = req.body;
     
@@ -204,7 +204,7 @@ router.post("/discover", isAuthenticated, async (req: Request, res: Response) =>
 });
 
 // Scan a URL for outgoing links
-router.post("/scan-outgoing", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/scan-outgoing", authenticate, async (req: Request, res: Response) => {
   try {
     const { url, profileId } = req.body;
     
@@ -224,7 +224,7 @@ router.post("/scan-outgoing", isAuthenticated, async (req: Request, res: Respons
     }
     
     // Verify that profile belongs to the authenticated user
-    if (profile.userId !== req.user?.id) {
+    if (profile.userId !== req.user?.userId) {
       return res.status(403).json({ error: "You don't have permission to access this profile" });
     }
     
@@ -237,7 +237,7 @@ router.post("/scan-outgoing", isAuthenticated, async (req: Request, res: Respons
 });
 
 // Update profile statistics
-router.post("/profiles/:id/update-stats", isAuthenticated, async (req: Request, res: Response) => {
+router.post("/profiles/:id/update-stats", authenticate, async (req: Request, res: Response) => {
   try {
     const profileId = parseInt(req.params.id);
     
@@ -253,7 +253,7 @@ router.post("/profiles/:id/update-stats", isAuthenticated, async (req: Request, 
     }
     
     // Verify that profile belongs to the authenticated user
-    if (profile.userId !== req.user?.id) {
+    if (profile.userId !== req.user?.userId) {
       return res.status(403).json({ error: "You don't have permission to access this profile" });
     }
     

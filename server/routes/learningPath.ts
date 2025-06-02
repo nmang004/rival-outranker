@@ -1,6 +1,6 @@
 import express from "express";
 import { learningPathService } from "../services/learningPathService";
-import { isAuthenticated } from "../replitAuth";
+import { authenticate } from "../middleware/auth";
 import { z } from "zod";
 import { insertUserLearningProgressSchema } from "@shared/schema";
 
@@ -121,9 +121,9 @@ router.get("/paths/:id/modules", async (req, res) => {
 });
 
 // Protected routes - require authentication
-router.get("/progress", isAuthenticated, async (req: any, res) => {
+router.get("/progress", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const progress = await learningPathService.getUserProgress(userId);
     res.json(progress);
   } catch (error) {
@@ -132,9 +132,9 @@ router.get("/progress", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.get("/progress/summary", isAuthenticated, async (req: any, res) => {
+router.get("/progress/summary", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const summary = await learningPathService.getUserProgressSummary(userId);
     res.json(summary);
   } catch (error) {
@@ -143,9 +143,9 @@ router.get("/progress/summary", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.get("/progress/modules/:id", isAuthenticated, async (req: any, res) => {
+router.get("/progress/modules/:id", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const moduleId = parseInt(req.params.id);
     if (isNaN(moduleId)) {
       return res.status(400).json({ message: "Invalid module ID" });
@@ -158,9 +158,9 @@ router.get("/progress/modules/:id", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.get("/progress/lessons/:id", isAuthenticated, async (req: any, res) => {
+router.get("/progress/lessons/:id", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const lessonId = parseInt(req.params.id);
     if (isNaN(lessonId)) {
       return res.status(400).json({ message: "Invalid lesson ID" });
@@ -176,9 +176,9 @@ router.get("/progress/lessons/:id", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.post("/progress", isAuthenticated, async (req: any, res) => {
+router.post("/progress", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     
     // Validate request data
     const schema = insertUserLearningProgressSchema.extend({
@@ -204,9 +204,9 @@ router.post("/progress", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.get("/recommendations", isAuthenticated, async (req: any, res) => {
+router.get("/recommendations", authenticate, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const recommendations = await learningPathService.getUserRecommendations(userId);
     res.json(recommendations);
   } catch (error) {
@@ -215,7 +215,7 @@ router.get("/recommendations", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.post("/recommendations/:id/complete", isAuthenticated, async (req, res) => {
+router.post("/recommendations/:id/complete", authenticate, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -232,7 +232,7 @@ router.post("/recommendations/:id/complete", isAuthenticated, async (req, res) =
   }
 });
 
-router.post("/recommendations/:id/dismiss", isAuthenticated, async (req, res) => {
+router.post("/recommendations/:id/dismiss", authenticate, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -250,16 +250,16 @@ router.post("/recommendations/:id/dismiss", isAuthenticated, async (req, res) =>
 });
 
 // Admin-only routes
-router.post("/modules", isAuthenticated, async (req: any, res) => {
+router.post("/modules", authenticate, async (req: any, res) => {
   try {
     // Check if user is an admin
-    if (req.user.claims.role !== "admin") {
+    if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Unauthorized. Admin access required." });
     }
     
     const data = {
       ...req.body,
-      createdBy: req.user.claims.sub
+      createdBy: req.user.userId
     };
     
     const module = await learningPathService.createModule(data);
@@ -270,10 +270,10 @@ router.post("/modules", isAuthenticated, async (req: any, res) => {
   }
 });
 
-router.put("/modules/:id", isAuthenticated, async (req: any, res) => {
+router.put("/modules/:id", authenticate, async (req: any, res) => {
   try {
     // Check if user is an admin
-    if (req.user.claims.role !== "admin") {
+    if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Unauthorized. Admin access required." });
     }
     

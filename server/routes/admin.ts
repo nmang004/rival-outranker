@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { isAuthenticated } from "../replitAuth";
+import { authenticate } from "../middleware/auth";
 import { apiUsageService } from "../services/apiUsageService";
 
 const router = express.Router();
@@ -7,13 +7,13 @@ const router = express.Router();
 // Admin authorization check
 const isAdmin = async (req: Request, res: Response, next: Function) => {
   // Verify the user is authenticated
-  if (!req.user || !req.user.claims || !req.user.claims.sub) {
+  if (!req.user || !req.user || !req.user.userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   
   try {
     // Get the user from the database
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const { storage } = await import('../storage');
     const user = await storage.getUser(userId);
     
@@ -30,7 +30,7 @@ const isAdmin = async (req: Request, res: Response, next: Function) => {
 };
 
 // Get API usage statistics - Protected route
-router.get("/api-usage/stats", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+router.get("/api-usage/stats", authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
@@ -114,7 +114,7 @@ router.get("/dev/api-usage/stats", async (req: Request, res: Response) => {
 });
 
 // Get detailed API usage records
-router.get("/api-usage/records", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+router.get("/api-usage/records", authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
@@ -200,7 +200,7 @@ router.get("/dev/api-usage/records", async (req: Request, res: Response) => {
 });
 
 // Get recent API errors
-router.get("/api-usage/errors", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+router.get("/api-usage/errors", authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
     const errors = await apiUsageService.getRecentErrors(limit);
@@ -287,7 +287,7 @@ router.get("/dev/api-usage/errors", async (req: Request, res: Response) => {
 });
 
 // Add endpoint to grant admin access to a user by email
-router.post("/grant-admin", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
+router.post("/grant-admin", authenticate, isAdmin, async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     
@@ -310,13 +310,13 @@ router.post("/grant-admin", isAuthenticated, isAdmin, async (req: Request, res: 
 });
 
 // Check if current user is an admin
-router.get("/is-admin", isAuthenticated, async (req: Request, res: Response) => {
+router.get("/is-admin", authenticate, async (req: Request, res: Response) => {
   try {
-    if (!req.user?.claims?.sub) {
+    if (!req.user?.userId) {
       return res.status(401).json({ isAdmin: false });
     }
     
-    const userId = req.user.claims.sub;
+    const userId = req.user.userId;
     const { adminService } = await import('../services/adminService');
     const isAdmin = await adminService.isUserAdmin(userId);
     

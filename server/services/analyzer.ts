@@ -1184,7 +1184,6 @@ class Analyzer {
     // Return a maximum of 15 recommendations
     return recommendations.slice(0, 15);
   }
-}
 
   /**
    * Create default analysis objects for error handling
