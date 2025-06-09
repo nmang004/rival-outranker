@@ -13,8 +13,11 @@ import {
   keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions,
   anonChatUsage
 } from "@shared/schema";
-import { db } from "./db";
+import { db as getDb } from "./db";
 import { eq, desc, and, inArray, sql, asc, gte, lte } from "drizzle-orm";
+
+// Get database instance
+const db = getDb();
 
 // Interfaces for storage operations
 export interface IStorage {
