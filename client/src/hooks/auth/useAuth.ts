@@ -8,7 +8,7 @@ interface LoginCredentials {
 
 export function useAuth() {
   const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/auth/me"],
     retry: false,
   });
   
