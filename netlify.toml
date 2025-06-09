@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build:netlify"
+  command = "npm run build:netlify && npm run build:functions"
   functions = "netlify/functions"
   publish = "dist"
 
@@ -29,7 +29,41 @@
   VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
   VITE_ENVIRONMENT = "preview"
 
-# API route redirects - redirect /api/* to Railway backend
+# API route redirects - handle some endpoints locally, others redirect to Railway
+
+# Handle rival-audit with Netlify function (higher priority)
+[[redirects]]
+  from = "/api/rival-audit"
+  to = "/.netlify/functions/rival-audit"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/rival-audit/:id"
+  to = "/.netlify/functions/rival-audit?id=:id"
+  status = 200
+  force = true
+
+# Handle other analysis endpoints with Netlify functions
+[[redirects]]
+  from = "/api/analyze"
+  to = "/.netlify/functions/analyze"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/competitors"
+  to = "/.netlify/functions/competitor-analysis"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/keyword-research"
+  to = "/.netlify/functions/keyword-research"
+  status = 200
+  force = true
+
+# Redirect all other API routes to Railway backend
 [[redirects]]
   from = "/api/*"
   to = "https://rival-outranker-production.up.railway.app/api/:splat"
