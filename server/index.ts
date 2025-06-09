@@ -102,10 +102,37 @@ app.use((req, res, next) => {
 (async () => {
   // Initialize database connection pool (non-blocking)
   console.log('🔧 Starting database initialization...');
-  initializeDatabase().catch(error => {
+  try {
+    await initializeDatabase();
+    
+    // Run database migration after successful connection
+    console.log('🗄️ Running database migration...');
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    try {
+      const { stdout, stderr } = await execAsync('npx drizzle-kit push --config=config/drizzle.config.ts', {
+        timeout: 60000
+      });
+      
+      if (stdout) {
+        console.log('✅ Migration completed:', stdout);
+      }
+      if (stderr && !stderr.includes('Reading config file')) {
+        console.warn('⚠️ Migration warnings:', stderr);
+      }
+      
+      console.log('🎯 Database schema is ready!');
+    } catch (migrationError) {
+      console.error('❌ Database migration failed:', migrationError);
+      console.log('🔄 Server will continue without full database features');
+    }
+    
+  } catch (error) {
     console.error('❌ Database initialization failed:', error);
     console.log('🔄 Server will continue with sample data mode');
-  });
+  }
   
   const server = await registerRoutes(app);
   
