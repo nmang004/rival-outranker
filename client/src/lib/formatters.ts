@@ -128,3 +128,49 @@ function countSyllables(word: string): number {
   
   return Math.max(1, Math.round(syllableCount));
 }
+
+/**
+ * Format date in human-readable format (individual export)
+ */
+export function formatDate(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return 'Invalid Date';
+  return dateObj.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+/**
+ * Format URL for display (clean and readable)
+ */
+export function formatUrl(url: string): string {
+  if (!url) return '';
+  
+  try {
+    const urlObj = new URL(url);
+    
+    // Remove www. prefix for cleaner display
+    let hostname = urlObj.hostname;
+    if (hostname.startsWith('www.')) {
+      hostname = hostname.substring(4);
+    }
+    
+    // For homepage, just return the domain
+    if (urlObj.pathname === '/' && !urlObj.search) {
+      return hostname;
+    }
+    
+    // For other pages, include path but clean it up
+    let path = urlObj.pathname;
+    if (path.endsWith('/') && path.length > 1) {
+      path = path.slice(0, -1);
+    }
+    
+    return hostname + path + (urlObj.search || '');
+  } catch {
+    // If URL parsing fails, return the original string cleaned up
+    return url.replace(/^https?:\/\/(www\.)?/, '');
+  }
+}
