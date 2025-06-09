@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "npm run build:netlify"
   functions = "netlify/functions"
   publish = "dist"
 
@@ -12,26 +12,34 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  NPM_VERSION = "9"
 
-# API route redirects - redirect /api/* to Netlify Functions
+# Production environment variables
+[context.production.environment]
+  VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
+  VITE_ENVIRONMENT = "production"
+
+# Branch deploy environment variables
+[context.branch-deploy.environment]
+  VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
+  VITE_ENVIRONMENT = "staging"
+
+# Deploy preview environment variables
+[context.deploy-preview.environment]
+  VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
+  VITE_ENVIRONMENT = "preview"
+
+# API route redirects - redirect /api/* to Railway backend
 [[redirects]]
-  from = "/api/analyze"
-  to = "/.netlify/functions/analyze"
+  from = "/api/*"
+  to = "https://rival-outranker-production.up.railway.app/api/:splat"
   status = 200
+  force = true
 
+# Health check redirect
 [[redirects]]
-  from = "/api/auth/user"
-  to = "/.netlify/functions/auth-user"
-  status = 200
-
-[[redirects]]
-  from = "/api/keyword-research"
-  to = "/.netlify/functions/keyword-research"
-  status = 200
-
-[[redirects]]
-  from = "/api/competitor-analysis"
-  to = "/.netlify/functions/competitor-analysis"
+  from = "/health"
+  to = "https://rival-outranker-production.up.railway.app/health"
   status = 200
 
 # Catch-all redirect for client-side routing
@@ -48,9 +56,11 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data: https:; connect-src 'self' https:;"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https: https://fonts.gstatic.com; connect-src 'self' https: https://rival-outranker-production.up.railway.app; media-src 'self' data:; object-src 'none'; frame-ancestors 'none';"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
 
-# Cache static assets
+# Cache static assets aggressively
 [[headers]]
   for = "/assets/*"
   [headers.values]
@@ -65,3 +75,55 @@
   for = "*.css"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache images with shorter duration
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Don't cache HTML files
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Build hooks for automated deployments
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
