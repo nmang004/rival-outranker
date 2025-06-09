@@ -16,6 +16,7 @@ import { apiClient, type ApiError } from './apiClient';
 
 // Legacy axios instance (to be phased out)
 const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   withCredentials: true,
   headers: {
     'Accept': 'application/json',
