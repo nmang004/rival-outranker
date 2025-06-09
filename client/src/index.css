@@ -24,12 +24,6 @@
   transition: all 0.2s;
 }
 
-/* Minimal emergency styling - keep navigation working */
-nav, .nav, [role="navigation"] {
-  background-color: #002264 !important;
-  color: white !important;
-  padding: 1rem !important;
-}
 
 :root {
   /* Rival Digital brand colors - navy blue and orange */
