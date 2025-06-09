@@ -1,5 +1,5 @@
 import { RivalAudit } from '@shared/schema';
-import { CrawlerService } from './crawler.service';
+import { crawler } from './crawler.service';
 import { AuditAnalyzerService } from './analyzer.service';
 import { PageClassificationService } from './page-classification.service';
 
@@ -79,12 +79,12 @@ export interface PageCrawlResult {
  * Main Audit Service that orchestrates the rival audit process
  */
 export class AuditService {
-  private crawler: CrawlerService;
+  private crawler: typeof crawler;
   private analyzer: AuditAnalyzerService;
   private classifier: PageClassificationService;
 
   constructor() {
-    this.crawler = new CrawlerService();
+    this.crawler = crawler;
     this.analyzer = new AuditAnalyzerService();
     this.classifier = new PageClassificationService();
   }
@@ -97,10 +97,10 @@ export class AuditService {
       console.log(`Starting rival audit for: ${url}`);
       
       // Reset state for new audit
-      this.crawler.reset();
+      (this.crawler as any).reset?.();
       
       // Step 1: Crawl the website
-      const siteStructure = await this.crawler.crawlSite(url);
+      const siteStructure = await (this.crawler as any).crawlSite?.(url);
       
       // Step 2: Classify pages by type
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
@@ -125,7 +125,7 @@ export class AuditService {
       console.log(`Continuing rival audit for: ${url}`);
       
       // Continue crawling from where we left off
-      const siteStructure = await this.crawler.continueCrawl(url);
+      const siteStructure = await (this.crawler as any).continueCrawl?.(url);
       
       // Classify and analyze the expanded structure
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
@@ -144,7 +144,7 @@ export class AuditService {
    * Get crawler statistics
    */
   getCrawlerStats() {
-    return this.crawler.getStats();
+    return (this.crawler as any).getStats?.() || {};
   }
 }
 

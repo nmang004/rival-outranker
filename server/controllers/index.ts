@@ -9,9 +9,17 @@
 export { BaseController } from './base.controller';
 
 // Controller implementations
-export { AnalysisController, analysisController } from './analysis.controller';
-export { UserController, userController } from './user.controller';
-export { ProjectController, projectController } from './project.controller';
+export { AnalysisController } from './analysis.controller';
+export { analysisController } from './analysis.controller';
+export { UserController } from './user.controller';
+export { userController } from './user.controller';
+export { ProjectController } from './project.controller';
+export { projectController } from './project.controller';
+
+// Re-import for local use
+import { analysisController } from './analysis.controller';
+import { userController } from './user.controller';
+import { projectController } from './project.controller';
 
 /**
  * Controllers Registry

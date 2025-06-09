@@ -332,7 +332,7 @@ export default function KeywordResearch() {
           </Button>
         </form>
         
-        <Alert variant="outline" className="bg-blue-50">
+        <Alert className="bg-blue-50">
           <InfoIcon className="h-4 w-4" />
           <AlertTitle>Optimize Your Keyword Research</AlertTitle>
           <AlertDescription>
@@ -611,7 +611,7 @@ export default function KeywordResearch() {
                                 tickFormatter={(value) => value}
                               />
                               <RechartsTooltip 
-                                labelFormatter={(label, payload) => {
+                                labelFormatter={(label: any, payload: any) => {
                                   if (payload && payload.length > 0) {
                                     return payload[0].payload.fullMonth;
                                   }

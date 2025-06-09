@@ -1,4 +1,4 @@
-import { storage } from '../storage';
+import { storage } from '../../storage';
 import { User, InsertUser } from '@shared/schema';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -7,8 +7,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret_for_development
 const JWT_EXPIRES_IN = '7d'; // Token expires in 7 days
 
 interface TokenPayload {
-  userId: number;
-  username: string;
+  userId: string;
+  username: string | null;
 }
 
 export class AuthService {
@@ -17,6 +17,9 @@ export class AuthService {
    */
   async register(userData: InsertUser): Promise<{ user: User; token: string }> {
     // Check if username already exists
+    if (!userData.username) {
+      throw new Error('Username is required');
+    }
     const existingUserByUsername = await storage.getUserByUsername(userData.username);
     if (existingUserByUsername) {
       throw new Error('Username already exists');
@@ -32,7 +35,7 @@ export class AuthService {
     
     // Hash the password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(userData.password, salt);
+    const hashedPassword = await bcrypt.hash(userData.password || '', salt);
     
     // Create the user with hashed password
     const user = await storage.createUser({
@@ -57,6 +60,9 @@ export class AuthService {
     }
     
     // Verify password
+    if (!user.password) {
+      throw new Error('Invalid credentials');
+    }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');

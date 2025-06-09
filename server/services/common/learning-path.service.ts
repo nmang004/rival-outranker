@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db } from "../../db";
 import { 
   learningModules, 
   learningLessons, 
@@ -188,7 +188,7 @@ export class LearningPathService {
       ))
       .orderBy(asc(learningPathModules.sortOrder));
     
-    return result.map(r => r.module);
+    return result.map((r: any) => r.module);
   }
 
   // User Recommendations operations
@@ -252,7 +252,7 @@ export class LearningPathService {
     });
     
     // Example: Check if keyword analysis score is low
-    const keywordAnalysisScore = results.keywordAnalysis?.overallScore.score || 0;
+    const keywordAnalysisScore = (results as any).keywordAnalysis?.overallScore.score || 0;
     if (keywordAnalysisScore < 70 && moduleMap.has('keyword research fundamentals')) {
       const moduleId = moduleMap.get('keyword research fundamentals')!;
       recommendations.push({
@@ -271,7 +271,7 @@ export class LearningPathService {
     }
     
     // Example: Check if meta tags analysis score is low
-    const metaTagsScore = results.metaTagsAnalysis?.overallScore.score || 0;
+    const metaTagsScore = (results as any).metaTagsAnalysis?.overallScore.score || 0;
     if (metaTagsScore < 70 && moduleMap.has('meta tag optimization')) {
       const moduleId = moduleMap.get('meta tag optimization')!;
       recommendations.push({
@@ -290,7 +290,7 @@ export class LearningPathService {
     }
     
     // Example: Check if content analysis score is low
-    const contentScore = results.contentAnalysis?.overallScore.score || 0;
+    const contentScore = (results as any).contentAnalysis?.overallScore.score || 0;
     if (contentScore < 70 && moduleMap.has('content writing for seo')) {
       const moduleId = moduleMap.get('content writing for seo')!;
       recommendations.push({

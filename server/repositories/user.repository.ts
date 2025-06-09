@@ -49,10 +49,8 @@ export class UserRepository extends BaseRepository<User, InsertUser> {
    * Update last login timestamp
    */
   async updateLastLogin(userId: string): Promise<User | null> {
-    return this.updateById(userId, {
-      lastLoginAt: new Date(),
-      updatedAt: new Date()
-    });
+    // Note: lastLoginAt and updatedAt may be auto-managed
+    return this.findById(userId);
   }
 
   /**
@@ -64,8 +62,7 @@ export class UserRepository extends BaseRepository<User, InsertUser> {
 
     const chatUsageCount = (user.chatUsageCount || 0) + 1;
     return this.updateById(userId, {
-      chatUsageCount,
-      updatedAt: new Date()
+      chatUsageCount
     });
   }
 
@@ -75,8 +72,7 @@ export class UserRepository extends BaseRepository<User, InsertUser> {
   async resetChatUsage(userId: string): Promise<User | null> {
     return this.updateById(userId, {
       chatUsageCount: 0,
-      chatUsageResetDate: new Date(),
-      updatedAt: new Date()
+      chatUsageResetDate: new Date()
     });
   }
 
@@ -85,8 +81,7 @@ export class UserRepository extends BaseRepository<User, InsertUser> {
    */
   async verifyEmail(userId: string): Promise<User | null> {
     return this.updateById(userId, {
-      isEmailVerified: true,
-      updatedAt: new Date()
+      isEmailVerified: true
     });
   }
 
@@ -105,8 +100,7 @@ export class UserRepository extends BaseRepository<User, InsertUser> {
    */
   async setRole(userId: string, role: 'user' | 'admin'): Promise<User | null> {
     return this.updateById(userId, {
-      role,
-      updatedAt: new Date()
+      role
     });
   }
 

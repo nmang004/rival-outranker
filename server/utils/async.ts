@@ -56,7 +56,7 @@ export async function retryAsync<T>(
     onRetry
   } = options;
 
-  let lastError: Error;
+  let lastError: Error = new Error('Operation failed');
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -87,8 +87,10 @@ export async function retryAsync<T>(
 
       logger.warn(`Retrying operation after ${delay}ms (attempt ${attempt + 1}/${maxRetries})`, {
         error: lastError,
-        attempt: attempt + 1,
-        delay
+        metadata: {
+          attempt: attempt + 1,
+          delay
+        }
       });
 
       // Wait before retrying
@@ -296,8 +298,10 @@ export class CircuitBreaker<T extends any[], R> {
     if (this.failures >= this.options.failureThreshold!) {
       this.state = 'open';
       logger.warn('Circuit breaker opened due to failure threshold', {
-        failures: this.failures,
-        threshold: this.options.failureThreshold
+        metadata: {
+          failures: this.failures,
+          threshold: this.options.failureThreshold
+        }
       });
     }
   }
@@ -327,7 +331,7 @@ export async function allSettledWithFailure<T>(
   const results = await Promise.allSettled(promises);
   
   const successful = results
-    .filter((result): result is PromiseFulfilledResult<T> => result.status === 'fulfilled')
+    .filter((result): result is PromiseFulfilledResult<Awaited<T>> => result.status === 'fulfilled')
     .map(result => result.value);
 
   if (successful.length < minimumSuccessCount) {
@@ -415,7 +419,9 @@ export function memoizeAsync<T extends any[], R>(
 
     if (cache.size >= maxSize) {
       const oldestKey = cache.keys().next().value;
-      cache.delete(oldestKey);
+      if (oldestKey !== undefined) {
+        cache.delete(oldestKey);
+      }
     }
 
     // Execute and cache the result

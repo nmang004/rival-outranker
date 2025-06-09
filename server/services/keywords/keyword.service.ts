@@ -1,4 +1,4 @@
-import { storage } from '../storage';
+import { storage } from '../../storage';
 import { InsertKeywordRanking, InsertCompetitorRanking, InsertKeywordMetrics } from '@shared/schema';
 import axios from 'axios';
 
@@ -193,8 +193,8 @@ export class KeywordService {
       if (competitorRankings && competitorRankings.length > 0) {
         // Check if top positions are taken by high authority domains
         const topDomains = competitorRankings
-          .filter(r => r.rank <= 10)
-          .map(r => {
+          .filter((r: any) => r.rank <= 10)
+          .map((r: any) => {
             try {
               const url = new URL(r.competitorUrl);
               return url.hostname;
@@ -410,6 +410,59 @@ export class KeywordService {
       console.error('Error generating keyword suggestions:', error);
       return [];
     }
+  }
+
+  /**
+   * Check keyword ranking for a specific keyword
+   */
+  async checkKeywordRanking(keywordId: number): Promise<any> {
+    try {
+      // Get the keyword details
+      const keyword = await storage.getKeyword(keywordId);
+      if (!keyword) {
+        throw new Error('Keyword not found');
+      }
+
+      // Get latest ranking for this keyword
+      const latestRanking = await storage.getLatestKeywordRanking(keywordId);
+      
+      return {
+        keyword: keyword.keyword,
+        latestRanking: latestRanking?.rank || null,
+        lastChecked: latestRanking?.rankDate || null
+      };
+    } catch (error) {
+      console.error('Error checking keyword ranking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get keyword data for a specific keyword
+   */
+  async getKeywordData(keyword: string): Promise<any> {
+    // This would typically call an external API
+    // For now, return a basic structure
+    return {
+      keyword,
+      searchVolume: 1000,
+      difficulty: 50,
+      cpc: '$1.25',
+      competition: 0.6
+    };
+  }
+
+  /**
+   * Get keyword suggestions for a base keyword
+   */
+  async getKeywordSuggestions(keyword: string): Promise<any[]> {
+    // This would typically call an external API
+    // For now, return basic suggestions
+    return [
+      { keyword: `${keyword} services`, searchVolume: 800, difficulty: 45 },
+      { keyword: `best ${keyword}`, searchVolume: 600, difficulty: 55 },
+      { keyword: `${keyword} near me`, searchVolume: 1200, difficulty: 40 }
+    ];
   }
 }
 

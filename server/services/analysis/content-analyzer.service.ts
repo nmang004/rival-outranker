@@ -1,7 +1,8 @@
 import * as cheerio from 'cheerio';
-import { CrawlerOutput } from '@/lib/types';
-import { contentAnnotationService } from './contentAnnotationService';
-import { ScoreUtils } from '../lib/utils/score.utils';
+// TODO: Define CrawlerOutput type
+type CrawlerOutput = any;
+import { contentAnnotationService } from './content-annotation.service';
+import { ScoreUtils } from '../../lib/utils/score.utils';
 
 /**
  * Deep Content Analyzer provides rich analysis of content structure,
@@ -185,12 +186,12 @@ export class DeepContentAnalyzer {
     }
     
     // Calculate average paragraph length
-    const paragraphLengths = paragraphs.map(p => p.split(/\s+/).length);
-    const avgParagraphLength = paragraphLengths.reduce((sum, len) => sum + len, 0) / totalParagraphs;
+    const paragraphLengths = paragraphs.map((p: any) => p.split(/\s+/).length);
+    const avgParagraphLength = paragraphLengths.reduce((sum: any, len: any) => sum + len, 0) / totalParagraphs;
     
     // Count short and long paragraphs
-    const shortParagraphCount = paragraphLengths.filter(len => len < 40).length; // Less than 40 words
-    const longParagraphCount = paragraphLengths.filter(len => len > 150).length; // More than 150 words
+    const shortParagraphCount = paragraphLengths.filter((len: any) => len < 40).length; // Less than 40 words
+    const longParagraphCount = paragraphLengths.filter((len: any) => len > 150).length; // More than 150 words
     
     // Calculate scores
     let score = 50; // Start at 50
@@ -391,11 +392,11 @@ export class DeepContentAnalyzer {
     }
     
     // Count sentences (naively)
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = text.split(/[.!?]+/).filter((s: any) => s.trim().length > 0);
     const sentenceCount = Math.max(1, sentences.length);
     
     // Count words
-    const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+    const words = text.split(/\s+/).filter((w: any) => w.trim().length > 0);
     const wordCount = Math.max(1, words.length);
     
     // Count syllables (very approximate)
@@ -502,7 +503,7 @@ export class DeepContentAnalyzer {
     }
     
     // Split into sentences
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = text.split(/[.!?]+/).filter((s: any) => s.trim().length > 0);
     const sentenceCount = sentences.length;
     
     if (sentenceCount === 0) {
@@ -515,8 +516,8 @@ export class DeepContentAnalyzer {
     }
     
     // Calculate average words per sentence
-    const sentenceLengths = sentences.map(s => s.split(/\s+/).filter(w => w.trim().length > 0).length);
-    const avgSentenceLength = sentenceLengths.reduce((sum, len) => sum + len, 0) / sentenceCount;
+    const sentenceLengths = sentences.map((s: any) => s.split(/\s+/).filter((w: any) => w.trim().length > 0).length);
+    const avgSentenceLength = sentenceLengths.reduce((sum: any, len: any) => sum + len, 0) / sentenceCount;
     
     // Calculate complex sentences (more than 20 words)
     const complexSentences = sentenceLengths.filter(len => len > 20);
@@ -561,7 +562,7 @@ export class DeepContentAnalyzer {
     }
     
     // Split into words
-    const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+    const words = text.split(/\s+/).filter((w: any) => w.trim().length > 0);
     const wordCount = words.length;
     
     if (wordCount === 0) {
@@ -575,8 +576,8 @@ export class DeepContentAnalyzer {
     }
     
     // Calculate average word length
-    const wordLengths = words.map(w => w.length);
-    const avgWordLength = wordLengths.reduce((sum, len) => sum + len, 0) / wordCount;
+    const wordLengths = words.map((w: any) => w.length);
+    const avgWordLength = wordLengths.reduce((sum: any, len: any) => sum + len, 0) / wordCount;
     
     // Define complex words (more than 3 syllables or longer than 10 characters)
     const complexWords = words.filter(word => {
@@ -699,7 +700,7 @@ export class DeepContentAnalyzer {
     }
     
     // Calculate topic depth (how much content covers each topic)
-    const contentWords = words.filter(w => w.length >= 4 && !stopWords.includes(w)).length;
+    const contentWords = words.filter((w: any) => w.length >= 4 && !stopWords.includes(w)).length;
     const topicDepthScore = Math.min(100, (contentWords / 50) * 10); // 10 points per 50 relevant words, max 100
     
     score += Math.min(15, topicDepthScore / 10); // Up to 15 points for depth
@@ -734,7 +735,7 @@ export class DeepContentAnalyzer {
     const keywordInContext = text.toLowerCase().includes(primaryKeyword.toLowerCase());
     
     // Calculate keyword density
-    const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+    const words = text.split(/\s+/).filter((w: any) => w.trim().length > 0);
     const wordCount = words.length;
     
     const keywordMatches = (text.toLowerCase().match(new RegExp(primaryKeyword.toLowerCase(), 'g')) || []).length;
@@ -742,8 +743,8 @@ export class DeepContentAnalyzer {
     
     // Check if keyword appears in important elements
     const keywordInTitle = pageData.title?.toLowerCase().includes(primaryKeyword.toLowerCase()) || false;
-    const keywordInH1 = pageData.headings.h1.some(h => h.toLowerCase().includes(primaryKeyword.toLowerCase()));
-    const keywordInH2 = pageData.headings.h2.some(h => h.toLowerCase().includes(primaryKeyword.toLowerCase()));
+    const keywordInH1 = pageData.headings.h1.some((h: any) => h.toLowerCase().includes(primaryKeyword.toLowerCase()));
+    const keywordInH2 = pageData.headings.h2.some((h: any) => h.toLowerCase().includes(primaryKeyword.toLowerCase()));
     const keywordInMeta = pageData.meta.description?.toLowerCase().includes(primaryKeyword.toLowerCase()) || false;
     
     // Calculate semantic relevance score
@@ -850,7 +851,7 @@ export class DeepContentAnalyzer {
     let score = 50; // Base score
     
     // Award points for entity diversity
-    const types = new Set(entityArray.map(e => e.type));
+    const types = new Set(entityArray.map((e: any) => e.type));
     score += Math.min(20, types.size * 10); // Up to 20 points for diverse entity types
     
     // Award points for number of entities
@@ -1148,7 +1149,7 @@ export class DeepContentAnalyzer {
       const sectionContent = sectionParagraphs.join('\n\n');
       
       // Generate annotations for this section
-      const sectionAnnotations = sectionParagraphs.flatMap(paragraph => 
+      const sectionAnnotations = sectionParagraphs.flatMap((paragraph: any) => 
         contentAnnotationService.generateParagraphAnnotations(paragraph, primaryKeyword)
       );
       
@@ -1269,7 +1270,7 @@ export class DeepContentAnalyzer {
       // Gather all annotations
       const allAnnotations = [
         ...analysis.annotatedContent.introduction.annotations || [],
-        ...(analysis.annotatedContent.mainContent || []).flatMap(section => section.annotations || []),
+        ...(analysis.annotatedContent.mainContent || []).flatMap((section: any) => section.annotations || []),
         ...analysis.annotatedContent.conclusion.annotations || []
       ];
       
@@ -1286,7 +1287,7 @@ export class DeepContentAnalyzer {
       
       // Get high severity annotations
       const highSeverityAnnotations = uniqueAnnotations
-        .filter(a => a.severity === 'high')
+        .filter((a: any) => a.severity === 'high')
         .slice(0, 3);
       
       for (const annotation of highSeverityAnnotations) {

@@ -86,10 +86,47 @@ export default function RivalRankTrackerResultsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Define types for the analysis data
+  interface KeywordMetrics {
+    volume?: number;
+    difficulty?: number;
+    trend?: number[];
+  }
+
+  interface KeywordRanking {
+    position?: number;
+  }
+
+  interface CompetitorRanking {
+    competitorUrl: string;
+    position?: number;
+  }
+
+  interface Keyword {
+    id: string;
+    text: string;
+    currentRanking?: KeywordRanking;
+    competitorRankings?: CompetitorRanking[];
+    metrics?: KeywordMetrics;
+  }
+
+  interface Competitor {
+    url: string;
+  }
+
+  interface AnalysisData {
+    id: string;
+    website: string;
+    status: string;
+    keywords: Keyword[];
+    competitors?: Competitor[];
+    avgPosition?: number;
+  }
+
   // For tracking direct fetch state
   const [manualLoading, setManualLoading] = useState(true);
   const [manualError, setManualError] = useState<Error | null>(null);
-  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   
   // Direct fetch implementation to bypass React Query caching issues
   useEffect(() => {
@@ -330,38 +367,38 @@ export default function RivalRankTrackerResultsPage() {
   }
 
   // Create data for the ranking chart
-  const rankingChartData = analysisData.keywords.map((keyword: any) => {
+  const rankingChartData = analysisData?.keywords.map((keyword: Keyword) => {
     const competitors = analysisData.competitors || [];
-    const data: any = {
+    const data: Record<string, number | string> = {
       keyword: keyword.text,
       "Your Website": keyword.currentRanking?.position || 100,
     };
     
     // Add competitor data to chart
-    competitors.forEach((competitor: any) => {
+    competitors.forEach((competitor: Competitor) => {
       const competitorRanking = keyword.competitorRankings?.find(
-        (r: any) => r.competitorUrl === competitor.url
+        (r: CompetitorRanking) => r.competitorUrl === competitor.url
       );
       data[competitor.url] = competitorRanking?.position || 100;
     });
     
     return data;
-  });
+  }) || [];
 
   // Data for summary stats
-  const topRankedKeywords = analysisData.keywords.filter((k: any) => 
+  const topRankedKeywords = analysisData?.keywords.filter((k: Keyword) => 
     (k.currentRanking?.position || 101) <= 10
-  ).length;
+  ).length || 0;
   
-  const keywordsWithDifficulty = analysisData.keywords.filter((k: any) => k.metrics?.difficulty).length;
+  const keywordsWithDifficulty = analysisData?.keywords.filter((k: Keyword) => k.metrics?.difficulty).length || 0;
   const avgDifficulty = keywordsWithDifficulty > 0 
-    ? analysisData.keywords.reduce((acc: number, k: any) => 
-        acc + (k.metrics?.difficulty || 0), 0) / keywordsWithDifficulty
+    ? (analysisData?.keywords.reduce((acc: number, k: Keyword) => 
+        acc + (k.metrics?.difficulty || 0), 0) || 0) / keywordsWithDifficulty
     : 0;
   
-  const totalSearchVolume = analysisData.keywords.reduce(
-    (acc: number, k: any) => acc + (k.metrics?.volume || 0), 0
-  );
+  const totalSearchVolume = analysisData?.keywords.reduce(
+    (acc: number, k: Keyword) => acc + (k.metrics?.volume || 0), 0
+  ) || 0;
 
   // Create a demoMode variable to track if user is in demo mode
   const demoMode = !isAuthenticated;
@@ -405,7 +442,7 @@ export default function RivalRankTrackerResultsPage() {
             <CardTitle className="text-sm font-medium">Keywords Tracked</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analysisData.keywords.length}</div>
+            <div className="text-2xl font-bold">{analysisData?.keywords.length || 0}</div>
             <p className="text-sm text-muted-foreground">
               {topRankedKeywords} in top 10 positions
             </p>
@@ -487,7 +524,7 @@ export default function RivalRankTrackerResultsPage() {
                     />
                     <Tooltip 
                       formatter={(value) => [
-                        value > 100 ? 'Not ranked' : `Position ${value}`, 
+                        Number(value) > 100 ? 'Not ranked' : `Position ${value}`, 
                         'Ranking'
                       ]}
                     />
@@ -522,12 +559,12 @@ export default function RivalRankTrackerResultsPage() {
               <div className="h-[400px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsLineChart
-                    data={analysisData.keywords.map((keyword: any) => ({
+                    data={analysisData?.keywords.map((keyword: Keyword) => ({
                       keyword: keyword.text,
                       volume: keyword.metrics?.volume || 0,
                       difficulty: keyword.metrics?.difficulty || 0,
                       position: keyword.currentRanking?.position || 100
-                    }))}
+                    })) || []}
                     margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
@@ -543,12 +580,12 @@ export default function RivalRankTrackerResultsPage() {
                     />
                     <Tooltip 
                       formatter={(value, name, props) => {
-                        if (name === "volume") return [formatNumber(value as number), "Search Volume"];
+                        if (name === "volume") return [formatNumber(Number(value)), "Search Volume"];
                         if (name === "difficulty") return [`${value}%`, "Difficulty"];
                         return [value, name];
                       }}
                       labelFormatter={(label) => {
-                        const item = analysisData.keywords.find((k: any) => 
+                        const item = analysisData?.keywords.find((k: Keyword) => 
                           (k.metrics?.difficulty || 0) === label
                         );
                         return item ? item.text : '';
@@ -595,12 +632,12 @@ export default function RivalRankTrackerResultsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {analysisData.keywords.sort((a: any, b: any) => {
+                  {(analysisData?.keywords || []).sort((a: Keyword, b: Keyword) => {
                     // Sort by position (unranked at the bottom)
                     const posA = a.currentRanking?.position || 101;
                     const posB = b.currentRanking?.position || 101;
                     return posA - posB;
-                  }).map((keyword: any) => (
+                  }).map((keyword: Keyword) => (
                     <TableRow key={keyword.id}>
                       <TableCell className="font-medium">{keyword.text}</TableCell>
                       <TableCell className={getRankingColor(keyword.currentRanking?.position || 101)}>
@@ -627,7 +664,7 @@ export default function RivalRankTrackerResultsPage() {
                           <div className="w-32 h-10">
                             <ResponsiveContainer width="100%" height="100%">
                               <AreaChart
-                                data={keyword.metrics.trend.map((point: number, i: number) => ({
+                                data={(keyword.metrics?.trend || []).map((point: number, i: number) => ({
                                   date: i,
                                   value: point
                                 }))}
@@ -663,22 +700,22 @@ export default function RivalRankTrackerResultsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {analysisData.competitors && analysisData.competitors.length > 0 ? (
+              {analysisData?.competitors && analysisData.competitors.length > 0 ? (
                 <div className="space-y-8">
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsBarChart
-                        data={analysisData.keywords.map((k: any) => {
-                          const data: any = {
+                        data={(analysisData?.keywords || []).map((k: Keyword) => {
+                          const data: Record<string, number | string> = {
                             keyword: k.text,
                             "Your Website": k.currentRanking?.position 
                               ? 100 - Math.min(k.currentRanking.position, 100) 
                               : 0,
                           };
                           
-                          analysisData.competitors.forEach((c: any) => {
+                          (analysisData?.competitors || []).forEach((c: Competitor) => {
                             const ranking = k.competitorRankings?.find(
-                              (r: any) => r.competitorUrl === c.url
+                              (r: CompetitorRanking) => r.competitorUrl === c.url
                             );
                             data[c.url] = ranking?.position 
                               ? 100 - Math.min(ranking.position, 100) 
@@ -692,7 +729,8 @@ export default function RivalRankTrackerResultsPage() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="keyword" 
-                          tick={{ angle: -45, textAnchor: 'end', fontSize: 12 }}
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
                           height={70}
                         />
                         <YAxis 
@@ -709,7 +747,7 @@ export default function RivalRankTrackerResultsPage() {
                           dataKey="Your Website" 
                           fill="#4f46e5" 
                         />
-                        {analysisData.competitors.map((competitor: any, index: number) => (
+                        {(analysisData?.competitors || []).map((competitor: Competitor, index: number) => (
                           <Bar 
                             key={competitor.url}
                             dataKey={competitor.url}
@@ -734,32 +772,32 @@ export default function RivalRankTrackerResultsPage() {
                       <TableBody>
                         <TableRow>
                           <TableCell className="font-medium">
-                            {analysisData.website}
+                            {analysisData?.website}
                             <Badge variant="outline" className="ml-2">Your Website</Badge>
                           </TableCell>
                           <TableCell>
-                            {analysisData.avgPosition ? `#${analysisData.avgPosition.toFixed(1)}` : "N/A"}
+                            {analysisData?.avgPosition ? `#${analysisData.avgPosition.toFixed(1)}` : "N/A"}
                           </TableCell>
                           <TableCell>
-                            {topRankedKeywords} of {analysisData.keywords.length}
+                            {topRankedKeywords} of {analysisData?.keywords.length || 0}
                           </TableCell>
                           <TableCell>
-                            {analysisData.keywords.filter((k: any) => k.currentRanking?.position).length} of {analysisData.keywords.length}
+                            {(analysisData?.keywords || []).filter((k: Keyword) => k.currentRanking?.position).length} of {analysisData?.keywords.length || 0}
                           </TableCell>
                         </TableRow>
                         
-                        {analysisData.competitors.map((competitor: any) => {
-                          const competitorRankings = analysisData.keywords
-                            .flatMap((k: any) => k.competitorRankings || [])
-                            .filter((r: any) => r.competitorUrl === competitor.url);
+                        {(analysisData?.competitors || []).map((competitor: Competitor) => {
+                          const competitorRankings = (analysisData?.keywords || [])
+                            .flatMap((k: Keyword) => k.competitorRankings || [])
+                            .filter((r: CompetitorRanking) => r.competitorUrl === competitor.url);
                           
                           const avgPosition = competitorRankings.length
-                            ? competitorRankings.reduce((acc: number, r: any) => 
+                            ? competitorRankings.reduce((acc: number, r: CompetitorRanking) => 
                                 acc + (r.position || 0), 0) / competitorRankings.length
                             : null;
                           
                           const top10Count = competitorRankings.filter(
-                            (r: any) => (r.position || 101) <= 10
+                            (r: CompetitorRanking) => (r.position || 101) <= 10
                           ).length;
                           
                           return (
@@ -779,10 +817,10 @@ export default function RivalRankTrackerResultsPage() {
                                 {avgPosition ? `#${avgPosition.toFixed(1)}` : "N/A"}
                               </TableCell>
                               <TableCell>
-                                {top10Count} of {analysisData.keywords.length}
+                                {top10Count} of {analysisData?.keywords.length || 0}
                               </TableCell>
                               <TableCell>
-                                {competitorRankings.filter(r => r.position).length} of {analysisData.keywords.length}
+                                {competitorRankings.filter((r: CompetitorRanking) => r.position).length} of {analysisData?.keywords.length || 0}
                               </TableCell>
                             </TableRow>
                           );
@@ -814,14 +852,14 @@ export default function RivalRankTrackerResultsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {analysisData.keywords.some((k: any) => k.metrics?.trend?.length > 0) ? (
+              {(analysisData?.keywords || []).some((k: Keyword) => k.metrics?.trend && k.metrics.trend.length > 0) ? (
                 <div className="space-y-8">
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsLineChart
                         data={Array.from({ length: 12 }, (_, i) => ({
                           month: i,
-                          ...analysisData.keywords.reduce((acc: any, keyword: any) => {
+                          ...(analysisData?.keywords || []).reduce((acc: Record<string, number>, keyword: Keyword) => {
                             if (keyword.metrics?.trend && keyword.metrics.trend[i] !== undefined) {
                               acc[keyword.text] = keyword.metrics.trend[i];
                             }
@@ -848,10 +886,10 @@ export default function RivalRankTrackerResultsPage() {
                           }}
                         />
                         <Legend />
-                        {analysisData.keywords
-                          .filter((k: any) => k.metrics?.trend?.length > 0)
+                        {(analysisData?.keywords || [])
+                          .filter((k: Keyword) => k.metrics?.trend && k.metrics.trend.length > 0)
                           .slice(0, 5) // Limit to 5 keywords for readability
-                          .map((keyword: any, index: number) => (
+                          .map((keyword: Keyword, index: number) => (
                             <Line
                               key={keyword.id}
                               type="monotone"
@@ -876,12 +914,12 @@ export default function RivalRankTrackerResultsPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {analysisData.keywords
-                          .filter((k: any) => k.metrics?.volume)
-                          .sort((a: any, b: any) => 
+                        {(analysisData?.keywords || [])
+                          .filter((k: Keyword) => k.metrics?.volume)
+                          .sort((a: Keyword, b: Keyword) => 
                             (b.metrics?.volume || 0) - (a.metrics?.volume || 0)
                           )
-                          .map((keyword: any) => {
+                          .map((keyword: Keyword) => {
                             const trend = keyword.metrics?.trend || [];
                             const startVolume = trend[0] || 0;
                             const endVolume = trend[trend.length - 1] || keyword.metrics?.volume || 0;
@@ -897,7 +935,7 @@ export default function RivalRankTrackerResultsPage() {
                                   {trend.length > 0 ? (
                                     <div className="w-32 h-10">
                                       <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={trend.map((v: number, i: number) => ({ date: i, value: v }))}>
+                                        <AreaChart data={(trend || []).map((v: number, i: number) => ({ date: i, value: v }))}>
                                           <Area
                                             type="monotone"
                                             dataKey="value"

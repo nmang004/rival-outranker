@@ -1,5 +1,6 @@
-import { CrawlerOutput } from '@/lib/types';
-import { ScoreUtils } from '../lib/utils/score.utils';
+// TODO: Define CrawlerOutput type
+type CrawlerOutput = any;
+import { ScoreUtils } from '../../lib/utils/score.utils';
 
 /**
  * Content optimization analyzer for detecting and fixing common SEO content issues
@@ -73,7 +74,7 @@ class ContentOptimizationAnalyzer {
       issues.push('No paragraphs detected in content.');
       recommendations.push('Structure your content with clear paragraphs using proper HTML <p> tags.');
     } else {
-      const longParagraphs = paragraphs.filter(p => p.split(/\s+/).length > 200).length;
+      const longParagraphs = paragraphs.filter((p: any) => p.split(/\s+/).length > 200).length;
       if (longParagraphs > 0) {
         issues.push(`${longParagraphs} extremely long paragraphs detected.`);
         recommendations.push('Break up long paragraphs into smaller, more digestible chunks of 3-5 sentences each.');
@@ -136,12 +137,12 @@ class ContentOptimizationAnalyzer {
     
     // Check for empty headings
     const emptyHeadings = [
-      ...h1.filter(h => h.trim() === ''),
-      ...h2.filter(h => h.trim() === ''),
-      ...h3.filter(h => h.trim() === ''),
-      ...h4.filter(h => h.trim() === ''),
-      ...h5.filter(h => h.trim() === ''),
-      ...h6.filter(h => h.trim() === '')
+      ...h1.filter((h: any) => h.trim() === ''),
+      ...h2.filter((h: any) => h.trim() === ''),
+      ...h3.filter((h: any) => h.trim() === ''),
+      ...h4.filter((h: any) => h.trim() === ''),
+      ...h5.filter((h: any) => h.trim() === ''),
+      ...h6.filter((h: any) => h.trim() === '')
     ].length;
     
     if (emptyHeadings > 0) {
@@ -157,7 +158,7 @@ class ContentOptimizationAnalyzer {
     const keywordLower = keyword.toLowerCase();
     const title = (pageData.title || '').toLowerCase();
     const description = (pageData.meta.description || '').toLowerCase();
-    const h1 = pageData.headings.h1.map(h => h.toLowerCase()).join(' ');
+    const h1 = pageData.headings.h1.map((h: any) => h.toLowerCase()).join(' ');
     const contentText = pageData.content.text.toLowerCase();
     
     // Check keyword presence in title
@@ -210,7 +211,7 @@ class ContentOptimizationAnalyzer {
     const contentWords = pageData.content.wordCount;
     
     // Check for broken internal links
-    const brokenLinks = internalLinks.filter(link => link.broken);
+    const brokenLinks = internalLinks.filter((link: any) => link.broken);
     if (brokenLinks.length > 0) {
       issues.push(`${brokenLinks.length} broken internal ${brokenLinks.length === 1 ? 'link' : 'links'} detected.`);
       recommendations.push('Fix all broken internal links to improve user experience and site crawlability.');
@@ -232,8 +233,8 @@ class ContentOptimizationAnalyzer {
     }
     
     // Check for duplicate identical links
-    const linkUrls = internalLinks.map(link => link.url);
-    const duplicateLinks = linkUrls.filter((url, index) => linkUrls.indexOf(url) !== index);
+    const linkUrls = internalLinks.map((link: any) => link.url);
+    const duplicateLinks = linkUrls.filter((url: any, index: any) => linkUrls.indexOf(url) !== index);
     const uniqueDuplicates = Array.from(new Set(duplicateLinks));
     
     if (uniqueDuplicates.length > 0) {
@@ -249,7 +250,7 @@ class ContentOptimizationAnalyzer {
     const images = pageData.images;
     
     // Check for images without alt text
-    const missingAltImages = images.filter(img => !img.alt || img.alt.trim() === '');
+    const missingAltImages = images.filter((img: any) => !img.alt || img.alt.trim() === '');
     if (missingAltImages.length > 0) {
       issues.push(`${missingAltImages.length} ${missingAltImages.length === 1 ? 'image is' : 'images are'} missing alt text.`);
       recommendations.push('Add descriptive alt text to all images for better accessibility and SEO.');
@@ -262,7 +263,7 @@ class ContentOptimizationAnalyzer {
     }
     
     // Check for oversized images
-    const largeImages = images.filter(img => img.size && img.size > 200000); // Over 200KB
+    const largeImages = images.filter((img: any) => img.size && img.size > 200000); // Over 200KB
     if (largeImages.length > 0) {
       issues.push(`${largeImages.length} ${largeImages.length === 1 ? 'image is' : 'images are'} oversized (>200KB).`);
       recommendations.push('Optimize large images to under 100KB when possible to improve page load speed.');
@@ -297,7 +298,7 @@ class ContentOptimizationAnalyzer {
     // Prepare text
     const cleanText = text.replace(/[^a-zA-Z0-9 .!?]/g, '');
     const words = cleanText.match(/\b\w+\b/g) || [];
-    const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = cleanText.split(/[.!?]+/).filter((s: any) => s.trim().length > 0);
     
     if (words.length === 0 || sentences.length === 0) {
       return {
@@ -401,11 +402,11 @@ class ContentOptimizationAnalyzer {
     }
     
     // Adjust for broken internal links
-    const brokenLinksCount = pageData.links.internal.filter(link => link.broken).length;
+    const brokenLinksCount = pageData.links.internal.filter((link: any) => link.broken).length;
     score -= Math.min(15, brokenLinksCount * 3);
     
     // Adjust for missing image alt text
-    const missingAltTextCount = pageData.images.filter(img => !img.alt || img.alt.trim() === '').length;
+    const missingAltTextCount = pageData.images.filter((img: any) => !img.alt || img.alt.trim() === '').length;
     score -= Math.min(10, missingAltTextCount);
     
     // Ensure score stays within 0-100 range
@@ -420,8 +421,8 @@ class ContentOptimizationAnalyzer {
     const title = (pageData.title || '').toLowerCase();
     const description = (pageData.meta.description || '').toLowerCase();
     const contentText = pageData.content.text.toLowerCase();
-    const h1 = pageData.headings.h1.map(h => h.toLowerCase()).join(' ');
-    const h2 = pageData.headings.h2.map(h => h.toLowerCase()).join(' ');
+    const h1 = pageData.headings.h1.map((h: any) => h.toLowerCase()).join(' ');
+    const h2 = pageData.headings.h2.map((h: any) => h.toLowerCase()).join(' ');
     
     // Count occurrences
     const titleCount = (title.match(new RegExp(keywordLower, 'g')) || []).length;

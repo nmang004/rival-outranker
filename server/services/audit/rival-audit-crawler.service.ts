@@ -1,5 +1,5 @@
 import { RivalAudit } from '@shared/schema';
-import { auditService } from './audit/audit.service';
+import { auditService } from './audit.service';
 
 /**
  * Legacy RivalAuditCrawler - now delegates to modular audit services

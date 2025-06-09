@@ -362,7 +362,7 @@ router.get("/analysis", async (req: Request, res: Response) => {
 router.get("/analysis/:id", async (req: Request, res: Response) => {
   try {
     const analysisId = parseInt(req.params.id);
-    const analysis = await storage.getAnalysisById(analysisId);
+    const analysis = await storage.getAnalysis(analysisId);
     
     if (!analysis) {
       return res.status(404).json({ error: "Analysis not found" });
@@ -379,23 +379,23 @@ router.get("/analysis/:id", async (req: Request, res: Response) => {
 router.post("/analysis/:id/update-keyword", async (req: Request, res: Response) => {
   try {
     const analysisId = parseInt(req.params.id);
-    const { targetKeyword } = updateKeywordSchema.parse(req.body);
+    const { keyword } = updateKeywordSchema.parse(req.body);
     
     // Get the existing analysis
-    const existingAnalysis = await storage.getAnalysisById(analysisId);
+    const existingAnalysis = await storage.getAnalysis(analysisId);
     if (!existingAnalysis) {
       return res.status(404).json({ error: "Analysis not found" });
     }
     
     // Re-analyze with the new target keyword
     const url = existingAnalysis.url;
-    console.log(`Re-analyzing ${url} with new target keyword: ${targetKeyword}`);
+    console.log(`Re-analyzing ${url} with new target keyword: ${keyword}`);
     
     // Crawl the page again
     const pageData = await crawler.crawlPage(url);
     
     // Perform analysis with the new target keyword
-    const analysisResult = await analyzer.analyzePage(url, pageData, { forcedPrimaryKeyword: targetKeyword });
+    const analysisResult = await analyzer.analyzePage(url, pageData, { forcedPrimaryKeyword: keyword });
     
     // Process and sanitize the result
     const sanitizedResult = JSON.parse(

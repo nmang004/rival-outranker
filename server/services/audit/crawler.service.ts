@@ -1,7 +1,8 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { URL } from 'url';
-import { CrawlerOutput } from '@/lib/types';
+// TODO: Define CrawlerOutput type
+type CrawlerOutput = any;
 import * as https from 'https';
 import * as dns from 'dns';
 import { promisify } from 'util';

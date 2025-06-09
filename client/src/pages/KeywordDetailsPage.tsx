@@ -36,6 +36,7 @@ import {
   Lightbulb
 } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
+import type { Keyword, KeywordMetrics, KeywordRanking, CompetitorRanking } from "../../../shared/schema";
 
 export default function KeywordDetailsPage() {
   const { toast } = useToast();
@@ -43,7 +44,7 @@ export default function KeywordDetailsPage() {
   const [checkingRanking, setCheckingRanking] = useState(false);
   const [, navigate] = useLocation();
   const { id } = useParams();
-  const keywordId = parseInt(id);
+  const keywordId = parseInt(id || '');
 
   // Redirect if not logged in
   React.useEffect(() => {
@@ -52,22 +53,22 @@ export default function KeywordDetailsPage() {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
-  const { data: keyword, isLoading: keywordLoading } = useQuery({
+  const { data: keyword, isLoading: keywordLoading } = useQuery<Keyword & { latestRanking?: KeywordRanking }>({
     queryKey: [`/api/keywords/${keywordId}`],
     enabled: isAuthenticated && !isNaN(keywordId),
   });
 
-  const { data: rankings, isLoading: rankingsLoading } = useQuery({
+  const { data: rankings, isLoading: rankingsLoading } = useQuery<KeywordRanking[]>({
     queryKey: [`/api/keywords/${keywordId}/rankings`],
     enabled: isAuthenticated && !isNaN(keywordId),
   });
 
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
+  const { data: metrics, isLoading: metricsLoading } = useQuery<KeywordMetrics>({
     queryKey: [`/api/keywords/${keywordId}/metrics`],
     enabled: isAuthenticated && !isNaN(keywordId),
   });
 
-  const { data: competitors, isLoading: competitorsLoading } = useQuery({
+  const { data: competitors, isLoading: competitorsLoading } = useQuery<CompetitorRanking[]>({
     queryKey: [`/api/keywords/${keywordId}/competitors`],
     enabled: isAuthenticated && !isNaN(keywordId),
   });
@@ -203,7 +204,7 @@ export default function KeywordDetailsPage() {
                   Ranking Change
                 </div>
                 <div className="text-3xl font-bold">
-                  {keyword.latestRanking && keyword.latestRanking.previousRank ? (
+                  {keyword.latestRanking && keyword.latestRanking.rank !== null && keyword.latestRanking.previousRank !== null ? (
                     <RankChange 
                       current={keyword.latestRanking.rank} 
                       previous={keyword.latestRanking.previousRank} 
@@ -332,13 +333,13 @@ export default function KeywordDetailsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rankings.map((ranking: any) => (
+                    {rankings.map((ranking: KeywordRanking) => (
                       <TableRow key={ranking.id}>
                         <TableCell>{new Date(ranking.rankDate).toLocaleDateString()}</TableCell>
                         <TableCell>{ranking.rank || "-"}</TableCell>
                         <TableCell>{ranking.previousRank || "-"}</TableCell>
                         <TableCell>
-                          {ranking.rank && ranking.previousRank ? (
+                          {ranking.rank !== null && ranking.previousRank !== null ? (
                             <RankChange 
                               current={ranking.rank} 
                               previous={ranking.previousRank} 
@@ -388,7 +389,7 @@ export default function KeywordDetailsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {competitors.map((competitor: any) => (
+                    {competitors.map((competitor: CompetitorRanking) => (
                       <TableRow key={competitor.id}>
                         <TableCell className="font-mono text-xs">
                           {new URL(competitor.competitorUrl).hostname}
@@ -412,7 +413,10 @@ export default function KeywordDetailsPage() {
   );
 }
 
-function RankChange({ current, previous }: { current: number; previous: number }) {
+function RankChange({ current, previous }: { current: number | null; previous: number | null }) {
+  if (current === null || previous === null) {
+    return <span>-</span>;
+  }
   const diff = previous - current;
   
   if (diff > 0) {

@@ -92,14 +92,26 @@ router.post("/", async (req: Request, res: Response) => {
           // Continue crawling from where it left off
           const auditResults = await rivalAuditCrawler.continueCrawl(url);
           // Store the results in our in-memory cache
-          auditCache[auditId] = auditResults;
+          auditCache[auditId] = {
+            ...auditResults,
+            id: auditId,
+            status: 'completed',
+            startTime: new Date(),
+            timestamp: new Date()
+          };
           console.log(`Completed continued rival audit for ${url} with ID ${auditId}`);
         } else {
           console.log(`Starting new rival audit for ${url} with ID ${auditId}`);
           // Crawl and analyze the website using our new crawler
           const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
           // Store the results in our in-memory cache
-          auditCache[auditId] = auditResults;
+          auditCache[auditId] = {
+            ...auditResults,
+            id: auditId,
+            status: 'completed',
+            startTime: new Date(),
+            timestamp: new Date()
+          };
           console.log(`Completed rival audit for ${url} with ID ${auditId}`);
         }
         
@@ -155,7 +167,7 @@ router.post("/:id/analyze-service-pages", async (req: Request, res: Response) =>
     
     // Force the first item to be service page detection to OK if it's not already
     const servicePageIndex = audit.servicePages.items.findIndex(
-      item => item.name === "Has a single Service Page for each primary service?"
+      (item: any) => item.name === "Has a single Service Page for each primary service?"
     );
     
     if (servicePageIndex !== -1) {
@@ -278,7 +290,7 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     }
     
     // Find the item and update its status
-    const item = section.items.find(item => item.name === itemName);
+    const item = section.items.find((item: any) => item.name === itemName);
     
     if (!item) {
       return res.status(404).json({ error: "Item not found" });
@@ -352,7 +364,10 @@ router.get("/:id/export", async (req: Request, res: Response) => {
     
     if (format === 'csv') {
       try {
-        const csvBuffer = await generateRivalAuditCsv(audit);
+        const csvBuffer = await generateRivalAuditCsv({
+          ...audit,
+          timestamp: audit.timestamp || new Date()
+        });
         
         // Set headers for CSV download
         res.setHeader('Content-Type', 'text/csv');
@@ -367,7 +382,10 @@ router.get("/:id/export", async (req: Request, res: Response) => {
       }
     } else {
       try {
-        const excelBuffer = await generateRivalAuditExcel(audit);
+        const excelBuffer = await generateRivalAuditExcel({
+          ...audit,
+          timestamp: audit.timestamp || new Date()
+        });
         
         // Set headers for Excel download
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -408,7 +426,7 @@ function updateAuditSummary(audit: CachedRivalAudit) {
   
   sections.forEach(section => {
     if (section && section.items) {
-      section.items.forEach(item => {
+      section.items.forEach((item: any) => {
         switch (item.status) {
           case 'Priority OFI':
             audit.summary.priorityOfiCount++;

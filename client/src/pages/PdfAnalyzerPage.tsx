@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
+import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import Tesseract from 'tesseract.js';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,7 +49,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, value, description, ic
 );
 
 // Define a type that can handle both File objects and enhanced Blobs
-type FileOrBlob = File | (Blob & { name: string; lastModified: number; webkitRelativePath?: string });
+type FileOrBlob = File | (Blob & { name: string; lastModified: number; webkitRelativePath?: string; _blob?: Blob });
 
 const PdfAnalyzerPage: React.FC = () => {
   // State variables
@@ -59,7 +60,29 @@ const PdfAnalyzerPage: React.FC = () => {
   const [progress, setProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState<boolean>(false);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<{
+    score: number;
+    elements: {
+      metaTags: number;
+      headings: number;
+      links: number;
+      images: number;
+    };
+    recommendations: string[];
+    chartData: {
+      dataPoints: number;
+      hasTimeSeries: boolean;
+    };
+    ratings: {
+      titleLengthScore: string;
+      h1Score: string;
+      canonicalScore: string;
+      robotsScore: string;
+      altTextScore: string;
+    };
+    keywordStats: Record<string, number>;
+    keywordDensity: string;
+  } | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState<string>('');
@@ -231,10 +254,10 @@ that should be highlighted when communicating results to clients.
         
         // Race the loading against the timeout
         const pdf = await Promise.race([loadingPromise, timeoutPromise])
-          .catch(error => {
+          .catch((error: Error) => {
             console.error("PDF processing error or timeout:", error);
             return null;
-          });
+          }) as PDFDocumentProxy | null;
         
         // If we successfully loaded the PDF, extract text
         if (pdf) {
@@ -265,7 +288,7 @@ that should be highlighted when communicating results to clients.
               
               // Look for likely headings (short lines, possibly numbered, with specific formatting)
               for (const item of textContent.items) {
-                const text = item.str.trim();
+                const text = (item as any).str?.trim() || '';
                 // Detect headings by format (numbers followed by text, all caps, etc.)
                 if ((text.match(/^\d+(\.\d+)*\s+[A-Z]/)) ||
                     (text.length < 60 && text.toUpperCase() === text && text.length > 5) ||
@@ -311,16 +334,17 @@ that should be highlighted when communicating results to clients.
               let currentLine = '';
               
               for (const item of textContent.items) {
+                const itemData = item as any;
                 // Group text by vertical position to maintain paragraph structure
-                if (lastY !== null && Math.abs(lastY - item.transform[5]) > 5) {
+                if (lastY !== null && Math.abs(lastY - (itemData.transform?.[5] || 0)) > 5) {
                   if (currentLine.trim().length > 0) {
                     textChunks.push(currentLine.trim());
                     currentLine = '';
                   }
                 }
                 
-                currentLine += item.str + ' ';
-                lastY = item.transform[5];
+                currentLine += (itemData.str || '') + ' ';
+                lastY = itemData.transform?.[5] || 0;
               }
               
               // Add the last line
@@ -488,7 +512,7 @@ Conversion Rate: 3.8%
       const sortedKeywords = Object.entries(keywordCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
-        .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
+        .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {} as Record<string, number>);
       
       // Look for data metrics and KPIs
       const metricsRegex = /(\d+(\.\d+)?%)|(\d{1,3}(,\d{3})*(\.\d+)?)/g;
@@ -589,7 +613,7 @@ Conversion Rate: 3.8%
           altTextScore: insights.length > 3 ? 'Good' : 'Poor'
         },
         keywordStats: sortedKeywords,
-        keywordDensity: `${(Object.values(sortedKeywords).reduce((sum: any, count: any) => sum + count, 0) / wordCount * 100).toFixed(1)}%`
+        keywordDensity: `${(Object.values(sortedKeywords).reduce((sum: number, count: number) => sum + count, 0) / wordCount * 100).toFixed(1)}%`
       };
       
       setProgress(75);
@@ -750,7 +774,13 @@ const formatMetrics = () => {
 
 // Create a more detailed, SEO-specific analysis if it's an SEO report
 let reportSpecificInsights = '';
-const trendDirection = 'mixed'; // Default trend direction
+// Determine trend direction from content (simple heuristic)
+let trendDirection: 'positive' | 'negative' | 'mixed' = 'mixed';
+if (text.toLowerCase().includes('growth') || text.toLowerCase().includes('increase') || text.toLowerCase().includes('improve')) {
+  trendDirection = 'positive';
+} else if (text.toLowerCase().includes('decline') || text.toLowerCase().includes('decrease') || text.toLowerCase().includes('drop')) {
+  trendDirection = 'negative';
+}
 if (fileName.toLowerCase().includes('seo') || text.toLowerCase().includes('seo') || text.toLowerCase().includes('search engine')) {
   reportSpecificInsights = `
 ## SEO Performance Insights
@@ -893,16 +923,16 @@ This analysis is designed to help account directors quickly extract the most val
       setPdfPreviewUrl(previewUrl);
       
       // Create a file object
-      const customFileObject = {
+      const customFileObject: FileOrBlob = {
         name: sampleName,
         type: 'application/pdf',
         size: blob.size,
         lastModified: Date.now(),
         _blob: blob
-      };
+      } as FileOrBlob;
       
       // Set our custom object as the file
-      setFile(customFileObject as any);
+      setFile(customFileObject);
       setFileType('pdf');
       
       setProgress(100);

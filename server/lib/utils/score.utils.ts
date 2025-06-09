@@ -81,7 +81,7 @@ export class ScoreUtils {
    */
   static getCategoryWithThresholds(
     score: number, 
-    thresholds: typeof SCORE_THRESHOLDS.STANDARD
+    thresholds: { excellent: number; good: number; 'needs-work': number }
   ): ScoreCategory {
     if (score >= thresholds.excellent) return 'excellent';
     if (score >= thresholds.good) return 'good';

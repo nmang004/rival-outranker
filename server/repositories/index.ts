@@ -65,6 +65,34 @@ export {
 // API usage tracking
 export { ApiUsageRepository, apiUsageRepository } from './api-usage.repository';
 
+// Re-import for local use
+import { userRepository } from './user.repository';
+import { analysisRepository } from './analysis.repository';
+import { projectRepository } from './project.repository';
+import { 
+  backlinkProfileRepository,
+  backlinkRepository,
+  backlinkHistoryRepository,
+  outgoingLinkRepository
+} from './backlink.repository';
+import { 
+  keywordRepository,
+  keywordMetricsRepository,
+  keywordRankingRepository,
+  competitorRankingRepository,
+  keywordSuggestionRepository
+} from './keyword.repository';
+import { 
+  learningModuleRepository,
+  learningLessonRepository,
+  lessonQuizRepository,
+  userLearningProgressRepository,
+  learningPathRepository,
+  learningPathModuleRepository,
+  userLearningRecommendationRepository
+} from './learning.repository';
+import { apiUsageRepository } from './api-usage.repository';
+
 /**
  * Repository Registry
  * 

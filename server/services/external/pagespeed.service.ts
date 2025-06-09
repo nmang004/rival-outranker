@@ -1,7 +1,9 @@
 import axios from 'axios';
-import { PageSpeedMetrics, CrawlerOutput } from '@/lib/types';
-import { ScoreUtils } from '../lib/utils/score.utils';
-import { AnalysisFactory } from '../lib/factories/analysis.factory';
+// TODO: Define types
+type PageSpeedMetrics = any;
+type CrawlerOutput = any;
+import { ScoreUtils } from '../../lib/utils/score.utils';
+import { AnalysisFactory } from '../../lib/factories/analysis.factory';
 
 interface DeviceMetrics {
   score: number;
@@ -233,7 +235,7 @@ export class UnifiedPageSpeedService {
     const hasLargeImages = pageData.images.length > 10;
     const hasExcessiveExternalLinks = pageData.links.external.length > 20;
     const hasLargeContent = pageData.content.wordCount > 3000;
-    const hasLotsOfJavaScript = pageData.scripts?.length > 10;
+    const hasLotsOfJavaScript = (pageData.performance?.resourceCount || 0) > 50;
     
     return hasLargeImages || hasExcessiveExternalLinks || hasLargeContent || hasLotsOfJavaScript;
   }

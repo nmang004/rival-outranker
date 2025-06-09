@@ -1,4 +1,4 @@
-import { storage } from '../storage';
+import { storage } from '../../storage';
 
 export const adminService = {
   // Grant admin role to a user by email

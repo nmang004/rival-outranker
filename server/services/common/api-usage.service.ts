@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db } from '../../db';
 import { apiUsage, InsertApiUsage, ApiUsage } from '@shared/schema';
 import { between, desc, eq, sql, and } from 'drizzle-orm';
 

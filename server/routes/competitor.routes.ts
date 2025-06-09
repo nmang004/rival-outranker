@@ -408,8 +408,6 @@ router.post("/", async (req: Request, res: Response) => {
               
               // Update the analysis in storage
               await storage.updateAnalysis(mostRecentAnalysis.id, {
-                url: mostRecentAnalysis.url,
-                overallScore: mostRecentAnalysis.overallScore,
                 results: updatedResults
               });
               

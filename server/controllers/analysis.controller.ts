@@ -100,7 +100,13 @@ export class AnalysisController extends BaseController {
         const { page, pageSize } = this.getPaginationParams(req);
         const result = await analysisService.getAllAnalyses({ page, pageSize });
         
-        this.sendPaginatedResponse(res, result, 'Analyses retrieved successfully');
+        this.sendPaginatedResponse(res, {
+          data: result.analyses,
+          total: result.total,
+          page: result.page,
+          pageSize: result.pageSize,
+          totalPages: result.totalPages
+        }, 'Analyses retrieved successfully');
       }
 
     } catch (error) {
@@ -144,7 +150,7 @@ export class AnalysisController extends BaseController {
   public updateAnalysisKeyword = this.asyncHandler(async (req: Request, res: Response) => {
     try {
       const analysisId = this.parseInteger(req.params.id);
-      const { targetKeyword } = updateKeywordSchema.parse(req.body);
+      const { keyword } = updateKeywordSchema.parse(req.body);
 
       if (!analysisId) {
         this.sendError(res, 'Invalid analysis ID', 400);
@@ -152,9 +158,9 @@ export class AnalysisController extends BaseController {
       }
 
       const userId = this.getUserId(req);
-      this.logAction('update_analysis_keyword', userId, { analysisId, targetKeyword });
+      this.logAction('update_analysis_keyword', userId, { analysisId, keyword });
 
-      const updatedAnalysis = await analysisService.reAnalyzeWithKeyword(analysisId, targetKeyword);
+      const updatedAnalysis = await analysisService.reAnalyzeWithKeyword(analysisId, keyword);
       
       this.sendSuccess(res, updatedAnalysis, 'Analysis updated with new keyword');
 
@@ -238,7 +244,13 @@ export class AnalysisController extends BaseController {
 
       if ('total' in result) {
         // Paginated response
-        this.sendPaginatedResponse(res, result as any, 'User analyses retrieved successfully');
+        this.sendPaginatedResponse(res, {
+          data: result.analyses,
+          total: result.total!,
+          page: result.page!,
+          pageSize: result.pageSize!,
+          totalPages: result.totalPages!
+        }, 'User analyses retrieved successfully');
       } else {
         // Simple list response
         this.sendSuccess(res, result.analyses, 'User analyses retrieved successfully');
@@ -309,7 +321,13 @@ export class AnalysisController extends BaseController {
         pageSize
       });
 
-      this.sendPaginatedResponse(res, result, 'Search results retrieved successfully');
+      this.sendPaginatedResponse(res, {
+        data: result.analyses,
+        total: result.total,
+        page: result.page,
+        pageSize: result.pageSize,
+        totalPages: result.totalPages
+      }, 'Search results retrieved successfully');
 
     } catch (error) {
       console.error('[AnalysisController] Error in searchAnalyses:', error);

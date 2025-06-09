@@ -1,6 +1,7 @@
-import { CrawlerOutput } from '@/lib/types';
-import { ScoreUtils } from '../lib/utils/score.utils';
-import { AnalysisFactory } from '../lib/factories/analysis.factory';
+// TODO: Define CrawlerOutput type
+type CrawlerOutput = any;
+import { ScoreUtils } from '../../lib/utils/score.utils';
+import { AnalysisFactory } from '../../lib/factories/analysis.factory';
 
 class KeywordAnalyzer {
   // Common English stop words to filter out when extracting keywords
@@ -40,7 +41,7 @@ class KeywordAnalyzer {
           if (h1Text.includes(term)) {
             // Look for words surrounding the service/product term
             const words = h1Text.split(/\s+/);
-            const termIndex = words.findIndex(w => w.includes(term));
+            const termIndex = words.findIndex((w: any) => w.includes(term));
             
             if (termIndex > 0) {
               // If service/product term has a preceding word (likely a descriptor)
@@ -48,7 +49,7 @@ class KeywordAnalyzer {
               const precedingWords = words.slice(Math.max(0, termIndex - 2), termIndex);
               
               // Filter out stop words and common modifiers
-              const filteredPrecedingWords = precedingWords.filter(w => 
+              const filteredPrecedingWords = precedingWords.filter((w: any) => 
                 !this.stopWords.has(w) && 
                 !['our', 'your', 'the', 'best', 'professional', 'quality', 'affordable'].includes(w)
               );
@@ -63,7 +64,7 @@ class KeywordAnalyzer {
         }
         
         // If no specific service/product pattern found, extract the most significant noun phrases from H1
-        const h1Words = h1Text.split(/\s+/).filter(w => !this.stopWords.has(w));
+        const h1Words = h1Text.split(/\s+/).filter((w: any) => !this.stopWords.has(w));
         if (h1Words.length > 0) {
           // Try to identify multi-word phrases in H1
           if (h1Words.length >= 2) {
@@ -95,7 +96,7 @@ class KeywordAnalyzer {
       // Check if any industry terms are in the title or headings
       for (const term of industryTerms) {
         if ((pageData.title && pageData.title.toLowerCase().includes(term)) || 
-            pageData.headings.h1.some(h => h.toLowerCase().includes(term))) {
+            pageData.headings.h1.some((h: any) => h.toLowerCase().includes(term))) {
           return term.charAt(0).toUpperCase() + term.slice(1);  // Return capitalized term
         }
       }
@@ -140,15 +141,15 @@ class KeywordAnalyzer {
       // Check keyword presence in different elements
       const titlePresent = this.isKeywordPresent(pageData.title || '', primaryKeyword);
       const descriptionPresent = this.isKeywordPresent(pageData.meta.description || '', primaryKeyword);
-      const h1Present = pageData.headings.h1.some(h => this.isKeywordPresent(h, primaryKeyword));
+      const h1Present = pageData.headings.h1.some((h: any) => this.isKeywordPresent(h, primaryKeyword));
       
       // Check if keyword is present in any H2-H6 headings
       const headingsPresent = 
-        pageData.headings.h2.some(h => this.isKeywordPresent(h, primaryKeyword)) ||
-        pageData.headings.h3.some(h => this.isKeywordPresent(h, primaryKeyword)) ||
-        pageData.headings.h4.some(h => this.isKeywordPresent(h, primaryKeyword)) ||
-        pageData.headings.h5.some(h => this.isKeywordPresent(h, primaryKeyword)) ||
-        pageData.headings.h6.some(h => this.isKeywordPresent(h, primaryKeyword));
+        pageData.headings.h2.some((h: any) => this.isKeywordPresent(h, primaryKeyword)) ||
+        pageData.headings.h3.some((h: any) => this.isKeywordPresent(h, primaryKeyword)) ||
+        pageData.headings.h4.some((h: any) => this.isKeywordPresent(h, primaryKeyword)) ||
+        pageData.headings.h5.some((h: any) => this.isKeywordPresent(h, primaryKeyword)) ||
+        pageData.headings.h6.some((h: any) => this.isKeywordPresent(h, primaryKeyword));
       
       // Check if keyword is present in first 100 words
       const first100Words = this.getFirst100Words(pageData.content.text);
@@ -158,7 +159,7 @@ class KeywordAnalyzer {
       const urlPresent = this.isKeywordPresent(pageData.url, primaryKeyword);
       
       // Check if keyword is present in image alt text
-      const altTextPresent = pageData.images.some(img => 
+      const altTextPresent = pageData.images.some((img: any) => 
         img.alt && this.isKeywordPresent(img.alt, primaryKeyword)
       );
       
@@ -210,7 +211,7 @@ class KeywordAnalyzer {
     const words = text.toLowerCase()
       .replace(/[^\w\s]/g, ' ') // Replace non-alphanumeric chars with spaces
       .split(/\s+/)             // Split by whitespace
-      .filter(word => word.length > 2 && !this.stopWords.has(word)); // Filter out short words and stop words
+      .filter((word: any) => word.length > 2 && !this.stopWords.has(word)); // Filter out short words and stop words
     
     // Extract potential 2-gram and 3-gram phrases
     const bigrams = this.extractNgrams(words, 2);
@@ -323,7 +324,7 @@ class KeywordAnalyzer {
       }
       
       // Higher weight if in H1
-      if (pageData.headings.h1.some(h => this.isKeywordPresent(h, keyword))) {
+      if (pageData.headings.h1.some((h: any) => this.isKeywordPresent(h, keyword))) {
         weight += 3;
       }
       
@@ -391,8 +392,8 @@ class KeywordAnalyzer {
     
     // Check words that make up the keyword (for phrases)
     if (keyword.includes(' ')) {
-      const keywordParts = normalizedKeyword.split(' ').filter(w => w.length > 3);
-      return keywordParts.some(part => normalizedText.includes(part));
+      const keywordParts = normalizedKeyword.split(' ').filter((w: any) => w.length > 3);
+      return keywordParts.some((part: any) => normalizedText.includes(part));
     }
     
     return false;

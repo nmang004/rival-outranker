@@ -129,6 +129,7 @@ export default function ResultsPage() {
   
   // Define a type for the API response
   interface ApiResponse {
+    id?: string;
     url: string;
     results?: any; // We'll keep this as any for now since it's a complex structure
   }
@@ -153,7 +154,7 @@ export default function ResultsPage() {
   // Make sure to include the analysis ID in the data passed to components
   const data = apiResponse ? {
     ...apiResponse.results,
-    id: apiResponse.id,
+    id: (apiResponse as any).id,
     url: apiResponse.url
   } : {};
   

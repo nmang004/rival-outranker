@@ -239,7 +239,7 @@ function generateFallbackSuggestions(baseKeyword: string): RelatedKeyword[] {
   }
 
   // Remove duplicates and limit to 15 suggestions
-  const uniqueSuggestions = [...new Set(suggestions)].slice(0, 15);
+  const uniqueSuggestions = Array.from(new Set(suggestions)).slice(0, 15);
 
   // Map to the expected format with simulated metrics
   return uniqueSuggestions.map((keyword, index) => {

@@ -413,16 +413,8 @@ const PdfAnalyzerPage: React.FC = () => {
         console.log('Chart analysis:', chartAnalysis);
       }
       
-      // Extract real metrics from the chart analysis if available, or use fallback
-      const metricsData = {
-        traffic: extractMetricValue(chartAnalysis.metrics, 'Sessions', 'Users', 'Traffic') || Math.floor(Math.random() * 50000) + 10000,
-        rankings: extractMetricValue(chartAnalysis.metrics, 'Position', 'Ranking', 'Keywords') || Math.floor(Math.random() * 50) + 10,
-        conversion: extractMetricValue(chartAnalysis.metrics, 'Conversion', 'CTR') || (Math.random() * 5 + 1).toFixed(2),
-        visibility: extractMetricValue(chartAnalysis.metrics, 'Visibility', 'Impression') || Math.floor(Math.random() * 100),
-      };
-      
       // Helper function to extract metric values from analysis
-      function extractMetricValue(metrics: any[], ...namePatterns: string[]): number | null {
+      const extractMetricValue = (metrics: any[], ...namePatterns: string[]): number | null => {
         const metric = metrics.find(m => 
           namePatterns.some(pattern => 
             m.name.toLowerCase().includes(pattern.toLowerCase())
@@ -440,7 +432,15 @@ const PdfAnalyzerPage: React.FC = () => {
         }
         
         return null;
-      }
+      };
+      
+      // Extract real metrics from the chart analysis if available, or use fallback
+      const metricsData = {
+        traffic: extractMetricValue(chartAnalysis.metrics, 'Sessions', 'Users', 'Traffic') || Math.floor(Math.random() * 50000) + 10000,
+        rankings: extractMetricValue(chartAnalysis.metrics, 'Position', 'Ranking', 'Keywords') || Math.floor(Math.random() * 50) + 10,
+        conversion: extractMetricValue(chartAnalysis.metrics, 'Conversion', 'CTR') || (Math.random() * 5 + 1).toFixed(2),
+        visibility: extractMetricValue(chartAnalysis.metrics, 'Visibility', 'Impression') || Math.floor(Math.random() * 100),
+      };
       
       // Attempt AI analysis using the PDF analysis service
       try {
@@ -647,7 +647,7 @@ When presenting this data to clients, focus on these key elements:
 - Schedule a review meeting to discuss implementation priorities
     `;
     
-    setAiInsights(aiAnalysisText);
+    return aiAnalysisText;
   };
 
   // Helper function to format numbers for display
@@ -690,14 +690,12 @@ When presenting this data to clients, focus on these key elements:
       // Create a blob from the response
       const blob = await response.blob();
       
-      // Create a File-like object that has the properties needed
-      const file = {
+      // Create a File-like object that extends the blob
+      const file = Object.assign(blob, {
         name: decodeURIComponent(fileName),
-        type: 'application/pdf',
-        size: blob.size,
         lastModified: Date.now(),
-        _blob: blob, // Store the blob for extraction
-      } as FileOrBlob;
+        webkitRelativePath: '',
+      }) as FileOrBlob;
       
       setFile(file);
       setFileType('pdf');
@@ -750,7 +748,8 @@ When presenting this data to clients, focus on these key elements:
       });
       
       // Generate sample AI insights
-      generateFallbackInsights(text, file.name, sortedKeywords);
+      const insights = generateFallbackInsights(text, file.name, sortedKeywords);
+      setAiInsights(insights);
       
       setAnalysisComplete(true);
     } catch (error) {
@@ -873,7 +872,7 @@ When presenting this data to clients, focus on these key elements:
                     animation: 'progressAnimation 2s linear infinite'
                   }}
                 />
-                <style jsx>{`
+                <style>{`
                   @keyframes progressAnimation {
                     0% { background-position: 100% 0; }
                     100% { background-position: -100% 0; }
@@ -1111,7 +1110,7 @@ When presenting this data to clients, focus on these key elements:
                         <div>
                           <h3 className="text-sm font-medium text-gray-900 mb-3">Top Keywords</h3>
                           <div className="flex flex-wrap gap-2">
-                            {summary.keywords.map((keyword, index) => (
+                            {summary.keywords.map((keyword: string, index: number) => (
                               <Badge key={index} variant="outline" className="text-xs py-1 px-2">
                                 {keyword}
                               </Badge>

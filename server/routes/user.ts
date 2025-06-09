@@ -83,7 +83,7 @@ userRouter.put('/change-password', async (req: Request, res: Response) => {
     }
     
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password || '');
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }

@@ -66,7 +66,7 @@ export const trackApiUsage = (apiProvider: string) => {
       });
       
       // Call the original end method
-      return originalEnd.apply(res, [chunk, ...args]);
+      return originalEnd.apply(res, arguments as any);
     };
     
     // Continue with the request

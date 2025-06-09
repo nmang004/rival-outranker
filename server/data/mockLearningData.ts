@@ -444,7 +444,7 @@ export function generateProgressSummary(userId: string) {
   const inProgressLessons = userProgressData.filter(p => p.status === 'in_progress');
   
   // Get unique modules the user has worked on
-  const moduleIdMap = {};
+  const moduleIdMap: Record<number, boolean> = {};
   userProgressData.forEach(p => {
     moduleIdMap[p.moduleId] = true;
   });

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { Keyword, Project, KeywordRanking } from "../../../shared/schema";
 import { useToast } from "@/hooks/ui/use-toast";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Button } from "@/components/ui/button";
@@ -74,12 +75,12 @@ export default function KeywordsPage() {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
-  const { data: keywords, isLoading: keywordsLoading } = useQuery({
+  const { data: keywords, isLoading: keywordsLoading } = useQuery<(Keyword & { latestRanking?: KeywordRanking })[]>({
     queryKey: ["/api/keywords"],
     enabled: isAuthenticated,
   });
 
-  const { data: projects, isLoading: projectsLoading } = useQuery({
+  const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
   });
@@ -297,7 +298,7 @@ export default function KeywordsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {keywords.map((keyword: any) => (
+                  {keywords.map((keyword: Keyword & { latestRanking?: KeywordRanking }) => (
                     <TableRow key={keyword.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleKeywordClick(keyword.id)}>
                       <TableCell className="font-medium">{keyword.keyword}</TableCell>
                       <TableCell className="font-mono text-xs">

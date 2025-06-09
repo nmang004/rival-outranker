@@ -1,7 +1,7 @@
 import { GoogleAdsApi, enums } from 'google-ads-api';
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { KeywordData, RelatedKeyword } from './dataForSeoService';
+import { KeywordData, RelatedKeyword } from './dataforseo.service';
 
 // Load environment variables
 dotenv.config();
@@ -34,7 +34,7 @@ const TEST_KEYWORDS = ['plumbing', 'hvac', 'roof repair', 'electrician', 'home i
 
 // Check if Google Ads API credentials are available
 let googleAdsClient: GoogleAdsApi | null = null;
-let customer: Customer | null = null;
+let customer: any | null = null;
 
 // Initialize Google Ads API client if credentials are available
 try {
@@ -160,11 +160,11 @@ try {
           // Also try different API URL structures
           const endpointStructures = [
             // Standard endpoint format
-            (ver, custId) => `https://googleads.googleapis.com/${ver}/customers/${custId}/keywordPlanIdeas:generateKeywordIdeas`,
+            (ver: string, custId: string) => `https://googleads.googleapis.com/${ver}/customers/${custId}/keywordPlanIdeas:generateKeywordIdeas`,
             // Alternative formats that might work
-            (ver, custId) => `https://googleads.googleapis.com/${ver}/customers/${custId}:generateKeywordIdeas`,
-            (ver, custId) => `https://googleads.googleapis.com/${ver}/keywords:generateIdeas?customerId=${custId}`,
-            (ver, custId) => `https://googleads.googleapis.com/${ver}/keywordPlan:generateKeywordIdeas?customerId=${custId}`
+            (ver: string, custId: string) => `https://googleads.googleapis.com/${ver}/customers/${custId}:generateKeywordIdeas`,
+            (ver: string, custId: string) => `https://googleads.googleapis.com/${ver}/keywords:generateIdeas?customerId=${custId}`,
+            (ver: string, custId: string) => `https://googleads.googleapis.com/${ver}/keywordPlan:generateKeywordIdeas?customerId=${custId}`
           ];
           
           let success = false;
@@ -483,7 +483,7 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
       if (response?.results?.length) {
         // Log first few results to help debug
         const sampleResults = response.results.slice(0, 3);
-        sampleResults.forEach(result => {
+        sampleResults.forEach((result: any) => {
           console.log(`- Result: "${result.text}" with volume: ${result.keywordIdeaMetrics?.avgMonthlySearches}`);
         });
       }
@@ -535,9 +535,9 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     const lowerKeyword = keyword.toLowerCase();
     
     // Check if we have sample data for the exact keyword
-    if (SAMPLE_KEYWORDS[lowerKeyword]) {
+    if ((SAMPLE_KEYWORDS as any)[lowerKeyword]) {
       console.log(`Using sample data for "${keyword}"`);
-      const sampleData = SAMPLE_KEYWORDS[lowerKeyword];
+      const sampleData = (SAMPLE_KEYWORDS as any)[lowerKeyword];
       return {
         keyword,
         searchVolume: sampleData.searchVolume,
@@ -553,14 +553,14 @@ export async function getKeywordData(keyword: string, location: number = 2840): 
     for (const sampleKey in SAMPLE_KEYWORDS) {
       if (lowerKeyword.includes(sampleKey) || sampleKey.includes(lowerKeyword.split(' ')[0])) {
         console.log(`Using related sample data for "${keyword}" from "${sampleKey}"`);
-        const sampleData = SAMPLE_KEYWORDS[sampleKey];
+        const sampleData = (SAMPLE_KEYWORDS as any)[sampleKey];
         return {
           keyword,
           searchVolume: Math.floor(sampleData.searchVolume * 0.7), // Slightly modified
           difficulty: sampleData.difficulty,
           cpc: sampleData.cpc,
           competition: sampleData.competition,
-          trend: sampleData.trend.map(val => Math.floor(val * 0.7)),
+          trend: sampleData.trend.map((val: number) => Math.floor(val * 0.7)),
           relatedKeywords: sampleData.relatedKeywords
         };
       }
@@ -687,7 +687,7 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
           return true;
         })
         .slice(0, 15) // Limit to 15 suggestions
-        .map((result: any, index) => ({
+        .map((result: any, index: number) => ({
           id: index + 1,
           keyword: result.text || '',
           searchVolume: result.keywordIdeaMetrics?.avgMonthlySearches || 0,
@@ -717,7 +717,7 @@ export async function getKeywordSuggestions(keyword: string, location: number = 
       // Just return a limited set of the results
       return fallbackResponse.results
         .slice(0, 15)
-        .map((result: any, index) => ({
+        .map((result: any, index: number) => ({
           id: index + 1,
           keyword: result.text || '',
           searchVolume: result.keywordIdeaMetrics?.avgMonthlySearches || 0,

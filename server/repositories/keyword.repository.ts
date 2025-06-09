@@ -64,13 +64,13 @@ export class KeywordRepository extends BaseRepository<Keyword, InsertKeyword> {
    * Find keyword by text and target URL
    */
   async findByKeywordAndUrl(userId: string, keyword: string, targetUrl: string): Promise<Keyword | null> {
-    return this.findOne(
-      and(
-        eq(keywords.userId, userId),
-        eq(keywords.keyword, keyword),
-        eq(keywords.targetUrl, targetUrl)
-      )
+    const condition = and(
+      eq(keywords.userId, userId),
+      eq(keywords.keyword, keyword),
+      eq(keywords.targetUrl, targetUrl)
     );
+    if (!condition) return null;
+    return this.findOne(condition);
   }
 
   /**
@@ -78,8 +78,7 @@ export class KeywordRepository extends BaseRepository<Keyword, InsertKeyword> {
    */
   async deactivateKeyword(keywordId: number): Promise<Keyword | null> {
     return this.updateById(keywordId, {
-      isActive: false,
-      updatedAt: new Date()
+      isActive: false
     });
   }
 
@@ -88,8 +87,7 @@ export class KeywordRepository extends BaseRepository<Keyword, InsertKeyword> {
    */
   async reactivateKeyword(keywordId: number): Promise<Keyword | null> {
     return this.updateById(keywordId, {
-      isActive: true,
-      updatedAt: new Date()
+      isActive: true
     });
   }
 
@@ -98,8 +96,7 @@ export class KeywordRepository extends BaseRepository<Keyword, InsertKeyword> {
    */
   async updateNotes(keywordId: number, notes: string): Promise<Keyword | null> {
     return this.updateById(keywordId, {
-      notes,
-      updatedAt: new Date()
+      notes
     });
   }
 
@@ -145,15 +142,11 @@ export class KeywordMetricsRepository extends BaseRepository<KeywordMetrics, Ins
     const existing = await this.findByKeywordId(keywordId);
     
     if (existing) {
-      return this.updateById(existing.id, {
-        ...data,
-        lastUpdated: new Date()
-      });
+      return this.updateById(existing.id, data);
     } else {
       return this.create({
         keywordId,
-        ...data,
-        lastUpdated: new Date()
+        ...data
       });
     }
   }
@@ -255,7 +248,11 @@ export class KeywordRankingRepository extends BaseRepository<KeywordRanking, Ins
     if (days) {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
-      whereClause = and(whereClause, gte(keywordRankings.rankDate, cutoffDate.toISOString().split('T')[0]));
+      const dateCondition = gte(keywordRankings.rankDate, cutoffDate.toISOString().split('T')[0]);
+      const combinedCondition = and(whereClause, dateCondition);
+      if (combinedCondition) {
+        whereClause = combinedCondition;
+      }
     }
 
     const rankings = await this.findMany({

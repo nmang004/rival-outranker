@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { URL } from 'url';
-import { db } from '../db';
+import { db } from '../../db';
 import { 
   backlinkProfiles, 
   backlinks, 

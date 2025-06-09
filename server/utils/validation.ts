@@ -1,4 +1,4 @@
-import { z, ZodError, ZodSchema } from 'zod';
+import { z, ZodError, ZodSchema, ZodTypeAny, ZodUnion } from 'zod';
 import { ValidationError } from './errors';
 
 /**
@@ -196,10 +196,10 @@ export function conditionalSchema<T, U>(
 /**
  * Create a union schema with better error messages
  */
-export function betterUnion<T extends readonly [ZodSchema, ...ZodSchema[]]>(
+export function betterUnion<T extends readonly [ZodTypeAny, ZodTypeAny, ...ZodTypeAny[]]>(
   schemas: T,
   message?: string
-): ZodSchema<z.infer<T[number]>> {
+): ZodUnion<T> {
   return z.union(schemas, {
     errorMap: () => ({
       message: message || 'Value does not match any of the allowed formats'

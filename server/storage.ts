@@ -13,7 +13,7 @@ import {
   keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions,
   anonChatUsage
 } from "@shared/schema";
-import { db } from "./db.js";
+import { db } from "./db";
 import { eq, desc, and, inArray, sql, asc, gte, lte } from "drizzle-orm";
 
 // Interfaces for storage operations
@@ -317,6 +317,17 @@ export class DatabaseStorage implements IStorage {
     return updatedAnalysis;
   }
 
+  async updateAnalysis(id: number, analysisData: Partial<InsertAnalysis>): Promise<Analysis> {
+    // Update an entire analysis record
+    const [updatedAnalysis] = await db
+      .update(analyses)
+      .set(analysisData)
+      .where(eq(analyses.id, id))
+      .returning();
+    
+    return updatedAnalysis;
+  }
+
   // Project operations
   async createProject(project: InsertProject): Promise<Project> {
     const [result] = await db
@@ -399,7 +410,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Get analysis IDs
-    const analysisIds = projectAnalysesResults.map(pa => pa.analysisId);
+    const analysisIds = projectAnalysesResults.map((pa: any) => pa.analysisId);
     
     // Get analysis details
     return await db

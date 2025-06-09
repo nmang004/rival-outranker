@@ -9,7 +9,7 @@ export abstract class BaseRepository<
   T extends Record<string, any>,
   TInsert extends Record<string, any> = Partial<T>
 > {
-  protected constructor(protected table: PgTableWithColumns<TableConfig>) {}
+  protected constructor(protected table: any) {}
 
   /**
    * Find record by ID

@@ -23,6 +23,22 @@ import {
 import { ChartExport } from "@/components/ui/chart-export";
 import { useRef } from "react";
 
+interface AuditSummary {
+  ofiCount: number;
+  priorityOfiCount: number;
+  okCount: number;
+}
+
+interface AuditCategory {
+  name: string;
+  issues?: Array<{ title: string; description: string; priority: string }>;
+}
+
+interface AuditData {
+  summary: AuditSummary;
+  categories: AuditCategory[];
+}
+
 interface ClientPresentationPageProps {
   auditId?: string;
 }
@@ -37,7 +53,7 @@ export default function ClientPresentationPage({ auditId }: ClientPresentationPa
   const competitiveAnalysisRef = useRef<HTMLDivElement>(null);
 
   // Get audit data if auditId is provided
-  const { data: audit } = useQuery({
+  const { data: audit } = useQuery<AuditData>({
     queryKey: ["/api/rival-audit", auditId],
     enabled: !!auditId,
   });
@@ -79,21 +95,21 @@ export default function ClientPresentationPage({ auditId }: ClientPresentationPa
   const priorityOpportunities = audit ? [
     {
       category: "On-Page SEO",
-      issues: audit.categories.find(c => c.name === "On-Page")?.issues?.length || 0,
+      issues: audit.categories.find((c: AuditCategory) => c.name === "On-Page")?.issues?.length || 0,
       impact: "High",
       projectedRevenue: roiData ? Math.round(roiData.annualIncrease * 0.4) : 0,
       timeframe: "2-3 months"
     },
     {
       category: "Technical SEO", 
-      issues: audit.categories.find(c => c.name === "Structure")?.issues?.length || 0,
+      issues: audit.categories.find((c: AuditCategory) => c.name === "Structure")?.issues?.length || 0,
       impact: "Critical",
       projectedRevenue: roiData ? Math.round(roiData.annualIncrease * 0.3) : 0,
       timeframe: "1-2 months"
     },
     {
       category: "Local SEO",
-      issues: audit.categories.find(c => c.name === "Service Areas")?.issues?.length || 0,
+      issues: audit.categories.find((c: AuditCategory) => c.name === "Service Areas")?.issues?.length || 0,
       impact: "High",
       projectedRevenue: roiData ? Math.round(roiData.annualIncrease * 0.3) : 0,
       timeframe: "2-4 months"
@@ -294,7 +310,7 @@ export default function ClientPresentationPage({ auditId }: ClientPresentationPa
                       id="business-type"
                       className="w-full mt-1 p-2 border rounded"
                       value={businessType}
-                      onChange={(e) => setBusinessType(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setBusinessType(e.target.value)}
                     >
                       <option value="local-service">Local Service Business</option>
                       <option value="ecommerce">E-commerce</option>
@@ -525,7 +541,7 @@ export default function ClientPresentationPage({ auditId }: ClientPresentationPa
                         <div>
                           <h4 className="font-semibold mb-3">Competitive Disadvantages</h4>
                           <div className="space-y-3">
-                            {audit.categories.slice(0, 3).map((category, index) => (
+                            {audit.categories.slice(0, 3).map((category: AuditCategory, index: number) => (
                               <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
                                 <div>
                                   <p className="font-medium">{category.name}</p>

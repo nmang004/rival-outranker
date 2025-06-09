@@ -60,7 +60,7 @@ router.post("/keyword-research", async (req: Request, res: Response) => {
     // Fallback to Google Ads API if available
     if (isGoogleAdsApiReady()) {
       try {
-        const googleAdsData = await getGoogleAdsKeywordData([keyword], location);
+        const googleAdsData = await getGoogleAdsKeywordData(keyword, location);
         
         return res.json({
           keyword,

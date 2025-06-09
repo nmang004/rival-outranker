@@ -129,7 +129,7 @@ export default function ModuleDetailPage() {
   const [module, setModule] = useState<LearningModule | null>(null);
   const [lessons, setLessons] = useState<LearningLesson[]>([]);
   const [userProgress, setUserProgress] = useState<UserLearningProgress[]>([]);
-  const [selectedLesson, setSelectedLesson] = useState<LearningLesson | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [quizAnswers, setQuizAnswers] = useState<{[questionId: number]: number}>({});
   const [lessonQuizCompleted, setLessonQuizCompleted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -265,7 +265,7 @@ export default function ModuleDetailPage() {
             completedAt: new Date().toISOString(),
             lastAccessedAt: new Date().toISOString()
           };
-          setUserProgress(prev => [...prev, newProgress]);
+          setUserProgress(prev => [...prev, newProgress as UserLearningProgress]);
         }
       }
       
@@ -451,7 +451,7 @@ export default function ModuleDetailPage() {
       const firstLessonAchievement = mockAchievements.find(a => a.id === "first-lesson");
       if (firstLessonAchievement) {
         setTimeout(() => {
-          setCurrentAchievement(firstLessonAchievement);
+          setCurrentAchievement(firstLessonAchievement as Achievement);
           setShowAchievement(true);
         }, 1500);
       }
@@ -469,7 +469,7 @@ export default function ModuleDetailPage() {
       );
       if (moduleAchievement) {
         setTimeout(() => {
-          setCurrentAchievement(moduleAchievement);
+          setCurrentAchievement(moduleAchievement as Achievement);
           setShowAchievement(true);
         }, 1500);
       }
@@ -480,7 +480,7 @@ export default function ModuleDetailPage() {
       const milestoneAchievement = mockAchievements.find(a => a.id === "seo-journey");
       if (milestoneAchievement) {
         setTimeout(() => {
-          setCurrentAchievement(milestoneAchievement);
+          setCurrentAchievement(milestoneAchievement as Achievement);
           setShowAchievement(true);
         }, 1500);
       }
@@ -788,7 +788,7 @@ export default function ModuleDetailPage() {
                       <div className="mt-8 border-t pt-6">
                         <h3 className="text-xl font-bold mb-4">Additional Resources</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {selectedLesson.additionalResources.map((resource, idx) => (
+                          {selectedLesson.additionalResources.map((resource: any, idx: number) => (
                             <div key={idx} className="border rounded-md p-4 hover:border-primary transition-colors">
                               <h4 className="font-medium mb-1">{resource.title}</h4>
                               <p className="text-sm text-muted-foreground mb-3">{resource.description}</p>
@@ -813,11 +813,11 @@ export default function ModuleDetailPage() {
                       <div className="mt-8 border-t pt-6">
                         <h3 className="text-xl font-bold mb-4">Knowledge Check</h3>
                         <div className="space-y-6">
-                          {selectedLesson.quiz.questions.map((question) => (
+                          {selectedLesson.quiz.questions.map((question: QuizQuestion) => (
                             <div key={question.id} className="bg-gray-50 p-4 rounded-md">
                               <h4 className="font-medium mb-3">{question.text}</h4>
                               <div className="space-y-2">
-                                {question.options.map((option, index) => (
+                                {question.options.map((option: string, index: number) => (
                                   <div 
                                     key={index} 
                                     className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-100"
@@ -858,7 +858,7 @@ export default function ModuleDetailPage() {
                               const totalQuestions = selectedLesson.quiz.questions.length;
                               let correctAnswers = 0;
                               
-                              selectedLesson.quiz.questions.forEach(question => {
+                              selectedLesson.quiz.questions.forEach((question: QuizQuestion) => {
                                 if (quizAnswers[question.id] === question.correctOptionIndex) {
                                   correctAnswers++;
                                 }
@@ -882,7 +882,7 @@ export default function ModuleDetailPage() {
                                   const quizMasterAchievement = mockAchievements.find(a => a.id === "quiz-master");
                                   if (quizMasterAchievement) {
                                     setTimeout(() => {
-                                      setCurrentAchievement(quizMasterAchievement);
+                                      setCurrentAchievement(quizMasterAchievement as Achievement);
                                       setShowAchievement(true);
                                     }, 1500); // Show achievement after quiz completion dialog
                                   }

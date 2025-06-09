@@ -226,8 +226,10 @@ export function setupUnhandledRejectionHandler(): void {
   process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     logger.error('Unhandled promise rejection', {
       reason: reason instanceof Error ? reason.message : String(reason),
-      stack: reason instanceof Error ? reason.stack : undefined,
-      promise: promise.toString()
+      metadata: {
+        stack: reason instanceof Error ? reason.stack : undefined,
+        promise: promise.toString()
+      }
     });
 
     // In development, exit immediately to catch the issue
@@ -245,7 +247,9 @@ export function setupUncaughtExceptionHandler(): void {
     logger.error('Uncaught exception', {
       error: err,
       message: err.message,
-      stack: err.stack
+      metadata: {
+        stack: err.stack
+      }
     });
 
     // Always exit on uncaught exceptions
@@ -290,9 +294,11 @@ export function requestTimeout(timeoutMs: number = 30000) {
       if (!res.headersSent) {
         logger.warn('Request timeout', {
           method: req.method,
-          url: req.url,
-          timeout: timeoutMs,
-          userId: (req as any).user?.id
+          userId: (req as any).user?.id,
+          metadata: {
+            url: req.url,
+            timeout: timeoutMs
+          }
         });
 
         res.status(408).json({
@@ -328,9 +334,11 @@ export function rateLimitErrorHandler(
   logger.warn('Rate limit exceeded', {
     ip: req.ip,
     method: req.method,
-    url: req.url,
     userAgent: req.get('User-Agent'),
-    userId: (req as any).user?.id
+    userId: (req as any).user?.id,
+    metadata: {
+      url: req.url
+    }
   });
 
   res.status(429).json({
@@ -351,9 +359,11 @@ export function rateLimitErrorHandler(
 export function corsErrorHandler(err: Error, req: Request, res: Response, next: NextFunction): void {
   if (err.message.includes('CORS')) {
     logger.warn('CORS error', {
-      origin: req.get('Origin'),
       method: req.method,
-      url: req.url
+      metadata: {
+        origin: req.get('Origin'),
+        url: req.url
+      }
     });
 
     res.status(403).json({

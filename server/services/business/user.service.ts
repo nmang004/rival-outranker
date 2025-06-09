@@ -239,8 +239,7 @@ export class UserService implements IUserService {
 
     // Update password
     const updatedUser = await userRepository.updateById(userId, {
-      password: hashedNewPassword,
-      updatedAt: new Date()
+      password: hashedNewPassword
     });
 
     return !!updatedUser;

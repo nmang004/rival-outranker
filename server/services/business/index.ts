@@ -16,6 +16,11 @@ export { UserService, userService } from './user.service';
 export { AnalysisService, analysisService } from './analysis.service';
 export { ProjectService, projectService } from './project.service';
 
+// Import the service instances for the registry
+import { userService } from './user.service';
+import { analysisService } from './analysis.service';
+import { projectService } from './project.service';
+
 /**
  * Business Services Registry
  * 

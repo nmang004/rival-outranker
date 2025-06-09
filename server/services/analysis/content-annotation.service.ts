@@ -160,8 +160,8 @@ export class ContentAnnotationService {
     }
     
     // Check for long sentences
-    const sentences = paragraphText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const longSentences = sentences.filter(s => s.split(/\s+/).length > 25);
+    const sentences = paragraphText.split(/[.!?]+/).filter((s: any) => s.trim().length > 0);
+    const longSentences = sentences.filter((s: any) => s.split(/\s+/).length > 25);
     
     if (longSentences.length > 0) {
       annotations.push({

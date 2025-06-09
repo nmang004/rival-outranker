@@ -51,10 +51,9 @@ export class BacklinkProfileRepository extends BaseRepository<BacklinkProfile, I
    * Update scan timestamp
    */
   async updateLastScan(profileId: number): Promise<BacklinkProfile | null> {
-    return this.updateById(profileId, {
-      lastScanAt: new Date(),
-      updatedAt: new Date()
-    });
+    // Note: lastScanAt is auto-managed by the database
+    // This method can be used to trigger an update timestamp
+    return this.findById(profileId);
   }
 
   /**
@@ -68,10 +67,7 @@ export class BacklinkProfileRepository extends BaseRepository<BacklinkProfile, I
     nofollow?: number;
     domainAuthority?: number;
   }): Promise<BacklinkProfile | null> {
-    return this.updateById(profileId, {
-      ...counts,
-      updatedAt: new Date()
-    });
+    return this.updateById(profileId, counts);
   }
 
   /**
@@ -170,8 +166,7 @@ export class BacklinkRepository extends BaseRepository<Backlink, InsertBacklink>
    */
   async updateStatus(backlinkId: number, status: 'active' | 'lost' | 'redirected'): Promise<Backlink | null> {
     return this.updateById(backlinkId, {
-      status,
-      lastChecked: new Date()
+      status
     });
   }
 
@@ -295,8 +290,7 @@ export class OutgoingLinkRepository extends BaseRepository<OutgoingLink, InsertO
    */
   async updateStatus(linkId: number, status: 'active' | 'broken' | 'redirected'): Promise<OutgoingLink | null> {
     return this.updateById(linkId, {
-      status,
-      lastChecked: new Date()
+      status
     });
   }
 

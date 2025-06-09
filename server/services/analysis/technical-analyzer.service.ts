@@ -1,5 +1,6 @@
-import { CrawlerOutput } from '@/lib/types';
-import { ScoreUtils } from '../lib/utils/score.utils';
+// TODO: Define CrawlerOutput type
+type CrawlerOutput = any;
+import { ScoreUtils } from '../../lib/utils/score.utils';
 import * as cheerio from 'cheerio';
 import * as dns from 'dns';
 import { promisify } from 'util';
@@ -217,7 +218,7 @@ class TechnicalSeoAnalyzer {
     
     const results = {
       hasStructuredData: schemas.length > 0,
-      schemaTypes: schemas.map(s => s.types).flat(),
+      schemaTypes: schemas.map((s: any) => s.types).flat(),
       count: schemas.length
     };
     
@@ -227,8 +228,8 @@ class TechnicalSeoAnalyzer {
       recommendations.push('Implement appropriate structured data to enhance search result appearance and context.');
     } else {
       // Check for common schemas
-      const hasOrganization = results.schemaTypes.some(type => type === 'Organization' || type === 'LocalBusiness');
-      const hasBreadcrumbs = results.schemaTypes.some(type => type === 'BreadcrumbList');
+      const hasOrganization = results.schemaTypes.some((type: any) => type === 'Organization' || type === 'LocalBusiness');
+      const hasBreadcrumbs = results.schemaTypes.some((type: any) => type === 'BreadcrumbList');
       
       if (!hasOrganization) {
         recommendations.push('Consider adding Organization or LocalBusiness schema to provide business information to search engines.');

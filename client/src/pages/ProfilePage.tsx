@@ -88,8 +88,16 @@ function MiniChart({
   );
 }
 
+interface Analysis {
+  id: string;
+  url: string;
+  score: number;
+  created_at: string;
+  status: string;
+}
+
 function UserAnalysesList() {
-  const { data: analyses, isLoading } = useQuery<any[]>({
+  const { data: analyses, isLoading } = useQuery<Analysis[]>({
     queryKey: ['/api/user/analyses'],
     retry: false,
   });
@@ -125,7 +133,7 @@ function UserAnalysesList() {
 
   return (
     <div className="space-y-4">
-      {analysesToShow.map((analysis: any) => (
+      {analysesToShow.map((analysis: Analysis) => (
         <Card key={analysis.id}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -280,14 +288,14 @@ export default function ProfilePage(props: { params?: { tab?: string } }) {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src={user?.avatar} alt={user?.name || 'User'} />
+            <AvatarImage src={(user as any)?.avatar} alt={(user as any)?.name || 'User'} />
             <AvatarFallback>
               <UserCircle2 className="h-8 w-8" />
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-3xl font-bold">{user?.name || 'Welcome'}</h1>
-            <p className="text-muted-foreground">{user?.email}</p>
+            <h1 className="text-3xl font-bold">{(user as any)?.name || 'Welcome'}</h1>
+            <p className="text-muted-foreground">{(user as any)?.email}</p>
           </div>
         </div>
       </div>

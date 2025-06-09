@@ -1,11 +1,11 @@
 import { IAnalysisService } from '../interfaces/analysis.service.interface';
 import { Analysis, InsertAnalysis, SeoAnalysisResult } from '@shared/schema';
 import { analysisRepository } from '../../repositories';
-import { analyzer } from '../analyzer';
-import { crawler } from '../crawler';
-import { competitorAnalyzer } from '../competitorAnalyzer';
-import { deepContentAnalyzer } from '../deepContentAnalyzer';
-import { searchService } from '../searchService';
+import { analyzer } from '../analysis/analyzer.service';
+import { crawler } from '../audit/crawler.service';
+import { competitorAnalyzer } from '../analysis/competitor-analyzer.service';
+import { deepContentAnalyzer } from '../analysis/content-analyzer.service';
+import { searchService } from '../external/search.service';
 
 /**
  * Analysis business logic service
@@ -21,7 +21,13 @@ export class AnalysisService implements IAnalysisService {
   async createAnalysis(analysisData: InsertAnalysis): Promise<Analysis> {
     // Validate and sanitize the analysis data
     const sanitizedData = this.sanitizeAnalysisData(analysisData);
-    return await analysisRepository.create(sanitizedData);
+    
+    // Ensure required fields are present
+    if (!sanitizedData.url) {
+      throw new Error('URL is required for analysis creation');
+    }
+    
+    return await analysisRepository.create(sanitizedData as InsertAnalysis);
   }
 
   /**
@@ -185,7 +191,7 @@ export class AnalysisService implements IAnalysisService {
               primaryKeyword, 
               'Global'
             );
-            analysisResult.competitorAnalysis = competitorResult;
+            analysisResult.competitorAnalysis = competitorResult as any;
           }
         } catch (competitorError) {
           console.error(`[AnalysisService] Competitor analysis failed:`, competitorError);

@@ -1,11 +1,12 @@
 import { SeoAnalysisResult, SeoScore } from '@shared/schema';
-import { CrawlerOutput } from '@/lib/types';
-import { keywordAnalyzer } from './keywordAnalyzer';
-import { pageSpeedService } from './pageSpeedService';
-import { contentOptimizationAnalyzer } from './contentOptimizationAnalyzer';
-import { technicalSeoAnalyzer } from './technicalSeoAnalyzer';
-import { ScoreUtils } from '../lib/utils/score.utils';
-import { AnalysisFactory } from '../lib/factories/analysis.factory';
+// TODO: Define CrawlerOutput type
+type CrawlerOutput = any;
+import { keywordAnalyzer } from './keyword-analyzer.service';
+import { pageSpeedService } from '../external/pagespeed.service';
+import { contentOptimizationAnalyzer } from './content-optimization.service';
+import { technicalSeoAnalyzer } from './technical-analyzer.service';
+import { ScoreUtils } from '../../lib/utils/score.utils';
+import { AnalysisFactory } from '../../lib/factories/analysis.factory';
 
 class Analyzer {
   /**
@@ -39,33 +40,67 @@ class Analyzer {
   private createErrorAnalysisResult(url: string, errorMessage: string): SeoAnalysisResult {
     return {
       url,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
       overallScore: { score: 50, category: 'needs-work' },
       strengths: [],
       weaknesses: [errorMessage || "Analysis could not be completed. Please try again."],
       keywordAnalysis: AnalysisFactory.createDefaultKeywordAnalysis(""),
       metaTagsAnalysis: AnalysisFactory.createDefaultMetaTagsAnalysis(),
-      contentAnalysis: AnalysisFactory.createDefaultContentAnalysis(),
-      internalLinksAnalysis: AnalysisFactory.createDefaultInternalLinksAnalysis(),
-      imageAnalysis: AnalysisFactory.createDefaultImageAnalysis(),
+      contentAnalysis: {
+        wordCount: 0,
+        paragraphCount: 0,
+        headingStructure: {
+          h1Count: 0,
+          h2Count: 0,
+          h3Count: 0,
+          h4Count: 0,
+          h5Count: 0,
+          h6Count: 0
+        },
+        readabilityScore: 0,
+        hasMultimedia: false,
+        overallScore: { score: 50, category: 'needs-work' }
+      },
+      internalLinksAnalysis: {
+        count: 0,
+        uniqueCount: 0,
+        hasProperAnchors: false,
+        brokenLinksCount: 0,
+        overallScore: { score: 50, category: 'needs-work' }
+      },
+      imageAnalysis: {
+        count: 0,
+        withAltCount: 0,
+        withoutAltCount: 0,
+        optimizedCount: 0,
+        unoptimizedCount: 0,
+        overallScore: { score: 50, category: 'needs-work' }
+      },
       schemaMarkupAnalysis: AnalysisFactory.createDefaultSchemaMarkupAnalysis(),
-      mobileAnalysis: AnalysisFactory.createDefaultMobileAnalysis(),
+      mobileAnalysis: {
+        isMobileFriendly: false,
+        viewportSet: false,
+        textSizeAppropriate: false,
+        tapTargetsAppropriate: false,
+        overallScore: { score: 50, category: 'needs-work' }
+      },
       pageSpeedAnalysis: AnalysisFactory.createDefaultPageSpeedAnalysis(),
       userEngagementAnalysis: AnalysisFactory.createDefaultUserEngagementAnalysis(),
       eatAnalysis: AnalysisFactory.createDefaultEATAnalysis(),
       technicalSeoAnalysis: {
-        securityIssues: { score: 50, hasHttps: true, hasMixedContent: false, hasSecurityHeaders: false },
-        indexability: { score: 50, hasRobotsTxt: false, hasNoindexTag: false, hasCanonicalTag: true },
-        mobileFriendliness: { score: 50, isMobileFriendly: true, hasViewport: true, hasResponsiveDesign: true },
-        structuredData: { score: 50, hasStructuredData: false, hasSchema: false, hasMicrodata: false },
-        canonicalIssues: { score: 50, hasCanonical: true, hasMultipleCanonicals: false, hasCanonicalLoop: false },
-        performance: { score: 50, loadTime: 3.0, resourceCount: 50, resourceSize: 2000 },
-        serverConfig: { score: 50, statusCode: 200, hasGzip: true, hasHttp2: false }
+        score: 50,
+        assessment: 'needs-work',
+        pageStatus: { code: 200, message: 'OK' },
+        indexability: { isIndexable: true },
+        mobileFriendliness: { hasMobileViewport: false },
+        structuredData: { hasStructuredData: false },
+        issues: ['Analysis could not be completed'],
+        recommendations: ['Retry analysis with a valid URL']
       },
       enhancedContentAnalysis: {
         headingStructure: { score: 50, hasH1: true, hasProperHierarchy: true, avgWordCount: 5 },
         keywordUsage: { score: 50, density: 1.5, inTitle: true, inHeadings: true, inFirstParagraph: true },
-        readability: { score: 50, fleschKincaid: 60, avgSentenceLength: 15, avgParagraphLength: 2 },
+        readability: { score: 50, grade: "8th grade", fleschKincaidGrade: 60, averageWordsPerSentence: 15, complexWordPercentage: 2 },
         contentQuality: { score: 50, hasOriginalContent: true, hasThinContent: false },
         contentStructure: { score: 50, hasBulletLists: true, hasNumberedLists: true, hasSections: true },
         contentIssues: ["Analysis could not be completed"],
@@ -228,7 +263,7 @@ class Analyzer {
     
     try {
       // First crawl the page to get the data
-      const crawler = await import('./crawler').then(m => m.crawler);
+      const { crawler } = await import('../audit/crawler.service');
       const pageData = await crawler.crawlPage(url);
       
       // Then analyze the page with the pageData and options
@@ -477,12 +512,13 @@ class Analyzer {
       // Construct final analysis result
       return {
         url,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         overallScore,
         strengths,
         weaknesses,
-        keywordAnalysis,
-        metaTagsAnalysis,
+        recommendations: [],
+        keywordAnalysis: keywordAnalysis as any,
+        metaTagsAnalysis: metaTagsAnalysis as any,
         contentAnalysis,
         internalLinksAnalysis,
         imageAnalysis,
@@ -683,7 +719,7 @@ class Analyzer {
    * Estimate average words per sentence
    */
   private estimateAverageWordsPerSentence(text: string): number {
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = text.split(/[.!?]+/).filter((s: any) => s.trim().length > 0);
     const sentenceCount = sentences.length;
     
     if (sentenceCount === 0) return 0;
@@ -729,16 +765,16 @@ class Analyzer {
     const { internal } = links;
     
     const count = internal.length;
-    const uniqueUrls = new Set(internal.map(link => link.url));
+    const uniqueUrls = new Set(internal.map((link: any) => link.url));
     const uniqueCount = uniqueUrls.size;
     
     // Check for broken links
-    const brokenLinks = internal.filter(link => link.broken);
+    const brokenLinks = internal.filter((link: any) => link.broken);
     const brokenLinksCount = brokenLinks.length;
     
     // Check for proper anchor texts (non-generic)
     const genericAnchorTexts = ['click here', 'read more', 'learn more', 'more', 'link', 'here'];
-    const genericAnchors = internal.filter(link => {
+    const genericAnchors = internal.filter((link: any) => {
       const anchorText = link.text.toLowerCase().trim();
       return genericAnchorTexts.includes(anchorText);
     });
@@ -811,12 +847,12 @@ class Analyzer {
     }
     
     // Check for alt text
-    const imagesWithAlt = images.filter(img => img.alt && img.alt.trim().length > 0);
+    const imagesWithAlt = images.filter((img: any) => img.alt && img.alt.trim().length > 0);
     const altCount = imagesWithAlt.length;
     const altPercentage = Math.round((altCount / count) * 100);
     
     // Check for size optimization (assuming size is in KB)
-    const largeImages = images.filter(img => img.size && img.size > 200);
+    const largeImages = images.filter((img: any) => img.size && img.size > 200);
     const sizeOptimized = largeImages.length === 0;
     
     // Calculate score

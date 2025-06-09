@@ -383,7 +383,7 @@ export default function DeepContentResultsPage() {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Key Recommendations</h3>
                   <ul className="space-y-2">
-                    {analysisData.recommendations.slice(0, 5).map((recommendation, index) => (
+                    {analysisData.recommendations.slice(0, 5).map((recommendation: any, index: number) => (
                       <li key={index} className="flex items-start">
                         <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">→</span>
                         <span>{recommendation}</span>
@@ -529,7 +529,7 @@ export default function DeepContentResultsPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
                       <ul className="space-y-2">
-                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('head') || rec.toLowerCase().includes('title')).slice(0, 3).map((rec, i) => (
+                        {analysisData.recommendations.filter((rec: any) => rec.toLowerCase().includes('head') || rec.toLowerCase().includes('title')).slice(0, 3).map((rec: any, i: number) => (
                           <li key={i} className="text-sm flex items-start">
                             <span className="text-primary mr-2">•</span>
                             <span>{rec}</span>
@@ -584,7 +584,7 @@ export default function DeepContentResultsPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
                       <ul className="space-y-2">
-                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('paragraph') || rec.toLowerCase().includes('content') || rec.toLowerCase().includes('text')).slice(0, 3).map((rec, i) => (
+                        {analysisData.recommendations.filter((rec: any) => rec.toLowerCase().includes('paragraph') || rec.toLowerCase().includes('content') || rec.toLowerCase().includes('text')).slice(0, 3).map((rec: any, i: number) => (
                           <li key={i} className="text-sm flex items-start">
                             <span className="text-primary mr-2">•</span>
                             <span>{rec}</span>
@@ -631,7 +631,7 @@ export default function DeepContentResultsPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
                       <ul className="space-y-2">
-                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('cta') || rec.toLowerCase().includes('call to action') || rec.toLowerCase().includes('button')).slice(0, 3).map((rec, i) => (
+                        {analysisData.recommendations.filter((rec: any) => rec.toLowerCase().includes('cta') || rec.toLowerCase().includes('call to action') || rec.toLowerCase().includes('button')).slice(0, 3).map((rec: any, i: number) => (
                           <li key={i} className="text-sm flex items-start">
                             <span className="text-primary mr-2">•</span>
                             <span>{rec}</span>
@@ -682,7 +682,7 @@ export default function DeepContentResultsPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2 text-muted-foreground">Recommendations</h4>
                       <ul className="space-y-2">
-                        {analysisData.recommendations.filter(rec => rec.toLowerCase().includes('introduction') || rec.toLowerCase().includes('opening') || rec.toLowerCase().includes('first')).slice(0, 3).map((rec, i) => (
+                        {analysisData.recommendations.filter((rec: any) => rec.toLowerCase().includes('introduction') || rec.toLowerCase().includes('opening') || rec.toLowerCase().includes('first')).slice(0, 3).map((rec: any, i: number) => (
                           <li key={i} className="text-sm flex items-start">
                             <span className="text-primary mr-2">•</span>
                             <span>{rec}</span>
@@ -768,12 +768,12 @@ export default function DeepContentResultsPage() {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Readability Recommendations</h3>
                   <ul className="space-y-2">
-                    {analysisData.recommendations.filter(rec => 
+                    {analysisData.recommendations.filter((rec: any) => 
                       rec.toLowerCase().includes('read') || 
                       rec.toLowerCase().includes('sentence') || 
                       rec.toLowerCase().includes('word') ||
                       rec.toLowerCase().includes('complex')
-                    ).slice(0, 5).map((rec, index) => (
+                    ).slice(0, 5).map((rec: any, index: number) => (
                       <li key={index} className="flex items-start">
                         <span className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center text-xs mr-2 mt-0.5">→</span>
                         <span>{rec}</span>
@@ -825,7 +825,7 @@ export default function DeepContentResultsPage() {
                             }
                           }
                           
-                          return uniqueAnnotations.map((annotation, index) => (
+                          return uniqueAnnotations.map((annotation: any, index: number) => (
                             <div key={index} className="border-l-2 border-primary pl-4 py-1">
                               <div className="flex items-center mb-1">
                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
@@ -851,7 +851,7 @@ export default function DeepContentResultsPage() {
                 </div>
                 
                 {/* Main content sections */}
-                {analysisData.annotatedContent.mainContent.map((section, sectionIndex) => (
+                {analysisData.annotatedContent.mainContent.map((section: any, sectionIndex: number) => (
                   <div key={sectionIndex} className="border rounded-lg overflow-hidden">
                     <div className="bg-muted p-3 flex items-center justify-between">
                       <h3 className="font-medium">Content Section {sectionIndex + 1}</h3>
@@ -876,7 +876,7 @@ export default function DeepContentResultsPage() {
                               }
                             }
                             
-                            return uniqueAnnotations.map((annotation, annotationIndex) => (
+                            return uniqueAnnotations.map((annotation: any, annotationIndex: number) => (
                               <div key={annotationIndex} className="border-l-2 border-primary pl-4 py-1">
                                 <div className="flex items-center mb-1">
                                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
@@ -927,7 +927,7 @@ export default function DeepContentResultsPage() {
                             }
                           }
                           
-                          return uniqueAnnotations.map((annotation, index) => (
+                          return uniqueAnnotations.map((annotation: any, index: number) => (
                             <div key={index} className="border-l-2 border-primary pl-4 py-1">
                               <div className="flex items-center mb-1">
                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full mr-2 ${
