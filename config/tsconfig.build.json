@@ -1,0 +1,32 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["../server/**/*", "../shared/**/*"],
+  "exclude": [
+    "../node_modules", 
+    "../client", 
+    "../dist", 
+    "**/*.test.ts",
+    "../config/vite.config.ts",
+    "../server/vite.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": false,
+    "declaration": false,
+    "outDir": "../dist",
+    "rootDir": "..",
+    "module": "ESNext",
+    "target": "ES2022",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": "..",
+    "types": ["node"],
+    "paths": {
+      "@shared/*": ["./shared/*"]
+    }
+  }
+}
