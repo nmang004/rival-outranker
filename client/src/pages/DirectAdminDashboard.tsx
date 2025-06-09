@@ -185,7 +185,7 @@ export default function DirectAdminDashboard() {
             statusCode: 429,
             responseTime: 356,
             timestamp: new Date().toISOString(),
-            apiProvider: 'google-ads',
+            apiProvider: 'dataforseo',
             errorMessage: 'Too many requests. Retry in 5 seconds.',
             estimatedCost: 0
           },
@@ -520,7 +520,7 @@ export default function DirectAdminDashboard() {
                     <Legend />
                     
                     {/* Lines for counts */}
-                    <Line type="monotone" dataKey="google-ads_count" stroke="#8884d8" name="Google Ads Count" />
+                    <Line type="monotone" dataKey="internal_count" stroke="#8884d8" name="Internal Count" />
                     <Line type="monotone" dataKey="dataforseo_count" stroke="#82ca9d" name="DataForSEO Count" />
                     <Line type="monotone" dataKey="openai_count" stroke="#ffc658" name="OpenAI Count" />
                   </LineChart>

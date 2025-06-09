@@ -8,7 +8,3 @@ export {
   getKeywordSuggestions as dataForSeoGetKeywordSuggestions
 } from './dataforseo.service';
 
-export { 
-  getKeywordData as googleAdsGetKeywordData,
-  getKeywordSuggestions as googleAdsGetKeywordSuggestions
-} from './google-ads.service';

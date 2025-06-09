@@ -61,7 +61,6 @@ router.get("/sample/api-usage/stats", async (req: Request, res: Response) => {
       averageResponseTime: 245,
       totalCost: 18.74,
       costByProvider: {
-        "google-ads": 7.25,
         "dataforseo": 8.49,
         "openai": 3.00,
         "internal": 0
@@ -80,7 +79,6 @@ router.get("/sample/api-usage/stats", async (req: Request, res: Response) => {
         "POST": 200
       },
       byApiProvider: {
-        "google-ads": 156,
         "dataforseo": 178,
         "openai": 42,
         "internal": 111
@@ -101,7 +99,6 @@ router.get("/sample/api-usage/stats", async (req: Request, res: Response) => {
           const dateStr = date.toISOString().split('T')[0];
           
           return [
-            { date: dateStr, provider: "google-ads", count: 20 + Math.floor(Math.random() * 10), cost: 1.05 + (Math.random() * 0.5) },
             { date: dateStr, provider: "dataforseo", count: 22 + Math.floor(Math.random() * 12), cost: 1.15 + (Math.random() * 0.6) },
             { date: dateStr, provider: "openai", count: 5 + Math.floor(Math.random() * 5), cost: 0.35 + (Math.random() * 0.2) },
             { date: dateStr, provider: "internal", count: 15 + Math.floor(Math.random() * 8), cost: 0 }

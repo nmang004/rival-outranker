@@ -6,7 +6,7 @@ async function populateSampleData() {
   console.log("Populating API usage tracking table with sample data...");
   
   // Create sample API providers
-  const providers = ['google-ads', 'dataforseo', 'openai', 'internal'];
+  const providers = ['dataforseo', 'openai', 'internal'];
   
   // Create sample endpoints
   const endpoints = [
@@ -66,9 +66,7 @@ async function populateSampleData() {
       
       // Calculate estimated cost based on provider
       let estimatedCost = 0;
-      if (provider === 'google-ads') {
-        estimatedCost = Math.random() * 0.05 + 0.01; // $0.01-$0.06 per call
-      } else if (provider === 'dataforseo') {
+      if (provider === 'dataforseo') {
         estimatedCost = Math.random() * 0.08 + 0.02; // $0.02-$0.10 per call
       } else if (provider === 'openai') {
         estimatedCost = Math.random() * 0.12 + 0.03; // $0.03-$0.15 per call
@@ -109,7 +107,6 @@ async function populateSampleData() {
       // Sample usage metrics                    
       const usageMetrics = provider === 'openai' ? { tokens: Math.floor(Math.random() * 1000) + 200 } : 
                           provider === 'dataforseo' ? { credits: Math.floor(Math.random() * 5) + 1 } :
-                          provider === 'google-ads' ? { operations: 1 } :
                           null;
       
       // Create the record

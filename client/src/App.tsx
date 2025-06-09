@@ -29,7 +29,6 @@ import PdfAnalyzerPage from "@/pages/FixedPdfAnalyzerPage";
 import KeywordsPage from "@/pages/KeywordsPage";
 import KeywordDetailsPage from "@/pages/KeywordDetailsPage";
 import KeywordSuggestionsPage from "@/pages/KeywordSuggestionsPage";
-import GoogleAdsSettings from "@/pages/GoogleAdsSettings";
 import BacklinksPage from "@/pages/BacklinksPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import DirectAdminDashboard from "@/pages/DirectAdminDashboard";
@@ -80,7 +79,6 @@ function Router() {
             <Route path="/modern-advanced-rank-tracker" component={ModernAdvancedRankTracker} />
             
             <Route path="/keyword-research" component={KeywordResearch} />
-            <Route path="/google-ads-settings" component={GoogleAdsSettings} />
             <Route path="/backlinks" component={BacklinksPage} />
             <Route path="/admin/dashboard" component={AdminDashboard} />
             <Route path="/direct-admin" component={DirectAdminDashboard} />

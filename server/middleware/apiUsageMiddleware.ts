@@ -75,7 +75,6 @@ export const trackApiUsage = (apiProvider: string) => {
 };
 
 // Middleware factory for common API providers
-export const trackGoogleAdsApi = trackApiUsage('Google Ads API');
 export const trackDataForSeoApi = trackApiUsage('DataForSEO');
 export const trackOpenAiApi = trackApiUsage('OpenAI');
 export const trackInternalApi = trackApiUsage('Internal API');

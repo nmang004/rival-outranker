@@ -42,7 +42,6 @@ import { Link } from 'wouter';
 import { useToast } from "@/hooks/ui/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { checkGoogleAdsAuthStatus, GoogleAdsAuthStatus } from "../lib/googleAdsApi";
 
 interface KeywordData {
   keyword: string;
@@ -325,21 +324,13 @@ export default function KeywordResearch() {
             {isLoading ? 'Researching...' : 'Research Keyword'}
           </Button>
           
-          <Button variant="outline" size="icon" asChild title="Google Ads API Settings">
-            <Link href="/google-ads-settings">
-              <Settings className="h-4 w-4" />
-            </Link>
-          </Button>
         </form>
         
         <Alert className="bg-blue-50">
           <InfoIcon className="h-4 w-4" />
-          <AlertTitle>Optimize Your Keyword Research</AlertTitle>
+          <AlertTitle>Keyword Research Data</AlertTitle>
           <AlertDescription>
-            Connect to the Google Ads API for more accurate keyword data and insights from Google Keyword Planner.{' '}
-            <Link href="/google-ads-settings" className="font-medium underline text-blue-600 hover:text-blue-800">
-              Configure API Settings
-            </Link>
+            Our keyword research uses DataForSEO API to provide accurate search volume and keyword metrics. Results include competition analysis, cost-per-click estimates, and search trends.
           </AlertDescription>
         </Alert>
       </div>
@@ -558,7 +549,7 @@ export default function KeywordResearch() {
                       <div className="text-3xl font-bold text-green-700">
                         {keywordData.cpc || '$0.00'}
                       </div>
-                      <div className="mt-2 text-xs text-gray-500">Average cost per click in Google Ads</div>
+                      <div className="mt-2 text-xs text-gray-500">Estimated cost per click for paid advertising</div>
                     </div>
                   </div>
                   

@@ -11,7 +11,7 @@ export const apiUsage = pgTable("api_usage", {
   statusCode: integer("status_code"),
   responseTime: integer("response_time"), // in milliseconds
   timestamp: timestamp("timestamp").defaultNow().notNull(),
-  apiProvider: text("api_provider").notNull(), // e.g., 'google-ads', 'backlinks', 'keyword', 'internal'
+  apiProvider: text("api_provider").notNull(), // e.g., 'dataforseo', 'backlinks', 'keyword', 'internal'
   requestData: jsonb("request_data"), // request parameters (sanitized)
   responseData: jsonb("response_data"), // limited response data (sanitized)
   errorMessage: text("error_message"),

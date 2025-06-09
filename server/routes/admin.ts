@@ -57,7 +57,6 @@ router.get("/dev/api-usage/stats", async (req: Request, res: Response) => {
       averageResponseTime: 245,
       totalCost: 18.74,
       costByProvider: {
-        "google-ads": 7.25,
         "dataforseo": 8.49,
         "openai": 3.00,
         "internal": 0
@@ -76,7 +75,6 @@ router.get("/dev/api-usage/stats", async (req: Request, res: Response) => {
         "POST": 200
       },
       byApiProvider: {
-        "google-ads": 156,
         "dataforseo": 178,
         "openai": 42,
         "internal": 111
@@ -97,7 +95,6 @@ router.get("/dev/api-usage/stats", async (req: Request, res: Response) => {
           const dateStr = date.toISOString().split('T')[0];
           
           return [
-            { date: dateStr, provider: "google-ads", count: 20 + Math.floor(Math.random() * 10), cost: 1.05 + (Math.random() * 0.5) },
             { date: dateStr, provider: "dataforseo", count: 22 + Math.floor(Math.random() * 12), cost: 1.15 + (Math.random() * 0.6) },
             { date: dateStr, provider: "openai", count: 5 + Math.floor(Math.random() * 5), cost: 0.35 + (Math.random() * 0.2) },
             { date: dateStr, provider: "internal", count: 15 + Math.floor(Math.random() * 8), cost: 0 }
@@ -142,7 +139,7 @@ router.get("/dev/api-usage/records", async (req: Request, res: Response) => {
     const provider = req.query.provider as string | undefined;
     
     // Sample API usage records for demonstration
-    const apiProviders = ["google-ads", "dataforseo", "openai", "internal"];
+    const apiProviders = ["dataforseo", "openai", "internal"];
     const endpoints = [
       "/api/keyword-research", 
       "/api/analyze", 
@@ -168,9 +165,7 @@ router.get("/dev/api-usage/records", async (req: Request, res: Response) => {
       
       // Calculate estimated cost based on provider
       let estimatedCost = 0;
-      if (selectedProvider === "google-ads") {
-        estimatedCost = Math.random() * 0.05 + 0.01;
-      } else if (selectedProvider === "dataforseo") {
+      if (selectedProvider === "dataforseo") {
         estimatedCost = Math.random() * 0.06 + 0.02;
       } else if (selectedProvider === "openai") {
         estimatedCost = Math.random() * 0.09 + 0.03;
@@ -226,7 +221,7 @@ router.get("/dev/api-usage/errors", async (req: Request, res: Response) => {
       { status: 500, message: "Internal Server Error - Server failed to process request" }
     ];
     
-    const apiProviders = ["google-ads", "dataforseo", "openai"];
+    const apiProviders = ["dataforseo", "openai"];
     const endpoints = [
       "/api/keyword-research", 
       "/api/analyze", 
@@ -246,12 +241,7 @@ router.get("/dev/api-usage/errors", async (req: Request, res: Response) => {
       
       // Provider-specific error details
       let errorDetails = {};
-      if (apiProvider === "google-ads") {
-        errorDetails = {
-          code: "RESOURCE_EXHAUSTED",
-          details: "Too many requests. Retry in 4 seconds."
-        };
-      } else if (apiProvider === "dataforseo") {
+      if (apiProvider === "dataforseo") {
         errorDetails = {
           code: "INVALID_ARGUMENT",
           details: "Missing required parameter 'keywords'"

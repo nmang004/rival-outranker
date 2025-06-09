@@ -7,7 +7,6 @@ import { authRouter } from "./auth";
 import { userRouter } from "./user";
 import { keywordRouter } from "./keywords";
 import { backlinkRouter } from "./backlinks";
-import { googleAdsAuthRouter } from "./googleAdsAuth";
 import { adminRouter } from "./admin";
 import { directAdminRouter } from "./directAdmin";
 import { pagespeedRouter } from "./pagespeed";
@@ -48,7 +47,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/user', userRouter);
   app.use('/api/keywords', trackInternalApi, keywordRouter);
   app.use('/api/backlinks', trackApiUsage('backlinks'), backlinkRouter);
-  app.use('/api/google-ads-auth', trackApiUsage('google-ads'), googleAdsAuthRouter);
   app.use('/api/admin', authenticate, trackApiUsage('internal'), adminRouter);
   app.use('/api/direct-admin', directAdminRouter);
   app.use('/api/pagespeed', pagespeedRouter);

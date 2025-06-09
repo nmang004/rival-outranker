@@ -1,10 +1,5 @@
 import { Router, Request, Response } from 'express';
 import { keywordService } from '../services/keywords/keyword.service';
-import { 
-  getKeywordData as getGoogleAdsKeywordData,
-  getKeywordSuggestions as getGoogleAdsKeywordSuggestions,
-  isGoogleAdsApiReady
-} from '../services/external/google-ads.service';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -57,23 +52,7 @@ router.post("/keyword-research", async (req: Request, res: Response) => {
       console.error("DataForSEO keyword research failed:", dataForSeoError);
     }
     
-    // Fallback to Google Ads API if available
-    if (isGoogleAdsApiReady()) {
-      try {
-        const googleAdsData = await getGoogleAdsKeywordData(keyword, location);
-        
-        return res.json({
-          keyword,
-          location,
-          language,
-          data: googleAdsData,
-          source: 'Google Ads API',
-          timestamp: new Date()
-        });
-      } catch (googleAdsError) {
-        console.error("Google Ads keyword research failed:", googleAdsError);
-      }
-    }
+    // Note: Google Ads API fallback removed for simplification
     
     // Return mock data as final fallback
     const mockData = [{
@@ -127,21 +106,7 @@ router.post("/keyword-suggestions", async (req: Request, res: Response) => {
       console.error("DataForSEO keyword suggestions failed:", dataForSeoError);
     }
     
-    // Fallback to Google Ads API if available
-    if (isGoogleAdsApiReady()) {
-      try {
-        const googleAdsSuggestions = await getGoogleAdsKeywordSuggestions(keyword);
-        
-        return res.json({
-          keyword,
-          suggestions: googleAdsSuggestions,
-          source: 'Google Ads API',
-          timestamp: new Date()
-        });
-      } catch (googleAdsError) {
-        console.error("Google Ads keyword suggestions failed:", googleAdsError);
-      }
-    }
+    // Note: Google Ads API fallback removed for simplification
     
     // Return mock suggestions as final fallback
     const mockSuggestions = [
