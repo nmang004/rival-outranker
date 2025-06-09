@@ -1,25 +1,18 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "../../shared/schema";
 
-// Configure Neon for serverless deployment
-neonConfig.webSocketConstructor = ws;
-
-// Database configuration for Railway
+// Database configuration for Railway PostgreSQL
 const DATABASE_CONFIG = {
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20, // Maximum number of connections in the pool
   min: 2, // Minimum number of connections in the pool
   idleTimeoutMillis: 30000, // Close connections after 30 seconds of inactivity
-  connectionTimeoutMillis: 5000, // How long to wait for a connection
-  acquireTimeoutMillis: 60000, // How long to wait for a connection from the pool
-  createTimeoutMillis: 30000, // How long to wait for a new connection to be created
-  destroyTimeoutMillis: 5000, // How long to wait for a connection to be destroyed
-  createRetryIntervalMillis: 200, // How long to wait between retries
-  reapIntervalMillis: 1000, // How often to check for idle connections
-  log: process.env.NODE_ENV === 'development' ? console.log : undefined
+  connectionTimeoutMillis: 10000, // How long to wait for a connection
+  statement_timeout: 30000, // 30 second statement timeout
+  query_timeout: 30000, // 30 second query timeout
+  application_name: 'rival-outranker'
 };
 
 class DatabaseManager {
