@@ -1,6 +1,8 @@
-import { Pool } from 'pg';
+import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "../../shared/schema";
+
+const { Pool } = pg;
 
 // Database configuration for Railway PostgreSQL
 const DATABASE_CONFIG = {
