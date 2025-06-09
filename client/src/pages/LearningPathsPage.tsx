@@ -1,12 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
 import { Link } from "wouter";
-import { 
-  mockModules, 
-  mockLearningPaths, 
-  mockRecommendations,
-  generateProgressSummary 
-} from "@/data/mockLearningData";
 import { 
   Card, 
   CardContent, 
@@ -20,39 +13,69 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/auth/useAuth";
-import { Loader2, BookOpen, Award, Lightbulb, BookMarked, Clock } from "lucide-react";
+import { Loader2, BookOpen, Award, Lightbulb, BookMarked, Clock, AlertCircle } from "lucide-react";
+import { ErrorBoundary, InlineError } from "@/components/ui/error-boundary";
+import { AnalysisLoadingSkeleton, CardGridLoading } from "@/components/ui/loading-states";
 
-// Import types from our shared types file
+// Import new API hooks
 import {
-  LearningModule,
-  LearningPath,
-  ProgressSummary,
-  LearningRecommendation
-} from "@/types/learningTypes";
+  useLearningModules,
+  useLearningPaths,
+  useUserProgress,
+  useLearningRecommendations,
+  useLearningAnalytics,
+  type LearningModule,
+  type LearningPath,
+  type UserProgress,
+  type LearningRecommendation,
+} from "@/hooks/api";
 
 export default function LearningPathsPage() {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("all-modules");
   
-  // Use local mock data instead of API calls for now
-  const [modules, setModules] = useState(mockModules);
-  const [paths, setPaths] = useState(mockLearningPaths);
-  const [progressSummary, setProgressSummary] = useState<ProgressSummary | null>(null);
-  const [recommendations, setRecommendations] = useState<LearningRecommendation[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Fetch data using new API hooks
+  const { 
+    data: modulesResponse, 
+    isLoading: isLoadingModules, 
+    error: modulesError,
+    refetch: refetchModules 
+  } = useLearningModules();
   
-  // Simulate loading the data
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isAuthenticated) {
-        setProgressSummary(generateProgressSummary() as ProgressSummary);
-        setRecommendations(mockRecommendations);
-      }
-      setIsLoading(false);
-    }, 800); // Add a small delay to simulate API loading
-    
-    return () => clearTimeout(timer);
-  }, [isAuthenticated]);
+  const { 
+    data: pathsResponse, 
+    isLoading: isLoadingPaths, 
+    error: pathsError 
+  } = useLearningPaths();
+  
+  const { 
+    data: progressResponse, 
+    isLoading: isLoadingProgress, 
+    error: progressError 
+  } = useUserProgress(user?.id || '', { enabled: !!user?.id });
+  
+  const { 
+    data: recommendationsResponse, 
+    isLoading: isLoadingRecommendations, 
+    error: recommendationsError 
+  } = useLearningRecommendations(user?.id || '', { enabled: !!user?.id });
+  
+  const { 
+    data: analyticsResponse, 
+    isLoading: isLoadingAnalytics, 
+    error: analyticsError 
+  } = useLearningAnalytics(user?.id || '', '30d', { enabled: !!user?.id });
+
+  // Extract data from API responses
+  const modules = modulesResponse?.data || [];
+  const paths = pathsResponse?.data || [];
+  const userProgress = progressResponse?.data || [];
+  const recommendations = recommendationsResponse?.data || [];
+  const analytics = analyticsResponse?.data;
+  
+  // Loading states
+  const isLoading = isLoadingModules || isLoadingPaths || (isAuthenticated && (isLoadingProgress || isLoadingRecommendations));
+  const hasError = modulesError || pathsError || progressError || recommendationsError;
                     
   // Helper functions
   const getDifficultyColor = (difficulty: string) => {
@@ -79,142 +102,184 @@ export default function LearningPathsPage() {
       : `${hours} hr`;
   };
   
-  const getProgressForModule = (moduleId: number) => {
-    if (!progressSummary) return null;
+  const getProgressForModule = (moduleId: string) => {
+    if (!userProgress) return null;
     
-    return progressSummary.moduleProgress.find(p => p.moduleId === moduleId) || null;
+    return userProgress.find(p => p.moduleId === moduleId) || null;
   };
   
-  const getRecommendationForModule = (moduleId: number) => {
+  const getRecommendationForModule = (moduleId: string) => {
     if (!recommendations) return null;
     
-    return recommendations.find(r => r.moduleId === moduleId && !r.isCompleted && !r.isDismmised) || null;
+    return recommendations.find(r => r.moduleId === moduleId) || null;
   };
+
+  // Calculate overall progress statistics
+  const getOverallStats = () => {
+    if (!modules.length || !userProgress.length) {
+      return { completedModules: 0, inProgressModules: 0, totalModules: modules.length };
+    }
+
+    const completedModules = userProgress.filter(p => p.status === 'completed').length;
+    const inProgressModules = userProgress.filter(p => p.status === 'in_progress').length;
+    
+    return {
+      completedModules,
+      inProgressModules,
+      totalModules: modules.length,
+      overallProgress: Math.round((completedModules / modules.length) * 100)
+    };
+  };
+
+  const overallStats = getOverallStats();
   
   // Filter modules based on active tab
-  const filteredModules = modules ? modules.filter((module: LearningModule) => {
+  const filteredModules = modules.filter((module: LearningModule) => {
     if (activeTab === 'all-modules') return true;
-    if (activeTab === 'in-progress' && progressSummary) {
+    if (activeTab === 'in-progress') {
       const moduleProgress = getProgressForModule(module.id);
       return moduleProgress?.status === 'in_progress';
     }
-    if (activeTab === 'completed' && progressSummary) {
+    if (activeTab === 'completed') {
       const moduleProgress = getProgressForModule(module.id);
       return moduleProgress?.status === 'completed';
     }
-    if (activeTab === 'recommended' && recommendations) {
+    if (activeTab === 'recommended') {
       return getRecommendationForModule(module.id) !== null;
     }
     return true;
-  }) : [];
+  });
   
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-col space-y-2 mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">SEO Learning Paths</h1>
-        <p className="text-muted-foreground">
-          Master the art of SEO with our personalized learning paths. Track your progress and improve your skills.
-        </p>
-      </div>
-      
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-lg">Loading learning materials...</span>
+    <ErrorBoundary>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col space-y-2 mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">SEO Learning Paths</h1>
+          <p className="text-muted-foreground">
+            Master the art of SEO with our personalized learning paths. Track your progress and improve your skills.
+          </p>
         </div>
-      ) : (
-        <>
-          {isAuthenticated && progressSummary && (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle>Your Learning Progress</CardTitle>
-                <CardDescription>
-                  Track your SEO learning journey and see your accomplishments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-4 mb-4">
-                    <div className="bg-blue-50 rounded-lg p-4 flex-1 min-w-[200px]">
-                      <div className="text-blue-600 font-medium">Overall Completion</div>
-                      <div className="text-3xl font-bold mt-1">{progressSummary.overallProgress.percentComplete}%</div>
-                      <Progress 
-                        value={progressSummary.overallProgress.percentComplete} 
-                        className="h-2 mt-2"
-                      />
-                    </div>
-                    
-                    <div className="bg-green-50 rounded-lg p-4 flex-1 min-w-[200px]">
-                      <div className="text-green-600 font-medium">Completed Modules</div>
-                      <div className="text-3xl font-bold mt-1">
-                        {progressSummary.overallProgress.completedModules}/{progressSummary.overallProgress.totalModules}
+        
+        {/* Global error handling */}
+        {hasError && (
+          <InlineError
+            error={modulesError || pathsError || progressError || recommendationsError}
+            onRetry={refetchModules}
+            className="mb-6"
+          />
+        )}
+        
+        {isLoading ? (
+          <CardGridLoading count={6} columns={3} />
+        ) : (
+          <>
+            {isAuthenticated && (userProgress.length > 0 || analytics) && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Your Learning Progress</CardTitle>
+                  <CardDescription>
+                    Track your SEO learning journey and see your accomplishments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-4 mb-4">
+                      <div className="bg-blue-50 rounded-lg p-4 flex-1 min-w-[200px]">
+                        <div className="text-blue-600 font-medium">Overall Completion</div>
+                        <div className="text-3xl font-bold mt-1">{overallStats.overallProgress || 0}%</div>
+                        <Progress 
+                          value={overallStats.overallProgress || 0} 
+                          className="h-2 mt-2"
+                        />
                       </div>
-                      <Progress 
-                        value={(progressSummary.overallProgress.completedModules / progressSummary.overallProgress.totalModules) * 100} 
-                        className="h-2 mt-2"
-                      />
-                    </div>
-                    
-                    <div className="bg-amber-50 rounded-lg p-4 flex-1 min-w-[200px]">
-                      <div className="text-amber-600 font-medium">Completed Lessons</div>
-                      <div className="text-3xl font-bold mt-1">
-                        {progressSummary.overallProgress.completedLessons}/{progressSummary.overallProgress.totalLessons}
+                      
+                      <div className="bg-green-50 rounded-lg p-4 flex-1 min-w-[200px]">
+                        <div className="text-green-600 font-medium">Completed Modules</div>
+                        <div className="text-3xl font-bold mt-1">
+                          {overallStats.completedModules}/{overallStats.totalModules}
+                        </div>
+                        <Progress 
+                          value={overallStats.totalModules > 0 ? (overallStats.completedModules / overallStats.totalModules) * 100 : 0} 
+                          className="h-2 mt-2"
+                        />
                       </div>
-                      <Progress 
-                        value={(progressSummary.overallProgress.completedLessons / progressSummary.overallProgress.totalLessons) * 100} 
-                        className="h-2 mt-2"
-                      />
+                      
+                      <div className="bg-amber-50 rounded-lg p-4 flex-1 min-w-[200px]">
+                        <div className="text-amber-600 font-medium">Completed Lessons</div>
+                        <div className="text-3xl font-bold mt-1">
+                          {analytics?.lessonsCompleted || 0}
+                        </div>
+                        <div className="text-sm text-amber-600 mt-1">
+                          {analytics?.currentStreak || 0} day streak
+                        </div>
+                      </div>
+                      
+                      {analytics?.totalTimeSpent && (
+                        <div className="bg-purple-50 rounded-lg p-4 flex-1 min-w-[200px]">
+                          <div className="text-purple-600 font-medium">Time Invested</div>
+                          <div className="text-3xl font-bold mt-1">
+                            {Math.round(analytics.totalTimeSpent / 60)}h
+                          </div>
+                          <div className="text-sm text-purple-600 mt-1">
+                            Avg score: {Math.round(analytics.averageScore || 0)}%
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
+            )}
           
-          {isAuthenticated && recommendations && recommendations.length > 0 && (
-            <Card className="mb-8 border-amber-200 bg-amber-50">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
-                  Personalized Recommendations
-                </CardTitle>
-                <CardDescription>
-                  Based on your website analyses and learning progress
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {recommendations.filter(r => !r.isCompleted && !r.isDismmised).slice(0, 3).map(recommendation => {
-                    const recommendedModule = modules?.find((m: LearningModule) => m.id === recommendation.moduleId);
-                    if (!recommendedModule) return null;
-                    
-                    return (
-                      <Card key={recommendation.id} className="border-amber-200 bg-white">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">{recommendedModule.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                          <p className="text-sm">{recommendation.reasonText}</p>
-                        </CardContent>
-                        <CardFooter>
-                          <Link href={`/modules/${recommendedModule.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                            <Button className="w-full">Start Learning</Button>
-                          </Link>
-                        </CardFooter>
-                      </Card>
-                    );
-                  })}
-                </div>
-                {recommendations.filter(r => !r.isCompleted && !r.isDismmised).length > 3 && (
-                  <div className="text-center mt-4">
-                    <Button variant="outline" onClick={() => setActiveTab("recommended")}>
-                      View All Recommendations
-                    </Button>
+            {isAuthenticated && recommendations && recommendations.length > 0 && (
+              <Card className="mb-8 border-amber-200 bg-amber-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Lightbulb className="h-5 w-5 mr-2 text-amber-500" />
+                    Personalized Recommendations
+                  </CardTitle>
+                  <CardDescription>
+                    Based on your website analyses and learning progress
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {recommendations.slice(0, 3).map(recommendation => {
+                      const recommendedModule = modules.find((m: LearningModule) => m.id === recommendation.moduleId);
+                      if (!recommendedModule) return null;
+                      
+                      return (
+                        <Card key={recommendation.id} className="border-amber-200 bg-white">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">{recommendedModule.title}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="pb-2">
+                            <p className="text-sm">{recommendation.description}</p>
+                            <div className="mt-2">
+                              <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                                {recommendation.type}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                          <CardFooter>
+                            <Link href={`/modules/${recommendedModule.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                              <Button className="w-full">Start Learning</Button>
+                            </Link>
+                          </CardFooter>
+                        </Card>
+                      );
+                    })}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  {recommendations.length > 3 && (
+                    <div className="text-center mt-4">
+                      <Button variant="outline" onClick={() => setActiveTab("recommended")}>
+                        View All Recommendations ({recommendations.length})
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           
           <Tabs defaultValue="all-modules" className="mb-8" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
@@ -265,12 +330,17 @@ export default function LearningPathsPage() {
                         {moduleProgress && (
                           <div className="mt-4">
                             <div className="flex justify-between text-sm mb-1">
-                              <span>Progress: {moduleProgress.percentComplete}%</span>
+                              <span>Progress: {Math.round(moduleProgress.progress)}%</span>
                               <span>
-                                {moduleProgress.completedLessons}/{moduleProgress.totalLessons} lessons
+                                Status: {moduleProgress.status.replace('_', ' ')}
                               </span>
                             </div>
-                            <Progress value={moduleProgress.percentComplete} className="h-2" />
+                            <Progress value={moduleProgress.progress} className="h-2" />
+                            {moduleProgress.completedAt && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Completed: {new Date(moduleProgress.completedAt).toLocaleDateString()}
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -344,12 +414,17 @@ export default function LearningPathsPage() {
                         {moduleProgress && (
                           <div className="mt-4">
                             <div className="flex justify-between text-sm mb-1">
-                              <span>Progress: {moduleProgress.percentComplete}%</span>
+                              <span>Progress: {Math.round(moduleProgress.progress)}%</span>
                               <span>
-                                {moduleProgress.completedLessons}/{moduleProgress.totalLessons} lessons
+                                Status: {moduleProgress.status.replace('_', ' ')}
                               </span>
                             </div>
-                            <Progress value={moduleProgress.percentComplete} className="h-2" />
+                            <Progress value={moduleProgress.progress} className="h-2" />
+                            {moduleProgress.completedAt && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Completed: {new Date(moduleProgress.completedAt).toLocaleDateString()}
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -412,7 +487,7 @@ export default function LearningPathsPage() {
                             <div className="flex justify-between text-sm mb-1">
                               <span>Progress: 100%</span>
                               <span>
-                                {moduleProgress.completedLessons}/{moduleProgress.totalLessons} lessons
+                                Completed: {new Date(moduleProgress.completedAt!).toLocaleDateString()}
                               </span>
                             </div>
                             <Progress value={100} className="h-2 bg-green-100" />
@@ -473,7 +548,12 @@ export default function LearningPathsPage() {
                         {recommendation && (
                           <div className="bg-amber-50 p-3 rounded-md mb-3 text-sm">
                             <p className="font-medium text-amber-800">Why we recommend this:</p>
-                            <p className="text-amber-700">{recommendation.reasonText}</p>
+                            <p className="text-amber-700">{recommendation.reason}</p>
+                            <div className="mt-2">
+                              <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                                Priority: {recommendation.priority}
+                              </Badge>
+                            </div>
                           </div>
                         )}
                         <p className="text-muted-foreground line-clamp-3">
@@ -483,12 +563,17 @@ export default function LearningPathsPage() {
                         {moduleProgress && (
                           <div className="mt-4">
                             <div className="flex justify-between text-sm mb-1">
-                              <span>Progress: {moduleProgress.percentComplete}%</span>
+                              <span>Progress: {Math.round(moduleProgress.progress)}%</span>
                               <span>
-                                {moduleProgress.completedLessons}/{moduleProgress.totalLessons} lessons
+                                Status: {moduleProgress.status.replace('_', ' ')}
                               </span>
                             </div>
-                            <Progress value={moduleProgress.percentComplete} className="h-2" />
+                            <Progress value={moduleProgress.progress} className="h-2" />
+                            {moduleProgress.completedAt && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Completed: {new Date(moduleProgress.completedAt).toLocaleDateString()}
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -527,24 +612,38 @@ export default function LearningPathsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {paths.map((path: LearningPath) => (
                     <Card key={path.id} className="overflow-hidden">
-                      {path.imageUrl && (
-                        <div className="w-full h-48 bg-gray-100 overflow-hidden">
-                          <img 
-                            src={path.imageUrl} 
-                            alt={path.name} 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
                       <CardHeader>
-                        <CardTitle>{path.name}</CardTitle>
-                        {path.targetAudience && (
-                          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 mb-2">
-                            {path.targetAudience}
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                            {path.difficulty}
                           </Badge>
-                        )}
+                          <div className="flex items-center text-gray-500 text-sm">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {formatTime(path.estimatedTime)}
+                          </div>
+                        </div>
+                        <CardTitle>{path.title}</CardTitle>
                         <CardDescription>{path.description}</CardDescription>
+                        {path.tags && path.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {path.tags.slice(0, 3).map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {path.tags.length > 3 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{path.tags.length - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                       </CardHeader>
+                      <CardContent>
+                        <div className="text-sm text-muted-foreground">
+                          {path.modules.length} modules • {path.modules.reduce((acc, module) => acc + (module.lessons?.length || 0), 0)} lessons
+                        </div>
+                      </CardContent>
                       <CardFooter>
                         <Link href={`/learning/paths/${path.id}`} className="w-full">
                           <Button className="w-full">View Learning Path</Button>
@@ -560,8 +659,9 @@ export default function LearningPathsPage() {
               )}
             </TabsContent>
           </Tabs>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
