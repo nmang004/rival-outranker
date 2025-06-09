@@ -2,14 +2,18 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
 import LearningCompanion from "@/components/features/learning/LearningCompanion";
-// Import types directly from mock data as we're currently using those
+// Import types and API hooks
 import type { QuizQuestion, Achievement } from "@/types/learningTypes";
-import { 
-  mockModules, 
-  mockLessons, 
-  mockUserProgress,
-  mockAchievements 
-} from "@/data/mockLearningData";
+// TODO: Implement API integration for ModuleDetailPage
+// import { 
+//   useLearningModules,
+//   useLearningPaths,
+//   useUserProgress,
+//   useLearningAchievements,
+//   type LearningModule,
+//   type UserProgress,
+//   type LearningAchievement
+// } from "@/hooks/api";
 import { 
   localBusinessSEOLessons 
 } from "@/data/localBusinessSEOLessons";
@@ -114,9 +118,22 @@ export default function ModuleDetailPage() {
   
   // Find module by slug instead of id
   const getModuleBySlug = (moduleSlug: string) => {
-    return mockModules.find(m => 
-      m.title.toLowerCase().replace(/\s+/g, '-') === moduleSlug
-    );
+    // TODO: Implement real module fetching by slug
+    // return mockModules.find(m => 
+    //   m.title.toLowerCase().replace(/\s+/g, '-') === moduleSlug
+    // );
+    
+    // Fallback module for now
+    return {
+      id: 1,
+      title: moduleSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      description: 'Module description',
+      difficulty: 'Beginner',
+      estimatedTime: 60,
+      prerequisiteIds: [],
+      sortOrder: 1,
+      isActive: true
+    };
   };
   
   const foundModule = getModuleBySlug(slug || "");
@@ -154,7 +171,6 @@ export default function ModuleDetailPage() {
       
       // Find lessons for this module - combine from all sources
       const allLessons = [
-        ...mockLessons,
         ...localBusinessSEOLessons,
         ...onPageSEOLessons,
         ...technicalSEOLessons,
@@ -166,10 +182,12 @@ export default function ModuleDetailPage() {
         .sort((a, b) => a.sortOrder - b.sortOrder);
       setLessons(moduleFilteredLessons as LearningLesson[]);
       
+      // TODO: Implement real user progress fetching
       // Find progress data if authenticated
       if (isAuthenticated) {
-        const filteredProgress = mockUserProgress.filter(p => p.moduleId === moduleId);
-        setUserProgress(filteredProgress as UserLearningProgress[]);
+        // const filteredProgress = mockUserProgress.filter(p => p.moduleId === moduleId);
+        // setUserProgress(filteredProgress as UserLearningProgress[]);
+        setUserProgress([]);
       }
       
       setIsLoading(false);
@@ -182,9 +200,16 @@ export default function ModuleDetailPage() {
   useEffect(() => {
     if (selectedLessonId === null) return;
     
-    const foundLesson = mockLessons.find(l => l.id === selectedLessonId);
+    // TODO: Implement real lesson fetching
+    // const foundLesson = mockLessons.find(l => l.id === selectedLessonId);
+    // if (foundLesson) {
+    //   setSelectedLesson(foundLesson as LearningLesson);
+    // }
+    
+    // For now, find from the loaded lessons
+    const foundLesson = lessons.find(l => l.id === selectedLessonId);
     if (foundLesson) {
-      setSelectedLesson(foundLesson as LearningLesson);
+      setSelectedLesson(foundLesson);
     }
     
     // Reset quiz state when a new lesson is selected
@@ -445,16 +470,17 @@ export default function ModuleDetailPage() {
   const checkForAchievements = (status: 'in_progress' | 'completed', lessonId: number) => {
     if (status !== 'completed' || !isAuthenticated) return;
     
+    // TODO: Implement real achievements system
     // First lesson completed achievement
     const completedLessons = userProgress.filter(p => p.status === 'completed');
     if (completedLessons.length === 0) {
-      const firstLessonAchievement = mockAchievements.find(a => a.id === "first-lesson");
-      if (firstLessonAchievement) {
-        setTimeout(() => {
-          setCurrentAchievement(firstLessonAchievement as Achievement);
-          setShowAchievement(true);
-        }, 1500);
-      }
+      // const firstLessonAchievement = mockAchievements.find(a => a.id === "first-lesson");
+      // if (firstLessonAchievement) {
+      //   setTimeout(() => {
+      //     setCurrentAchievement(firstLessonAchievement as Achievement);
+      //     setShowAchievement(true);
+      //   }, 1500);
+      // }
     }
     
     // Check if this completion finishes the module
@@ -462,28 +488,30 @@ export default function ModuleDetailPage() {
     const totalModuleLessons = lessons.filter(l => l.moduleId === moduleId).length;
     
     if (moduleCompletedLessons + 1 === totalModuleLessons) {
+      // TODO: Implement real module completion achievements
       // Module completion achievement
-      const moduleAchievement = mockAchievements.find(a => 
-        a.id === "module-complete" || 
-        (a.trigger.moduleId === moduleId && a.trigger.type === "module_complete")
-      );
-      if (moduleAchievement) {
-        setTimeout(() => {
-          setCurrentAchievement(moduleAchievement as Achievement);
-          setShowAchievement(true);
-        }, 1500);
-      }
+      // const moduleAchievement = mockAchievements.find(a => 
+      //   a.id === "module-complete" || 
+      //   (a.trigger.moduleId === moduleId && a.trigger.type === "module_complete")
+      // );
+      // if (moduleAchievement) {
+      //   setTimeout(() => {
+      //     setCurrentAchievement(moduleAchievement as Achievement);
+      //     setShowAchievement(true);
+      //   }, 1500);
+      // }
     }
     
+    // TODO: Implement real milestone achievements
     // Learning milestone achievements (10 lessons)
     if (completedLessons.length + 1 === 10) {
-      const milestoneAchievement = mockAchievements.find(a => a.id === "seo-journey");
-      if (milestoneAchievement) {
-        setTimeout(() => {
-          setCurrentAchievement(milestoneAchievement as Achievement);
-          setShowAchievement(true);
-        }, 1500);
-      }
+      // const milestoneAchievement = mockAchievements.find(a => a.id === "seo-journey");
+      // if (milestoneAchievement) {
+      //   setTimeout(() => {
+      //     setCurrentAchievement(milestoneAchievement as Achievement);
+      //     setShowAchievement(true);
+      //   }, 1500);
+      // }
     }
   };
   

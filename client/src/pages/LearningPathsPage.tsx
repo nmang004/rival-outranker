@@ -52,19 +52,19 @@ export default function LearningPathsPage() {
     data: progressResponse, 
     isLoading: isLoadingProgress, 
     error: progressError 
-  } = useUserProgress(user?.id || '', { enabled: !!user?.id });
+  } = useUserProgress(user?.id || '');
   
   const { 
     data: recommendationsResponse, 
     isLoading: isLoadingRecommendations, 
     error: recommendationsError 
-  } = useLearningRecommendations(user?.id || '', { enabled: !!user?.id });
+  } = useLearningRecommendations(user?.id || '');
   
   const { 
     data: analyticsResponse, 
     isLoading: isLoadingAnalytics, 
     error: analyticsError 
-  } = useLearningAnalytics(user?.id || '', '30d', { enabled: !!user?.id });
+  } = useLearningAnalytics(user?.id || '', '30d');
 
   // Extract data from API responses
   const modules = modulesResponse?.data || [];

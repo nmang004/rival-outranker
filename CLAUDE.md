@@ -13,6 +13,15 @@ npm run check      # TypeScript type checking across entire codebase
 npm run db:push    # Push database schema changes to PostgreSQL (Drizzle ORM)
 ```
 
+### Security Commands
+```bash
+npm run security:audit     # Audit dependencies for vulnerabilities
+npm run security:test      # Run comprehensive security tests
+npm run security:headers   # Test security headers implementation
+npm run security:fix       # Fix known security vulnerabilities
+npm run security:deps      # Check for outdated dependencies
+```
+
 ### Development Workflow
 - Development server runs both frontend (Vite on client/) and backend (Express on server/) concurrently
 - Frontend builds to `dist/public/` directory
@@ -36,9 +45,22 @@ Rival Outranker is a full-stack SEO analysis platform with a React frontend, Exp
 
 **State Management**: TanStack Query on frontend for server state caching, no global client state management
 
-**Authentication**: Dual auth system:
-- Primary: Replit Auth for hosted deployment
-- Fallback: JWT with Passport.js for local development
+**Authentication**: Enhanced JWT-based authentication system:
+- JWT access tokens (15-minute expiry) with refresh tokens (7-day expiry)
+- Password strength validation and bcrypt hashing (12 salt rounds)
+- Account lockout protection (5 attempts, 30-minute lockout)
+- Session management with device fingerprinting
+- Two-factor authentication support
+- Real-time security event monitoring
+
+**Security**: Production-grade security implementation:
+- Comprehensive input sanitization and SQL injection prevention
+- XSS protection with whitelist-based HTML sanitization
+- Advanced rate limiting with IP reputation management
+- CSRF protection with secure token generation
+- Security headers (CSP, HSTS, X-Frame-Options, etc.)
+- DDoS mitigation with progressive penalties
+- Request fingerprinting for fraud detection
 
 ### Core Service Architecture
 

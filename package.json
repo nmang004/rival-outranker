@@ -24,7 +24,12 @@
     "check:env": "node scripts/check-environment.js",
     "db:push": "drizzle-kit push --config=config/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=config/drizzle.config.ts",
-    "health": "curl -f http://localhost:5000/health || exit 1"
+    "health": "curl -f http://localhost:5000/health || exit 1",
+    "security:audit": "npm audit --audit-level high",
+    "security:fix": "npm audit fix",
+    "security:test": "npm run check && npm run security:audit",
+    "security:headers": "node scripts/test-security-headers.js",
+    "security:deps": "npm outdated && npm audit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
@@ -128,7 +133,12 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.2",
     "zod": "^3.24.2",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "helmet": "^8.0.0",
+    "compression": "^1.7.5",
+    "validator": "^13.15.0",
+    "xss": "^1.0.15",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@netlify/functions": "^4.0.0",
@@ -144,6 +154,9 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@types/ws": "^8.5.13",
+    "@types/compression": "^1.7.5",
+    "@types/validator": "^13.15.0",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.2",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.1",

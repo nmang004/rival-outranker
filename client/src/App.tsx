@@ -22,7 +22,6 @@ import BasicRankTracker from "@/pages/BasicRankTracker";
 // New consolidated rank tracker
 import { ModernBasicRankTracker, ModernSimpleRankTracker, ModernAdvancedRankTracker } from "@/pages/ModernRankTracker";
 import KeywordResearch from "@/pages/KeywordResearch";
-import TestExportPage from "@/pages/TestExportPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import PdfAnalyzerPage from "@/pages/FixedPdfAnalyzerPage";
@@ -58,7 +57,6 @@ function Router() {
             <Route path="/rival-audit" component={RivalAuditPage} />
             <Route path="/rival-audit-results" component={RivalAuditResultsPage} />
             <Route path="/pdf-analyzer" component={PdfAnalyzerPage} />
-            <Route path="/test-export" component={TestExportPage} />
             <Route path="/profile" component={ProfilePage} />
             <Route path="/profile/:tab" component={ProfilePage} />
             <Route path="/project/:id" component={ProjectDetailPage} />

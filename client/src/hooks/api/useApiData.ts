@@ -10,7 +10,7 @@
  * - Offline support
  */
 
-import { useQuery, useMutation, useQueryClient, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, UseQueryOptions, UseMutationOptions, UseInfiniteQueryOptions } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient, type ApiResponse, type ApiError } from '../../lib/apiClient';
 
@@ -83,7 +83,7 @@ export function useApiQuery<T = any>(
       return response;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: (failureCount, error) => {
       // Don't retry on auth errors or client errors
       if (error.isAuthError || (error.status && error.status < 500)) {
@@ -202,7 +202,7 @@ export function useInfiniteApiQuery<T = any>(
     enabled?: boolean;
   }
 ) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey,
     queryFn: async ({ pageParam = 1 }) => {
       const params = {
@@ -215,6 +215,7 @@ export function useInfiniteApiQuery<T = any>(
       const { page, totalPages } = lastPage.data.pagination || {};
       return page < totalPages ? page + 1 : undefined;
     }),
+    initialPageParam: 1,
     enabled: options?.enabled,
   });
 }
