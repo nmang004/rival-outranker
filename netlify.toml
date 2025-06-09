@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build:netlify && npm run build:functions"
+  command = "npm run build:netlify"
   functions = "netlify/functions"
   publish = "dist"
 
@@ -30,19 +30,6 @@
   VITE_ENVIRONMENT = "preview"
 
 # API route redirects - handle some endpoints locally, others redirect to Railway
-
-# Handle rival-audit with Netlify function (higher priority)
-[[redirects]]
-  from = "/api/rival-audit"
-  to = "/.netlify/functions/rival-audit"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/rival-audit/:id"
-  to = "/.netlify/functions/rival-audit?id=:id"
-  status = 200
-  force = true
 
 # Handle other analysis endpoints with Netlify functions
 [[redirects]]
