@@ -100,8 +100,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize database connection pool
-  await initializeDatabase();
+  // Initialize database connection pool (non-blocking)
+  console.log('🔧 Starting database initialization...');
+  initializeDatabase().catch(error => {
+    console.error('❌ Database initialization failed:', error);
+    console.log('🔄 Server will continue with sample data mode');
+  });
   
   const server = await registerRoutes(app);
   

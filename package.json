@@ -12,7 +12,7 @@
     "start": "NODE_ENV=production tsx server/index.ts",
     "start:dev": "NODE_ENV=development tsx server/index.ts",
     "railway:build": "npm run build",
-    "railway:start": "node scripts/migrate-db.js && npm start",
+    "railway:start": "npm start",
     "check": "tsc --project config/tsconfig.json",
     "check:env": "node scripts/check-environment.js",
     "db:push": "drizzle-kit push --config=config/drizzle.config.ts",
