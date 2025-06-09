@@ -1,0 +1,59 @@
+# Railway-specific ignore file to reduce build size and time
+
+# Frontend build artifacts (not needed on Railway)
+dist/
+client/
+
+# Development and testing files
+tests/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+playwright.config.ts
+vitest.config.ts
+
+# Netlify-specific files
+netlify/
+netlify.toml
+
+# Documentation
+docs/
+README.md
+*.md
+
+# IDE and development files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+
+# Frontend config files (not needed on Railway)
+tailwind.config.ts
+postcss.config.js
+
+# Build cache
+.cache/
+coverage/
+
+# Development dependencies
+node_modules/.cache/
+
+# Large asset files that aren't needed for backend
+public/assets/
+client/public/
+attached_assets/
