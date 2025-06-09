@@ -16,7 +16,9 @@ const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
   'http://localhost:3000',
   'http://localhost:5000',
   'https://*.railway.app',
-  'https://*.up.railway.app'
+  'https://*.up.railway.app',
+  'https://rival-outranker.netlify.app',
+  'https://*.netlify.app'
 ];
 
 app.use(cors({
