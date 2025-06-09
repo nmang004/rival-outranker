@@ -154,7 +154,8 @@
     "xss": "^1.0.15",
     "zod": "^3.24.2",
     "zod-validation-error": "^3.4.0",
-    "tsx": "^4.19.4"
+    "tsx": "^4.19.4",
+    "jsdom": "^26.1.0"
   },
   "devDependencies": {
     "@netlify/functions": "^4.0.0",
@@ -181,7 +182,6 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.1",
     "esbuild": "^0.25.0",
-    "jsdom": "^26.1.0",
     "netlify-cli": "^21.5.0",
     "nodemailer": "^7.0.3",
     "postcss": "^8.4.47",
