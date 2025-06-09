@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy only necessary package files first for better caching
 COPY package.json package-lock.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production --no-audit --no-fund
+# Install all dependencies (production and dev)
+RUN npm ci --no-audit --no-fund
 
 # Copy only backend-related files
 COPY server/ ./server/
