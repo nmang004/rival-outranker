@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { backlinkService } from "../services/backlinks/backlink.service";
 import { authenticate } from "../middleware/auth";
-import { insertBacklinkProfileSchema } from "@shared/schema";
+import { insertBacklinkProfileSchema } from "../../shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 

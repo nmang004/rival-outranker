@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { urlFormSchema, insertAnalysisSchema, updateKeywordSchema } from '@shared/schema';
+import { urlFormSchema, insertAnalysisSchema, updateKeywordSchema } from '../../shared/schema';
 import { z, ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { crawler } from '../services/audit/crawler.service';

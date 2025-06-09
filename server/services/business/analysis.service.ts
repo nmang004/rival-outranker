@@ -1,5 +1,5 @@
 import { IAnalysisService } from '../interfaces/analysis.service.interface';
-import { Analysis, InsertAnalysis, SeoAnalysisResult } from '@shared/schema';
+import { Analysis, InsertAnalysis, SeoAnalysisResult } from '../../../shared/schema';
 import { analysisRepository } from '../../repositories';
 import { analyzer } from '../analysis/analyzer.service';
 import { crawler } from '../audit/crawler.service';

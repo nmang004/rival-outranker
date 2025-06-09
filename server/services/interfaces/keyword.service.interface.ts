@@ -4,7 +4,7 @@ import {
   KeywordMetrics, 
   KeywordRanking, 
   KeywordSuggestion 
-} from '@shared/schema';
+} from '../../../shared/schema';
 
 /**
  * Interface for keyword service operations

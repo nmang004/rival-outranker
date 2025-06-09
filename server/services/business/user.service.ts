@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { IUserService } from '../interfaces/user.service.interface';
-import { User, InsertUser, UpdateUser, LoginCredentials } from '@shared/schema';
+import { User, InsertUser, UpdateUser, LoginCredentials } from '../../../shared/schema';
 import { 
   userRepository, 
   analysisRepository, 

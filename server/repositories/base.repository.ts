@@ -1,6 +1,7 @@
 import { eq, SQL, and, or, desc, asc, count } from 'drizzle-orm';
 import { PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core';
-import { db } from '../db';
+import { db as getDb } from '../db';
+const db = getDb();
 
 /**
  * Base repository class providing common database operations

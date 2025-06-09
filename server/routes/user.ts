@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { storage } from '../storage';
 import { authenticate } from '../middleware/auth';
-import { updateUserSchema, users } from '@shared/schema';
+import { updateUserSchema, users } from '../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import bcrypt from 'bcryptjs';
-import { db } from '../db';
+import { db as getDb } from '../db';
+const db = getDb();
 import { eq } from 'drizzle-orm';
 
 export const userRouter = Router();

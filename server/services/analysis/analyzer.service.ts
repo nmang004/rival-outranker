@@ -1,4 +1,4 @@
-import { SeoAnalysisResult, SeoScore } from '@shared/schema';
+import { SeoAnalysisResult, SeoScore } from '../../../shared/schema';
 // TODO: Define CrawlerOutput type
 type CrawlerOutput = any;
 import { keywordAnalyzer } from './keyword-analyzer.service';

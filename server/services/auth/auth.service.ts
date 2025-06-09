@@ -1,5 +1,5 @@
 import { storage } from '../../storage';
-import { User, InsertUser } from '@shared/schema';
+import { User, InsertUser } from '../../../shared/schema';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 

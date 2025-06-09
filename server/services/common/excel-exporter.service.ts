@@ -1,5 +1,5 @@
 import Excel from 'exceljs';
-import { RivalAudit, AuditItem } from '@shared/schema';
+import { RivalAudit, AuditItem } from '../../../shared/schema';
 import { Buffer } from 'buffer';
 
 /**

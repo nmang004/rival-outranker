@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { BaseController } from './base.controller';
 import { userService } from '../services/business';
-import { insertUserSchema, updateUserSchema, loginUserSchema } from '@shared/schema';
+import { insertUserSchema, updateUserSchema, loginUserSchema } from '../../shared/schema';
 import { ZodError } from 'zod';
 
 /**

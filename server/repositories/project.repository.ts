@@ -1,7 +1,8 @@
 import { eq, desc, and } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
-import { projects, projectAnalyses, Project, InsertProject, UpdateProject, ProjectAnalysis, InsertProjectAnalysis } from '@shared/schema';
-import { db } from '../db';
+import { projects, projectAnalyses, Project, InsertProject, UpdateProject, ProjectAnalysis, InsertProjectAnalysis } from '../../shared/schema';
+import { db as getDb } from '../db';
+const db = getDb();
 
 /**
  * Repository for project-related database operations

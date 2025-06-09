@@ -22,8 +22,9 @@ import {
   InsertLearningPathModule,
   UserLearningRecommendation,
   InsertUserLearningRecommendation
-} from '@shared/schema';
-import { db } from '../db';
+} from '../../shared/schema';
+import { db as getDb } from '../db';
+const db = getDb();
 
 /**
  * Repository for learning module operations

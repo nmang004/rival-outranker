@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { JSDOM } from 'jsdom';
 import { URL } from 'url';
-import { db } from '../../db';
+import { db as getDb } from '../../db';
+const db = getDb();
 import { 
   backlinkProfiles, 
   backlinks, 
@@ -9,7 +10,7 @@ import {
   backlinkHistory,
   InsertBacklinkProfile,
   InsertOutgoingLink
-} from '@shared/schema';
+} from '../../../shared/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 
 // Function to extract domain from a URL

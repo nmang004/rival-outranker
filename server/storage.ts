@@ -12,7 +12,7 @@ import {
   users, analyses, projects, projectAnalyses,
   keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions,
   anonChatUsage
-} from "@shared/schema";
+} from "../shared/schema";
 import { db as getDb } from "./db";
 import { eq, desc, and, inArray, sql, asc, gte, lte } from "drizzle-orm";
 

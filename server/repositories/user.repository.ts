@@ -1,6 +1,6 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
-import { users, User, InsertUser, UpdateUser } from '@shared/schema';
+import { users, User, InsertUser, UpdateUser } from '../../shared/schema';
 
 /**
  * Repository for user-related database operations

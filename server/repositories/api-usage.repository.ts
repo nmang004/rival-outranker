@@ -1,7 +1,8 @@
 import { eq, desc, and, gte, lte, sum } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
-import { apiUsage, ApiUsage, InsertApiUsage } from '@shared/schema';
-import { db } from '../db';
+import { apiUsage, ApiUsage, InsertApiUsage } from '../../shared/schema';
+import { db as getDb } from '../db';
+const db = getDb();
 
 /**
  * Repository for API usage tracking operations

@@ -1,5 +1,5 @@
 import { storage } from '../../storage';
-import { InsertKeywordRanking, InsertCompetitorRanking, InsertKeywordMetrics } from '@shared/schema';
+import { InsertKeywordRanking, InsertCompetitorRanking, InsertKeywordMetrics } from '../../../shared/schema';
 import axios from 'axios';
 
 /**

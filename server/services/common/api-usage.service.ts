@@ -1,5 +1,6 @@
-import { db } from '../../db';
-import { apiUsage, InsertApiUsage, ApiUsage } from '@shared/schema';
+import { db as getDb } from '../../db';
+const db = getDb();
+import { apiUsage, InsertApiUsage, ApiUsage } from '../../../shared/schema';
 import { between, desc, eq, sql, and } from 'drizzle-orm';
 
 interface ApiUsageData {

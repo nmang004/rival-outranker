@@ -1,4 +1,5 @@
-import { db } from "../../db";
+import { db as getDb } from "../../db";
+const db = getDb();
 import { 
   learningModules, 
   learningLessons, 
@@ -22,7 +23,7 @@ import {
   type UserLearningRecommendation,
   type InsertUserLearningRecommendation,
   type Analysis
-} from "@shared/schema";
+} from "../../../shared/schema";
 import { eq, and, asc, desc, lt, gt, isNull, not, inArray } from "drizzle-orm";
 
 export class LearningPathService {

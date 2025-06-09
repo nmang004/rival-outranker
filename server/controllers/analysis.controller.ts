@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { BaseController } from './base.controller';
 import { analysisService } from '../services/business';
-import { urlFormSchema, updateKeywordSchema } from '@shared/schema';
+import { urlFormSchema, updateKeywordSchema } from '../../shared/schema';
 import { ZodError } from 'zod';
 
 /**

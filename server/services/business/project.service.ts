@@ -1,8 +1,9 @@
 import { IProjectService } from '../interfaces/project.service.interface';
-import { Project, InsertProject, UpdateProject, Analysis } from '@shared/schema';
+import { Project, InsertProject, UpdateProject, Analysis } from '../../../shared/schema';
 import { projectRepository, analysisRepository } from '../../repositories';
 import { eq } from 'drizzle-orm';
-import { db } from '../../db';
+import { db as getDb } from '../../db';
+const db = getDb();
 
 /**
  * Project business logic service

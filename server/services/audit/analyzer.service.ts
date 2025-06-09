@@ -1,4 +1,4 @@
-import { AuditItem, RivalAudit } from '@shared/schema';
+import { AuditItem, RivalAudit } from '../../../shared/schema';
 import { PageCrawlResult, SiteStructure } from './audit.service';
 
 /**

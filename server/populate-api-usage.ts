@@ -1,4 +1,5 @@
-import { db } from "./db";
+import { db as getDb } from "./db";
+const db = getDb();
 import { apiUsage } from "../shared/schema";
 
 async function populateSampleData() {

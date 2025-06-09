@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { rivalAuditCrawler } from '../services/audit/rival-audit-crawler.service';
 import { generateRivalAuditExcel } from '../services/common/excel-exporter.service';
 import { generateRivalAuditCsv } from '../services/common/csv-exporter.service';
-import { AuditStatus } from '@shared/schema';
+import { AuditStatus } from '../../shared/schema';
 import { storage } from '../storage';
 
 const router = Router();

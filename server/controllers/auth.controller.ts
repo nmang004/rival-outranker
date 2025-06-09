@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/auth/auth.service';
-import { loginUserSchema, insertUserSchema } from '@shared/schema';
+import { loginUserSchema, insertUserSchema } from '../../shared/schema';
 import { ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 

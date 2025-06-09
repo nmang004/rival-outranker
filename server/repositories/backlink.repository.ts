@@ -12,8 +12,9 @@ import {
   BacklinkHistory,
   OutgoingLink,
   InsertOutgoingLink
-} from '@shared/schema';
-import { db } from '../db';
+} from '../../shared/schema';
+import { db as getDb } from '../db';
+const db = getDb();
 
 /**
  * Repository for backlink profile operations

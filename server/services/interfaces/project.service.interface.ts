@@ -1,4 +1,4 @@
-import { Project, InsertProject, UpdateProject, Analysis } from '@shared/schema';
+import { Project, InsertProject, UpdateProject, Analysis } from '../../../shared/schema';
 
 /**
  * Interface for project service operations

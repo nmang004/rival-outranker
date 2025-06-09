@@ -1,4 +1,5 @@
-import { db } from "./db";
+import { db as getDb } from "./db";
+const db = getDb();
 import { pgTable, serial, text, integer, timestamp, jsonb, real } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 

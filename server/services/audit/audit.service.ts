@@ -1,4 +1,4 @@
-import { RivalAudit } from '@shared/schema';
+import { RivalAudit } from '../../../shared/schema';
 import { crawler } from './crawler.service';
 import { AuditAnalyzerService } from './analyzer.service';
 import { PageClassificationService } from './page-classification.service';

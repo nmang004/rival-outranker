@@ -1,4 +1,4 @@
-import { User, InsertUser, UpdateUser, LoginCredentials } from '@shared/schema';
+import { User, InsertUser, UpdateUser, LoginCredentials } from '../../../shared/schema';
 
 /**
  * Interface for user service operations

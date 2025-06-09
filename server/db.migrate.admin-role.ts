@@ -1,4 +1,6 @@
-import { db, pool } from './db';
+import { db as getDb, pool as getPool } from './db';
+const db = getDb();
+const pool = getPool();
 import { sql } from 'drizzle-orm';
 
 async function runMigration() {
@@ -29,7 +31,7 @@ async function runMigration() {
     console.error('Error during migration:', error);
     throw error;
   } finally {
-    await pool.end();
+    await pool?.end();
   }
 }
 

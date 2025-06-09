@@ -1,4 +1,4 @@
-import { RivalAudit, AuditItem } from '@shared/schema';
+import { RivalAudit, AuditItem } from '../../../shared/schema';
 
 /**
  * Generate a CSV file from a Rival Audit

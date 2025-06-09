@@ -1,4 +1,4 @@
-import { RivalAudit } from '@shared/schema';
+import { RivalAudit } from '../../../shared/schema';
 import { auditService } from './audit.service';
 
 /**

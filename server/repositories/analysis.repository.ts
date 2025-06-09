@@ -1,6 +1,6 @@
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
 import { BaseRepository } from './base.repository';
-import { analyses, Analysis, InsertAnalysis } from '@shared/schema';
+import { analyses, Analysis, InsertAnalysis } from '../../shared/schema';
 
 /**
  * Repository for analysis-related database operations

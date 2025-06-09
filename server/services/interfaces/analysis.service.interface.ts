@@ -1,4 +1,4 @@
-import { Analysis, InsertAnalysis, SeoAnalysisResult } from '@shared/schema';
+import { Analysis, InsertAnalysis, SeoAnalysisResult } from '../../../shared/schema';
 
 /**
  * Interface for SEO analysis service operations

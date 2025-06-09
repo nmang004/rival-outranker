@@ -1,5 +1,5 @@
 import { db } from './db';
-import * as schema from '@shared/schema';
+import * as schema from '../shared/schema';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { migrate } from 'drizzle-orm/neon-serverless/migrator';
 import { Pool } from '@neondatabase/serverless';
