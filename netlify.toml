@@ -1,0 +1,129 @@
+[build]
+  command = "npm run build:netlify"
+  functions = "netlify/functions"
+  publish = "dist"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 5173
+  port = 8888
+  publish = "dist"
+  autoLaunch = true
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+
+# Production environment variables
+[context.production.environment]
+  VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
+  VITE_ENVIRONMENT = "production"
+
+# Branch deploy environment variables
+[context.branch-deploy.environment]
+  VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
+  VITE_ENVIRONMENT = "staging"
+
+# Deploy preview environment variables
+[context.deploy-preview.environment]
+  VITE_API_BASE_URL = "https://rival-outranker-production.up.railway.app"
+  VITE_ENVIRONMENT = "preview"
+
+# API route redirects - redirect /api/* to Railway backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://rival-outranker-production.up.railway.app/api/:splat"
+  status = 200
+  force = true
+
+# Health check redirect
+[[redirects]]
+  from = "/health"
+  to = "https://rival-outranker-production.up.railway.app/health"
+  status = 200
+
+# Catch-all redirect for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https: https://fonts.gstatic.com; connect-src 'self' https: https://rival-outranker-production.up.railway.app; media-src 'self' data:; object-src 'none'; frame-ancestors 'none';"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# Cache static assets aggressively
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "*.woff"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache images with shorter duration
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Don't cache HTML files
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Build hooks for automated deployments
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
