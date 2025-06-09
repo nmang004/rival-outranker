@@ -1,9 +1,22 @@
 import { Router, Request, Response } from 'express';
-import { rivalAuditCrawler } from '../services/audit/rival-audit-crawler.service';
-import { generateRivalAuditExcel } from '../services/common/excel-exporter.service';
-import { generateRivalAuditCsv } from '../services/common/csv-exporter.service';
-import { AuditStatus } from '../../shared/schema';
-import { storage } from '../storage';
+
+// Try-catch wrapper for imports to debug Railway issues
+let rivalAuditCrawler: any;
+let generateRivalAuditExcel: any;
+let generateRivalAuditCsv: any;
+let AuditStatus: any;
+let storage: any;
+
+try {
+  ({ rivalAuditCrawler } = require('../services/audit/rival-audit-crawler.service'));
+  ({ generateRivalAuditExcel } = require('../services/common/excel-exporter.service'));
+  ({ generateRivalAuditCsv } = require('../services/common/csv-exporter.service'));
+  ({ AuditStatus } = require('../../shared/schema'));
+  ({ storage } = require('../storage'));
+  console.log('✅ All audit route imports loaded successfully');
+} catch (error) {
+  console.error('❌ Import error in audit routes:', error);
+}
 
 const router = Router();
 
@@ -67,22 +80,29 @@ function generateMockRivalAudit(url: string): CachedRivalAudit {
 
 // Start a new rival audit
 router.post("/", async (req: Request, res: Response) => {
+  console.log('🎯 POST /api/rival-audit called with body:', req.body);
+  
   try {
     const { url, continueCrawl } = req.body;
+    console.log('📥 Received URL:', url, 'continueCrawl:', continueCrawl);
     
     if (!url) {
+      console.log('❌ No URL provided');
       return res.status(400).json({ error: "URL is required" });
     }
     
     // Generate an audit ID (in a production environment, this would be stored in the database)
     const auditId = Math.floor(Math.random() * 1000) + 1;
+    console.log('🆔 Generated audit ID:', auditId);
     
     // Return the audit ID immediately
-    res.status(202).json({ 
+    const response = { 
       id: auditId, 
       message: continueCrawl ? "Continuing audit" : "Audit started", 
       url 
-    });
+    };
+    console.log('✅ Sending response:', response);
+    res.status(202).json(response);
     
     // Perform the actual audit asynchronously
     setTimeout(async () => {
@@ -141,8 +161,14 @@ router.post("/", async (req: Request, res: Response) => {
     }, 0);
     
   } catch (error) {
-    console.error("Error starting rival audit:", error);
-    res.status(500).json({ error: "Failed to start rival audit" });
+    console.error("❌ Error starting rival audit:", error);
+    console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+    console.error("❌ Error type:", typeof error);
+    console.error("❌ Error details:", JSON.stringify(error, null, 2));
+    res.status(500).json({ 
+      error: "Failed to start rival audit",
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
