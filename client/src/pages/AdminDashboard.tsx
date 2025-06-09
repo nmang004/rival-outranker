@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/auth/useAuth";
+import { useToast } from "@/hooks/ui/use-toast";
 import { 
   Card, 
   CardContent, 

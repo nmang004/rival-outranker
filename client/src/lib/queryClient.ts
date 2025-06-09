@@ -53,11 +53,11 @@ export async function apiRequest<T = any>(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+export const getQueryFn = <T>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+}): QueryFunction<T | null> =>
   async ({ queryKey }) => {
+    const { on401: unauthorizedBehavior } = options;
     try {
       // Safely handle potentially undefined or non-string queryKey
       if (!queryKey || !queryKey[0] || typeof queryKey[0] !== 'string') {

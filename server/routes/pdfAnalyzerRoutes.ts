@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { analyzeTextContent } from '../services/openaiService';
+import { analyzeTextContent } from '../services/external/openai.service';
 
 /**
  * Handle PDF content analysis using OpenAI

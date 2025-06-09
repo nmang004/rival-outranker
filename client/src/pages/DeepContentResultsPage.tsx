@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Download, Share2, Printer, RefreshCw, FileText, ChevronLeft } from 'lucide-react';
 import { exportDeepContentToPDF } from '@/lib/deepContentPdfExport';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/ui/use-toast';
 import {
   Breadcrumb,
   BreadcrumbItem,

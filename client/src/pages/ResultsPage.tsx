@@ -3,15 +3,15 @@ import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 
-import OverallScore from "@/components/assessment/OverallScore";
-import KeyMetrics from "@/components/assessment/KeyMetrics";
-import SummarySection from "@/components/assessment/SummarySection";
-import AssessmentTabs from "@/components/assessment/AssessmentTabs";
-import ActionPlan from "@/components/assessment/ActionPlan";
-import NextSteps from "@/components/assessment/NextSteps";
-import { ExportPdfButton } from "@/components/assessment/ExportPdfButton";
+import OverallScore from "@/components/features/analysis/OverallScore";
+import KeyMetrics from "@/components/features/analysis/KeyMetrics";
+import SummarySection from "@/components/features/analysis/SummarySection";
+import AssessmentTabs from "@/components/features/analysis/AssessmentTabs";
+import ActionPlan from "@/components/features/analysis/ActionPlan";
+import NextSteps from "@/components/features/analysis/NextSteps";
+import { ExportPdfButton } from "@/components/features/analysis/ExportPdfButton";
 import { SeoAnalysisResult } from "@shared/schema";
 import { formatDate, formatUrl } from "@/lib/formatters";
 import {

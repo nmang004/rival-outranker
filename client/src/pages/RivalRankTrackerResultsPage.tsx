@@ -37,11 +37,11 @@ import {
   Line
 } from "recharts";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
-import { useAuth } from "@/hooks/useAuth";
-import { LoginButton } from "@/components/auth/LoginButton";
+import { useAuth } from "@/hooks/auth/useAuth";
+import { LoginButton } from "@/components/features/auth/LoginButton";
 
 // Helper function to format search volume
 const formatNumber = (num: number): string => {

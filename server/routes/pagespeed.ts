@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { fetchPageSpeedMetrics } from "../services/pageSpeedService";
+import { pageSpeedService } from "../services/external/pagespeed.service";
 import { trackApiUsage } from "../middleware/apiUsageMiddleware";
 
 export const pagespeedRouter = Router();
@@ -21,12 +21,8 @@ pagespeedRouter.get("/", async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'URL parameter is required' });
     }
     
-    if (!process.env.GOOGLE_API_KEY) {
-      return res.status(500).json({ error: 'PageSpeed API key is not configured' });
-    }
-    
     console.log(`Fetching PageSpeed metrics for: ${url}`);
-    const metrics = await fetchPageSpeedMetrics(url);
+    const metrics = await pageSpeedService.analyze(url);
     
     res.json(metrics);
   } catch (error) {

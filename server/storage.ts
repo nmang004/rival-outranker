@@ -13,7 +13,7 @@ import {
   keywords, keywordMetrics, keywordRankings, competitorRankings, keywordSuggestions,
   anonChatUsage
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, desc, and, inArray, sql, asc, gte, lte } from "drizzle-orm";
 
 // Interfaces for storage operations
@@ -103,7 +103,7 @@ export class DatabaseStorage implements IStorage {
       console.error("Error fetching user:", error);
       // Return a minimally valid user object if there's a schema error
       // This helps us get past the missing 'role' column error until we can migrate the database
-      if (error.message && error.message.includes("column \"role\" does not exist")) {
+      if ((error as Error).message && (error as Error).message.includes("column \"role\" does not exist")) {
         const results = await db.select({
           id: users.id,
           username: users.username,
@@ -203,7 +203,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error updating user role:", error);
       // Handle missing role column error by returning user with default role
-      if (error.message && error.message.includes("column \"role\" does not exist")) {
+      if ((error as Error).message && (error as Error).message.includes("column \"role\" does not exist")) {
         const existingUser = await this.getUser(id);
         if (existingUser) {
           return {
@@ -535,6 +535,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRankingHistory(keywordId: number, startDate?: Date, endDate?: Date): Promise<KeywordRanking[]> {
     // Handle different date filter combinations with separate query constructions
+    // Convert Date objects to YYYY-MM-DD format for PostgreSQL date comparison
     if (startDate && endDate) {
       return await db
         .select()
@@ -542,8 +543,8 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(keywordRankings.keywordId, keywordId),
-            gte(keywordRankings.rankDate, startDate),
-            lte(keywordRankings.rankDate, endDate)
+            gte(keywordRankings.rankDate, startDate.toISOString().split('T')[0]),
+            lte(keywordRankings.rankDate, endDate.toISOString().split('T')[0])
           )
         )
         .orderBy(asc(keywordRankings.rankDate));
@@ -554,7 +555,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(keywordRankings.keywordId, keywordId),
-            gte(keywordRankings.rankDate, startDate)
+            gte(keywordRankings.rankDate, startDate.toISOString().split('T')[0])
           )
         )
         .orderBy(asc(keywordRankings.rankDate));
@@ -565,7 +566,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             eq(keywordRankings.keywordId, keywordId),
-            lte(keywordRankings.rankDate, endDate)
+            lte(keywordRankings.rankDate, endDate.toISOString().split('T')[0])
           )
         )
         .orderBy(asc(keywordRankings.rankDate));

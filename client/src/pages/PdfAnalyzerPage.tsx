@@ -730,6 +730,7 @@ if (fileName.includes('_')) {
 // Format detected metrics for better presentation
 const formatMetrics = () => {
   let metricsText = '';
+  const numericValues: Record<string, string[]> = {};
   
   if (Object.keys(numericValues).length > 0) {
     Object.entries(numericValues).forEach(([key, values]) => {
@@ -749,6 +750,7 @@ const formatMetrics = () => {
 
 // Create a more detailed, SEO-specific analysis if it's an SEO report
 let reportSpecificInsights = '';
+const trendDirection = 'mixed'; // Default trend direction
 if (fileName.toLowerCase().includes('seo') || text.toLowerCase().includes('seo') || text.toLowerCase().includes('search engine')) {
   reportSpecificInsights = `
 ## SEO Performance Insights

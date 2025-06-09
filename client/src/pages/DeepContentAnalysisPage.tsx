@@ -36,7 +36,7 @@ import { FileSearch, Info, Sparkles, Check, ArrowRight, Zap } from 'lucide-react
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { urlFormSchema } from '@shared/schema';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/ui/use-toast';
 
 // Extend the URL form schema for deep content analysis
 const deepContentFormSchema = urlFormSchema.extend({

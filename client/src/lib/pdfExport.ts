@@ -98,7 +98,7 @@ export async function exportToPDF(
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10);
   pdf.setTextColor(BRAND_COLORS.muted);
-  const date = new Date(analysisResult.timestamp);
+  const date = new Date(analysisResult.timestamp || new Date());
   pdf.text(`Analysis Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 14, yPos);
   yPos += 12;
 
@@ -249,7 +249,7 @@ function addOverallScore(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: number):
   pdf.setFontSize(20);
   
   // Set color based on score category
-  switch(analysis.score.category) {
+  switch(analysis.overallScore.category) {
     case 'excellent':
       pdf.setTextColor(BRAND_COLORS.excellent);
       break;
@@ -267,11 +267,11 @@ function addOverallScore(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: number):
   }
   
   // Score value
-  pdf.text(`${analysis.score.score}/100`, 150, yPos + 16);
+  pdf.text(`${analysis.overallScore.score}/100`, 150, yPos + 16);
   
   // Category label
   pdf.setFontSize(14);
-  pdf.text(getCategoryLabel(analysis.score.category), 150, yPos + 24);
+  pdf.text(getCategoryLabel(analysis.overallScore.category), 150, yPos + 24);
   
   return yPos + 30;
 }
@@ -318,7 +318,7 @@ function addKeywordAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: numbe
     margin: { left: 14, right: 14 },
   });
   
-  return tableResult.finalY || yPos + 50;
+  return (pdf as any).lastAutoTable?.finalY || yPos + 50;
 }
 
 /**
@@ -364,7 +364,7 @@ function addContentAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: numbe
     margin: { left: 14, right: 14 },
   });
   
-  return tableResult.finalY || yPos + 50;
+  return (pdf as any).lastAutoTable?.finalY || yPos + 50;
 }
 
 /**
@@ -409,7 +409,7 @@ function addTechnicalAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: num
     margin: { left: 14, right: 14 },
   });
   
-  return tableResult.finalY || yPos + 50;
+  return (pdf as any).lastAutoTable?.finalY || yPos + 50;
 }
 
 /**
@@ -466,7 +466,7 @@ function addCompetitorAnalysis(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: nu
     margin: { left: 14, right: 14 },
   });
   
-  return tableResult.finalY || yPos + 50;
+  return (pdf as any).lastAutoTable?.finalY || yPos + 50;
 }
 
 /**
@@ -584,7 +584,7 @@ function addActionPlan(pdf: jsPDF, analysis: SeoAnalysisResult, yPos: number, sh
     });
   }
   
-  return tableResult.finalY || yPos + 50;
+  return (pdf as any).lastAutoTable?.finalY || yPos + 50;
 }
 
 // Helper functions

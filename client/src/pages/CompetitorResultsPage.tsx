@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, Share2, Printer, RefreshCw, Globe, ChevronLeft } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/ui/use-toast';
 import { exportCompetitorToPDF } from '@/lib/competitorPdfExport';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -14,8 +14,8 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import CompetitorAnalysis from '@/components/assessment/CompetitorAnalysis';
-import FullCompetitorResults from '@/components/assessment/FullCompetitorResults';
+import CompetitorAnalysis from '@/components/features/analysis/CompetitorAnalysis';
+import FullCompetitorResults from '@/components/features/analysis/FullCompetitorResults';
 
 export default function CompetitorResultsPage() {
   const [location] = useLocation();

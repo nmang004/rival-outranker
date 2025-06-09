@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { seoKnowledgeBase, SeoTopic, SeoSubtopic, industrySpecificAdvice, seoTools } from '@/data/seoKnowledgeBase';
 import { getOpenAIResponse } from '@/services/openAiService';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import axios from 'axios';
 
 // Define message type

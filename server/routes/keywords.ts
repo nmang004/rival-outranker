@@ -3,7 +3,7 @@ import { storage } from '../storage';
 import { z } from 'zod';
 import { insertKeywordSchema, insertKeywordSuggestionSchema } from '@shared/schema';
 import { authenticate } from '../middleware/auth';
-import { keywordService } from '../services/keywordService';
+import { keywordService } from '../services/keywords/keyword.service';
 
 export const keywordRouter = Router();
 

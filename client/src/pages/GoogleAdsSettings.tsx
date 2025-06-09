@@ -4,7 +4,7 @@ import GoogleAdsCredentialsForm from "@/components/GoogleAdsCredentialsForm";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { Settings, KeySquare, ArrowLeft } from "lucide-react";
 
 export default function GoogleAdsSettings() {

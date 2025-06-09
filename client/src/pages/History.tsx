@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Analysis } from "@shared/schema";
 import { formatDate } from "@/lib/formatters";
-import SearchApiUsage from "@/components/assessment/SearchApiUsage";
+import SearchApiUsage from "@/components/features/analysis/SearchApiUsage";
 import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-fns";
 
 export default function History() {

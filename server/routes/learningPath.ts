@@ -1,5 +1,5 @@
 import express from "express";
-import { learningPathService } from "../services/learningPathService";
+import { learningPathService } from "../services/common/learning-path.service";
 import { authenticate } from "../middleware/auth";
 import { z } from "zod";
 import { insertUserLearningProgressSchema } from "@shared/schema";

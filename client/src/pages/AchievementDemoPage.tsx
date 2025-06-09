@@ -26,9 +26,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 
-import AchievementUnlocked from '@/components/learning/AchievementUnlocked';
-import QuizCompleted from '@/components/learning/QuizCompleted';
-import MilestoneSpark from '@/components/learning/MilestoneSpark';
+import AchievementUnlocked from '@/components/features/learning/AchievementUnlocked';
+import QuizCompleted from '@/components/features/learning/QuizCompleted';
+import MilestoneSpark from '@/components/features/learning/MilestoneSpark';
 import { Achievement } from '@/types/learningTypes';
 
 /**

@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { authenticate } from "../middleware/auth";
-import { apiUsageService } from "../services/apiUsageService";
+import { apiUsageService } from "../services/common/api-usage.service";
 
 const router = express.Router();
 
@@ -295,7 +295,7 @@ router.post("/grant-admin", authenticate, isAdmin, async (req: Request, res: Res
       return res.status(400).json({ error: "Email is required" });
     }
     
-    const { adminService } = await import('../services/adminService');
+    const { adminService } = await import('../services/common/admin.service');
     const success = await adminService.grantAdminRoleByEmail(email);
     
     if (!success) {
@@ -317,7 +317,7 @@ router.get("/is-admin", authenticate, async (req: Request, res: Response) => {
     }
     
     const userId = req.user.userId;
-    const { adminService } = await import('../services/adminService');
+    const { adminService } = await import('../services/common/admin.service');
     const isAdmin = await adminService.isUserAdmin(userId);
     
     res.json({ isAdmin });

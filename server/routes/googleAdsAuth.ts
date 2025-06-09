@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { isGoogleAdsApiReady, getRequiredSecrets } from '../services/googleAdsService';
+import { isGoogleAdsApiReady, getRequiredSecrets } from '../services/external/google-ads.service';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';

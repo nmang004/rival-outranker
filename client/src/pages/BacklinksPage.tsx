@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 // Simplified API request function for this component
 const apiRequest = async (url: string, options?: { method?: string; data?: any }) => {
@@ -25,7 +25,7 @@ const apiRequest = async (url: string, options?: { method?: string; data?: any }
   
   return response.json();
 };
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -43,7 +43,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import MetricCard from "@/components/metrics/MetricCard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BacklinksChart } from "@/components/backlinks/BacklinksChart";
+import { BacklinksChart } from "@/components/features/backlinks/BacklinksChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from 'react-helmet';
 

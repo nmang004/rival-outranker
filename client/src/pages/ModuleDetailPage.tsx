@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation, Link } from "wouter";
-import LearningCompanion from "@/components/learning/LearningCompanion";
+import LearningCompanion from "@/components/features/learning/LearningCompanion";
 // Import types directly from mock data as we're currently using those
 import type { QuizQuestion, Achievement } from "@/types/learningTypes";
 import { 
@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { 
   Loader2, 
   BookOpen, 
@@ -52,9 +52,9 @@ import {
   Trophy
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import QuizCompleted from "@/components/learning/QuizCompleted";
-import AchievementUnlocked from "@/components/learning/AchievementUnlocked";
+import { useToast } from "@/hooks/ui/use-toast";
+import QuizCompleted from "@/components/features/learning/QuizCompleted";
+import AchievementUnlocked from "@/components/features/learning/AchievementUnlocked";
 
 // Types for learning module content
 interface LearningModule {

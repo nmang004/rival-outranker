@@ -11,7 +11,7 @@ import { Check, ChevronRight, Globe, MapPin, Search, BarChart3, LineChart, PieCh
 import { useQuery } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Combobox } from '../components/ui/combobox';
-import { US_CITIES } from '@shared/us-cities';
+import { US_CITIES } from '@shared/constants/us-cities';
 import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 

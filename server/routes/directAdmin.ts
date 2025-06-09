@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { apiUsageService } from "../services/apiUsageService";
+import { apiUsageService } from "../services/common/api-usage.service";
 
 const router = express.Router();
 

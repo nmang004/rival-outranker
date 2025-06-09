@@ -12,7 +12,7 @@ import {
   AccordionTrigger 
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -37,11 +37,11 @@ import {
 import { RivalAudit, AuditItem, AuditStatus } from "@shared/schema";
 
 // Import components for the Rival Audit
-import RivalAuditSection from "../components/rival/RivalAuditSection";
-import RivalAuditSummary from "../components/rival/RivalAuditSummary";
-import RivalAuditDashboard from "../components/rival/RivalAuditDashboard";
-import RivalAuditRecommendations from "../components/rival/RivalAuditRecommendations";
-import RivalAuditLoadingScreen from "../components/rival/RivalAuditLoadingScreen";
+import RivalAuditSection from "@/components/features/audit/RivalAuditSection";
+import RivalAuditSummary from "@/components/features/audit/RivalAuditSummary";
+import RivalAuditDashboard from "@/components/features/audit/RivalAuditDashboard";
+import RivalAuditRecommendations from "@/components/features/audit/RivalAuditRecommendations";
+import RivalAuditLoadingScreen from "@/components/features/audit/RivalAuditLoadingScreen";
 
 export default function RivalAuditResultsPage() {
   const { toast } = useToast();

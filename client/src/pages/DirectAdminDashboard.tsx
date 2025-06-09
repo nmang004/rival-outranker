@@ -29,7 +29,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon, Download, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 
 // Bar chart component
 import {

@@ -17,8 +17,8 @@ import {
   BookOpen,
   Trophy
 } from "lucide-react";
-import { UserAccountButton } from "@/components/auth";
-import { useAuth } from "@/hooks/useAuth";
+import { UserAccountButton } from "@/components/features/auth";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import {
   DropdownMenu,

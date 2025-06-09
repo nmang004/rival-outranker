@@ -12,7 +12,7 @@ import {
   Search,
   Rocket
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 
 export default function Home() {

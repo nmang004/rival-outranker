@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { PageHeader } from '@/components/PageHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,7 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PaperclipIcon, CopyIcon, TrendingUpIcon, SearchIcon, SaveIcon, ChevronDown, ChevronUp, DownloadIcon, ArrowRightIcon, InfoIcon, RefreshCw, Settings } from 'lucide-react';
 import { Link } from 'wouter';
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/ui/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { checkGoogleAdsAuthStatus, GoogleAdsAuthStatus } from "../lib/googleAdsApi";

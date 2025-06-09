@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { apiUsageService } from '../services/apiUsageService';
-import { estimateCost, extractUsageMetrics } from '../services/costEstimationService';
+import { apiUsageService } from '../services/common/api-usage.service';
+import { estimateCost, extractUsageMetrics } from '../services/common/cost-estimation.service';
 
 /**
  * Middleware to track API usage
