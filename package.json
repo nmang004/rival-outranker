@@ -16,7 +16,7 @@
     "start": "NODE_ENV=production tsx server/index.ts",
     "start:dev": "NODE_ENV=development tsx server/index.ts",
     "preview": "vite preview --config=config/vite.config.ts",
-    "railway:build": "npm run build",
+    "railway:build": "echo 'Railway backend build - no frontend build needed'",
     "railway:start": "npm start",
     "deploy:staging": "netlify deploy --dir=dist",
     "deploy:production": "netlify deploy --prod --dir=dist",
