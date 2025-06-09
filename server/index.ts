@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes/index";
-import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase, closeDatabase, getDatabaseHealth, getDatabaseInfo } from "./lib/database";
 
 // Railway-specific configuration
@@ -94,7 +93,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -191,9 +190,16 @@ app.use((req, res, next) => {
 
   // Setup Vite in development, serve static files in production
   if (!isProduction) {
-    await setupVite(app, server);
+    try {
+      const { setupVite } = await import("./vite");
+      await setupVite(app, server);
+    } catch (error) {
+      console.warn("Could not load Vite for development:", error?.message);
+    }
   } else {
-    serveStatic(app);
+    // In production, no need for Vite or static file serving
+    // Frontend is hosted on Netlify
+    console.log("🏭 Production mode: Frontend served by Netlify");
   }
   
   // Graceful shutdown handling
@@ -238,8 +244,8 @@ app.use((req, res, next) => {
   
   // Start the server
   server.listen(PORT, HOST, () => {
-    log(`🚀 Server running on ${HOST}:${PORT}`);
-    log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    log(`🗄️  Database: ${process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured'}`);
+    console.log(`🚀 Server running on ${HOST}:${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🗄️  Database: ${process.env.DATABASE_URL ? '✅ Connected' : '❌ Not configured'}`);
   });
 })();
