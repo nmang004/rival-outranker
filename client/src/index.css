@@ -21,6 +21,37 @@ nav, .nav, [role="navigation"] {
   padding: 1rem !important;
 }
 
+/* Test if Tailwind utilities work */
+.test-tailwind {
+  @apply bg-red-500 text-white p-4 rounded-lg;
+}
+
+/* Force basic button styling */
+button {
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.375rem !important;
+  border: 1px solid #d1d5db !important;
+  background-color: white !important;
+  cursor: pointer !important;
+}
+
+/* Force basic component styling */
+.relative {
+  position: relative !important;
+}
+
+.flex {
+  display: flex !important;
+}
+
+.items-center {
+  align-items: center !important;
+}
+
+.justify-between {
+  justify-content: space-between !important;
+}
+
 :root {
   /* Rival Digital brand colors - navy blue and orange */
   --background: 0 0% 100%;
