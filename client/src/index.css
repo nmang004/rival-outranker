@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Emergency CSS override to force styling */
+body {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+  background-color: #f8fafc !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#root {
+  min-height: 100vh !important;
+}
+
+/* Force navigation styling */
+nav, .nav, [role="navigation"] {
+  background-color: #002264 !important;
+  color: white !important;
+  padding: 1rem !important;
+}
+
 :root {
   /* Rival Digital brand colors - navy blue and orange */
   --background: 0 0% 100%;
