@@ -46,6 +46,31 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
  * Optional authentication middleware
  * Attaches user to request if token is valid, but doesn't require authentication
  */
+/**
+ * Required authentication middleware (alias for authenticate)
+ */
+export const requireAuth = authenticate;
+
+/**
+ * Admin role requirement middleware
+ */
+export const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // First authenticate the user
+    await authenticate(req, res, () => {});
+    
+    // Check if user has admin role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Admin authentication error:', error);
+    return res.status(401).json({ message: 'Invalid authentication' });
+  }
+};
+
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Get token from Authorization header (Bearer token)

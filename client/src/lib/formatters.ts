@@ -1,95 +1,130 @@
-// Function to format a date for display
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(date));
-};
+/**
+ * Utility functions for formatting data display
+ */
 
-// Function to format a URL for display (truncate if too long)
-export const formatUrl = (url: string, maxLength: number = 50): string => {
-  if (url.length <= maxLength) return url;
-  
-  // Remove protocol for display
-  let displayUrl = url.replace(/^https?:\/\//, '');
-  
-  if (displayUrl.length <= maxLength) return displayUrl;
-  
-  // Try to keep domain and part of the path
-  const parts = displayUrl.split('/');
-  const domain = parts[0];
-  
-  if (domain.length >= maxLength - 5) {
-    return domain.substring(0, maxLength - 3) + '...';
+export const formatters = {
+  /**
+   * Format numbers with thousands separators
+   */
+  formatNumber: (num: number): string => {
+    if (typeof num !== 'number' || isNaN(num)) return '0';
+    return num.toLocaleString();
+  },
+
+  /**
+   * Format decimal as percentage
+   */
+  formatPercentage: (decimal: number): string => {
+    if (typeof decimal !== 'number' || isNaN(decimal)) return '0%';
+    return `${Math.round(decimal * 100)}%`;
+  },
+
+  /**
+   * Format score out of 100
+   */
+  formatScore: (score: number): string => {
+    if (typeof score !== 'number' || isNaN(score)) return '0/100';
+    return `${Math.round(score)}/100`;
+  },
+
+  /**
+   * Format date in human-readable format
+   */
+  formatDate: (date: Date): string => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  },
+
+  /**
+   * Format relative time (e.g., "5 minutes ago")
+   */
+  formatRelativeTime: (date: Date): string => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid Date';
+    
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} seconds ago`;
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
+    }
+  },
+
+  /**
+   * Format file size in human-readable format
+   */
+  formatFileSize: (bytes: number): string => {
+    if (typeof bytes !== 'number' || isNaN(bytes) || bytes === 0) return '0 B';
+    
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   }
-  
-  // Keep domain and truncate path
-  return domain + '/...' + displayUrl.substring(displayUrl.length - (maxLength - domain.length - 5));
 };
 
-// Function to get a category label based on a score
-export const getScoreCategory = (score: number): string => {
-  if (score >= 90) return 'Excellent';
-  if (score >= 70) return 'Good';
-  if (score >= 50) return 'Needs Improvement';
-  return 'Poor';
-};
-
-// Function to get a color based on a score
-export const getScoreColor = (score: number): string => {
-  if (score >= 90) return 'text-green-500';
-  if (score >= 70) return 'text-blue-500';
-  if (score >= 50) return 'text-yellow-500';
-  return 'text-red-500';
-};
-
-// Function to get a background color based on a score
-export const getScoreBgColor = (score: number): string => {
-  if (score >= 90) return 'bg-green-100 text-green-800';
-  if (score >= 70) return 'bg-blue-100 text-blue-800';
-  if (score >= 50) return 'bg-yellow-100 text-yellow-800';
-  return 'bg-red-100 text-red-800';
-};
-
-// Function to format time (ms) to a readable format
-export const formatTime = (timeMs?: number): string => {
-  if (timeMs === undefined) return 'N/A';
-  
-  if (timeMs < 1000) {
-    return `${timeMs.toFixed(0)}ms`;
+/**
+ * Validate URL format
+ */
+export function validateUrl(url: string): boolean {
+  try {
+    const urlObject = new URL(url);
+    return urlObject.protocol === 'http:' || urlObject.protocol === 'https:';
+  } catch {
+    return false;
   }
-  
-  return `${(timeMs / 1000).toFixed(2)}s`;
-};
+}
 
-// Function to format file size
-export const formatFileSize = (bytes?: number): string => {
-  if (bytes === undefined) return 'N/A';
+/**
+ * Calculate readability score using Flesch Reading Ease formula
+ */
+export function calculateReadabilityScore(text: string): number {
+  if (!text || text.trim().length === 0) return 0;
   
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const words = text.split(/\s+/).filter(w => w.trim().length > 0);
+  const syllables = words.reduce((count, word) => {
+    return count + countSyllables(word);
+  }, 0);
   
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
+  if (sentences.length === 0 || words.length === 0) return 0;
   
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
+  const avgSentenceLength = words.length / sentences.length;
+  const avgSyllablesPerWord = syllables / words.length;
+  
+  // Flesch Reading Ease formula
+  const score = 206.835 - (1.015 * avgSentenceLength) - (84.6 * avgSyllablesPerWord);
+  
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
 
-// Function to format keyword density
-export const formatDensity = (density?: number): string => {
-  if (density === undefined) return 'N/A';
-  return `${density.toFixed(1)}%`;
-};
-
-// Function to generate a simple slug from text
-export const generateSlug = (text: string): string => {
-  return text
-    .toLowerCase()
-    .replace(/[^\w ]+/g, '')
-    .replace(/ +/g, '-');
-};
+/**
+ * Count syllables in a word (simplified)
+ */
+function countSyllables(word: string): number {
+  word = word.toLowerCase();
+  if (word.length <= 3) return 1;
+  
+  const vowels = word.match(/[aeiouy]/g);
+  let syllableCount = vowels ? vowels.length : 0;
+  
+  // Subtract silent 'e'
+  if (word.endsWith('e')) syllableCount--;
+  
+  // Handle double vowels
+  syllableCount -= (word.match(/[aeiouy]{2,}/g) || []).length * 0.5;
+  
+  return Math.max(1, Math.round(syllableCount));
+}

@@ -20,6 +20,7 @@ import { keywordResearchRoutes } from "./keyword-research.routes";
 import { rankTrackerRoutes } from "./rank-tracker.routes";
 import { pdfRoutes } from "./pdf.routes";
 import { openaiRoutes } from "./openai.routes";
+import monitoringRoutes from "./monitoring.routes";
 
 // Import middleware
 import { trackInternalApi, trackApiUsage } from "../middleware/apiUsageMiddleware";
@@ -61,14 +62,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', pdfRoutes);
   app.use('/api', openaiRoutes);
   
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date(),
-      version: process.env.npm_package_version || '1.0.0'
-    });
-  });
+  // Monitoring and health check routes
+  app.use('/api', monitoringRoutes);
   
   // Create and return the server
   const server = createServer(app);

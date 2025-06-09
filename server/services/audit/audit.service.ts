@@ -97,10 +97,10 @@ export class AuditService {
       console.log(`Starting rival audit for: ${url}`);
       
       // Reset state for new audit
-      (this.crawler as any).reset?.();
+      this.crawler.reset();
       
       // Step 1: Crawl the website
-      const siteStructure = await (this.crawler as any).crawlSite?.(url);
+      const siteStructure = await this.crawler.crawlSite(url);
       
       // Step 2: Classify pages by type
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
@@ -125,7 +125,7 @@ export class AuditService {
       console.log(`Continuing rival audit for: ${url}`);
       
       // Continue crawling from where we left off
-      const siteStructure = await (this.crawler as any).continueCrawl?.(url);
+      const siteStructure = await this.crawler.continueCrawl(url);
       
       // Classify and analyze the expanded structure
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
@@ -144,7 +144,7 @@ export class AuditService {
    * Get crawler statistics
    */
   getCrawlerStats() {
-    return (this.crawler as any).getStats?.() || {};
+    return this.crawler.getStats();
   }
 }
 

@@ -16,10 +16,16 @@ const OPENAI_CONFIG = {
   }
 } as const;
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client (only if API key is available)
+let openai: OpenAI | null = null;
+
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+} else {
+  console.warn('OpenAI API key not found. OpenAI services will be disabled.');
+}
 
 // Standard response interface
 export interface OpenAIResponse {
@@ -66,7 +72,7 @@ export async function getOpenAIResponse(
   context: string = "You are a helpful AI assistant."
 ): Promise<OpenAIResponse> {
   try {
-    if (!isOpenAIConfigured()) {
+    if (!isOpenAIConfigured() || !openai) {
       return {
         success: false,
         error: "OpenAI API key is not configured.",
@@ -118,7 +124,7 @@ export async function analyzeTextContent(
   analysisType: 'general' | 'seo' | 'document' | 'readability' = 'general'
 ): Promise<OpenAIAnalysisResponse> {
   try {
-    if (!isOpenAIConfigured()) {
+    if (!isOpenAIConfigured() || !openai) {
       return {
         success: false,
         error: "OpenAI API key is not configured.",

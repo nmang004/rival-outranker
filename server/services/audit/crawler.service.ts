@@ -17,6 +17,7 @@ class Crawler {
   private USER_AGENT = 'SEO-Best-Practices-Assessment-Tool/1.0';
   private MAX_REDIRECTS = 10; // Maximum number of redirects to follow
   private CRAWL_DELAY = 500; // Delay between requests in milliseconds
+  private MAX_PAGES = 50; // Maximum pages to crawl per site
   
   // Map to cache DNS resolutions
   private dnsCache = new Map<string, string>();
@@ -26,6 +27,18 @@ class Crawler {
   
   // Set to track broken links for verification
   private brokenLinks = new Set<string>();
+  
+  // Crawling state
+  private crawledUrls = new Set<string>();
+  private pendingUrls: string[] = [];
+  private currentSite: string = '';
+  private stats = {
+    pagesCrawled: 0,
+    pagesSkipped: 0,
+    errorsEncountered: 0,
+    startTime: 0,
+    endTime: 0
+  };
 
   /**
    * Crawl a webpage and extract its data
@@ -785,6 +798,368 @@ class Crawler {
     
     // Check if viewport contains width=device-width
     return viewport.includes('width=device-width');
+  }
+
+  /**
+   * Reset crawler state for a new site crawl
+   */
+  reset(): void {
+    this.crawledUrls.clear();
+    this.pendingUrls = [];
+    this.currentSite = '';
+    this.stats = {
+      pagesCrawled: 0,
+      pagesSkipped: 0,
+      errorsEncountered: 0,
+      startTime: 0,
+      endTime: 0
+    };
+  }
+
+  /**
+   * Get crawler statistics
+   */
+  getStats() {
+    return {
+      ...this.stats,
+      crawlTime: this.stats.endTime ? this.stats.endTime - this.stats.startTime : 0,
+      cacheSize: this.responseCache.size,
+      dnsCache: this.dnsCache.size
+    };
+  }
+
+  /**
+   * Crawl an entire site starting from the homepage
+   */
+  async crawlSite(url: string): Promise<any> {
+    console.log(`[Crawler] Starting site crawl for: ${url}`);
+    
+    this.reset();
+    this.stats.startTime = Date.now();
+    this.currentSite = new URL(url).origin;
+    
+    try {
+      // Crawl the homepage first
+      const homepage = await this.crawlPage(url);
+      this.stats.pagesCrawled++;
+      
+      if (homepage.error) {
+        console.error(`[Crawler] Failed to crawl homepage: ${homepage.error}`);
+        this.stats.errorsEncountered++;
+        this.stats.endTime = Date.now();
+        
+        return {
+          homepage,
+          otherPages: [],
+          contactPage: undefined,
+          servicePages: [],
+          locationPages: [],
+          serviceAreaPages: [],
+          hasSitemapXml: false,
+          reachedMaxPages: false
+        };
+      }
+
+      // Convert homepage data to PageCrawlResult format
+      const homepageResult = this.convertToPageCrawlResult(homepage);
+      
+      // Extract internal links for further crawling
+      if (homepage.links && homepage.links.internal) {
+        this.pendingUrls = homepage.links.internal
+          .map((link: any) => typeof link === 'string' ? link : link.url)
+          .filter((link: string) => this.shouldCrawlUrl(link))
+          .slice(0, this.MAX_PAGES - 1); // Reserve space for homepage
+      }
+
+      // Crawl additional pages
+      const otherPages: any[] = [];
+      let crawledCount = 1; // Already crawled homepage
+
+      while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
+        const nextUrl = this.pendingUrls.shift();
+        if (!nextUrl || this.crawledUrls.has(nextUrl)) continue;
+
+        try {
+          console.log(`[Crawler] Crawling page ${crawledCount + 1}/${this.MAX_PAGES}: ${nextUrl}`);
+          
+          const pageData = await this.crawlPage(nextUrl);
+          this.crawledUrls.add(nextUrl);
+          
+          if (pageData.error) {
+            this.stats.errorsEncountered++;
+            console.log(`[Crawler] Error crawling ${nextUrl}: ${pageData.error}`);
+          } else {
+            const pageResult = this.convertToPageCrawlResult(pageData);
+            otherPages.push(pageResult);
+            this.stats.pagesCrawled++;
+            
+            // Add more internal links if we find them
+            if (pageData.links && pageData.links.internal && crawledCount < this.MAX_PAGES * 0.8) {
+              const newLinks = pageData.links.internal
+                .map((link: any) => typeof link === 'string' ? link : link.url)
+                .filter((link: string) => this.shouldCrawlUrl(link) && !this.crawledUrls.has(link))
+                .slice(0, 10); // Limit new links per page
+              
+              this.pendingUrls.push(...newLinks);
+            }
+          }
+          
+          crawledCount++;
+          
+          // Add delay between requests
+          await new Promise(resolve => setTimeout(resolve, this.CRAWL_DELAY));
+          
+        } catch (error) {
+          console.error(`[Crawler] Exception crawling ${nextUrl}:`, error);
+          this.stats.errorsEncountered++;
+          crawledCount++;
+        }
+      }
+
+      // Check for sitemap.xml
+      const hasSitemapXml = await this.checkSitemap(url);
+
+      this.stats.endTime = Date.now();
+      
+      const result = {
+        homepage: homepageResult,
+        otherPages,
+        contactPage: undefined, // Will be classified later
+        servicePages: [],
+        locationPages: [],
+        serviceAreaPages: [],
+        hasSitemapXml,
+        reachedMaxPages: crawledCount >= this.MAX_PAGES
+      };
+
+      console.log(`[Crawler] Site crawl completed. Pages crawled: ${this.stats.pagesCrawled}, Errors: ${this.stats.errorsEncountered}`);
+      return result;
+
+    } catch (error) {
+      console.error(`[Crawler] Site crawl failed for ${url}:`, error);
+      this.stats.errorsEncountered++;
+      this.stats.endTime = Date.now();
+      throw error;
+    }
+  }
+
+  /**
+   * Continue crawling from where we left off
+   */
+  async continueCrawl(url: string): Promise<any> {
+    console.log(`[Crawler] Continuing site crawl for: ${url}`);
+    
+    // If no previous crawl state, start fresh
+    if (!this.currentSite || this.stats.pagesCrawled === 0) {
+      return this.crawlSite(url);
+    }
+
+    // Continue with remaining URLs
+    const otherPages: any[] = [];
+    let crawledCount = this.stats.pagesCrawled;
+
+    while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
+      const nextUrl = this.pendingUrls.shift();
+      if (!nextUrl || this.crawledUrls.has(nextUrl)) continue;
+
+      try {
+        console.log(`[Crawler] Continuing crawl ${crawledCount + 1}/${this.MAX_PAGES}: ${nextUrl}`);
+        
+        const pageData = await this.crawlPage(nextUrl);
+        this.crawledUrls.add(nextUrl);
+        
+        if (pageData.error) {
+          this.stats.errorsEncountered++;
+        } else {
+          const pageResult = this.convertToPageCrawlResult(pageData);
+          otherPages.push(pageResult);
+          this.stats.pagesCrawled++;
+        }
+        
+        crawledCount++;
+        await new Promise(resolve => setTimeout(resolve, this.CRAWL_DELAY));
+        
+      } catch (error) {
+        console.error(`[Crawler] Exception in continued crawl ${nextUrl}:`, error);
+        this.stats.errorsEncountered++;
+        crawledCount++;
+      }
+    }
+
+    this.stats.endTime = Date.now();
+    
+    return {
+      homepage: null, // Already crawled in initial crawl
+      otherPages,
+      contactPage: undefined,
+      servicePages: [],
+      locationPages: [],
+      serviceAreaPages: [],
+      hasSitemapXml: false,
+      reachedMaxPages: crawledCount >= this.MAX_PAGES
+    };
+  }
+
+  /**
+   * Convert crawler output to PageCrawlResult format
+   */
+  private convertToPageCrawlResult(crawlerOutput: any): any {
+    return {
+      url: crawlerOutput.url,
+      title: crawlerOutput.title,
+      metaDescription: crawlerOutput.meta?.description || '',
+      bodyText: crawlerOutput.content?.text || '',
+      rawHtml: crawlerOutput.rawHtml || crawlerOutput.html || '',
+      h1s: crawlerOutput.headings?.h1 || [],
+      h2s: crawlerOutput.headings?.h2 || [],
+      h3s: crawlerOutput.headings?.h3 || [],
+      headings: {
+        h1: crawlerOutput.headings?.h1 || [],
+        h2: crawlerOutput.headings?.h2 || [],
+        h3: crawlerOutput.headings?.h3 || []
+      },
+      links: {
+        internal: (crawlerOutput.links?.internal || []).map((link: any) => 
+          typeof link === 'string' ? link : link.url
+        ),
+        external: (crawlerOutput.links?.external || []).map((link: any) => 
+          typeof link === 'string' ? link : link.url
+        ),
+        broken: (crawlerOutput.links?.internal || [])
+          .filter((link: any) => typeof link === 'object' && link.broken)
+          .map((link: any) => link.url)
+      },
+      hasContactForm: this.hasContactForm(crawlerOutput.rawHtml || crawlerOutput.html || ''),
+      hasPhoneNumber: this.hasPhoneNumber(crawlerOutput.content?.text || ''),
+      hasAddress: this.hasAddress(crawlerOutput.content?.text || ''),
+      hasNAP: this.hasNAP(crawlerOutput.content?.text || ''),
+      images: {
+        total: crawlerOutput.images?.length || 0,
+        withAlt: (crawlerOutput.images || []).filter((img: any) => img.alt).length,
+        withoutAlt: (crawlerOutput.images || []).filter((img: any) => !img.alt).length,
+        largeImages: 0, // Could be enhanced
+        altTexts: (crawlerOutput.images || []).map((img: any) => img.alt).filter(Boolean)
+      },
+      hasSchema: (crawlerOutput.schema || []).length > 0,
+      schemaTypes: (crawlerOutput.schema || []).flatMap((s: any) => s.types || []),
+      mobileFriendly: crawlerOutput.mobileCompatible || false,
+      wordCount: crawlerOutput.content?.wordCount || 0,
+      hasSocialTags: Object.keys(crawlerOutput.meta?.ogTags || {}).length > 0 || 
+                     Object.keys(crawlerOutput.meta?.twitterTags || {}).length > 0,
+      hasCanonical: !!crawlerOutput.meta?.canonical,
+      hasRobotsMeta: !!crawlerOutput.meta?.robots,
+      hasIcon: false, // Could be enhanced
+      hasHttps: crawlerOutput.security?.hasHttps || false,
+      hasHreflang: false, // Could be enhanced
+      hasSitemap: false, // Determined separately
+      hasAmpVersion: false, // Could be enhanced
+      pageLoadSpeed: {
+        score: this.calculateSpeedScore(crawlerOutput.performance),
+        firstContentfulPaint: 0,
+        totalBlockingTime: 0,
+        largestContentfulPaint: 0
+      },
+      keywordDensity: {},
+      readabilityScore: 0,
+      contentStructure: {
+        hasFAQs: this.hasFAQs(crawlerOutput.content?.text || ''),
+        hasTable: this.hasTable(crawlerOutput.rawHtml || crawlerOutput.html || ''),
+        hasLists: this.hasLists(crawlerOutput.rawHtml || crawlerOutput.html || ''),
+        hasVideo: this.hasVideo(crawlerOutput.rawHtml || crawlerOutput.html || ''),
+        hasEmphasis: this.hasEmphasis(crawlerOutput.rawHtml || crawlerOutput.html || '')
+      }
+    };
+  }
+
+  /**
+   * Check if URL should be crawled
+   */
+  private shouldCrawlUrl(url: string): boolean {
+    try {
+      const parsedUrl = new URL(url);
+      const baseDomain = new URL(this.currentSite).hostname;
+      
+      // Only crawl same domain
+      if (parsedUrl.hostname !== baseDomain) return false;
+      
+      // Skip certain file types
+      const skipExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.css', '.js', '.zip', '.doc', '.docx'];
+      if (skipExtensions.some(ext => parsedUrl.pathname.toLowerCase().endsWith(ext))) return false;
+      
+      // Skip admin/system paths
+      const skipPaths = ['/admin', '/wp-admin', '/login', '/register', '/cart', '/checkout'];
+      if (skipPaths.some(path => parsedUrl.pathname.toLowerCase().includes(path))) return false;
+      
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if site has sitemap.xml
+   */
+  private async checkSitemap(baseUrl: string): Promise<boolean> {
+    try {
+      const sitemapUrl = new URL('/sitemap.xml', baseUrl).toString();
+      const response = await axios.head(sitemapUrl, { timeout: 5000 });
+      return response.status === 200;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Helper methods for content analysis
+   */
+  private hasContactForm(html: string): boolean {
+    return /<form[^>]*>/i.test(html) && /type=['"]?email['"]?/i.test(html);
+  }
+
+  private hasPhoneNumber(text: string): boolean {
+    const phoneRegex = /(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/;
+    return phoneRegex.test(text);
+  }
+
+  private hasAddress(text: string): boolean {
+    const addressKeywords = ['street', 'avenue', 'road', 'blvd', 'drive', 'lane', 'way', 'suite', 'apt'];
+    return addressKeywords.some(keyword => text.toLowerCase().includes(keyword));
+  }
+
+  private hasNAP(text: string): boolean {
+    return this.hasPhoneNumber(text) && this.hasAddress(text);
+  }
+
+  private hasFAQs(text: string): boolean {
+    const faqKeywords = ['frequently asked questions', 'faq', 'questions and answers'];
+    return faqKeywords.some(keyword => text.toLowerCase().includes(keyword));
+  }
+
+  private hasTable(html: string): boolean {
+    return /<table[^>]*>/i.test(html);
+  }
+
+  private hasLists(html: string): boolean {
+    return /<[uo]l[^>]*>/i.test(html);
+  }
+
+  private hasVideo(html: string): boolean {
+    return /<video[^>]*>/i.test(html) || /youtube\.com|vimeo\.com/i.test(html);
+  }
+
+  private hasEmphasis(html: string): boolean {
+    return /<(strong|b|em|i)[^>]*>/i.test(html);
+  }
+
+  private calculateSpeedScore(performance: any): number {
+    if (!performance) return 50;
+    const loadTime = performance.loadTime || 3000;
+    // Simple scoring: faster = better score
+    if (loadTime < 1000) return 90;
+    if (loadTime < 2000) return 75;
+    if (loadTime < 3000) return 60;
+    if (loadTime < 5000) return 40;
+    return 20;
   }
 }
 

@@ -97,7 +97,11 @@ router.post("/", async (req: Request, res: Response) => {
             id: auditId,
             status: 'completed',
             startTime: new Date(),
-            timestamp: new Date()
+            timestamp: new Date(),
+            summary: {
+              ...auditResults.summary,
+              total: auditResults.summary.total || 0
+            }
           };
           console.log(`Completed continued rival audit for ${url} with ID ${auditId}`);
         } else {
@@ -110,7 +114,11 @@ router.post("/", async (req: Request, res: Response) => {
             id: auditId,
             status: 'completed',
             startTime: new Date(),
-            timestamp: new Date()
+            timestamp: new Date(),
+            summary: {
+              ...auditResults.summary,
+              total: auditResults.summary.total || 0
+            }
           };
           console.log(`Completed rival audit for ${url} with ID ${auditId}`);
         }
@@ -364,10 +372,7 @@ router.get("/:id/export", async (req: Request, res: Response) => {
     
     if (format === 'csv') {
       try {
-        const csvBuffer = await generateRivalAuditCsv({
-          ...audit,
-          timestamp: audit.timestamp || new Date()
-        });
+        const csvBuffer = await generateRivalAuditCsv(convertForExport(audit));
         
         // Set headers for CSV download
         res.setHeader('Content-Type', 'text/csv');
@@ -382,10 +387,7 @@ router.get("/:id/export", async (req: Request, res: Response) => {
       }
     } else {
       try {
-        const excelBuffer = await generateRivalAuditExcel({
-          ...audit,
-          timestamp: audit.timestamp || new Date()
-        });
+        const excelBuffer = await generateRivalAuditExcel(convertForExport(audit));
         
         // Set headers for Excel download
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -404,6 +406,22 @@ router.get("/:id/export", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to export audit results" });
   }
 });
+
+// Helper function to convert cached audit to export format
+function convertForExport(audit: CachedRivalAudit) {
+  return {
+    url: audit.url,
+    timestamp: audit.timestamp || new Date(),
+    onPage: audit.onPage || { items: [] },
+    structureNavigation: audit.structureNavigation || { items: [] },
+    contactPage: audit.contactPage || { items: [] },
+    servicePages: audit.servicePages || { items: [] },
+    locationPages: audit.locationPages || { items: [] },
+    serviceAreaPages: audit.serviceAreaPages || { items: [] },
+    summary: audit.summary,
+    reachedMaxPages: audit.reachedMaxPages
+  };
+}
 
 // Helper function to update the summary counts
 function updateAuditSummary(audit: CachedRivalAudit) {
