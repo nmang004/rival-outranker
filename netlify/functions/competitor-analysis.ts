@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { competitorAnalyzer } from '../../server/services/competitorAnalyzer';
+import { competitorAnalyzer } from '../../server/services/analysis/competitor-analyzer.service';
 
 export const handler: Handler = async (event, context) => {
   // Handle CORS preflight
@@ -48,7 +48,7 @@ export const handler: Handler = async (event, context) => {
     }
 
     // Perform competitor analysis
-    const analysisResult = await competitorAnalyzer.analyzeCompetitors(url, competitors);
+    const analysisResult = await competitorAnalyzer.analyzeCompetitors(url, 'business services', 'United States');
 
     return {
       statusCode: 200,

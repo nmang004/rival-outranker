@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { keywordService } from '../../server/services/keywordService';
+import { keywordService } from '../../server/services/keywords/keyword.service';
 
 export const handler: Handler = async (event, context) => {
   // Handle CORS preflight
@@ -48,7 +48,7 @@ export const handler: Handler = async (event, context) => {
     }
 
     // Get keyword data using the service
-    const keywordData = await keywordService.getKeywordData(keyword, includeSearchVolume);
+    const keywordData = await keywordService.getKeywordData(keyword, 'US', 'en');
 
     return {
       statusCode: 200,

@@ -1,5 +1,5 @@
 import { Handler } from '@netlify/functions';
-import { analyzer } from '../../server/services/analyzer';
+import { analyzer } from '../../server/services/analysis/analyzer.service';
 import { optionalAuth } from '../../server/middleware/auth';
 import { trackApiUsage } from '../../server/middleware/apiUsageMiddleware';
 
@@ -56,7 +56,7 @@ export const handler: Handler = async (event, context) => {
     }
 
     // Perform SEO analysis
-    const analysisResult = await analyzer.analyzePage(url, primaryKeyword);
+    const analysisResult = await analyzer.analyze(url, { forcedPrimaryKeyword: primaryKeyword });
 
     return {
       statusCode: 200,
