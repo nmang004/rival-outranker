@@ -18,6 +18,7 @@ class Crawler {
   private MAX_REDIRECTS = 10; // Maximum number of redirects to follow
   private CRAWL_DELAY = 500; // Delay between requests in milliseconds
   private MAX_PAGES = 50; // Maximum pages to crawl per site
+  private CONCURRENT_REQUESTS = 5; // Maximum concurrent requests for parallel processing
   
   // Map to cache DNS resolutions
   private dnsCache = new Map<string, string>();
@@ -39,6 +40,60 @@ class Crawler {
     startTime: 0,
     endTime: 0
   };
+
+  /**
+   * Process URLs in parallel batches with concurrency limiting
+   */
+  private async crawlUrlsInParallel(urls: string[], batchSize: number = this.CONCURRENT_REQUESTS): Promise<{ url: string; result: any; error?: string }[]> {
+    const results: { url: string; result: any; error?: string }[] = [];
+    
+    // Process URLs in batches to limit concurrent requests
+    for (let i = 0; i < urls.length; i += batchSize) {
+      const batch = urls.slice(i, i + batchSize);
+      console.log(`[Crawler] Processing parallel batch ${Math.floor(i / batchSize) + 1} with ${batch.length} URLs`);
+      
+      // Process batch in parallel with Promise.allSettled to handle individual failures
+      const batchPromises = batch.map(async (url) => {
+        try {
+          // Add small random delay to avoid overwhelming the server
+          const randomDelay = Math.random() * 1000; // 0-1 second random delay
+          await new Promise(resolve => setTimeout(resolve, randomDelay));
+          
+          const pageData = await this.crawlPage(url);
+          this.crawledUrls.add(url);
+          
+          return { url, result: pageData };
+        } catch (error) {
+          console.error(`[Crawler] Error in parallel crawl for ${url}:`, error);
+          this.stats.errorsEncountered++;
+          return { url, result: null, error: error instanceof Error ? error.message : String(error) };
+        }
+      });
+      
+      const batchResults = await Promise.allSettled(batchPromises);
+      
+      // Process results and extract successful ones
+      batchResults.forEach((promiseResult, index) => {
+        if (promiseResult.status === 'fulfilled') {
+          results.push(promiseResult.value);
+        } else {
+          console.error(`[Crawler] Promise rejected for URL ${batch[index]}:`, promiseResult.reason);
+          results.push({ 
+            url: batch[index], 
+            result: null, 
+            error: promiseResult.reason instanceof Error ? promiseResult.reason.message : String(promiseResult.reason)
+          });
+        }
+      });
+      
+      // Add delay between batches to be respectful to the target server
+      if (i + batchSize < urls.length) {
+        await new Promise(resolve => setTimeout(resolve, this.CRAWL_DELAY));
+      }
+    }
+    
+    return results;
+  }
 
   /**
    * Crawl a webpage and extract its data
@@ -871,49 +926,65 @@ class Crawler {
           .slice(0, this.MAX_PAGES - 1); // Reserve space for homepage
       }
 
-      // Crawl additional pages
+      // Crawl additional pages using parallel processing
       const otherPages: any[] = [];
       let crawledCount = 1; // Already crawled homepage
+      let discoveredNewLinks = true;
 
-      while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
-        const nextUrl = this.pendingUrls.shift();
-        if (!nextUrl || this.crawledUrls.has(nextUrl)) continue;
-
-        try {
-          console.log(`[Crawler] Crawling page ${crawledCount + 1}/${this.MAX_PAGES}: ${nextUrl}`);
+      while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES && discoveredNewLinks) {
+        // Get batch of URLs to process in parallel
+        const urlsToProcess = this.pendingUrls
+          .filter(url => !this.crawledUrls.has(url))
+          .slice(0, Math.min(this.MAX_PAGES - crawledCount, this.CONCURRENT_REQUESTS * 2)) // Process up to 2 batches worth
+          .slice(0, this.MAX_PAGES - crawledCount); // Don't exceed max pages
+        
+        if (urlsToProcess.length === 0) break;
+        
+        // Remove processed URLs from pending list
+        urlsToProcess.forEach(url => {
+          const index = this.pendingUrls.indexOf(url);
+          if (index > -1) this.pendingUrls.splice(index, 1);
+        });
+        
+        console.log(`[Crawler] Processing ${urlsToProcess.length} pages in parallel (${crawledCount + 1}-${crawledCount + urlsToProcess.length}/${this.MAX_PAGES})`);
+        
+        // Process URLs in parallel
+        const parallelResults = await this.crawlUrlsInParallel(urlsToProcess);
+        
+        // Process results and collect new links
+        const newLinksThisRound: string[] = [];
+        
+        for (const { url, result, error } of parallelResults) {
+          crawledCount++;
           
-          const pageData = await this.crawlPage(nextUrl);
-          this.crawledUrls.add(nextUrl);
-          
-          if (pageData.error) {
+          if (error || (result && result.error)) {
             this.stats.errorsEncountered++;
-            console.log(`[Crawler] Error crawling ${nextUrl}: ${pageData.error}`);
-          } else {
-            const pageResult = this.convertToPageCrawlResult(pageData);
+            console.log(`[Crawler] Error crawling ${url}: ${error || result.error}`);
+          } else if (result) {
+            const pageResult = this.convertToPageCrawlResult(result);
             otherPages.push(pageResult);
             this.stats.pagesCrawled++;
             
-            // Add more internal links if we find them
-            if (pageData.links && pageData.links.internal && crawledCount < this.MAX_PAGES * 0.8) {
-              const newLinks = pageData.links.internal
+            // Collect new internal links from this page
+            if (result.links && result.links.internal && crawledCount < this.MAX_PAGES * 0.8) {
+              const newLinks = result.links.internal
                 .map((link: any) => typeof link === 'string' ? link : link.url)
                 .filter((link: string) => this.shouldCrawlUrl(link) && !this.crawledUrls.has(link))
-                .slice(0, 10); // Limit new links per page
+                .slice(0, 5); // Reduced from 10 to 5 to prevent exponential growth
               
-              this.pendingUrls.push(...newLinks);
+              newLinksThisRound.push(...newLinks);
             }
           }
-          
-          crawledCount++;
-          
-          // Add delay between requests
-          await new Promise(resolve => setTimeout(resolve, this.CRAWL_DELAY));
-          
-        } catch (error) {
-          console.error(`[Crawler] Exception crawling ${nextUrl}:`, error);
-          this.stats.errorsEncountered++;
-          crawledCount++;
         }
+        
+        // Add new discovered links to pending queue (deduplicated)
+        const uniqueNewLinks = Array.from(new Set(newLinksThisRound))
+          .filter(link => !this.crawledUrls.has(link) && !this.pendingUrls.includes(link));
+        
+        this.pendingUrls.push(...uniqueNewLinks);
+        discoveredNewLinks = uniqueNewLinks.length > 0;
+        
+        console.log(`[Crawler] Found ${uniqueNewLinks.length} new links, ${this.pendingUrls.length} URLs remaining in queue`);
       }
 
       // Check for sitemap.xml
@@ -954,35 +1025,42 @@ class Crawler {
       return this.crawlSite(url);
     }
 
-    // Continue with remaining URLs
+    // Continue with remaining URLs using parallel processing
     const otherPages: any[] = [];
     let crawledCount = this.stats.pagesCrawled;
 
     while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
-      const nextUrl = this.pendingUrls.shift();
-      if (!nextUrl || this.crawledUrls.has(nextUrl)) continue;
-
-      try {
-        console.log(`[Crawler] Continuing crawl ${crawledCount + 1}/${this.MAX_PAGES}: ${nextUrl}`);
+      // Get batch of URLs to process in parallel
+      const urlsToProcess = this.pendingUrls
+        .filter(url => !this.crawledUrls.has(url))
+        .slice(0, Math.min(this.MAX_PAGES - crawledCount, this.CONCURRENT_REQUESTS * 2))
+        .slice(0, this.MAX_PAGES - crawledCount);
+      
+      if (urlsToProcess.length === 0) break;
+      
+      // Remove processed URLs from pending list
+      urlsToProcess.forEach(url => {
+        const index = this.pendingUrls.indexOf(url);
+        if (index > -1) this.pendingUrls.splice(index, 1);
+      });
+      
+      console.log(`[Crawler] Continuing crawl with ${urlsToProcess.length} pages in parallel (${crawledCount + 1}-${crawledCount + urlsToProcess.length}/${this.MAX_PAGES})`);
+      
+      // Process URLs in parallel
+      const parallelResults = await this.crawlUrlsInParallel(urlsToProcess);
+      
+      // Process results
+      for (const { url, result, error } of parallelResults) {
+        crawledCount++;
         
-        const pageData = await this.crawlPage(nextUrl);
-        this.crawledUrls.add(nextUrl);
-        
-        if (pageData.error) {
+        if (error || (result && result.error)) {
           this.stats.errorsEncountered++;
-        } else {
-          const pageResult = this.convertToPageCrawlResult(pageData);
+          console.log(`[Crawler] Error in continued crawl ${url}: ${error || result.error}`);
+        } else if (result) {
+          const pageResult = this.convertToPageCrawlResult(result);
           otherPages.push(pageResult);
           this.stats.pagesCrawled++;
         }
-        
-        crawledCount++;
-        await new Promise(resolve => setTimeout(resolve, this.CRAWL_DELAY));
-        
-      } catch (error) {
-        console.error(`[Crawler] Exception in continued crawl ${nextUrl}:`, error);
-        this.stats.errorsEncountered++;
-        crawledCount++;
       }
     }
 
