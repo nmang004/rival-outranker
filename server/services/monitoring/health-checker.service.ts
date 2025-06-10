@@ -1,4 +1,4 @@
-import { db } from '../../db.js';
+import { db as getDb } from '../../db.js';
 import { crawlJobs, crawledContent, users } from '../../../shared/schema.js';
 import { eq, sql, desc, gt } from 'drizzle-orm';
 import { log } from './logger.service.js';
@@ -26,6 +26,14 @@ export class HealthCheckerService {
   
   constructor() {
     this.registerDefaultChecks();
+  }
+  
+  private getDatabase() {
+    const db = getDb();
+    if (!db) {
+      throw new Error('Database not initialized');
+    }
+    return db;
   }
   
   private registerDefaultChecks() {
@@ -120,11 +128,13 @@ export class HealthCheckerService {
     const start = Date.now();
     
     try {
+      const database = this.getDatabase();
+      
       // Test basic connectivity
-      await db.execute(sql`SELECT 1`);
+      await database.execute(sql`SELECT 1`);
       
       // Test table access
-      const userCount = await db.select({ count: sql<number>`count(*)` }).from(users);
+      const userCount = await database.select({ count: sql<number>`count(*)` }).from(users);
       
       // Test write capability (if needed)
       // await db.execute(sql`SELECT pg_is_in_recovery()`);
@@ -162,13 +172,15 @@ export class HealthCheckerService {
   
   private async checkCrawler(): Promise<HealthCheck> {
     try {
+      const database = this.getDatabase();
+      
       // Check if crawler jobs exist and are active
-      const activeJobs = await db.select({ count: sql<number>`count(*)` })
+      const activeJobs = await database.select({ count: sql<number>`count(*)` })
         .from(crawlJobs)
         .where(eq(crawlJobs.isActive, true));
       
       // Check last crawl activity
-      const lastActivity = await db.select({
+      const lastActivity = await database.select({
         lastRun: crawlJobs.lastRun,
         name: crawlJobs.name
       })
@@ -366,16 +378,16 @@ export class HealthCheckerService {
   private async checkDataQuality(): Promise<HealthCheck> {
     try {
       // Check recent data crawling activity
-      const recentContent = await db.select({ count: sql<number>`count(*)` })
+      const recentContent = await this.getDatabase().select({ count: sql<number>`count(*)` })
         .from(crawledContent)
         .where(gt(crawledContent.crawledAt, sql`NOW() - INTERVAL '24 hours'`));
       
       // Check for data quality issues
-      const duplicateCount = await db.select({ count: sql<number>`count(*)` })
+      const duplicateCount = await this.getDatabase().select({ count: sql<number>`count(*)` })
         .from(crawledContent)
         .where(eq(crawledContent.isDuplicate, true));
       
-      const staleCount = await db.select({ count: sql<number>`count(*)` })
+      const staleCount = await this.getDatabase().select({ count: sql<number>`count(*)` })
         .from(crawledContent)
         .where(eq(crawledContent.isStale, true));
       
@@ -425,12 +437,12 @@ export class HealthCheckerService {
   private async checkRecentActivity(): Promise<HealthCheck> {
     try {
       // Check recent user activity
-      const recentUsers = await db.select({ count: sql<number>`count(*)` })
+      const recentUsers = await this.getDatabase().select({ count: sql<number>`count(*)` })
         .from(users)
         .where(gt(users.lastLoginAt, sql`NOW() - INTERVAL '24 hours'`));
       
       // Check recent analyses
-      const recentAnalyses = await db.select({ count: sql<number>`count(*)` })
+      const recentAnalyses = await this.getDatabase().select({ count: sql<number>`count(*)` })
         .from(crawledContent)
         .where(gt(crawledContent.crawledAt, sql`NOW() - INTERVAL '1 hour'`));
       
@@ -502,7 +514,10 @@ export async function healthCheckHandler(req: any, res: any) {
 export async function simpleHealthCheckHandler(req: any, res: any) {
   try {
     // Quick health check for load balancers
-    await db.execute(sql`SELECT 1`);
+    const database = getDb();
+    if (database) {
+      await database.execute(sql`SELECT 1`);
+    }
     res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
   } catch (error) {
     res.status(503).json({ status: 'unhealthy', timestamp: new Date().toISOString() });
