@@ -65,6 +65,40 @@ export function OFIClassificationAdmin() {
     }
   };
 
+  const runQuickReclassification = async () => {
+    try {
+      setReclassifying(true);
+      const response = await fetch('/api/ofi-reports/reclassify-all-recent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to run reclassification');
+      
+      const data = await response.json();
+      
+      toast({
+        title: "Reclassification Complete!",
+        description: `Successfully processed ${data.data.auditsProcessed} audits. Downgraded ${data.data.totalDowngraded} Priority OFI items. New rate: ${data.data.newPriorityOFIRate}%`,
+        duration: 5000,
+      });
+      
+      fetchMetrics(); // Refresh metrics
+    } catch (error) {
+      console.error('Error running quick reclassification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to run quick reclassification",
+        variant: "destructive"
+      });
+    } finally {
+      setReclassifying(false);
+    }
+  };
+
   const runDryRunReclassification = async () => {
     try {
       setReclassifying(true);
@@ -279,11 +313,29 @@ export function OFIClassificationAdmin() {
           )}
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            <Button 
+              onClick={runQuickReclassification}
+              disabled={reclassifying}
+              variant={isHighRate ? "default" : "outline"}
+            >
+              {reclassifying ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <TrendingDown className="h-4 w-4 mr-2" />
+                  Quick Fix: Reclassify Recent Audits
+                </>
+              )}
+            </Button>
+            
             <Button 
               onClick={runDryRunReclassification}
               disabled={reclassifying || metrics.potentialDowngrades === 0}
-              variant={isHighRate ? "default" : "outline"}
+              variant="outline"
             >
               {reclassifying ? (
                 <>
@@ -293,7 +345,7 @@ export function OFIClassificationAdmin() {
               ) : (
                 <>
                   <TrendingDown className="h-4 w-4 mr-2" />
-                  Bulk Reclassify Priority OFI
+                  Bulk Reclassify (Preview)
                 </>
               )}
             </Button>

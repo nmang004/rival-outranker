@@ -625,17 +625,19 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                           <span className="text-xs sm:text-sm font-medium line-clamp-1">{item.name}</span>
                           
                           <div className="sm:hidden ml-auto space-x-2">
-                            {getStatusBadge(item, true)}
-                            {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                            {(item.status === 'OFI' || item.status === 'Priority OFI') ? (
                               <OFIClassificationDisplay item={item} showFullDetails={false} />
+                            ) : (
+                              getStatusBadge(item, true)
                             )}
                             <span className="hidden xs:inline-block">{getImportanceBadge(item.importance)}</span>
                           </div>
                         </div>
                         <div className="hidden sm:flex col-span-2 items-center gap-1">
-                          {getStatusBadge(item, true)}
-                          {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                          {(item.status === 'OFI' || item.status === 'Priority OFI') ? (
                             <OFIClassificationDisplay item={item} showFullDetails={false} />
+                          ) : (
+                            getStatusBadge(item, true)
                           )}
                         </div>
                         <div className="hidden sm:flex col-span-2 items-center">
@@ -837,9 +839,10 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                                 <span className="text-sm font-medium">{item.name}</span>
                               </div>
                               <div className="flex gap-2 items-center">
-                                {getStatusBadge(item, true)}
-                                {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                                {(item.status === 'OFI' || item.status === 'Priority OFI') ? (
                                   <OFIClassificationDisplay item={item} showFullDetails={false} />
+                                ) : (
+                                  getStatusBadge(item, true)
                                 )}
                                 {getImportanceBadge(item.importance)}
                               </div>

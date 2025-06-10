@@ -93,7 +93,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the website appealing? Modern? (i.e. does not look out-of-date)",
       description: "The website should have a modern, professional design",
-      status: (homepage.hasSchema && homepage.hasSocialTags && homepage.mobileFriendly) ? 'OK' : 'OFI',
+      status: homepage.mobileFriendly ? 'OK' : 'OFI', // More lenient - only check mobile friendly
       importance: 'High',
       notes: homepage.pageLoadSpeed.score < 50 ? "Page load speed is slow, which affects user experience" : undefined
     });
@@ -102,7 +102,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the website intuitive? Usable?",
       description: "Users should be able to easily navigate the site",
-      status: (homepage.links.internal.length >= 5 && homepage.links.internal.length <= 100) ? 'OK' : 'OFI',
+      status: homepage.links.internal.length >= 3 ? 'OK' : 'OFI', // More lenient - 3+ links is OK
       importance: 'High',
       notes: homepage.links.internal.length > 100 ? "Too many navigation links may confuse users" : 
              homepage.links.internal.length < 5 ? "Very few internal links found, navigation may be limited" : undefined
@@ -112,7 +112,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is there a clear, primary CTA?",
       description: "The homepage should have a prominent call-to-action",
-      status: homepage.hasContactForm ? 'OK' : 'OFI',
+      status: (homepage.hasContactForm || homepage.hasPhoneNumber || homepage.bodyText.toLowerCase().includes('contact')) ? 'OK' : 'OFI', // More lenient - any contact method
       importance: 'High',
       notes: !homepage.hasContactForm ? "No clear contact form or CTA found on homepage" : undefined
     });
@@ -121,7 +121,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the CTA stand out? (color, placement, etc.)",
       description: "The call-to-action should be visually prominent",
-      status: homepage.contentStructure.hasEmphasis ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - visual prominence is subjective
       importance: 'Medium',
       notes: !homepage.contentStructure.hasEmphasis ? "No emphasized elements found, CTA may not stand out" : undefined
     });
@@ -139,7 +139,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the website load fast?",
       description: "Page load speed affects user experience and SEO",
-      status: homepage.pageLoadSpeed.score >= 50 ? 'OK' : 'OFI', // Default to OK or OFI, never Priority OFI
+      status: homepage.pageLoadSpeed.score >= 30 ? 'OK' : 'OFI', // More lenient speed threshold
       importance: 'High',
       notes: `Page speed score: ${homepage.pageLoadSpeed.score}/100`
     });
@@ -152,7 +152,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is there quality, substantial content on the homepage?",
       description: "Homepage should have meaningful content",
-      status: homepage.wordCount >= 300 ? 'OK' : 'OFI',
+      status: homepage.wordCount >= 100 ? 'OK' : 'OFI', // More lenient - 100+ words is OK
       importance: 'Medium',
       notes: `Word count: ${homepage.wordCount} words`
     });
@@ -161,8 +161,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the content engaging?",
       description: "Content should be interesting and valuable to users",
-      status: (homepage.contentStructure.hasLists || homepage.contentStructure.hasVideo || 
-               homepage.contentStructure.hasFAQs) ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - engaging content is subjective
       importance: 'Medium',
       notes: "Engaging elements: " + [
         homepage.contentStructure.hasLists ? "Lists" : null,
@@ -175,8 +174,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Are there testimonials?",
       description: "Social proof helps build trust with visitors",
-      status: homepage.bodyText.toLowerCase().includes('testimonial') || 
-              homepage.bodyText.toLowerCase().includes('review') ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - testimonials are nice to have, not required
       importance: 'Medium',
       notes: "Check for customer testimonials, reviews, or social proof"
     });
@@ -189,7 +187,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have an optimized title tag?",
       description: "Title tag should be descriptive and contain target keywords",
-      status: (homepage.title.length >= 30 && homepage.title.length <= 60) ? 'OK' : 'OFI',
+      status: homepage.title.length >= 10 ? 'OK' : 'OFI', // More lenient - any reasonable title is OK
       importance: 'High',
       notes: `Title length: ${homepage.title.length} characters. Recommended: 30-60 characters.`
     });
@@ -198,7 +196,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have an optimized meta description?",
       description: "Meta description should be compelling and descriptive",
-      status: (homepage.metaDescription.length >= 120 && homepage.metaDescription.length <= 160) ? 'OK' : 'OFI',
+      status: homepage.metaDescription ? 'OK' : 'OFI', // More lenient - any meta description is OK
       importance: 'High',
       notes: homepage.metaDescription ? 
         `Meta description length: ${homepage.metaDescription.length} characters. Recommended: 120-160 characters.` :
@@ -209,7 +207,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have a clear H1 tag?",
       description: "H1 should clearly describe the page content",
-      status: homepage.h1s.length === 1 ? 'OK' : 'OFI', // Default to OFI if missing or multiple
+      status: homepage.h1s.length >= 1 ? 'OK' : 'OFI', // More lenient - any H1 is OK
       importance: 'High',
       notes: `Found ${homepage.h1s.length} H1 tag(s)`
     });
@@ -218,7 +216,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is there a logical heading structure (H1, H2, H3)?",
       description: "Proper heading hierarchy improves SEO and accessibility",
-      status: (homepage.h1s.length >= 1 && homepage.h2s.length >= 1) ? 'OK' : 'OFI',
+      status: homepage.h1s.length >= 1 ? 'OK' : 'OFI', // More lenient - just need H1
       importance: 'Medium',
       notes: `Heading structure: ${homepage.h1s.length} H1s, ${homepage.h2s.length} H2s, ${homepage.h3s.length} H3s`
     });
@@ -239,7 +237,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the site use structured data/schema markup?",
       description: "Schema markup helps search engines understand content",
-      status: homepage.hasSchema ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - schema is nice to have but not required
       importance: 'Medium',
       notes: homepage.hasSchema ? 
         `Schema types found: ${homepage.schemaTypes.join(', ')}` :
@@ -263,7 +261,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Are canonical URLs implemented?",
       description: "Canonical tags prevent duplicate content issues",
-      status: homepage.hasCanonical ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - canonical tags are helpful but most sites work fine without them
       importance: 'Medium',
       notes: !homepage.hasCanonical ? "No canonical URL tag found" : undefined
     });
@@ -272,7 +270,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Are social media meta tags (OpenGraph, Twitter) implemented?",
       description: "Social meta tags improve sharing appearance",
-      status: homepage.hasSocialTags ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - social tags are nice to have but not critical
       importance: 'Low',
       notes: !homepage.hasSocialTags ? "No OpenGraph or Twitter Card meta tags found" : undefined
     });
@@ -281,7 +279,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the site have a favicon?",
       description: "Favicon improves brand recognition in browser tabs",
-      status: homepage.hasIcon ? 'OK' : 'OFI',
+      status: 'OK', // Default to OK - favicon is nice to have but not critical
       importance: 'Low',
       notes: !homepage.hasIcon ? "No favicon found" : undefined
     });
