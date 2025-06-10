@@ -195,10 +195,10 @@ export function OFIClassificationDisplay({ item, showFullDetails = false }: OFIC
               <div className="text-xs text-gray-600 space-y-1">
                 <p><strong>Priority OFI requires ≥2 of:</strong></p>
                 <ul className="ml-4 space-y-0.5">
-                  <li>• System stability impact (crashes, >50% performance loss, CVSS≥7.0)</li>
-                  <li>• User impact severity (>30% users affected, >10 tickets/day)</li>
-                  <li>• Business impact (>$10K/day revenue risk, compliance violations)</li>
-                  <li>• Technical debt criticality (blocks 3+ initiatives, >25% incident increase)</li>
+                  <li>• System stability impact (crashes, &gt;50% performance loss, CVSS≥7.0)</li>
+                  <li>• User impact severity (&gt;30% users affected, &gt;10 tickets/day)</li>
+                  <li>• Business impact (&gt;$10K/day revenue risk, compliance violations)</li>
+                  <li>• Technical debt criticality (blocks 3+ initiatives, &gt;25% incident increase)</li>
                 </ul>
               </div>
             </div>
