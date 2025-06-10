@@ -222,11 +222,14 @@ class EnhancedAuditAnalyzer {
         // Item exists, merge the results intelligently
         const existingItem = targetItems[existingIndex];
         
-        // Combine notes if both have different information
-        if (newItem.notes && existingItem.notes !== newItem.notes) {
-          existingItem.notes = `${existingItem.notes} | ${newItem.notes}`;
-        } else if (newItem.notes && !existingItem.notes) {
+        // Only update notes if existing item doesn't have notes or if new notes are significantly different
+        if (!existingItem.notes && newItem.notes) {
           existingItem.notes = newItem.notes;
+        } else if (newItem.notes && existingItem.notes && 
+                   !existingItem.notes.includes(newItem.notes.substring(0, 50)) &&
+                   existingItem.notes.length < 200) {
+          // Only append if notes are different and total length is reasonable
+          existingItem.notes = `${existingItem.notes} | ${newItem.notes}`;
         }
         
         // Use the worst status (Priority OFI > OFI > OK > N/A)
@@ -328,6 +331,9 @@ class EnhancedAuditAnalyzer {
       ...results.serviceAreaPages.items
     ];
 
+    console.log(`[PageIssueSummaries] Processing ${allItems.length} total items`);
+    console.log(`[PageIssueSummaries] Items with pageUrl: ${allItems.filter(item => item.pageUrl).length}`);
+
     // Group items by page URL
     const pageGroups = new Map<string, AuditItem[]>();
     
@@ -340,6 +346,8 @@ class EnhancedAuditAnalyzer {
       }
     });
 
+    console.log(`[PageIssueSummaries] Grouped into ${pageGroups.size} pages`);
+
     // Generate summaries for each page
     const pageSummaries: PageIssueSummary[] = [];
     
@@ -350,6 +358,8 @@ class EnhancedAuditAnalyzer {
       const naCount = items.filter(item => item.status === 'N/A').length;
       const totalIssues = priorityOfiCount + ofiCount;
 
+      console.log(`[PageIssueSummaries] Page ${pageUrl}: ${totalIssues} issues (${priorityOfiCount} Priority OFI, ${ofiCount} OFI)`);
+      
       // Only include pages that have issues to fix
       if (totalIssues > 0) {
         const firstItem = items[0]; // Get page info from first item
@@ -406,6 +416,8 @@ class EnhancedAuditAnalyzer {
       }
     });
 
+    console.log(`[PageIssueSummaries] Generated ${pageSummaries.length} page summaries with issues`);
+    
     // Sort by priority weight first, then by total issues
     return pageSummaries.sort((a, b) => {
       // Sort by priority (higher priority first), then Priority OFI count, then total issues
@@ -1719,7 +1731,7 @@ class LocalSEOAnalyzer {
         description: factor.desc,
         status: score >= 85 ? "OK" : score >= 65 ? "OFI" : "Priority OFI",
         importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
-        notes: `Local SEO analysis score: ${score}/100. ${pageType} page evaluation for ${factor.desc.toLowerCase()}.`
+        notes: `Local SEO analysis score: ${score}/100. ${pageType} page evaluation for ${factor.name.toLowerCase()}.`
       });
     });
 

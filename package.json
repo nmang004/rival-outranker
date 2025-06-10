@@ -18,6 +18,7 @@
     "preview": "vite preview --config=config/vite.config.ts",
     "railway:build": "echo 'Railway backend build - no frontend build needed'",
     "railway:start": "npm start",
+    "postinstall": "test \"$NODE_ENV\" = \"production\" && npx puppeteer browsers install chrome || true",
     "deploy:staging": "netlify deploy --dir=dist",
     "deploy:production": "netlify deploy --prod --dir=dist",
     "check": "tsc --project config/tsconfig.json",

@@ -975,7 +975,7 @@ class Crawler {
         maxConcurrency: this.PUPPETEER_CLUSTER_SIZE,
         puppeteerOptions: {
           headless: true,
-          executablePath: process.env.CHROME_EXECUTABLE_PATH || undefined,
+          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_EXECUTABLE_PATH || undefined,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -985,6 +985,8 @@ class Crawler {
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
             '--disable-renderer-backgrounding',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
             '--window-size=1920x1080'
           ]
         },

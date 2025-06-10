@@ -1,6 +1,16 @@
 # Railway-optimized Dockerfile for backend-only deployment
 FROM node:18-alpine
 
+# Install Chrome dependencies and Chrome itself
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    curl
+
 # Set working directory
 WORKDIR /app
 
@@ -9,6 +19,13 @@ COPY package.json package-lock.json ./
 
 # Install all dependencies (production and dev)
 RUN npm ci --no-audit --no-fund
+
+# Install Chrome for Puppeteer (skip download since we use system Chrome)
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Set additional Puppeteer configuration for Alpine Linux
+ENV PUPPETEER_CACHE_DIR=/home/nodejs/.cache/puppeteer
 
 # Copy only backend-related files
 COPY server/ ./server/
@@ -21,8 +38,9 @@ COPY scripts/ ./scripts/
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Change ownership of the app directory
-RUN chown -R nodejs:nodejs /app
+# Create cache directory and change ownership of app directory
+RUN mkdir -p /home/nodejs/.cache/puppeteer && \
+    chown -R nodejs:nodejs /app /home/nodejs/.cache
 
 # Switch to non-root user
 USER nodejs
