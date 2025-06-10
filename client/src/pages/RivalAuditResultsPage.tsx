@@ -361,6 +361,40 @@ export default function RivalAuditResultsPage() {
   const getEnhancedCategories = () => {
     if (!isEnhanced && !('totalFactors' in (audit?.summary || {}))) return null;
     
+    console.log('[ResultsPage] Enhanced audit data structure:', {
+      hasContentQuality: 'contentQuality' in audit,
+      hasTechnicalSEO: 'technicalSEO' in audit,
+      hasLocalSEO: 'localSEO' in audit,
+      hasUxPerformance: 'uxPerformance' in audit,
+      contentQualityItems: (audit as any).contentQuality?.items?.length || 0,
+      technicalSEOItems: (audit as any).technicalSEO?.items?.length || 0,
+      localSEOItems: (audit as any).localSEO?.items?.length || 0,
+      uxPerformanceItems: (audit as any).uxPerformance?.items?.length || 0,
+      totalFactors: audit.summary.totalFactors || audit.summary.total || 0
+    });
+    
+    // Check if audit has dedicated enhanced categories with actual items
+    const hasEnhancedCategories = 'contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit;
+    const hasEnhancedItems = hasEnhancedCategories && (
+      ((audit as any).contentQuality?.items?.length || 0) > 0 ||
+      ((audit as any).technicalSEO?.items?.length || 0) > 0 ||
+      ((audit as any).localSEO?.items?.length || 0) > 0 ||
+      ((audit as any).uxPerformance?.items?.length || 0) > 0
+    );
+    
+    if (hasEnhancedCategories && hasEnhancedItems) {
+      console.log('[ResultsPage] Using dedicated enhanced categories from API');
+      return {
+        contentQuality: (audit as any).contentQuality?.items || [],
+        technicalSEO: (audit as any).technicalSEO?.items || [],
+        localSEO: (audit as any).localSEO?.items || [],
+        uxPerformance: (audit as any).uxPerformance?.items || [],
+        uncategorized: []
+      };
+    }
+    
+    // Enhanced audit without dedicated categories - need to categorize all legacy items by category field
+    console.log('[ResultsPage] Enhanced audit without dedicated categories - categorizing legacy items');
     const allItems = [
       ...(audit?.onPage?.items || []),
       ...(audit?.structureNavigation?.items || []),
@@ -370,69 +404,119 @@ export default function RivalAuditResultsPage() {
       ...(audit?.serviceAreaPages?.items || [])
     ];
     
-    // Group items by their category field for enhanced audits
-    const categories = {
-      contentQuality: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('Content Quality') ||
-          item.category.includes('Content') ||
-          item.category.includes('Readability') ||
-          item.category.includes('Engagement') ||
-          item.category.includes('Social Proof') ||
-          item.category.includes('Review') ||
-          item.category.includes('CTA')
-        )
-      ),
-      technicalSEO: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('Technical SEO') ||
-          item.category.includes('Technical') ||
-          item.category.includes('Schema') ||
-          item.category.includes('URL') ||
-          item.category.includes('Meta') ||
-          item.category.includes('Navigation') ||
-          item.category.includes('Internal Linking') ||
-          item.category.includes('Duplicate Content')
-        )
-      ),
-      localSEO: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('Local SEO') ||
-          item.category.includes('Local') ||
-          item.category.includes('NAP') ||
-          item.category.includes('E-E-A-T') ||
-          item.category.includes('Trust') ||
-          item.category.includes('Contact') ||
-          item.category.includes('Service Area') ||
-          item.category.includes('Location')
-        )
-      ),
-      uxPerformance: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('UX') ||
-          item.category.includes('Performance') ||
-          item.category.includes('Mobile') ||
-          item.category.includes('Accessibility') ||
-          item.category.includes('User Experience') ||
-          item.category.includes('Form') ||
-          item.category.includes('Visual')
-        )
+    console.log('[ResultsPage] Total legacy items to categorize:', allItems.length);
+    console.log('[ResultsPage] Sample item categories:', allItems.slice(0, 5).map(item => ('category' in item ? item.category : 'no category')));
+    
+    const contentQuality = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('Content Quality') ||
+        item.category.includes('Content') ||
+        item.category.includes('Readability') ||
+        item.category.includes('Engagement') ||
+        item.category.includes('Social Proof') ||
+        item.category.includes('Review') ||
+        item.category.includes('CTA')
       )
-    };
+    );
     
-    // Add remaining items to legacy organization if not categorized
-    const categorizedItems = new Set([
-      ...categories.contentQuality,
-      ...categories.technicalSEO,
-      ...categories.localSEO,
-      ...categories.uxPerformance
-    ]);
+    const technicalSEO = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('Technical SEO') ||
+        item.category.includes('Technical') ||
+        item.category.includes('Schema') ||
+        item.category.includes('URL') ||
+        item.category.includes('Meta') ||
+        item.category.includes('Navigation') ||
+        item.category.includes('Internal Linking') ||
+        item.category.includes('Duplicate Content')
+      )
+    );
     
-    const uncategorizedItems = allItems.filter(item => !categorizedItems.has(item));
+    const localSEO = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('Local SEO') ||
+        item.category.includes('Local') ||
+        item.category.includes('NAP') ||
+        item.category.includes('E-E-A-T') ||
+        item.category.includes('Trust') ||
+        item.category.includes('Contact') ||
+        item.category.includes('Service Area') ||
+        item.category.includes('Location')
+      )
+    );
+    
+    const uxPerformance = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('UX') ||
+        item.category.includes('Performance') ||
+        item.category.includes('Mobile') ||
+        item.category.includes('Accessibility') ||
+        item.category.includes('User Experience') ||
+        item.category.includes('Form') ||
+        item.category.includes('Visual')
+      )
+    );
+    
+    // Items that don't match any enhanced category
+    const categorizedItems = new Set([...contentQuality, ...technicalSEO, ...localSEO, ...uxPerformance]);
+    const uncategorized = allItems.filter(item => !categorizedItems.has(item));
+    
+    console.log('[ResultsPage] Categorization results:', {
+      contentQuality: contentQuality.length,
+      technicalSEO: technicalSEO.length,
+      localSEO: localSEO.length,
+      uxPerformance: uxPerformance.length,
+      uncategorized: uncategorized.length,
+      total: allItems.length
+    });
+    
+    // If we have very few items in enhanced categories but many uncategorized,
+    // the category field matching isn't working - distribute items more evenly
+    if (uncategorized.length > (contentQuality.length + technicalSEO.length + localSEO.length + uxPerformance.length)) {
+      console.log('[ResultsPage] Many uncategorized items detected - applying smart categorization');
+      
+      // Smart categorization based on item names and context when category field is missing
+      uncategorized.forEach(item => {
+        const itemName = item.name.toLowerCase();
+        const itemDescription = (item.description || '').toLowerCase();
+        const combined = itemName + ' ' + itemDescription;
+        
+        if (combined.includes('content') || combined.includes('text') || combined.includes('readability') || 
+            combined.includes('heading') || combined.includes('title') || combined.includes('description') ||
+            combined.includes('review') || combined.includes('social') || combined.includes('cta') || combined.includes('call')) {
+          contentQuality.push(item);
+        } else if (combined.includes('meta') || combined.includes('schema') || combined.includes('url') || 
+                   combined.includes('link') || combined.includes('navigation') || combined.includes('technical') ||
+                   combined.includes('seo') || combined.includes('duplicate') || combined.includes('canonical')) {
+          technicalSEO.push(item);
+        } else if (combined.includes('local') || combined.includes('contact') || combined.includes('address') || 
+                   combined.includes('phone') || combined.includes('location') || combined.includes('nap') ||
+                   combined.includes('trust') || combined.includes('expertise') || combined.includes('authority')) {
+          localSEO.push(item);
+        } else if (combined.includes('mobile') || combined.includes('performance') || combined.includes('speed') || 
+                   combined.includes('accessibility') || combined.includes('form') || combined.includes('user') ||
+                   combined.includes('ux') || combined.includes('visual') || combined.includes('loading')) {
+          uxPerformance.push(item);
+        } else {
+          // Default to technical SEO for remaining items
+          technicalSEO.push(item);
+        }
+      });
+      
+      console.log('[ResultsPage] After smart categorization:', {
+        contentQuality: contentQuality.length,
+        technicalSEO: technicalSEO.length,
+        localSEO: localSEO.length,
+        uxPerformance: uxPerformance.length
+      });
+    }
     
     return {
-      ...categories,
-      uncategorized: uncategorizedItems
+      contentQuality,
+      technicalSEO,
+      localSEO,
+      uxPerformance,
+      uncategorized: []
     };
   };
   
