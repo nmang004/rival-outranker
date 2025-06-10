@@ -152,6 +152,13 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
   
+  // Start audit cleanup service for automatic expired audit removal
+  if (process.env.DATABASE_URL) {
+    console.log('🧹 Starting audit cleanup service...');
+    const { auditCleanupService } = await import('./services/audit/cleanup.service');
+    auditCleanupService.start();
+  }
+  
   // Enhanced health check endpoint
   app.get('/health', async (req, res) => {
     const dbHealth = await getDatabaseHealth();
@@ -223,6 +230,17 @@ app.use((req, res, next) => {
     
     server.close(async () => {
       console.log('HTTP server closed');
+      
+      // Stop audit cleanup service
+      if (process.env.DATABASE_URL) {
+        try {
+          const { auditCleanupService } = await import('./services/audit/cleanup.service');
+          auditCleanupService.stop();
+          console.log('Audit cleanup service stopped');
+        } catch (error) {
+          console.error('Error stopping audit cleanup service:', error);
+        }
+      }
       
       try {
         await closeDatabase();

@@ -76,28 +76,57 @@ export default function RivalAuditResultsPage() {
         : `/api/rival-audit/${auditId}`;
       
       try {
-        const result = await apiRequest(endpoint);
-        return result;
-      } catch (error) {
-        // If we get a 404, the audit might still be processing
-        if (error instanceof Error && error.message.includes('404')) {
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+        const response = await fetch(`${baseURL}${endpoint}`, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.status === 202) {
+          // 202 means audit is still processing
           throw new Error('AUDIT_PROCESSING');
         }
+        
+        if (response.status === 404) {
+          throw new Error('AUDIT_NOT_FOUND');
+        }
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(`${response.status}: ${JSON.stringify(errorData)}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        // Re-throw our custom errors
+        if (error instanceof Error && 
+            (error.message === 'AUDIT_PROCESSING' || error.message === 'AUDIT_NOT_FOUND')) {
+          throw error;
+        }
+        
+        // Handle other fetch errors
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          throw new Error('Network error: Could not connect to server');
+        }
+        
         throw error;
       }
     },
     enabled: !!auditId,
     retry: (failureCount, error) => {
       // Keep retrying if audit is still processing, up to 30 attempts (5 minutes)
-      if (error instanceof Error && error.message === 'AUDIT_PROCESSING') {
+      if (error instanceof Error && (error.message === 'AUDIT_PROCESSING' || error.message === 'AUDIT_NOT_FOUND')) {
         return failureCount < 30;
       }
       // For other errors, use standard retry logic
       return failureCount < 3;
     },
     retryDelay: (attemptIndex, error) => {
-      // If audit is processing, check every 10 seconds
-      if (error instanceof Error && error.message === 'AUDIT_PROCESSING') {
+      // If audit is processing or not found yet, check every 10 seconds
+      if (error instanceof Error && (error.message === 'AUDIT_PROCESSING' || error.message === 'AUDIT_NOT_FOUND')) {
         return 10000; // 10 seconds
       }
       // For other errors, use exponential backoff
@@ -352,7 +381,7 @@ export default function RivalAuditResultsPage() {
 
   if (isError || !audit) {
     // Check if this is a processing error vs actual error
-    const isProcessingError = isError && error instanceof Error && error.message === 'AUDIT_PROCESSING';
+    const isProcessingError = isError && error instanceof Error && (error.message === 'AUDIT_PROCESSING' || error.message === 'AUDIT_NOT_FOUND');
     
     if (isProcessingError) {
       // Show loading screen if audit is still processing

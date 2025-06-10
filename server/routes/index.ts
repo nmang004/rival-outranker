@@ -15,6 +15,7 @@ import { pagespeedRouter } from "./pagespeed";
 import { analysisRoutes } from "./analysis.routes";
 import { competitorRoutes } from "./competitor.routes";
 import { auditRoutes } from "./audit.routes";
+import { adminAuditRoutes } from "./admin-audit.routes";
 import { contentRoutes } from "./content.routes";
 import { keywordResearchRoutes } from "./keyword-research.routes";
 import { rankTrackerRoutes } from "./rank-tracker.routes";
@@ -61,6 +62,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', rankTrackerRoutes);
   app.use('/api', pdfRoutes);
   app.use('/api', openaiRoutes);
+  
+  // Admin audit management routes
+  app.use('/api/admin/audits', adminAuditRoutes);
   
   // Monitoring and health check routes
   app.use('/api', monitoringRoutes);

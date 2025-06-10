@@ -1134,6 +1134,35 @@ export const dataQualityReports = pgTable("data_quality_reports", {
   ];
 });
 
+// Rival Audits table - stores SEO audit results with automatic cleanup
+export const rivalAudits = pgTable("rival_audits", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  url: text("url").notNull(),
+  status: text("status").notNull(), // pending, processing, completed, failed
+  results: jsonb("results"), // complete audit results
+  summary: jsonb("summary"), // summary counts and metrics
+  crawlJobId: text("crawl_job_id").references(() => crawlJobs.id),
+  pagesAnalyzed: integer("pages_analyzed").default(0).notNull(),
+  reachedMaxPages: boolean("reached_max_pages").default(false).notNull(),
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"), // additional audit metadata
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  expiresAt: timestamp("expires_at").notNull(), // for automatic cleanup
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return [
+    index("idx_rival_audits_user").on(table.userId),
+    index("idx_rival_audits_url").on(table.url),
+    index("idx_rival_audits_status").on(table.status),
+    index("idx_rival_audits_expires").on(table.expiresAt),
+    index("idx_rival_audits_created").on(table.createdAt),
+    unique("unique_user_url_active").on(table.userId, table.url, table.status)
+  ];
+});
+
 // Insert schemas for crawling system
 export const insertCrawlSourceSchema = createInsertSchema(crawlSources).omit({
   id: true,
@@ -1175,6 +1204,13 @@ export const insertCrawlAlertSchema = createInsertSchema(crawlAlerts).omit({
   resolved: true,
 });
 
+export const insertRivalAuditSchema = createInsertSchema(rivalAudits).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  startedAt: true,
+});
+
 // Crawling system types
 export type CrawlSource = typeof crawlSources.$inferSelect;
 export type InsertCrawlSource = z.infer<typeof insertCrawlSourceSchema>;
@@ -1187,3 +1223,5 @@ export type InsertCrawlMetrics = z.infer<typeof insertCrawlMetricsSchema>;
 export type CrawlAlert = typeof crawlAlerts.$inferSelect;
 export type InsertCrawlAlert = z.infer<typeof insertCrawlAlertSchema>;
 export type DataQualityReport = typeof dataQualityReports.$inferSelect;
+export type RivalAuditRecord = typeof rivalAudits.$inferSelect;
+export type InsertRivalAuditRecord = z.infer<typeof insertRivalAuditSchema>;

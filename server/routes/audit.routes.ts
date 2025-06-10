@@ -33,6 +33,9 @@ interface CachedRivalAudit {
 // In-memory cache for audit results (should be replaced with database storage)
 const auditCache: Record<number, CachedRivalAudit> = {};
 
+// Track processing status separately
+const processingStatus: Record<number, { status: 'processing' | 'completed' | 'failed', startTime: Date }> = {};
+
 // Generate mock rival audit data (fallback function)
 function generateMockRivalAudit(url: string): CachedRivalAudit {
   return {
@@ -82,6 +85,12 @@ router.post("/", async (req: Request, res: Response) => {
     const auditId = Math.floor(Math.random() * 1000) + 1;
     console.log('🆔 Generated audit ID:', auditId);
     
+    // Mark as processing
+    processingStatus[auditId] = {
+      status: 'processing',
+      startTime: new Date()
+    };
+    
     // Return the audit ID immediately
     const response = { 
       id: auditId, 
@@ -110,6 +119,8 @@ router.post("/", async (req: Request, res: Response) => {
               total: auditResults.summary.total || 0
             }
           };
+          // Mark as completed
+          processingStatus[auditId].status = 'completed';
           console.log(`Completed continued rival audit for ${url} with ID ${auditId}`);
         } else {
           console.log(`Starting new rival audit for ${url} with ID ${auditId}`);
@@ -127,6 +138,8 @@ router.post("/", async (req: Request, res: Response) => {
               total: auditResults.summary.total || 0
             }
           };
+          // Mark as completed
+          processingStatus[auditId].status = 'completed';
           console.log(`Completed rival audit for ${url} with ID ${auditId}`);
         }
         
@@ -141,8 +154,12 @@ router.post("/", async (req: Request, res: Response) => {
         
       } catch (error) {
         console.error("Error performing rival audit:", error);
+        // Mark as failed initially
+        processingStatus[auditId].status = 'failed';
         // Store mock data as fallback
         auditCache[auditId] = generateMockRivalAudit(url);
+        // Mark as completed since we have fallback data
+        processingStatus[auditId].status = 'completed';
         console.log(`Stored mock data for failed audit ${auditId}`);
       }
     }, 0);
@@ -351,9 +368,31 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid audit ID" });
     }
     
-    // Check if we have cached results for this ID
+    // Check processing status first
+    const status = processingStatus[auditId];
+    
+    if (!status) {
+      return res.status(404).json({ error: "Audit not found" });
+    }
+    
+    // If still processing, return 202 with status info
+    if (status.status === 'processing') {
+      const timeElapsed = Date.now() - status.startTime.getTime();
+      return res.status(202).json({ 
+        status: 'processing',
+        message: 'Audit is still being processed',
+        timeElapsed: Math.floor(timeElapsed / 1000) // seconds
+      });
+    }
+    
+    // If failed without results, return error
+    if (status.status === 'failed' && !auditCache[auditId]) {
+      return res.status(500).json({ error: "Audit failed to complete" });
+    }
+    
+    // Check if we have cached results
     if (!auditCache[auditId]) {
-      return res.status(404).json({ error: "Audit not found or still processing" });
+      return res.status(404).json({ error: "Audit results not found" });
     }
     
     const audit = auditCache[auditId];
