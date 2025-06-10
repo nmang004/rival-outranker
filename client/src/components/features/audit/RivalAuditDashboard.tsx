@@ -55,6 +55,15 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   // Check if this is an enhanced audit
   const isEnhancedAudit = 'totalFactors' in audit.summary;
   
+  // Debug: Log enhanced audit detection
+  console.log('[Dashboard] Enhanced audit detection:', {
+    isEnhancedAudit,
+    summaryKeys: Object.keys(audit.summary),
+    hasTotalFactors: 'totalFactors' in audit.summary,
+    totalFactors: audit.summary.totalFactors,
+    auditKeys: Object.keys(audit)
+  });
+  
   // Calculate total issues for each category
   const getCategoryTotals = (categoryItems: any[]) => {
     return {
@@ -83,8 +92,17 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
       totalFactors: audit.summary.totalFactors || audit.summary.total || 0
     });
     
-    // Check if audit has dedicated enhanced categories
-    if ('contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit) {
+    // Check if audit has dedicated enhanced categories with actual items
+    const hasEnhancedCategories = 'contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit;
+    const hasEnhancedItems = hasEnhancedCategories && (
+      ((audit as any).contentQuality?.items?.length || 0) > 0 ||
+      ((audit as any).technicalSEO?.items?.length || 0) > 0 ||
+      ((audit as any).localSEO?.items?.length || 0) > 0 ||
+      ((audit as any).uxPerformance?.items?.length || 0) > 0
+    );
+    
+    if (hasEnhancedCategories && hasEnhancedItems) {
+      console.log('[Dashboard] Using dedicated enhanced categories');
       return {
         contentQuality: (audit as any).contentQuality?.items || [],
         technicalSEO: (audit as any).technicalSEO?.items || [],
@@ -93,7 +111,8 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
       };
     }
     
-    // Fallback: categorize from legacy sections by category field
+    // Enhanced audit without dedicated categories - need to categorize all legacy items by category field
+    console.log('[Dashboard] Enhanced audit without dedicated categories - categorizing legacy items');
     const allItems = [
       ...audit.onPage.items,
       ...audit.structureNavigation.items,
@@ -103,40 +122,118 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
       ...(audit.serviceAreaPages?.items || [])
     ];
     
-    return {
-      contentQuality: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('Content Quality') ||
-          item.category.includes('Content') ||
-          item.category.includes('Readability') ||
-          item.category.includes('Engagement')
-        )
-      ),
-      technicalSEO: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('Technical SEO') ||
-          item.category.includes('Technical') ||
-          item.category.includes('Schema') ||
-          item.category.includes('URL') ||
-          item.category.includes('Meta')
-        )
-      ),
-      localSEO: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('Local SEO') ||
-          item.category.includes('Local') ||
-          item.category.includes('NAP') ||
-          item.category.includes('E-E-A-T')
-        )
-      ),
-      uxPerformance: allItems.filter(item => 
-        'category' in item && item.category && (
-          item.category.includes('UX') ||
-          item.category.includes('Performance') ||
-          item.category.includes('Mobile') ||
-          item.category.includes('Accessibility')
-        )
+    console.log('[Dashboard] Total legacy items to categorize:', allItems.length);
+    console.log('[Dashboard] Sample item categories:', allItems.slice(0, 5).map(item => ('category' in item ? item.category : 'no category')));
+    
+    const contentQuality = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('Content Quality') ||
+        item.category.includes('Content') ||
+        item.category.includes('Readability') ||
+        item.category.includes('Engagement') ||
+        item.category.includes('Social Proof') ||
+        item.category.includes('Review') ||
+        item.category.includes('CTA')
       )
+    );
+    
+    const technicalSEO = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('Technical SEO') ||
+        item.category.includes('Technical') ||
+        item.category.includes('Schema') ||
+        item.category.includes('URL') ||
+        item.category.includes('Meta') ||
+        item.category.includes('Navigation') ||
+        item.category.includes('Internal Linking') ||
+        item.category.includes('Duplicate Content')
+      )
+    );
+    
+    const localSEO = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('Local SEO') ||
+        item.category.includes('Local') ||
+        item.category.includes('NAP') ||
+        item.category.includes('E-E-A-T') ||
+        item.category.includes('Trust') ||
+        item.category.includes('Contact') ||
+        item.category.includes('Service Area') ||
+        item.category.includes('Location')
+      )
+    );
+    
+    const uxPerformance = allItems.filter(item => 
+      'category' in item && item.category && (
+        item.category.includes('UX') ||
+        item.category.includes('Performance') ||
+        item.category.includes('Mobile') ||
+        item.category.includes('Accessibility') ||
+        item.category.includes('User Experience') ||
+        item.category.includes('Form') ||
+        item.category.includes('Visual')
+      )
+    );
+    
+    // Items that don't match any enhanced category
+    const categorizedItems = new Set([...contentQuality, ...technicalSEO, ...localSEO, ...uxPerformance]);
+    const uncategorized = allItems.filter(item => !categorizedItems.has(item));
+    
+    console.log('[Dashboard] Categorization results:', {
+      contentQuality: contentQuality.length,
+      technicalSEO: technicalSEO.length,
+      localSEO: localSEO.length,
+      uxPerformance: uxPerformance.length,
+      uncategorized: uncategorized.length,
+      total: allItems.length
+    });
+    
+    // If we have very few items in enhanced categories but many uncategorized,
+    // the category field matching isn't working - distribute items more evenly
+    if (uncategorized.length > (contentQuality.length + technicalSEO.length + localSEO.length + uxPerformance.length)) {
+      console.log('[Dashboard] Many uncategorized items detected - applying smart categorization');
+      
+      // Smart categorization based on item names and context when category field is missing
+      uncategorized.forEach(item => {
+        const itemName = item.name.toLowerCase();
+        const itemDescription = (item.description || '').toLowerCase();
+        const combined = itemName + ' ' + itemDescription;
+        
+        if (combined.includes('content') || combined.includes('text') || combined.includes('readability') || 
+            combined.includes('heading') || combined.includes('title') || combined.includes('description') ||
+            combined.includes('review') || combined.includes('social') || combined.includes('cta') || combined.includes('call')) {
+          contentQuality.push(item);
+        } else if (combined.includes('meta') || combined.includes('schema') || combined.includes('url') || 
+                   combined.includes('link') || combined.includes('navigation') || combined.includes('technical') ||
+                   combined.includes('seo') || combined.includes('duplicate') || combined.includes('canonical')) {
+          technicalSEO.push(item);
+        } else if (combined.includes('local') || combined.includes('contact') || combined.includes('address') || 
+                   combined.includes('phone') || combined.includes('location') || combined.includes('nap') ||
+                   combined.includes('trust') || combined.includes('expertise') || combined.includes('authority')) {
+          localSEO.push(item);
+        } else if (combined.includes('mobile') || combined.includes('performance') || combined.includes('speed') || 
+                   combined.includes('accessibility') || combined.includes('form') || combined.includes('user') ||
+                   combined.includes('ux') || combined.includes('visual') || combined.includes('loading')) {
+          uxPerformance.push(item);
+        } else {
+          // Default to technical SEO for remaining items
+          technicalSEO.push(item);
+        }
+      });
+      
+      console.log('[Dashboard] After smart categorization:', {
+        contentQuality: contentQuality.length,
+        technicalSEO: technicalSEO.length,
+        localSEO: localSEO.length,
+        uxPerformance: uxPerformance.length
+      });
+    }
+    
+    return {
+      contentQuality,
+      technicalSEO,
+      localSEO,
+      uxPerformance
     };
   };
 
@@ -164,26 +261,49 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     return relevantItems > 0 ? Math.round((totals.ok / relevantItems) * 100) : 0;
   };
 
-  // Prepare data for status distribution chart, using updatedSummary if available
+  // Calculate accurate status distribution from our categorized data
+  const calculateStatusDistribution = () => {
+    if (isEnhancedAuditWithCategories && enhancedCategories) {
+      // Use our enhanced category totals for accurate counts
+      return {
+        priorityOfiCount: contentQualityTotals.priorityOfi + technicalSEOTotals.priorityOfi + localSEOTotals.priorityOfi + uxPerformanceTotals.priorityOfi,
+        ofiCount: contentQualityTotals.ofi + technicalSEOTotals.ofi + localSEOTotals.ofi + uxPerformanceTotals.ofi,
+        okCount: contentQualityTotals.ok + technicalSEOTotals.ok + localSEOTotals.ok + uxPerformanceTotals.ok,
+        naCount: contentQualityTotals.na + technicalSEOTotals.na + localSEOTotals.na + uxPerformanceTotals.na
+      };
+    } else {
+      // Use updatedSummary if available, otherwise fall back to audit summary
+      return updatedSummary || {
+        priorityOfiCount: audit.summary.priorityOfiCount,
+        ofiCount: audit.summary.ofiCount,
+        okCount: audit.summary.okCount,
+        naCount: audit.summary.naCount
+      };
+    }
+  };
+  
+  const statusCounts = calculateStatusDistribution();
+  
+  // Prepare data for status distribution chart
   const statusDistributionData = [
     { 
       name: 'Priority Issues', 
-      value: updatedSummary ? updatedSummary.priorityOfiCount : audit.summary.priorityOfiCount, 
+      value: statusCounts.priorityOfiCount, 
       color: '#ef4444' 
     },
     { 
       name: 'Opportunities', 
-      value: updatedSummary ? updatedSummary.ofiCount : audit.summary.ofiCount, 
+      value: statusCounts.ofiCount, 
       color: '#eab308' 
     },
     { 
       name: 'Completed', 
-      value: updatedSummary ? updatedSummary.okCount : audit.summary.okCount, 
+      value: statusCounts.okCount, 
       color: '#22c55e' 
     },
     { 
       name: 'Not Applicable', 
-      value: updatedSummary ? updatedSummary.naCount : audit.summary.naCount, 
+      value: statusCounts.naCount, 
       color: '#9ca3af' 
     },
   ];
@@ -347,11 +467,21 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     );
   }
 
-  // Calculate total audit progress
+  // Calculate total audit progress - ensure consistency with category totals
   const isEnhancedAuditWithCategories = enhancedCategories !== null;
   
+  // Debug: Log totals to verify consistency
+  console.log('[Dashboard] Progress calculation:', {
+    isEnhancedAuditWithCategories,
+    contentQualityTotals,
+    technicalSEOTotals,
+    localSEOTotals,
+    uxPerformanceTotals,
+    legacyTotals: { onPageTotals, structureTotals, contactTotals, serviceTotals, locationTotals, serviceAreaTotals }
+  });
+  
   const totalRelevantItems = isEnhancedAuditWithCategories && enhancedCategories ? 
-    // Enhanced audit calculation
+    // Enhanced audit calculation - use the same data source as individual categories
     (contentQualityTotals.total - contentQualityTotals.na) +
     (technicalSEOTotals.total - technicalSEOTotals.na) +
     (localSEOTotals.total - localSEOTotals.na) +
@@ -365,7 +495,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     (serviceAreaTotals.total - serviceAreaTotals.na);
   
   const totalCompletedItems = isEnhancedAuditWithCategories && enhancedCategories ?
-    // Enhanced audit calculation
+    // Enhanced audit calculation - use the same data source as individual categories
     contentQualityTotals.ok +
     technicalSEOTotals.ok +
     localSEOTotals.ok +
@@ -381,11 +511,24 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   const totalProgress = totalRelevantItems > 0 
     ? (totalCompletedItems / totalRelevantItems) * 100 
     : 0;
+    
+  // Calculate grand total of all items for verification
+  const grandTotalItems = isEnhancedAuditWithCategories && enhancedCategories ?
+    contentQualityTotals.total + technicalSEOTotals.total + localSEOTotals.total + uxPerformanceTotals.total :
+    onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total;
+    
+  console.log('[Dashboard] Total calculation verification:', {
+    grandTotalItems,
+    totalRelevantItems,
+    totalCompletedItems,
+    totalProgress: Math.round(totalProgress),
+    summaryTotal: audit.summary.totalFactors || audit.summary.total || 0
+  });
 
-  // Get total factors for display
-  const totalFactors = isEnhancedAudit && 'totalFactors' in audit.summary 
-    ? audit.summary.totalFactors 
-    : updatedSummary?.total || ('total' in audit.summary ? audit.summary.total : 0);
+  // Get total factors for display - use calculated grand total for consistency
+  const totalFactors = isEnhancedAuditWithCategories ? 
+    grandTotalItems : // Use our calculated total for enhanced audits to ensure consistency
+    (updatedSummary?.total || ('total' in audit.summary ? audit.summary.total : 0));
 
   // Check if audit has priority breakdown data (new weighted OFI feature)
   const hasPriorityBreakdown = isEnhancedAudit && 'priorityBreakdown' in audit.summary && audit.summary.priorityBreakdown;
@@ -486,10 +629,8 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                             return ["0 items (0%)", name];
                           }
                           
-                          // Use updated summary if available
-                          const summary = updatedSummary || audit.summary;
-                          const total = ('total' in summary ? summary.total : 0) || 
-                            (summary.priorityOfiCount + summary.ofiCount + summary.okCount + summary.naCount);
+                          // Use our calculated totals for accuracy
+                          const total = statusCounts.priorityOfiCount + statusCounts.ofiCount + statusCounts.okCount + statusCounts.naCount;
                           return [`${value} items (${((Number(value)/total) * 100).toFixed(1)}%)`, name];
                         }}
                         contentStyle={{ 
