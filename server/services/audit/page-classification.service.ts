@@ -149,13 +149,34 @@ export class PageClassificationService {
       bodyText.includes(term)
     ).length;
     
+    // Enhanced detection for electrical contractor pages
+    const electricalSpecificTerms = [
+      'electrical', 'electrician', 'wiring', 'outlet', 'circuit', 'panel',
+      'lighting installation', 'generator', 'surge protector', 'electrical repair',
+      'electrical installation', 'electrical service', 'commercial electrical',
+      'residential electrical', 'electrical contractor', 'licensed electrician'
+    ];
+    
+    const electricalTermCount = electricalSpecificTerms.filter(term => 
+      bodyText.includes(term) || title.includes(term) || url.includes(term)
+    ).length;
+    
     // A page is considered a service page if it has:
     // - Multiple service indicators, OR
     // - Some service indicators AND industry terms, OR
-    // - Strong industry presence
+    // - Strong industry presence, OR
+    // - Any electrical contractor terms (more lenient for electrical contractors)
+    // - URL patterns that suggest services (even without strong content)
+    const hasServiceUrlPattern = url.includes('/') && url.split('/').some(segment => 
+      serviceTitleKeywords.some(keyword => segment.includes(keyword)) ||
+      industryServiceTerms.some(term => segment.includes(term.replace(' ', '-')))
+    );
+    
     return serviceIndicatorCount >= 3 || 
            (serviceIndicatorCount >= 1 && industryTermCount >= 2) ||
-           industryTermCount >= 4;
+           industryTermCount >= 4 ||
+           electricalTermCount >= 1 ||
+           hasServiceUrlPattern;
   }
 
   /**

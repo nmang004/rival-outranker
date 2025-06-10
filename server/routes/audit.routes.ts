@@ -117,17 +117,31 @@ router.post("/enhanced", async (req: Request, res: Response) => {
         // Use the enhanced audit service
         const auditResults = await auditService.crawlAndAuditEnhanced(url);
         
-        // Store the results in database
+        // Store the results in database - ensure enhanced categories are preserved
+        const resultsToStore = {
+          ...auditResults,
+          type: 'enhanced',
+          summary: {
+            ...auditResults.summary,
+            total: auditResults.summary.totalFactors || 0
+          },
+          // Explicitly include enhanced categories to ensure they're preserved
+          contentQuality: auditResults.contentQuality,
+          technicalSEO: auditResults.technicalSEO,
+          localSEO: auditResults.localSEO,
+          uxPerformance: auditResults.uxPerformance
+        };
+        
+        console.log(`[AuditRoute] Storing enhanced audit results with categories:`, {
+          contentQuality: resultsToStore.contentQuality?.items?.length || 0,
+          technicalSEO: resultsToStore.technicalSEO?.items?.length || 0,
+          localSEO: resultsToStore.localSEO?.items?.length || 0,
+          uxPerformance: resultsToStore.uxPerformance?.items?.length || 0
+        });
+        
         await rivalAuditRepository.completeAudit(
           auditRecord.id,
-          {
-            ...auditResults,
-            type: 'enhanced',
-            summary: {
-              ...auditResults.summary,
-              total: auditResults.summary.totalFactors || 0
-            }
-          },
+          resultsToStore,
           auditResults.summary,
           auditResults.summary.total || 0,
           auditResults.reachedMaxPages || false
@@ -477,6 +491,63 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
   }
 });
 
+// Debug endpoint to check enhanced categories
+router.get("/:id/debug", async (req: Request, res: Response) => {
+  try {
+    const auditId = parseInt(req.params.id);
+    
+    if (isNaN(auditId)) {
+      return res.status(400).json({ error: "Invalid audit ID" });
+    }
+    
+    const auditRecord = await rivalAuditRepository.getAudit(auditId);
+    
+    if (!auditRecord || !auditRecord.results) {
+      return res.status(404).json({ error: "Audit not found" });
+    }
+    
+    const results = auditRecord.results as any;
+    
+    res.json({
+      auditId,
+      hasEnhancedCategories: !!(results.contentQuality || results.technicalSEO || results.localSEO || results.uxPerformance),
+      contentQuality: {
+        exists: !!results.contentQuality,
+        itemCount: results.contentQuality?.items?.length || 0,
+        sampleItems: results.contentQuality?.items?.slice(0, 2) || []
+      },
+      technicalSEO: {
+        exists: !!results.technicalSEO,
+        itemCount: results.technicalSEO?.items?.length || 0,
+        sampleItems: results.technicalSEO?.items?.slice(0, 2) || []
+      },
+      localSEO: {
+        exists: !!results.localSEO,
+        itemCount: results.localSEO?.items?.length || 0,
+        sampleItems: results.localSEO?.items?.slice(0, 2) || []
+      },
+      uxPerformance: {
+        exists: !!results.uxPerformance,
+        itemCount: results.uxPerformance?.items?.length || 0,
+        sampleItems: results.uxPerformance?.items?.slice(0, 2) || []
+      },
+      legacyCategories: {
+        onPage: results.onPage?.items?.length || 0,
+        structureNavigation: results.structureNavigation?.items?.length || 0,
+        contactPage: results.contactPage?.items?.length || 0,
+        servicePages: results.servicePages?.items?.length || 0,
+        locationPages: results.locationPages?.items?.length || 0,
+        serviceAreaPages: results.serviceAreaPages?.items?.length || 0
+      },
+      summary: results.summary,
+      type: results.type
+    });
+  } catch (error) {
+    console.error("Error in debug endpoint:", error);
+    res.status(500).json({ error: "Failed to debug audit" });
+  }
+});
+
 // Get rival audit results by ID
 router.get("/:id", async (req: Request, res: Response) => {
   try {
@@ -541,14 +612,20 @@ router.get("/:id", async (req: Request, res: Response) => {
         url: auditRecord.url
       };
       
-      // Debug: Log enhanced categories in API response
-      console.log(`[API] Returning audit ${auditId} with enhanced categories:`, {
-        contentQuality: audit.contentQuality?.items?.length || 0,
-        technicalSEO: audit.technicalSEO?.items?.length || 0,
-        localSEO: audit.localSEO?.items?.length || 0,
-        uxPerformance: audit.uxPerformance?.items?.length || 0,
-        totalFactors: audit.summary?.totalFactors || 0
-      });
+      // Debug: Check if enhanced categories exist and have items
+      const hasCategories = audit.contentQuality || audit.technicalSEO || audit.localSEO || audit.uxPerformance;
+      console.log(`[API] Enhanced categories exist: ${!!hasCategories}`);
+      if (!hasCategories) {
+        console.log(`[API] WARNING: No enhanced categories found in audit result. Available properties:`, Object.keys(audit));
+      } else {
+        console.log(`[API] Returning audit ${auditId} with enhanced categories:`, {
+          contentQuality: audit.contentQuality?.items?.length || 0,
+          technicalSEO: audit.technicalSEO?.items?.length || 0,
+          localSEO: audit.localSEO?.items?.length || 0,
+          uxPerformance: audit.uxPerformance?.items?.length || 0,
+          totalFactors: audit.summary?.totalFactors || 0
+        });
+      }
       
       res.json(audit);
     } else {

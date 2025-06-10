@@ -106,6 +106,31 @@ class EnhancedAuditAnalyzer {
       this.mergeServiceAreaResults(results, serviceAreaAnalysis, pageInfo);
     }
 
+    // CRITICAL FIX: Analyze "other" pages that may contain valuable service content
+    // These pages were previously ignored, causing massive data loss
+    console.log(`[EnhancedAnalyzer] Processing ${siteStructure.otherPages.length} other pages that may contain service content`);
+    for (const otherPage of siteStructure.otherPages) {
+      const otherPageAnalysis = await this.analyzePageComprehensive(otherPage, 'other');
+      const pageInfo = { 
+        url: otherPage.url, 
+        title: otherPage.title || 'Other Page', 
+        type: 'other' 
+      };
+      
+      // Intelligently classify and merge based on content analysis
+      if (this.isLikelyServiceContent(otherPage)) {
+        console.log(`[EnhancedAnalyzer] Treating other page as service page: ${otherPage.url}`);
+        this.mergeServiceResults(results, otherPageAnalysis, pageInfo);
+      } else if (this.isLikelyLocationContent(otherPage)) {
+        console.log(`[EnhancedAnalyzer] Treating other page as location page: ${otherPage.url}`);
+        this.mergeLocationResults(results, otherPageAnalysis, pageInfo);
+      } else {
+        console.log(`[EnhancedAnalyzer] Treating other page as general content: ${otherPage.url}`);
+        // Merge as general analysis results
+        this.mergeAnalysisResults(results, otherPageAnalysis, pageInfo);
+      }
+    }
+
     // Site-wide analysis
     const siteWideAnalysis = await this.analyzeSiteWide(siteStructure);
     this.mergeSiteWideResults(results, siteWideAnalysis);
@@ -256,7 +281,7 @@ class EnhancedAuditAnalyzer {
       status: factor.status,
       importance: factor.importance,
       notes: factor.notes,
-      category,
+      category, // Ensure category is always set for proper categorization
       pageUrl: pageInfo?.url,
       pageTitle: pageInfo?.title,
       pageType: pageInfo?.type
@@ -304,6 +329,62 @@ class EnhancedAuditAnalyzer {
   }
 
   /**
+   * Determine if an "other" page likely contains service content
+   */
+  private isLikelyServiceContent(page: PageCrawlResult): boolean {
+    const url = page.url.toLowerCase();
+    const title = page.title.toLowerCase();
+    const bodyText = page.bodyText.toLowerCase();
+    
+    // Check for electrical contractor specific terms
+    const electricalTerms = [
+      'electrical', 'electrician', 'wiring', 'outlet', 'circuit', 'panel', 
+      'lighting', 'generator', 'surge protector', 'electrical repair',
+      'electrical installation', 'electrical service', 'commercial electrical',
+      'residential electrical', 'electrical contractor', 'licensed electrician'
+    ];
+    
+    // General service terms
+    const serviceTerms = [
+      'service', 'services', 'repair', 'installation', 'maintenance',
+      'professional', 'certified', 'licensed', 'experienced',
+      'we provide', 'we offer', 'estimate', 'quote', 'consultation'
+    ];
+    
+    const electricalCount = electricalTerms.filter(term => 
+      title.includes(term) || bodyText.includes(term) || url.includes(term)
+    ).length;
+    
+    const serviceCount = serviceTerms.filter(term => 
+      title.includes(term) || bodyText.includes(term)
+    ).length;
+    
+    // Consider it service content if it has electrical terms OR multiple service indicators
+    return electricalCount >= 1 || serviceCount >= 3;
+  }
+
+  /**
+   * Determine if an "other" page likely contains location content
+   */
+  private isLikelyLocationContent(page: PageCrawlResult): boolean {
+    const url = page.url.toLowerCase();
+    const title = page.title.toLowerCase();
+    const bodyText = page.bodyText.toLowerCase();
+    
+    const locationTerms = [
+      'location', 'areas served', 'service area', 'service areas',
+      'cities', 'towns', 'neighborhoods', 'regions', 'we serve'
+    ];
+    
+    const locationCount = locationTerms.filter(term => 
+      title.includes(term) || bodyText.includes(term) || url.includes(term)
+    ).length;
+    
+    // Check for multiple city mentions or explicit location indicators
+    return locationCount >= 2;
+  }
+
+  /**
    * Calculate summary statistics for enhanced audit
    */
   private calculateSummary(results: EnhancedAuditResult) {
@@ -317,6 +398,22 @@ class EnhancedAuditAnalyzer {
         ...(results.localSEO?.items || []),
         ...(results.uxPerformance?.items || [])
       ];
+      
+      // Also populate legacy categories for backward compatibility
+      // This ensures the audit works with both enhanced and legacy UI components
+      results.onPage.items = [...(results.contentQuality?.items || []), ...(results.technicalSEO?.items || [])];
+      results.structureNavigation.items = [...(results.technicalSEO?.items || [])].filter(item => 
+        item.name.toLowerCase().includes('navigation') || 
+        item.name.toLowerCase().includes('link') ||
+        item.name.toLowerCase().includes('structure')
+      );
+      results.contactPage.items = [...(results.localSEO?.items || [])].filter(item => 
+        item.pageType === 'contact' || 
+        item.name.toLowerCase().includes('contact')
+      );
+      results.servicePages.items = [...allItems].filter(item => item.pageType === 'service');
+      results.locationPages.items = [...allItems].filter(item => item.pageType === 'location');
+      results.serviceAreaPages.items = [...allItems].filter(item => item.pageType === 'serviceArea');
     } else {
       // Fallback to legacy sections for backward compatibility
       allItems = [
