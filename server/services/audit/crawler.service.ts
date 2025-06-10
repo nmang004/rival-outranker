@@ -16,7 +16,10 @@ const dnsResolve = promisify(dns.resolve);
 
 class Crawler {
   private MAX_CONTENT_SIZE = 10 * 1024 * 1024; // 10MB limit for HTML content
-  private REQUEST_TIMEOUT = 45000; // 45 seconds timeout
+  private REQUEST_TIMEOUT = 45000; // 45 seconds timeout (will be dynamically adjusted)
+  private adaptiveTimeout = 45000; // Current adaptive timeout
+  private MIN_TIMEOUT = 8000; // Minimum timeout (8 seconds)
+  private MAX_TIMEOUT = 45000; // Maximum timeout
   private USER_AGENT = 'SEO-Best-Practices-Assessment-Tool/1.0';
   private MAX_REDIRECTS = 10; // Maximum number of redirects to follow
   private CRAWL_DELAY = 500; // Delay between requests in milliseconds
@@ -36,6 +39,11 @@ class Crawler {
   
   // Map to cache DNS resolutions
   private dnsCache = new Map<string, string>();
+  
+  // Circuit breaker for problematic domains
+  private timeoutCounts = new Map<string, number>();
+  private domainBlacklist = new Set<string>();
+  private MAX_TIMEOUT_FAILURES = 3; // Max timeouts before blacklisting domain patterns
   
   // Map to cache HTTP responses (to avoid crawling the same URL twice)
   private responseCache = new Map<string, any>();
@@ -631,6 +639,11 @@ class Crawler {
     try {
       console.log(`[Crawler] Starting crawl for URL: ${url}`);
       
+      // Early skip check for blacklisted domains and duplicate patterns
+      if (this.shouldSkipUrl(url)) {
+        return this.createErrorOutput(url, "Skipped Page", 0, "Skipped due to blacklist or duplicate pattern");
+      }
+      
       // Validate and normalize the URL
       const normalizedUrl = this.normalizeUrl(url);
       console.log(`[Crawler] Normalized URL: ${normalizedUrl}`);
@@ -648,21 +661,26 @@ class Crawler {
       
       console.log(`[Crawler] Crawling page: ${normalizedUrl}`);
       
-      // Perform DNS resolution first to check domain availability and cache results
-      console.log(`[Crawler] Checking DNS availability for domain...`);
-      const dnsResult = await this.checkDomainAvailability(normalizedUrl);
-      if (!dnsResult.available) {
-        console.error(`[Crawler] DNS resolution failed:`, dnsResult.error);
-        const errorOutput = this.createErrorOutput(
-          normalizedUrl, 
-          "DNS Error", 
-          -1, 
-          `Domain not available: ${dnsResult.error}`
-        );
-        this.responseCache.set(normalizedUrl, errorOutput);
-        return errorOutput;
+      // Perform DNS resolution first to check domain availability (uses cache to avoid repeated lookups)
+      const hostname = new URL(normalizedUrl).hostname;
+      if (!this.dnsCache.has(hostname)) {
+        console.log(`[Crawler] Checking DNS availability for domain...`);
+        const dnsResult = await this.checkDomainAvailability(normalizedUrl);
+        if (!dnsResult.available) {
+          console.error(`[Crawler] DNS resolution failed:`, dnsResult.error);
+          const errorOutput = this.createErrorOutput(
+            normalizedUrl, 
+            "DNS Error", 
+            -1, 
+            `Domain not available: ${dnsResult.error}`
+          );
+          this.responseCache.set(normalizedUrl, errorOutput);
+          return errorOutput;
+        }
+        console.log(`[Crawler] DNS resolution successful`);
+      } else {
+        console.log(`[Crawler] Using cached DNS resolution for ${hostname}`);
       }
-      console.log(`[Crawler] DNS resolution successful`);
       
       // Start timer for performance measurement
       const startTime = Date.now();
@@ -670,7 +688,7 @@ class Crawler {
       // Prepare the HTTP request
       const httpsAgent = new https.Agent({
         rejectUnauthorized: false, // Allow self-signed certificates
-        timeout: this.REQUEST_TIMEOUT
+        timeout: this.adaptiveTimeout
       });
       
       // Perform main page request with full settings
@@ -683,7 +701,7 @@ class Crawler {
             'Accept': 'text/html,application/xhtml+xml,application/xml',
             'Accept-Language': 'en-US,en;q=0.9',
           },
-          timeout: this.REQUEST_TIMEOUT,
+          timeout: this.adaptiveTimeout,
           maxContentLength: this.MAX_CONTENT_SIZE,
           maxRedirects: this.MAX_REDIRECTS,
           validateStatus: (status) => status < 500, // Accept 4xx errors to analyze them
@@ -702,6 +720,11 @@ class Crawler {
           responseHeaders: fetchError.response?.headers,
           responseData: fetchError.response?.data?.substring ? fetchError.response.data.substring(0, 200) : fetchError.response?.data
         });
+        
+        // Handle timeout errors specifically
+        if (fetchError.code === 'ECONNABORTED' || fetchError.message?.includes('timeout')) {
+          this.handleTimeoutError(normalizedUrl);
+        }
         
         // Determine if it's a 404 or other error
         const status = fetchError.response?.status || 0;
@@ -1880,6 +1903,10 @@ class Crawler {
     this.crawledUrls.clear();
     this.pendingUrls = [];
     this.currentSite = '';
+    // Reset adaptive timeout for new site
+    this.adaptiveTimeout = this.REQUEST_TIMEOUT;
+    this.timeoutCounts.clear();
+    this.domainBlacklist.clear();
     this.stats = {
       pagesCrawled: 0,
       pagesSkipped: 0,
@@ -2614,6 +2641,87 @@ class Crawler {
    */
   private async checkSitemap(baseUrl: string): Promise<boolean> {
     return this.sitemapUrls.size > 0 || this.sitemapDiscovered;
+  }
+
+  /**
+   * Handle timeout errors and implement adaptive timeout strategy
+   */
+  private handleTimeoutError(url: string): void {
+    try {
+      const domain = new URL(url).hostname;
+      const timeoutCount = this.timeoutCounts.get(domain) || 0;
+      this.timeoutCounts.set(domain, timeoutCount + 1);
+      
+      console.log(`[Crawler] ⏰ Timeout #${timeoutCount + 1} for domain: ${domain}`);
+      
+      // If we've had multiple timeouts, reduce timeout for this site
+      if (timeoutCount >= 1) {
+        this.adaptiveTimeout = Math.max(this.MIN_TIMEOUT, this.adaptiveTimeout * 0.6);
+        console.log(`[Crawler] 🚀 Reducing timeout to ${this.adaptiveTimeout}ms due to slow responses`);
+      }
+      
+      // If too many timeouts, blacklist domain patterns
+      if (timeoutCount >= this.MAX_TIMEOUT_FAILURES) {
+        this.domainBlacklist.add(domain);
+        console.log(`[Crawler] 🚫 Blacklisting domain due to repeated timeouts: ${domain}`);
+      }
+    } catch (error) {
+      console.log(`[Crawler] Error handling timeout for ${url}: ${error}`);
+    }
+  }
+  
+  /**
+   * Check if URL should be skipped due to blacklist or early duplicate detection
+   */
+  private shouldSkipUrl(url: string): boolean {
+    try {
+      const domain = new URL(url).hostname;
+      
+      // Check if domain is blacklisted
+      if (this.domainBlacklist.has(domain)) {
+        console.log(`[Crawler] ⚡ Skipping blacklisted domain: ${url}`);
+        return true;
+      }
+      
+      // Early duplicate pattern detection for common CMS structures
+      const pathname = new URL(url).pathname;
+      
+      // Skip if we've already found this exact URL pattern
+      if (this.crawledUrls.has(url)) {
+        return true;
+      }
+      
+      // Skip obvious duplicate patterns for service areas
+      const duplicatePatterns = [
+        /\/service-area\/[^\/]+\/[^\/]+\//,  // service area pages
+        /\/faqs\/[^\/]+\//,                  // FAQ pages  
+        /\/blog\/\d{4}\/\d{2}\//,           // dated blog posts
+        /\/category\/[^\/]+\/page\/\d+/      // paginated categories
+      ];
+      
+      for (const pattern of duplicatePatterns) {
+        if (pattern.test(pathname)) {
+          // Check if we already have a similar URL crawled
+          const similarExists = Array.from(this.crawledUrls).some(crawledUrl => {
+            try {
+              const crawledPath = new URL(crawledUrl).pathname;
+              return pattern.test(crawledPath) && crawledPath !== pathname;
+            } catch {
+              return false;
+            }
+          });
+          
+          if (similarExists) {
+            console.log(`[Crawler] ⚡ Skipping likely duplicate pattern: ${url}`);
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      return false; // Don't skip on URL parsing errors
+    }
   }
 
   /**
