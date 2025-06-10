@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { PageCrawlResult, SiteStructure } from './audit.service';
 import { PageIssueSummary } from '../../../shared/schema';
 import { PagePriorityService, PagePriority, PageClassificationOverride } from './page-priority.service';
+import { OFIClassificationService } from './ofi-classification.service';
 
 /**
  * Enhanced Audit Analyzer Service
@@ -402,7 +403,7 @@ class EnhancedAuditAnalyzer {
     results.serviceAreaPages.items = [...allItems].filter(item => item.pageType === 'serviceArea');
 
     // CRITICAL: Apply new OFI classification system to ALL items before calculating summary
-    const ofiClassificationService = new (require('./ofi-classification.service').OFIClassificationService)();
+    const ofiClassificationService = new OFIClassificationService();
     
     // Apply classification to all categories
     this.applyNewClassificationToItems(results.contentQuality.items, ofiClassificationService);
