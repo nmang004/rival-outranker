@@ -5,3 +5,4 @@ export * from './RivalAuditRecommendations';
 export * from './RivalAuditSection';
 export * from './RivalAuditSideNav';
 export * from './RivalAuditSummary';
+export { default as PageIssuesDropdown } from './PageIssuesDropdown';

@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { PageCrawlResult, SiteStructure } from './audit.service';
+import { PageIssueSummary } from '../../../shared/schema';
 
 /**
  * Enhanced Audit Analyzer Service
@@ -44,31 +45,56 @@ class EnhancedAuditAnalyzer {
     // Analyze homepage with all factors
     if (siteStructure.homepage) {
       const homepageAnalysis = await this.analyzePageComprehensive(siteStructure.homepage, 'homepage');
-      this.mergeAnalysisResults(results, homepageAnalysis);
+      const pageInfo = { 
+        url: siteStructure.homepage.url, 
+        title: siteStructure.homepage.title || 'Homepage', 
+        type: 'homepage' 
+      };
+      this.mergeAnalysisResults(results, homepageAnalysis, pageInfo);
     }
 
     // Analyze contact page
     if (siteStructure.contactPage) {
       const contactAnalysis = await this.analyzePageComprehensive(siteStructure.contactPage, 'contact');
-      this.mergeContactResults(results, contactAnalysis);
+      const pageInfo = { 
+        url: siteStructure.contactPage.url, 
+        title: siteStructure.contactPage.title || 'Contact Page', 
+        type: 'contact' 
+      };
+      this.mergeContactResults(results, contactAnalysis, pageInfo);
     }
 
     // Analyze service pages
     for (const servicePage of siteStructure.servicePages) {
       const serviceAnalysis = await this.analyzePageComprehensive(servicePage, 'service');
-      this.mergeServiceResults(results, serviceAnalysis);
+      const pageInfo = { 
+        url: servicePage.url, 
+        title: servicePage.title || 'Service Page', 
+        type: 'service' 
+      };
+      this.mergeServiceResults(results, serviceAnalysis, pageInfo);
     }
 
     // Analyze location pages
     for (const locationPage of siteStructure.locationPages) {
       const locationAnalysis = await this.analyzePageComprehensive(locationPage, 'location');
-      this.mergeLocationResults(results, locationAnalysis);
+      const pageInfo = { 
+        url: locationPage.url, 
+        title: locationPage.title || 'Location Page', 
+        type: 'location' 
+      };
+      this.mergeLocationResults(results, locationAnalysis, pageInfo);
     }
 
     // Analyze service area pages
     for (const serviceAreaPage of siteStructure.serviceAreaPages) {
       const serviceAreaAnalysis = await this.analyzePageComprehensive(serviceAreaPage, 'serviceArea');
-      this.mergeServiceAreaResults(results, serviceAreaAnalysis);
+      const pageInfo = { 
+        url: serviceAreaPage.url, 
+        title: serviceAreaPage.title || 'Service Area Page', 
+        type: 'serviceArea' 
+      };
+      this.mergeServiceAreaResults(results, serviceAreaAnalysis, pageInfo);
     }
 
     // Site-wide analysis
@@ -77,6 +103,9 @@ class EnhancedAuditAnalyzer {
 
     // Calculate final summary
     this.calculateSummary(results);
+
+    // Generate page issue summaries
+    results.pageIssues = this.generatePageIssueSummaries(results);
 
     console.log(`[EnhancedAnalyzer] Completed analysis: ${results.summary.totalFactors} factors evaluated`);
     return results;
@@ -111,40 +140,40 @@ class EnhancedAuditAnalyzer {
   }
 
   // Analysis merge methods
-  private mergeAnalysisResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
+  private mergeAnalysisResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
     // Merge content quality factors into on-page (with deduplication)
-    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality'));
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
     
     // Merge technical SEO factors into structure & navigation (with deduplication)
-    this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO'));
+    this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
     
     // Add local SEO factors to on-page (with deduplication)
-    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO'));
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO', pageInfo));
     
     // Add UX factors to on-page (with deduplication)
-    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance'));
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
   }
 
-  private mergeContactResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.contentQuality, 'Contact Content'));
-    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.localSeo, 'Contact Local SEO'));
-    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.uxPerformance, 'Contact UX'));
+  private mergeContactResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
+    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.contentQuality, 'Contact Content', pageInfo));
+    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.localSeo, 'Contact Local SEO', pageInfo));
+    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.uxPerformance, 'Contact UX', pageInfo));
   }
 
-  private mergeServiceResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Content'));
-    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.technicalSeo, 'Service Technical'));
-    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.localSeo, 'Service Local SEO'));
+  private mergeServiceResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
+    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Content', pageInfo));
+    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.technicalSeo, 'Service Technical', pageInfo));
+    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.localSeo, 'Service Local SEO', pageInfo));
   }
 
-  private mergeLocationResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.contentQuality, 'Location Content'));
-    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.localSeo, 'Location Local SEO'));
+  private mergeLocationResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
+    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.contentQuality, 'Location Content', pageInfo));
+    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.localSeo, 'Location Local SEO', pageInfo));
   }
 
-  private mergeServiceAreaResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Area Content'));
-    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.localSeo, 'Service Area Local SEO'));
+  private mergeServiceAreaResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
+    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Area Content', pageInfo));
+    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.localSeo, 'Service Area Local SEO', pageInfo));
   }
 
   private mergeSiteWideResults(results: EnhancedAuditResult, analysis: SiteWideAnalysisResult) {
@@ -155,16 +184,19 @@ class EnhancedAuditAnalyzer {
   }
 
   /**
-   * Convert analysis factors to audit items
+   * Convert analysis factors to audit items with page information
    */
-  private convertToAuditItems(factors: AnalysisFactor[], category: string): AuditItem[] {
+  private convertToAuditItems(factors: AnalysisFactor[], category: string, pageInfo?: { url: string; title: string; type: string }): AuditItem[] {
     return factors.map(factor => ({
       name: factor.name,
       description: factor.description,
       status: factor.status,
       importance: factor.importance,
       notes: factor.notes,
-      category
+      category,
+      pageUrl: pageInfo?.url,
+      pageTitle: pageInfo?.title,
+      pageType: pageInfo?.type
     }));
   }
 
@@ -223,6 +255,90 @@ class EnhancedAuditAnalyzer {
     results.summary.ofiCount = allItems.filter(item => item.status === 'OFI').length;
     results.summary.okCount = allItems.filter(item => item.status === 'OK').length;
     results.summary.naCount = allItems.filter(item => item.status === 'N/A').length;
+  }
+
+  /**
+   * Generate page-specific issue summaries for the dropdown
+   */
+  private generatePageIssueSummaries(results: EnhancedAuditResult): PageIssueSummary[] {
+    const allItems = [
+      ...results.onPage.items,
+      ...results.structureNavigation.items,
+      ...results.contactPage.items,
+      ...results.servicePages.items,
+      ...results.locationPages.items,
+      ...results.serviceAreaPages.items
+    ];
+
+    // Group items by page URL
+    const pageGroups = new Map<string, AuditItem[]>();
+    
+    allItems.forEach(item => {
+      if (item.pageUrl) {
+        if (!pageGroups.has(item.pageUrl)) {
+          pageGroups.set(item.pageUrl, []);
+        }
+        pageGroups.get(item.pageUrl)!.push(item);
+      }
+    });
+
+    // Generate summaries for each page
+    const pageSummaries: PageIssueSummary[] = [];
+    
+    pageGroups.forEach((items, pageUrl) => {
+      const priorityOfiCount = items.filter(item => item.status === 'Priority OFI').length;
+      const ofiCount = items.filter(item => item.status === 'OFI').length;
+      const okCount = items.filter(item => item.status === 'OK').length;
+      const naCount = items.filter(item => item.status === 'N/A').length;
+      const totalIssues = priorityOfiCount + ofiCount;
+
+      // Only include pages that have issues to fix
+      if (totalIssues > 0) {
+        const firstItem = items[0]; // Get page info from first item
+        const issueItems = items.filter(item => item.status === 'Priority OFI' || item.status === 'OFI');
+        
+        // Get top 3 most critical issues
+        const topIssues = issueItems
+          .sort((a, b) => {
+            // Sort by status priority first (Priority OFI > OFI), then by importance
+            const statusPriority: Record<string, number> = { 'Priority OFI': 0, 'OFI': 1, 'OK': 2, 'N/A': 3 };
+            const importancePriority: Record<string, number> = { 'High': 0, 'Medium': 1, 'Low': 2 };
+            
+            if (statusPriority[a.status] !== statusPriority[b.status]) {
+              return statusPriority[a.status] - statusPriority[b.status];
+            }
+            return importancePriority[a.importance] - importancePriority[b.importance];
+          })
+          .slice(0, 3)
+          .map(item => ({
+            name: item.name,
+            status: item.status,
+            importance: item.importance,
+            category: item.category
+          }));
+
+        pageSummaries.push({
+          pageUrl,
+          pageTitle: firstItem.pageTitle || 'Untitled Page',
+          pageType: firstItem.pageType || 'unknown',
+          priorityOfiCount,
+          ofiCount,
+          okCount,
+          naCount,
+          totalIssues,
+          topIssues
+        });
+      }
+    });
+
+    // Sort by total issues (most critical pages first)
+    return pageSummaries.sort((a, b) => {
+      // Sort by Priority OFI count first, then total issues
+      if (a.priorityOfiCount !== b.priorityOfiCount) {
+        return b.priorityOfiCount - a.priorityOfiCount;
+      }
+      return b.totalIssues - a.totalIssues;
+    });
   }
 
   // Site-wide analysis methods
@@ -1894,6 +2010,7 @@ interface EnhancedAuditResult {
   servicePages: { items: AuditItem[] };
   locationPages: { items: AuditItem[] };
   serviceAreaPages: { items: AuditItem[] };
+  pageIssues?: PageIssueSummary[];
 }
 
 interface PageAnalysisResult {
@@ -1925,6 +2042,9 @@ interface AuditItem {
   importance: 'High' | 'Medium' | 'Low';
   notes: string;
   category: string;
+  pageUrl?: string;
+  pageTitle?: string;
+  pageType?: string;
 }
 
 export { EnhancedAuditAnalyzer, type EnhancedAuditResult, type AnalysisFactor, type AuditItem };

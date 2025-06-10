@@ -33,6 +33,7 @@ import {
   Globe,
 } from "lucide-react";
 import { ChartExport } from "@/components/ui/chart-export";
+import PageIssuesDropdown from "./PageIssuesDropdown";
 
 interface RivalAuditDashboardProps {
   audit: RivalAudit | EnhancedRivalAudit;
@@ -495,6 +496,11 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             </div>
           </CardContent>
       </Card>
+
+      {/* Page Issues Dropdown - Show pages with Priority OFI/OFI issues */}
+      {'pageIssues' in audit && audit.pageIssues && (
+        <PageIssuesDropdown pageIssues={audit.pageIssues} />
+      )}
 
       {/* Category comparison chart */}
       <Card>

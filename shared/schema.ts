@@ -604,6 +604,9 @@ export const enhancedAuditItemSchema = z.object({
   notes: z.string(),
   category: z.string(),
   score: z.number().min(0).max(100).optional(), // Numeric score for the factor
+  pageUrl: z.string().optional(), // URL of the specific page where this issue was found
+  pageTitle: z.string().optional(), // Title of the specific page for better identification
+  pageType: z.string().optional(), // Type of page (homepage, contact, service, location, etc.)
   analysisDetails: z.object({
     actual: z.union([z.string(), z.number(), z.boolean()]).optional(),
     expected: z.union([z.string(), z.number(), z.boolean()]).optional(),
@@ -693,6 +696,25 @@ export const rivalAuditSchema = z.object({
   })
 });
 
+// Page-specific issue summary for enhanced audits
+export const pageIssueSummarySchema = z.object({
+  pageUrl: z.string(),
+  pageTitle: z.string(),
+  pageType: z.string(), // homepage, contact, service, location, serviceArea
+  priorityOfiCount: z.number(),
+  ofiCount: z.number(),
+  okCount: z.number(),
+  naCount: z.number(),
+  totalIssues: z.number(),
+  score: z.number().min(0).max(100).optional(),
+  topIssues: z.array(z.object({
+    name: z.string(),
+    status: auditStatusSchema,
+    importance: seoImportanceSchema,
+    category: z.string()
+  })).optional() // Top 3 most critical issues for quick reference
+});
+
 // Enhanced rival audit schema with 140+ factors
 export const enhancedRivalAuditSchema = z.object({
   url: z.string(),
@@ -713,6 +735,7 @@ export const enhancedRivalAuditSchema = z.object({
     overallScore: z.number().min(0).max(100).optional(),
     categoryScores: z.record(z.string(), z.number()).optional()
   }),
+  pageIssues: z.array(pageIssueSummarySchema).optional(), // Page-specific issue summaries
   analysisMetadata: z.object({
     analysisVersion: z.string().default("2.0"),
     factorCount: z.number(),
@@ -786,6 +809,7 @@ export type AuditStatus = z.infer<typeof auditStatusSchema>;
 export type SeoImportance = z.infer<typeof seoImportanceSchema>;
 export type AuditItem = z.infer<typeof auditItemSchema>;
 export type EnhancedAuditItem = z.infer<typeof enhancedAuditItemSchema>;
+export type PageIssueSummary = z.infer<typeof pageIssueSummarySchema>;
 export type OnPageAudit = z.infer<typeof onPageAuditSchema>;
 export type StructureNavigationAudit = z.infer<typeof structureNavigationAuditSchema>;
 export type ContactPageAudit = z.infer<typeof contactPageAuditSchema>;
