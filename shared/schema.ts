@@ -697,16 +697,22 @@ export const rivalAuditSchema = z.object({
 });
 
 // Page-specific issue summary for enhanced audits
+// Page priority tiers for OFI scoring
+export const pagePrioritySchema = z.enum(['1', '2', '3']).transform(val => parseInt(val));
+
 export const pageIssueSummarySchema = z.object({
   pageUrl: z.string(),
   pageTitle: z.string(),
   pageType: z.string(), // homepage, contact, service, location, serviceArea
+  priority: pagePrioritySchema.optional(), // Priority tier (1=high, 2=medium, 3=low)
+  priorityWeight: z.number().optional(), // Weight multiplier for OFI calculation
   priorityOfiCount: z.number(),
   ofiCount: z.number(),
   okCount: z.number(),
   naCount: z.number(),
   totalIssues: z.number(),
   score: z.number().min(0).max(100).optional(),
+  weightedScore: z.number().min(0).max(100).optional(), // Score after priority weighting
   topIssues: z.array(z.object({
     name: z.string(),
     status: auditStatusSchema,
@@ -733,7 +739,34 @@ export const enhancedRivalAuditSchema = z.object({
     okCount: z.number(),
     naCount: z.number(),
     overallScore: z.number().min(0).max(100).optional(),
-    categoryScores: z.record(z.string(), z.number()).optional()
+    weightedOverallScore: z.number().min(0).max(100).optional(), // Priority-weighted overall score
+    categoryScores: z.record(z.string(), z.number()).optional(),
+    priorityBreakdown: z.object({
+      tier1: z.object({
+        pages: z.number(),
+        weight: z.number(),
+        ofi: z.number()
+      }),
+      tier2: z.object({
+        pages: z.number(),
+        weight: z.number(),
+        ofi: z.number()
+      }),
+      tier3: z.object({
+        pages: z.number(),
+        weight: z.number(),
+        ofi: z.number()
+      }),
+      totalWeightedOFI: z.number(),
+      normalizedOFI: z.number(),
+      sizeAdjustedOFI: z.number(), // OFI after site size normalization
+      confidence: z.number(), // Confidence level based on tier 1 representation
+      normalizationFactors: z.object({
+        sizeNormalization: z.number(),
+        distributionBalance: z.number(),
+        tierRepresentation: z.number()
+      })
+    }).optional()
   }),
   pageIssues: z.array(pageIssueSummarySchema).optional(), // Page-specific issue summaries
   analysisMetadata: z.object({
@@ -809,6 +842,7 @@ export type AuditStatus = z.infer<typeof auditStatusSchema>;
 export type SeoImportance = z.infer<typeof seoImportanceSchema>;
 export type AuditItem = z.infer<typeof auditItemSchema>;
 export type EnhancedAuditItem = z.infer<typeof enhancedAuditItemSchema>;
+export type PagePriority = z.infer<typeof pagePrioritySchema>;
 export type PageIssueSummary = z.infer<typeof pageIssueSummarySchema>;
 export type OnPageAudit = z.infer<typeof onPageAuditSchema>;
 export type StructureNavigationAudit = z.infer<typeof structureNavigationAuditSchema>;
@@ -1282,6 +1316,24 @@ export const rivalAudits = pgTable("rival_audits", {
   ];
 });
 
+// Page priority overrides - allows manual classification of page priorities
+export const pageClassificationOverrides = pgTable("page_classification_overrides", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id),
+  auditId: integer("audit_id").references(() => rivalAudits.id),
+  pageUrl: text("page_url").notNull(),
+  priority: integer("priority").notNull(), // 1=Tier 1, 2=Tier 2, 3=Tier 3
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return [
+    unique().on(table.auditId, table.pageUrl), // One override per page per audit
+    index("idx_page_overrides_user").on(table.userId),
+    index("idx_page_overrides_audit").on(table.auditId)
+  ];
+});
+
 // Insert schemas for crawling system
 export const insertCrawlSourceSchema = createInsertSchema(crawlSources).omit({
   id: true,
@@ -1330,6 +1382,12 @@ export const insertRivalAuditSchema = createInsertSchema(rivalAudits).omit({
   startedAt: true,
 });
 
+export const insertPageClassificationOverrideSchema = createInsertSchema(pageClassificationOverrides).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Crawling system types
 export type CrawlSource = typeof crawlSources.$inferSelect;
 export type InsertCrawlSource = z.infer<typeof insertCrawlSourceSchema>;
@@ -1344,3 +1402,5 @@ export type InsertCrawlAlert = z.infer<typeof insertCrawlAlertSchema>;
 export type DataQualityReport = typeof dataQualityReports.$inferSelect;
 export type RivalAuditRecord = typeof rivalAudits.$inferSelect;
 export type InsertRivalAuditRecord = z.infer<typeof insertRivalAuditSchema>;
+export type PageClassificationOverride = typeof pageClassificationOverrides.$inferSelect;
+export type InsertPageClassificationOverride = z.infer<typeof insertPageClassificationOverrideSchema>;

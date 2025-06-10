@@ -363,6 +363,37 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     ? audit.summary.totalFactors 
     : updatedSummary?.total || ('total' in audit.summary ? audit.summary.total : 0);
 
+  // Check if audit has priority breakdown data (new weighted OFI feature)
+  const hasPriorityBreakdown = isEnhancedAudit && 'priorityBreakdown' in audit.summary && audit.summary.priorityBreakdown;
+  
+  // Prepare priority breakdown data for visualization
+  const priorityBreakdownData = hasPriorityBreakdown ? [
+    {
+      name: 'High Priority (Tier 1)',
+      pages: audit.summary.priorityBreakdown!.tier1.pages,
+      weight: audit.summary.priorityBreakdown!.tier1.weight,
+      ofi: audit.summary.priorityBreakdown!.tier1.ofi,
+      color: '#ef4444',
+      multiplier: '3x'
+    },
+    {
+      name: 'Medium Priority (Tier 2)', 
+      pages: audit.summary.priorityBreakdown!.tier2.pages,
+      weight: audit.summary.priorityBreakdown!.tier2.weight,
+      ofi: audit.summary.priorityBreakdown!.tier2.ofi,
+      color: '#f59e0b',
+      multiplier: '2x'
+    },
+    {
+      name: 'Low Priority (Tier 3)',
+      pages: audit.summary.priorityBreakdown!.tier3.pages,
+      weight: audit.summary.priorityBreakdown!.tier3.weight,
+      ofi: audit.summary.priorityBreakdown!.tier3.ofi,
+      color: '#10b981',
+      multiplier: '1x'
+    }
+  ] : null;
+
   return (
     <div className="space-y-6">
       {/* Overall progress card */}
@@ -496,6 +527,151 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             </div>
           </CardContent>
       </Card>
+
+      {/* Priority-Weighted OFI Breakdown - Show weighted scoring impact */}
+      {hasPriorityBreakdown && (
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-b">
+            <CardTitle className="flex items-center">
+              <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/50 mr-3">
+                <AlertTriangle className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              Priority-Weighted OFI Analysis
+            </CardTitle>
+            <CardDescription>
+              Pages are weighted by business importance: High Priority (3x), Medium Priority (2x), Low Priority (1x)
+              {audit.summary.priorityBreakdown!.confidence && (
+                <span className="block mt-1 text-sm">
+                  Analysis confidence: {Math.round(audit.summary.priorityBreakdown!.confidence * 100)}%
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Priority tier breakdown */}
+              <div>
+                <h4 className="text-sm font-semibold mb-4 text-gray-700 dark:text-gray-300">
+                  Page Priority Distribution
+                </h4>
+                <div className="space-y-3">
+                  {priorityBreakdownData!.map((tier, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div className="flex items-center">
+                        <div 
+                          className="w-4 h-4 rounded-full mr-3" 
+                          style={{ backgroundColor: tier.color }}
+                        />
+                        <div>
+                          <div className="font-medium text-sm">{tier.name}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Weight: {tier.multiplier}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold">{tier.pages} pages</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          {tier.ofi} OFI issues
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Weighted OFI metrics */}
+              <div>
+                <h4 className="text-sm font-semibold mb-4 text-gray-700 dark:text-gray-300">
+                  Weighted OFI Impact
+                </h4>
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div className="text-sm font-medium text-blue-900 dark:text-blue-100">Raw Weighted OFI</div>
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {Math.round(audit.summary.priorityBreakdown!.totalWeightedOFI * 100) / 100}
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                    <div className="text-sm font-medium text-green-900 dark:text-green-100">Normalized OFI</div>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {Math.round(audit.summary.priorityBreakdown!.normalizedOFI * 100) / 100}
+                    </div>
+                  </div>
+
+                  {audit.summary.priorityBreakdown!.sizeAdjustedOFI && (
+                    <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                      <div className="text-sm font-medium text-purple-900 dark:text-purple-100">Size-Adjusted OFI</div>
+                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                        {Math.round(audit.summary.priorityBreakdown!.sizeAdjustedOFI * 100) / 100}
+                      </div>
+                      <div className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                        Accounts for site size and distribution
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Normalization factors display */}
+                {audit.summary.priorityBreakdown!.normalizationFactors && (
+                  <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                    <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Normalization Factors:
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="text-center">
+                        <div className="font-medium">Size</div>
+                        <div className="text-gray-600 dark:text-gray-400">
+                          {audit.summary.priorityBreakdown!.normalizationFactors.sizeNormalization}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Balance</div>
+                        <div className="text-gray-600 dark:text-gray-400">
+                          {Math.round(audit.summary.priorityBreakdown!.normalizationFactors.distributionBalance * 100) / 100}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Representation</div>
+                        <div className="text-gray-600 dark:text-gray-400">
+                          {audit.summary.priorityBreakdown!.normalizationFactors.tierRepresentation}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Weighted overall score display */}
+            {audit.summary.weightedOverallScore && (
+              <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-800">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
+                      Priority-Weighted Overall Score
+                    </div>
+                    <div className="text-xs text-indigo-700 dark:text-indigo-300">
+                      Accounts for page business importance
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                      {Math.round(audit.summary.weightedOverallScore)}%
+                    </div>
+                    {audit.summary.overallScore && (
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        Standard: {Math.round(audit.summary.overallScore)}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Page Issues Dropdown - Show pages with Priority OFI/OFI issues */}
       {'pageIssues' in audit && audit.pageIssues && (

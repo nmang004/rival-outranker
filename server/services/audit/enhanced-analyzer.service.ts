@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 import { PageCrawlResult, SiteStructure } from './audit.service';
 import { PageIssueSummary } from '../../../shared/schema';
+import { PagePriorityService, PagePriority, PageClassificationOverride } from './page-priority.service';
 
 /**
  * Enhanced Audit Analyzer Service
@@ -19,11 +20,14 @@ class EnhancedAuditAnalyzer {
   
   // UX & Performance Analysis
   private uxAnalyzer = new UXPerformanceAnalyzer();
+  
+  // Page Priority Analysis
+  private priorityService = new PagePriorityService();
 
   /**
-   * Perform comprehensive 200+ factor analysis on a website
+   * Perform comprehensive 200+ factor analysis on a website with priority weighting
    */
-  async analyzeWebsite(siteStructure: SiteStructure): Promise<EnhancedAuditResult> {
+  async analyzeWebsite(siteStructure: SiteStructure, overrides?: PageClassificationOverride[]): Promise<EnhancedAuditResult> {
     console.log('[EnhancedAnalyzer] Starting comprehensive 200+ factor analysis');
     
     const results: EnhancedAuditResult = {
@@ -104,8 +108,11 @@ class EnhancedAuditAnalyzer {
     // Calculate final summary
     this.calculateSummary(results);
 
-    // Generate page issue summaries
-    results.pageIssues = this.generatePageIssueSummaries(results);
+    // Generate page issue summaries with priority weighting
+    results.pageIssues = this.generatePageIssueSummaries(results, siteStructure, overrides);
+
+    // Calculate weighted OFI scores and priority breakdown
+    this.calculateWeightedSummary(results, siteStructure, overrides);
 
     console.log(`[EnhancedAnalyzer] Completed analysis: ${results.summary.totalFactors} factors evaluated`);
     return results;
@@ -258,9 +265,60 @@ class EnhancedAuditAnalyzer {
   }
 
   /**
-   * Generate page-specific issue summaries for the dropdown
+   * Calculate weighted OFI summary with priority breakdown
    */
-  private generatePageIssueSummaries(results: EnhancedAuditResult): PageIssueSummary[] {
+  private calculateWeightedSummary(results: EnhancedAuditResult, siteStructure: SiteStructure, overrides?: PageClassificationOverride[]): void {
+    if (!results.pageIssues || results.pageIssues.length === 0) {
+      return;
+    }
+
+    // Prepare data for weighted calculation
+    const pageResults = results.pageIssues.map(page => ({
+      priority: page.priority || PagePriority.TIER_3,
+      priorityOfiCount: page.priorityOfiCount,
+      ofiCount: page.ofiCount,
+      okCount: page.okCount,
+      naCount: page.naCount,
+      score: page.score || 0
+    }));
+
+    // Calculate weighted OFI
+    const weightedOFI = this.priorityService.calculateWeightedOFI(pageResults);
+    
+    // Calculate priority-weighted overall score
+    const weightedScore = this.priorityService.calculatePriorityWeightedScore(
+      pageResults.map(page => ({
+        priority: page.priority,
+        score: page.score
+      }))
+    );
+
+    // Update summary with weighted calculations including normalization
+    results.summary.weightedOverallScore = weightedScore.weightedScore;
+    results.summary.priorityBreakdown = {
+      tier1: weightedOFI.breakdown.tier1,
+      tier2: weightedOFI.breakdown.tier2,
+      tier3: weightedOFI.breakdown.tier3,
+      totalWeightedOFI: weightedOFI.weightedOFI,
+      normalizedOFI: weightedOFI.normalizedOFI,
+      sizeAdjustedOFI: weightedOFI.sizeAdjustedOFI,
+      confidence: weightedScore.confidence,
+      normalizationFactors: weightedOFI.normalizationFactors
+    };
+
+    console.log(`[EnhancedAnalyzer] Priority Breakdown:
+      - Tier 1 (High Priority): ${weightedOFI.breakdown.tier1.pages} pages, ${weightedOFI.breakdown.tier1.ofi} OFI issues
+      - Tier 2 (Medium Priority): ${weightedOFI.breakdown.tier2.pages} pages, ${weightedOFI.breakdown.tier2.ofi} OFI issues  
+      - Tier 3 (Low Priority): ${weightedOFI.breakdown.tier3.pages} pages, ${weightedOFI.breakdown.tier3.ofi} OFI issues
+      - Weighted Overall Score: ${weightedScore.weightedScore}% (confidence: ${Math.round(weightedScore.confidence * 100)}%)
+      - Size-Adjusted OFI: ${Math.round(weightedOFI.sizeAdjustedOFI * 100) / 100}
+      - Normalization Factors: Size(${weightedOFI.normalizationFactors.sizeNormalization}), Balance(${Math.round(weightedOFI.normalizationFactors.distributionBalance * 100) / 100}), Representation(${weightedOFI.normalizationFactors.tierRepresentation})`);
+  }
+
+  /**
+   * Generate page-specific issue summaries for the dropdown with priority weighting
+   */
+  private generatePageIssueSummaries(results: EnhancedAuditResult, siteStructure: SiteStructure, overrides?: PageClassificationOverride[]): PageIssueSummary[] {
     const allItems = [
       ...results.onPage.items,
       ...results.structureNavigation.items,
@@ -317,28 +375,81 @@ class EnhancedAuditAnalyzer {
             category: item.category
           }));
 
+        // Determine page priority
+        const pageData = this.findPageInStructure(pageUrl, siteStructure);
+        const pageType = firstItem.pageType || 'unknown';
+        const priority = pageData ? this.priorityService.getPagePriority(pageData, pageType, overrides) : PagePriority.TIER_3;
+        const priorityWeight = this.priorityService.getPriorityWeight(priority);
+        
+        // Calculate basic page score (percentage of OK items)
+        const totalFactors = priorityOfiCount + ofiCount + okCount + naCount;
+        const score = totalFactors > 0 ? Math.round((okCount / totalFactors) * 100) : 0;
+        
+        // Calculate weighted score (applying priority weight but normalizing back to 0-100)
+        const weightedScore = Math.min(100, score * (priorityWeight / 2)); // Normalize weight impact
+
         pageSummaries.push({
           pageUrl,
           pageTitle: firstItem.pageTitle || 'Untitled Page',
-          pageType: firstItem.pageType || 'unknown',
+          pageType,
+          priority,
+          priorityWeight,
           priorityOfiCount,
           ofiCount,
           okCount,
           naCount,
           totalIssues,
+          score,
+          weightedScore,
           topIssues
         });
       }
     });
 
-    // Sort by total issues (most critical pages first)
+    // Sort by priority weight first, then by total issues
     return pageSummaries.sort((a, b) => {
-      // Sort by Priority OFI count first, then total issues
+      // Sort by priority (higher priority first), then Priority OFI count, then total issues
+      if (a.priority !== b.priority) {
+        return a.priority! - b.priority!; // Lower number = higher priority
+      }
       if (a.priorityOfiCount !== b.priorityOfiCount) {
         return b.priorityOfiCount - a.priorityOfiCount;
       }
       return b.totalIssues - a.totalIssues;
     });
+  }
+
+  /**
+   * Find a page in the site structure by URL
+   */
+  private findPageInStructure(url: string, siteStructure: SiteStructure): PageCrawlResult | null {
+    // Check homepage
+    if (siteStructure.homepage?.url === url) {
+      return siteStructure.homepage;
+    }
+    
+    // Check contact page
+    if (siteStructure.contactPage?.url === url) {
+      return siteStructure.contactPage;
+    }
+    
+    // Check service pages
+    const servicePage = siteStructure.servicePages.find(page => page.url === url);
+    if (servicePage) return servicePage;
+    
+    // Check location pages
+    const locationPage = siteStructure.locationPages.find(page => page.url === url);
+    if (locationPage) return locationPage;
+    
+    // Check service area pages
+    const serviceAreaPage = siteStructure.serviceAreaPages.find(page => page.url === url);
+    if (serviceAreaPage) return serviceAreaPage;
+    
+    // Check other pages
+    const otherPage = siteStructure.otherPages.find(page => page.url === url);
+    if (otherPage) return otherPage;
+    
+    return null;
   }
 
   // Site-wide analysis methods
