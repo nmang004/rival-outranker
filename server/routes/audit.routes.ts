@@ -81,7 +81,7 @@ router.post("/enhanced", async (req: Request, res: Response) => {
       url,
       status: 'processing',
       userId: req.user?.id || null,
-      auditType: 'enhanced'
+      metadata: { auditType: 'enhanced' }
     });
     
     console.log('🆔 Created enhanced audit ID:', auditRecord.id);
@@ -179,7 +179,7 @@ router.post("/", async (req: Request, res: Response) => {
       url,
       status: 'processing',
       userId: req.user?.id || null,
-      auditType: 'standard'
+      metadata: { auditType: 'standard' }
     });
     
     console.log('🆔 Created audit ID:', auditRecord.id);
