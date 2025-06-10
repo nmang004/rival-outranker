@@ -443,16 +443,107 @@ class EnhancedAuditAnalyzer {
         
         item.status = newStatus;
         
-        // Add classification justification to notes
+        // Add actionable improvement recommendations instead of classification details
         if (classificationResult.classification === 'Priority OFI') {
-          item.notes = (item.notes || '') + `\n\n[Enhanced Classification] ${classificationResult.justification}`;
+          item.notes = this.generateActionableNotes(item, 'Priority OFI');
         } else if (wasDowngraded) {
-          item.notes = (item.notes || '') + `\n\n[Enhanced Classification] Downgraded from Priority OFI: ${classificationResult.justification}`;
+          item.notes = this.generateActionableNotes(item, 'OFI') + ' [Auto-downgraded: Did not meet critical priority criteria]';
         } else {
-          item.notes = (item.notes || '') + `\n\n[Enhanced Classification] ${classificationResult.justification}`;
+          item.notes = this.generateActionableNotes(item, 'OFI');
         }
       }
     }
+  }
+
+  /**
+   * Generate actionable, specific improvement recommendations for audit items
+   */
+  private generateActionableNotes(item: any, status: string): string {
+    const name = item.name.toLowerCase();
+    const description = item.description.toLowerCase();
+    
+    // Generate specific recommendations based on the item name and context
+    let recommendation = '';
+    
+    // Content Quality recommendations
+    if (name.includes('content length') || name.includes('sufficient content')) {
+      recommendation = 'Add more detailed information about your services, benefits, and local expertise. Target 300-500 words minimum for service pages.';
+    } else if (name.includes('keyword density')) {
+      recommendation = 'Naturally integrate your target keywords 2-3 times throughout the content. Focus on semantic variations and related terms.';
+    } else if (name.includes('call-to-action') || name.includes('cta')) {
+      recommendation = 'Add prominent buttons like "Get Free Quote", "Call Now", or "Schedule Service" in multiple locations. Use action-oriented language.';
+    } else if (name.includes('brand consistency')) {
+      recommendation = 'Ensure your business name, logo, and contact information appear consistently across all pages. Use the same phone number format.';
+    } else if (name.includes('reviews') || name.includes('testimonials')) {
+      recommendation = 'Display customer testimonials prominently on your homepage and service pages. Include names, photos, and specific project details.';
+    } else if (name.includes('heading') || name.includes('h1') || name.includes('h2')) {
+      recommendation = 'Use clear, descriptive headings that include your target keywords. Structure content with H1 for main title, H2 for sections.';
+    } else if (name.includes('image') || name.includes('alt')) {
+      recommendation = 'Add descriptive alt text to all images explaining what they show. Include location and service keywords where relevant.';
+    }
+    
+    // Technical SEO recommendations
+    else if (name.includes('url structure')) {
+      recommendation = 'Create clean, descriptive URLs like "/plumbing-services" instead of "/page123". Include relevant keywords in the URL path.';
+    } else if (name.includes('schema') || name.includes('structured data')) {
+      recommendation = 'Add local business schema markup including your NAP, hours, services, and service areas to help search engines understand your business.';
+    } else if (name.includes('meta') || name.includes('title tag')) {
+      recommendation = 'Write compelling meta titles and descriptions that include your main keywords and location. Keep titles under 60 characters.';
+    } else if (name.includes('mobile') || name.includes('responsive')) {
+      recommendation = 'Ensure your website displays properly on all device sizes. Test buttons, forms, and navigation on mobile devices.';
+    } else if (name.includes('page speed') || name.includes('performance')) {
+      recommendation = 'Optimize images, enable compression, and minimize code to improve loading speed. Target under 3 seconds load time.';
+    } else if (name.includes('ssl') || name.includes('https')) {
+      recommendation = 'Install an SSL certificate to secure your website. This builds trust and is required for good search rankings.';
+    }
+    
+    // Local SEO recommendations  
+    else if (name.includes('nap consistency') || name.includes('business information')) {
+      recommendation = 'Display your complete business name, address, and phone number consistently on every page. Match your Google Business Profile exactly.';
+    } else if (name.includes('location') || name.includes('service area')) {
+      recommendation = 'Create dedicated pages for each city/area you serve. Include local landmarks, zip codes, and area-specific content.';
+    } else if (name.includes('google business') || name.includes('gmb')) {
+      recommendation = 'Optimize your Google Business Profile with complete information, regular posts, photos, and encourage customer reviews.';
+    } else if (name.includes('local link') || name.includes('citations')) {
+      recommendation = 'Get listed in local directories like Yelp, Angie\'s List, and industry-specific directories. Ensure consistent NAP information.';
+    } else if (name.includes('expertise') || name.includes('authority')) {
+      recommendation = 'Showcase your certifications, years of experience, and completed projects. Include team bios and professional credentials.';
+    } else if (name.includes('community') || name.includes('local involvement')) {
+      recommendation = 'Highlight your local community involvement, sponsorships, and partnerships. Feature local customer success stories.';
+    }
+    
+    // UX & Performance recommendations
+    else if (name.includes('navigation') || name.includes('menu')) {
+      recommendation = 'Simplify your main navigation to include key pages: Services, About, Contact. Add a clear "Get Quote" button in the header.';
+    } else if (name.includes('form') || name.includes('contact form')) {
+      recommendation = 'Streamline contact forms to essential fields only. Add clear labels and make sure forms work on mobile devices.';
+    } else if (name.includes('accessibility') || name.includes('contrast')) {
+      recommendation = 'Ensure sufficient color contrast and keyboard navigation. Use descriptive link text instead of "click here".';
+    } else if (name.includes('search') || name.includes('site search')) {
+      recommendation = 'Add a prominent search box to help visitors quickly find specific services or information on your website.';
+    } else if (name.includes('breadcrumb')) {
+      recommendation = 'Add breadcrumb navigation to help users understand their location on your site and improve SEO structure.';
+    }
+    
+    // Generic fallback recommendations
+    else {
+      if (name.includes('optimization')) {
+        recommendation = 'Review and improve this element following SEO best practices. Focus on user experience and search engine visibility.';
+      } else if (description.includes('should')) {
+        recommendation = description.replace('should', 'Consider updating this to').replace('Page should', 'Update your page to').replace('Site should', 'Improve your website to');
+      } else {
+        recommendation = 'This element needs attention to improve your website\'s SEO performance and user experience.';
+      }
+    }
+    
+    // Add priority context
+    if (status === 'Priority OFI') {
+      recommendation = '🚨 HIGH PRIORITY: ' + recommendation + ' This significantly impacts your search rankings and should be addressed immediately.';
+    } else {
+      recommendation = '💡 IMPROVEMENT: ' + recommendation + ' This enhancement will help improve your overall SEO performance.';
+    }
+    
+    return recommendation;
   }
 
   /**
