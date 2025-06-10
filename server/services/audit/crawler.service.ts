@@ -6,6 +6,8 @@ type CrawlerOutput = any;
 import * as https from 'https';
 import * as dns from 'dns';
 import { promisify } from 'util';
+import * as xml2js from 'xml2js';
+import { Cluster } from 'puppeteer-cluster';
 
 // DNS lookup with promise support
 const dnsLookup = promisify(dns.lookup);
@@ -19,6 +21,10 @@ class Crawler {
   private CRAWL_DELAY = 500; // Delay between requests in milliseconds
   private MAX_PAGES = 50; // Maximum pages to crawl per site
   private CONCURRENT_REQUESTS = 5; // Maximum concurrent requests for parallel processing
+  private USE_SITEMAP_DISCOVERY = true; // Enable sitemap-based page discovery
+  private PREFILTER_CONTENT_TYPES = true; // Enable content-type pre-filtering
+  private USE_PUPPETEER_FOR_JS_SITES = true; // Enable Puppeteer for JS-heavy sites
+  private PUPPETEER_CLUSTER_SIZE = 2; // Number of browser instances in cluster
   
   // Map to cache DNS resolutions
   private dnsCache = new Map<string, string>();
@@ -28,6 +34,19 @@ class Crawler {
   
   // Set to track broken links for verification
   private brokenLinks = new Set<string>();
+  
+  // Sitemap discovery cache
+  private sitemapUrls = new Set<string>();
+  private sitemapDiscovered = false;
+  
+  // Puppeteer cluster for JS-heavy sites
+  private puppeteerCluster: Cluster | null = null;
+  private jsDetectionPatterns = [
+    'react', 'angular', 'vue', 'backbone', 'ember',
+    'spa', 'ajax', 'xhr', 'fetch',
+    'document.ready', 'window.onload',
+    'ng-app', 'data-ng', 'v-if', 'v-for'
+  ];
   
   // Crawling state
   private crawledUrls = new Set<string>();
@@ -41,6 +60,69 @@ class Crawler {
     endTime: 0
   };
 
+  /**
+   * Pre-filter URLs by content type using HEAD requests
+   */
+  private async prefilterUrls(urls: string[]): Promise<string[]> {
+    if (!this.PREFILTER_CONTENT_TYPES || urls.length === 0) {
+      return urls;
+    }
+    
+    console.log(`[Crawler] Pre-filtering ${urls.length} URLs by content type...`);
+    const validUrls: string[] = [];
+    
+    // Process URLs in batches for HEAD requests
+    const batchSize = Math.min(this.CONCURRENT_REQUESTS * 2, 10); // More concurrent HEAD requests
+    
+    for (let i = 0; i < urls.length; i += batchSize) {
+      const batch = urls.slice(i, i + batchSize);
+      
+      const headPromises = batch.map(async (url) => {
+        try {
+          const response = await axios.head(url, {
+            timeout: 3000, // Shorter timeout for HEAD requests
+            headers: { 'User-Agent': this.USER_AGENT },
+            maxRedirects: 3,
+            validateStatus: (status) => status < 500, // Accept 4xx to check content type
+          });
+          
+          const contentType = response.headers['content-type'] || '';
+          
+          // Check if it's HTML content
+          if (response.status === 200 && 
+              (contentType.includes('text/html') || 
+               contentType.includes('application/xhtml+xml') ||
+               contentType === '')) { // Some servers don't return content-type for HEAD
+            return { url, valid: true };
+          }
+          
+          console.log(`[Crawler] Skipping non-HTML content: ${url} (${contentType})`);
+          return { url, valid: false };
+          
+        } catch (error) {
+          // If HEAD request fails, include URL anyway (might be server issue)
+          return { url, valid: true };
+        }
+      });
+      
+      const batchResults = await Promise.allSettled(headPromises);
+      
+      batchResults.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value.valid) {
+          validUrls.push(result.value.url);
+        }
+      });
+      
+      // Small delay between batches
+      if (i + batchSize < urls.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    console.log(`[Crawler] Pre-filtering complete: ${validUrls.length}/${urls.length} URLs passed filter`);
+    return validUrls;
+  }
+  
   /**
    * Process URLs in parallel batches with concurrency limiting
    */
@@ -110,6 +192,11 @@ class Crawler {
       if (this.responseCache.has(normalizedUrl)) {
         console.log(`[Crawler] Using cached response for: ${normalizedUrl}`);
         return this.responseCache.get(normalizedUrl);
+      }
+      
+      // Initialize Puppeteer cluster if needed
+      if (this.USE_PUPPETEER_FOR_JS_SITES && !this.puppeteerCluster) {
+        await this.initializePuppeteerCluster();
       }
       
       console.log(`[Crawler] Crawling page: ${normalizedUrl}`);
@@ -222,6 +309,21 @@ class Crawler {
       
       // Parse the HTML
       const $ = cheerio.load(response.data);
+      
+      // Check if this is a JavaScript-heavy site that needs Puppeteer
+      const isJsHeavy = this.detectJavaScriptHeavySite(response.data, normalizedUrl);
+      
+      if (isJsHeavy && this.puppeteerCluster) {
+        console.log(`[Crawler] Switching to Puppeteer for JS-heavy site: ${normalizedUrl}`);
+        try {
+          const puppeteerResult = await this.crawlPageWithPuppeteer(normalizedUrl);
+          this.responseCache.set(normalizedUrl, puppeteerResult);
+          return puppeteerResult;
+        } catch (puppeteerError) {
+          console.error(`[Crawler] Puppeteer failed, falling back to regular crawling:`, puppeteerError);
+          // Continue with regular crawling as fallback
+        }
+      }
       
       // Check for noindex directive
       const noindex = this.checkNoindex($);
@@ -856,6 +958,198 @@ class Crawler {
   }
 
   /**
+   * Initialize Puppeteer cluster for JavaScript-heavy sites
+   */
+  private async initializePuppeteerCluster(): Promise<void> {
+    if (!this.USE_PUPPETEER_FOR_JS_SITES || this.puppeteerCluster) {
+      return;
+    }
+    
+    try {
+      console.log(`[Crawler] Initializing Puppeteer cluster with ${this.PUPPETEER_CLUSTER_SIZE} instances`);
+      
+      this.puppeteerCluster = await Cluster.launch({
+        concurrency: Cluster.CONCURRENCY_CONTEXT,
+        maxConcurrency: this.PUPPETEER_CLUSTER_SIZE,
+        puppeteerOptions: {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--window-size=1920x1080'
+          ]
+        },
+        timeout: 30000,
+        retryLimit: 1,
+        retryDelay: 1000,
+      });
+      
+      // Set up task handler for crawling
+      await this.puppeteerCluster.task(async ({ page, data: url }) => {
+        console.log(`[Crawler] Puppeteer crawling: ${url}`);
+        
+        // Set viewport and user agent
+        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setUserAgent(this.USER_AGENT);
+        
+        // Block unnecessary resources to speed up loading
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+          const resourceType = req.resourceType();
+          if (['image', 'font', 'media'].includes(resourceType)) {
+            req.abort();
+          } else {
+            req.continue();
+          }
+        });
+        
+        // Navigate to page and wait for content
+        await page.goto(url, { 
+          waitUntil: 'networkidle2',
+          timeout: 25000 
+        });
+        
+        // Wait a bit for dynamic content to load
+        await page.waitForTimeout(2000);
+        
+        // Extract page data
+        const data = await page.evaluate(() => {
+          return {
+            title: document.title,
+            html: document.documentElement.outerHTML,
+            url: window.location.href
+          };
+        });
+        
+        return data;
+      });
+      
+      console.log(`[Crawler] Puppeteer cluster initialized successfully`);
+    } catch (error) {
+      console.error(`[Crawler] Failed to initialize Puppeteer cluster:`, error);
+      this.puppeteerCluster = null;
+    }
+  }
+  
+  /**
+   * Clean up Puppeteer cluster
+   */
+  private async closePuppeteerCluster(): Promise<void> {
+    if (this.puppeteerCluster) {
+      try {
+        console.log(`[Crawler] Closing Puppeteer cluster`);
+        await this.puppeteerCluster.idle();
+        await this.puppeteerCluster.close();
+        this.puppeteerCluster = null;
+      } catch (error) {
+        console.error(`[Crawler] Error closing Puppeteer cluster:`, error);
+      }
+    }
+  }
+  
+  /**
+   * Detect if a site is JavaScript-heavy
+   */
+  private detectJavaScriptHeavySite(html: string, url: string): boolean {
+    if (!this.USE_PUPPETEER_FOR_JS_SITES) {
+      return false;
+    }
+    
+    const htmlLower = html.toLowerCase();
+    const urlLower = url.toLowerCase();
+    
+    // Check for JS framework patterns in HTML
+    const jsPatternCount = this.jsDetectionPatterns.filter(pattern => 
+      htmlLower.includes(pattern)
+    ).length;
+    
+    // Check for minimal HTML content (indicates SPA)
+    const textContent = html.replace(/<[^>]*>/g, '').trim();
+    const hasMinimalContent = textContent.length < 500;
+    
+    // Check for heavy script usage
+    const scriptTags = (html.match(/<script[^>]*>/gi) || []).length;
+    const hasHeavyScripts = scriptTags > 5;
+    
+    // Determine if it's JS-heavy
+    const isJsHeavy = jsPatternCount >= 2 || hasMinimalContent || hasHeavyScripts;
+    
+    if (isJsHeavy) {
+      console.log(`[Crawler] Detected JS-heavy site: ${url} (patterns: ${jsPatternCount}, minimal content: ${hasMinimalContent}, scripts: ${scriptTags})`);
+    }
+    
+    return isJsHeavy;
+  }
+  
+  /**
+   * Crawl page using Puppeteer for JavaScript-heavy sites
+   */
+  private async crawlPageWithPuppeteer(url: string): Promise<CrawlerOutput> {
+    if (!this.puppeteerCluster) {
+      throw new Error('Puppeteer cluster not initialized');
+    }
+    
+    try {
+      const startTime = Date.now();
+      
+      // Execute crawling task in cluster
+      const result = await this.puppeteerCluster.execute(url);
+      
+      const loadTime = Date.now() - startTime;
+      
+      // Parse the HTML with Cheerio for consistent data extraction
+      const $ = cheerio.load(result.html);
+      
+      // Extract all the same data as regular crawling
+      const crawlResult = {
+        url: result.url,
+        statusCode: 200, // Puppeteer successful navigation
+        title: result.title || $('title').text().trim(),
+        meta: this.extractMetaTags($),
+        content: this.extractContent($),
+        headings: this.extractHeadings($),
+        links: this.extractLinks($, result.url),
+        images: this.extractImages($, result.url),
+        schema: this.extractSchemaMarkup($),
+        mobileCompatible: this.checkMobileCompatibility($),
+        performance: {
+          loadTime,
+          resourceCount: $('img, script, link[rel="stylesheet"], source, iframe').length,
+          resourceSize: result.html.length
+        },
+        security: {
+          hasHttps: result.url.startsWith('https://'),
+          hasMixedContent: this.checkMixedContent($, result.url),
+          hasSecurityHeaders: false // Can't check headers with Puppeteer easily
+        },
+        accessibility: this.checkAccessibility($),
+        seoIssues: {
+          noindex: this.checkNoindex($),
+          brokenLinks: 0, // Will be checked separately
+          missingAltText: this.countMissingAltText($),
+          duplicateMetaTags: this.checkDuplicateMetaTags($),
+          thinContent: this.checkThinContent($),
+          missingHeadings: this.checkMissingHeadings($),
+          robots: $('meta[name="robots"]').attr('content')
+        },
+        html: result.html,
+        rawHtml: result.html,
+        puppeteerUsed: true // Flag to indicate Puppeteer was used
+      };
+      
+      console.log(`[Crawler] Puppeteer crawl completed for ${url} in ${loadTime}ms`);
+      return crawlResult;
+      
+    } catch (error) {
+      console.error(`[Crawler] Puppeteer crawl failed for ${url}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
    * Reset crawler state for a new site crawl
    */
   reset(): void {
@@ -869,6 +1163,10 @@ class Crawler {
       startTime: 0,
       endTime: 0
     };
+    
+    // Reset sitemap discovery
+    this.sitemapUrls.clear();
+    this.sitemapDiscovered = false;
   }
 
   /**
@@ -894,6 +1192,10 @@ class Crawler {
     this.currentSite = new URL(url).origin;
     
     try {
+      // Initialize Puppeteer cluster for potential JS-heavy sites
+      if (this.USE_PUPPETEER_FOR_JS_SITES) {
+        await this.initializePuppeteerCluster();
+      }
       // Crawl the homepage first
       const homepage = await this.crawlPage(url);
       this.stats.pagesCrawled++;
@@ -918,13 +1220,28 @@ class Crawler {
       // Convert homepage data to PageCrawlResult format
       const homepageResult = this.convertToPageCrawlResult(homepage);
       
-      // Extract internal links for further crawling
-      if (homepage.links && homepage.links.internal) {
-        this.pendingUrls = homepage.links.internal
-          .map((link: any) => typeof link === 'string' ? link : link.url)
-          .filter((link: string) => this.shouldCrawlUrl(link))
-          .slice(0, this.MAX_PAGES - 1); // Reserve space for homepage
+      // Intelligent page discovery: Try sitemap first, fallback to link crawling
+      let discoveredUrls: string[] = [];
+      
+      // Phase 1: Sitemap-based discovery
+      const sitemapUrls = await this.discoverUrlsFromSitemap(url);
+      if (sitemapUrls.length > 0) {
+        console.log(`[Crawler] Using sitemap-based discovery: ${sitemapUrls.length} URLs found`);
+        discoveredUrls = sitemapUrls.slice(0, this.MAX_PAGES - 1);
+      } else {
+        console.log(`[Crawler] Sitemap discovery failed, falling back to link crawling`);
+        // Phase 2: Link crawling fallback
+        if (homepage.links && homepage.links.internal) {
+          discoveredUrls = homepage.links.internal
+            .map((link: any) => typeof link === 'string' ? link : link.url)
+            .filter((link: string) => this.shouldCrawlUrl(link))
+            .slice(0, this.MAX_PAGES - 1); // Reserve space for homepage
+        }
       }
+      
+      // Pre-filter URLs by content type
+      const validUrls = await this.prefilterUrls(discoveredUrls);
+      this.pendingUrls = validUrls;
 
       // Crawl additional pages using parallel processing
       const otherPages: any[] = [];
@@ -992,6 +1309,9 @@ class Crawler {
 
       this.stats.endTime = Date.now();
       
+      // Clean up Puppeteer cluster
+      await this.closePuppeteerCluster();
+      
       const result = {
         homepage: homepageResult,
         otherPages,
@@ -1010,6 +1330,10 @@ class Crawler {
       console.error(`[Crawler] Site crawl failed for ${url}:`, error);
       this.stats.errorsEncountered++;
       this.stats.endTime = Date.now();
+      
+      // Clean up Puppeteer cluster on error
+      await this.closePuppeteerCluster();
+      
       throw error;
     }
   }
@@ -1175,16 +1499,158 @@ class Crawler {
   }
 
   /**
-   * Check if site has sitemap.xml
+   * Discover URLs from sitemap.xml with intelligent parsing
+   */
+  private async discoverUrlsFromSitemap(baseUrl: string): Promise<string[]> {
+    if (!this.USE_SITEMAP_DISCOVERY || this.sitemapDiscovered) {
+      return [];
+    }
+    
+    const discoveredUrls: string[] = [];
+    const sitemapUrls = [
+      '/sitemap.xml',
+      '/sitemap_index.xml', 
+      '/sitemap-index.xml',
+      '/robots.txt' // Check robots.txt for sitemap references
+    ];
+    
+    try {
+      console.log(`[Crawler] Starting sitemap discovery for: ${baseUrl}`);
+      
+      // First, check robots.txt for sitemap references
+      const robotsUrls = await this.checkRobotsForSitemaps(baseUrl);
+      sitemapUrls.push(...robotsUrls);
+      
+      // Try each potential sitemap URL
+      for (const sitemapPath of sitemapUrls) {
+        try {
+          const sitemapUrl = sitemapPath.startsWith('http') ? sitemapPath : new URL(sitemapPath, baseUrl).toString();
+          console.log(`[Crawler] Checking sitemap: ${sitemapUrl}`);
+          
+          const response = await axios.get(sitemapUrl, {
+            timeout: 10000,
+            headers: { 'User-Agent': this.USER_AGENT },
+            validateStatus: (status) => status === 200
+          });
+          
+          if (response.data) {
+            const urls = await this.parseSitemap(response.data, baseUrl);
+            discoveredUrls.push(...urls);
+            console.log(`[Crawler] Found ${urls.length} URLs in sitemap: ${sitemapUrl}`);
+            
+            // If we found a valid sitemap, mark as discovered
+            if (urls.length > 0) {
+              this.sitemapDiscovered = true;
+              this.sitemapUrls.add(sitemapUrl);
+            }
+          }
+        } catch (error) {
+          // Silently continue to next sitemap
+          continue;
+        }
+      }
+      
+      // Remove duplicates and filter valid URLs
+      const uniqueUrls = Array.from(new Set(discoveredUrls))
+        .filter(url => this.shouldCrawlUrl(url))
+        .slice(0, this.MAX_PAGES * 2); // Get more URLs than MAX_PAGES to account for filtering
+      
+      console.log(`[Crawler] Sitemap discovery completed. Found ${uniqueUrls.length} valid URLs`);
+      return uniqueUrls;
+      
+    } catch (error) {
+      console.log(`[Crawler] Sitemap discovery failed:`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Check robots.txt for sitemap references
+   */
+  private async checkRobotsForSitemaps(baseUrl: string): Promise<string[]> {
+    try {
+      const robotsUrl = new URL('/robots.txt', baseUrl).toString();
+      const response = await axios.get(robotsUrl, { timeout: 5000 });
+      
+      const sitemapUrls: string[] = [];
+      const lines = response.data.split('\n');
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.toLowerCase().startsWith('sitemap:')) {
+          const sitemapUrl = trimmedLine.substring(8).trim();
+          if (sitemapUrl) {
+            sitemapUrls.push(sitemapUrl);
+          }
+        }
+      }
+      
+      console.log(`[Crawler] Found ${sitemapUrls.length} sitemap references in robots.txt`);
+      return sitemapUrls;
+    } catch {
+      return [];
+    }
+  }
+  
+  /**
+   * Parse sitemap XML and extract URLs
+   */
+  private async parseSitemap(xmlData: string, baseUrl: string): Promise<string[]> {
+    const urls: string[] = [];
+    
+    try {
+      const parser = new xml2js.Parser({ explicitArray: false });
+      const result = await parser.parseStringPromise(xmlData);
+      
+      // Handle sitemap index (contains references to other sitemaps)
+      if (result.sitemapindex && result.sitemapindex.sitemap) {
+        const sitemaps = Array.isArray(result.sitemapindex.sitemap) 
+          ? result.sitemapindex.sitemap 
+          : [result.sitemapindex.sitemap];
+        
+        // Recursively fetch URLs from child sitemaps
+        for (const sitemap of sitemaps.slice(0, 10)) { // Limit to 10 child sitemaps
+          if (sitemap.loc) {
+            try {
+              const childResponse = await axios.get(sitemap.loc, {
+                timeout: 10000,
+                headers: { 'User-Agent': this.USER_AGENT }
+              });
+              const childUrls = await this.parseSitemap(childResponse.data, baseUrl);
+              urls.push(...childUrls);
+            } catch {
+              // Continue to next sitemap on error
+              continue;
+            }
+          }
+        }
+      }
+      
+      // Handle regular sitemap (contains actual page URLs)
+      if (result.urlset && result.urlset.url) {
+        const urlEntries = Array.isArray(result.urlset.url) 
+          ? result.urlset.url 
+          : [result.urlset.url];
+        
+        for (const urlEntry of urlEntries) {
+          if (urlEntry.loc) {
+            urls.push(urlEntry.loc);
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error(`[Crawler] Error parsing sitemap:`, error);
+    }
+    
+    return urls;
+  }
+  
+  /**
+   * Check if site has sitemap.xml (updated for compatibility)
    */
   private async checkSitemap(baseUrl: string): Promise<boolean> {
-    try {
-      const sitemapUrl = new URL('/sitemap.xml', baseUrl).toString();
-      const response = await axios.head(sitemapUrl, { timeout: 5000 });
-      return response.status === 200;
-    } catch {
-      return false;
-    }
+    return this.sitemapUrls.size > 0 || this.sitemapDiscovered;
   }
 
   /**
