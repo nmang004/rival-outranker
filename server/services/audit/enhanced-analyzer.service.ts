@@ -185,86 +185,73 @@ class EnhancedAuditAnalyzer {
     console.log(`[EnhancedAnalyzer] Analysis contains: Content Quality (${analysis.contentQuality.length}), Technical SEO (${analysis.technicalSeo.length}), Local SEO (${analysis.localSeo.length}), UX Performance (${analysis.uxPerformance.length})`);
     
     // Merge factors into their dedicated enhanced categories
-    if (results.contentQuality) {
-      const contentItems = this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo);
-      this.mergeUniqueItems(results.contentQuality.items, contentItems);
-      console.log(`[EnhancedAnalyzer] Added ${contentItems.length} content quality factors. Total now: ${results.contentQuality.items.length}`);
-    }
+    const contentItems = this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo);
+    this.mergeUniqueItems(results.contentQuality.items, contentItems);
+    console.log(`[EnhancedAnalyzer] Added ${contentItems.length} content quality factors. Total now: ${results.contentQuality.items.length}`);
     
-    if (results.technicalSEO) {
-      const technicalItems = this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo);
-      this.mergeUniqueItems(results.technicalSEO.items, technicalItems);
-      console.log(`[EnhancedAnalyzer] Added ${technicalItems.length} technical SEO factors. Total now: ${results.technicalSEO.items.length}`);
-    }
+    const technicalItems = this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo);
+    this.mergeUniqueItems(results.technicalSEO.items, technicalItems);
+    console.log(`[EnhancedAnalyzer] Added ${technicalItems.length} technical SEO factors. Total now: ${results.technicalSEO.items.length}`);
     
-    if (results.localSEO) {
-      const localItems = this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo);
-      this.mergeUniqueItems(results.localSEO.items, localItems);
-      console.log(`[EnhancedAnalyzer] Added ${localItems.length} local SEO factors. Total now: ${results.localSEO.items.length}`);
-    }
+    const localItems = this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo);
+    this.mergeUniqueItems(results.localSEO.items, localItems);
+    console.log(`[EnhancedAnalyzer] Added ${localItems.length} local SEO factors. Total now: ${results.localSEO.items.length}`);
     
-    if (results.uxPerformance) {
-      const uxItems = this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo);
-      this.mergeUniqueItems(results.uxPerformance.items, uxItems);
-      console.log(`[EnhancedAnalyzer] Added ${uxItems.length} UX performance factors. Total now: ${results.uxPerformance.items.length}`);
-    }
+    const uxItems = this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo);
+    this.mergeUniqueItems(results.uxPerformance.items, uxItems);
+    console.log(`[EnhancedAnalyzer] Added ${uxItems.length} UX performance factors. Total now: ${results.uxPerformance.items.length}`);
+    
   }
 
   private mergeContactResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
     console.log(`[EnhancedAnalyzer] Merging contact page results for: ${pageInfo.url}`);
     
     // For enhanced audits, merge contact page factors into enhanced categories
-    if (results.contentQuality) {
-      const contentItems = this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo);
-      this.mergeUniqueItems(results.contentQuality.items, contentItems);
-      console.log(`[EnhancedAnalyzer] Contact page - Added ${contentItems.length} content quality factors`);
-    }
-    if (results.localSEO) {
-      const localItems = this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo);
-      this.mergeUniqueItems(results.localSEO.items, localItems);
-      console.log(`[EnhancedAnalyzer] Contact page - Added ${localItems.length} local SEO factors`);
-    }
-    if (results.uxPerformance) {
-      const uxItems = this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo);
-      this.mergeUniqueItems(results.uxPerformance.items, uxItems);
-      console.log(`[EnhancedAnalyzer] Contact page - Added ${uxItems.length} UX performance factors`);
-    }
+    const contentItems = this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo);
+    this.mergeUniqueItems(results.contentQuality.items, contentItems);
+    console.log(`[EnhancedAnalyzer] Contact page - Added ${contentItems.length} content quality factors`);
+    
+    const localItems = this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo);
+    this.mergeUniqueItems(results.localSEO.items, localItems);
+    console.log(`[EnhancedAnalyzer] Contact page - Added ${localItems.length} local SEO factors`);
+    
+    const uxItems = this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo);
+    this.mergeUniqueItems(results.uxPerformance.items, uxItems);
+    console.log(`[EnhancedAnalyzer] Contact page - Added ${uxItems.length} UX performance factors`);
   }
 
   private mergeServiceResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
     // For enhanced audits, merge service page factors into enhanced categories
-    if (results.contentQuality) {
-      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
-    }
-    if (results.technicalSEO) {
-      this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
-    }
-    if (results.localSEO) {
-      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
-    }
+    this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+    this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
   }
 
   private mergeLocationResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
     // For enhanced audits, merge location page factors into enhanced categories
-    if (results.contentQuality) {
-      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
-    }
-    if (results.localSEO) {
-      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
-    }
+    this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+    this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
   }
 
   private mergeServiceAreaResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
     // For enhanced audits, merge service area page factors into enhanced categories
-    if (results.contentQuality) {
-      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
-    }
-    if (results.localSEO) {
-      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
-    }
+    this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+    this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
   }
 
   private mergeSiteWideResults(results: EnhancedAuditResult, analysis: SiteWideAnalysisResult) {
+    // Merge site-wide factors into appropriate enhanced categories
+    this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.navigation, 'Technical SEO'));
+    this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.internalLinking, 'Technical SEO'));
+    this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentConsistency, 'Content Quality'));
+    this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.duplicateContent, 'Technical SEO'));
+    
+    // Also merge into legacy categories for backward compatibility
     this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.navigation, 'Navigation'));
     this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.internalLinking, 'Internal Linking'));
     this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.contentConsistency, 'Content Consistency'));
@@ -391,40 +378,28 @@ class EnhancedAuditAnalyzer {
     let allItems = [];
     
     // For enhanced audits, count factors from enhanced categories
-    if (results.contentQuality?.items || results.technicalSEO?.items || results.localSEO?.items || results.uxPerformance?.items) {
-      allItems = [
-        ...(results.contentQuality?.items || []),
-        ...(results.technicalSEO?.items || []),
-        ...(results.localSEO?.items || []),
-        ...(results.uxPerformance?.items || [])
-      ];
-      
-      // Also populate legacy categories for backward compatibility
-      // This ensures the audit works with both enhanced and legacy UI components
-      results.onPage.items = [...(results.contentQuality?.items || []), ...(results.technicalSEO?.items || [])];
-      results.structureNavigation.items = [...(results.technicalSEO?.items || [])].filter(item => 
-        item.name.toLowerCase().includes('navigation') || 
-        item.name.toLowerCase().includes('link') ||
-        item.name.toLowerCase().includes('structure')
-      );
-      results.contactPage.items = [...(results.localSEO?.items || [])].filter(item => 
-        item.pageType === 'contact' || 
-        item.name.toLowerCase().includes('contact')
-      );
-      results.servicePages.items = [...allItems].filter(item => item.pageType === 'service');
-      results.locationPages.items = [...allItems].filter(item => item.pageType === 'location');
-      results.serviceAreaPages.items = [...allItems].filter(item => item.pageType === 'serviceArea');
-    } else {
-      // Fallback to legacy sections for backward compatibility
-      allItems = [
-        ...results.onPage.items,
-        ...results.structureNavigation.items,
-        ...results.contactPage.items,
-        ...results.servicePages.items,
-        ...results.locationPages.items,
-        ...results.serviceAreaPages.items
-      ];
-    }
+    allItems = [
+      ...results.contentQuality.items,
+      ...results.technicalSEO.items,
+      ...results.localSEO.items,
+      ...results.uxPerformance.items
+    ];
+    
+    // Also populate legacy categories for backward compatibility
+    // This ensures the audit works with both enhanced and legacy UI components
+    results.onPage.items = [...results.contentQuality.items, ...results.technicalSEO.items];
+    results.structureNavigation.items = [...results.technicalSEO.items].filter(item => 
+      item.name.toLowerCase().includes('navigation') || 
+      item.name.toLowerCase().includes('link') ||
+      item.name.toLowerCase().includes('structure')
+    );
+    results.contactPage.items = [...results.localSEO.items].filter(item => 
+      item.pageType === 'contact' || 
+      item.name.toLowerCase().includes('contact')
+    );
+    results.servicePages.items = [...allItems].filter(item => item.pageType === 'service');
+    results.locationPages.items = [...allItems].filter(item => item.pageType === 'location');
+    results.serviceAreaPages.items = [...allItems].filter(item => item.pageType === 'serviceArea');
 
     results.summary.totalFactors = allItems.length;
     results.summary.priorityOfiCount = allItems.filter(item => item.status === 'Priority OFI').length;
@@ -2286,11 +2261,11 @@ interface EnhancedAuditResult {
   servicePages: { items: AuditItem[] };
   locationPages: { items: AuditItem[] };
   serviceAreaPages: { items: AuditItem[] };
-  // Enhanced audit categories
-  contentQuality?: { items: AuditItem[] };
-  technicalSEO?: { items: AuditItem[] };
-  localSEO?: { items: AuditItem[] };
-  uxPerformance?: { items: AuditItem[] };
+  // Enhanced audit categories - made required to ensure they're always populated
+  contentQuality: { items: AuditItem[] };
+  technicalSEO: { items: AuditItem[] };
+  localSEO: { items: AuditItem[] };
+  uxPerformance: { items: AuditItem[] };
   pageIssues?: PageIssueSummary[];
 }
 
