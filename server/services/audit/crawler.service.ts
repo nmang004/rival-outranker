@@ -19,7 +19,7 @@ class Crawler {
   private USER_AGENT = 'SEO-Best-Practices-Assessment-Tool/1.0';
   private MAX_REDIRECTS = 10; // Maximum number of redirects to follow
   private CRAWL_DELAY = 500; // Delay between requests in milliseconds
-  private MAX_PAGES = 50; // Maximum pages to crawl per site
+  private MAX_PAGES = 250; // Maximum pages to crawl per site
   private CONCURRENT_REQUESTS = 5; // Maximum concurrent requests for parallel processing
   private USE_SITEMAP_DISCOVERY = true; // Enable sitemap-based page discovery
   private PREFILTER_CONTENT_TYPES = true; // Enable content-type pre-filtering
@@ -1511,8 +1511,27 @@ class Crawler {
       const skipExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.css', '.js', '.zip', '.doc', '.docx'];
       if (skipExtensions.some(ext => parsedUrl.pathname.toLowerCase().endsWith(ext))) return false;
       
-      // Skip admin/system paths
-      const skipPaths = ['/admin', '/wp-admin', '/login', '/register', '/cart', '/checkout'];
+      // Skip admin/system paths, CMS content, and blog directories
+      const skipPaths = [
+        // Admin and system paths
+        '/admin', '/wp-admin', '/login', '/register', '/cart', '/checkout',
+        // WordPress content and uploads
+        '/wp-content', '/wp-includes', '/wp-json', '/wp-admin',
+        // Blog and content paths that are often not core pages
+        '/blog/', '/blogs/', '/news/', '/articles/', '/posts/',
+        // CMS and technical paths
+        '/api/', '/ajax/', '/feed/', '/feeds/', '/rss/', '/sitemap',
+        // User-generated content
+        '/user/', '/users/', '/profile/', '/profiles/',
+        // Search and filtering
+        '/search/', '/filter/', '/tag/', '/tags/', '/category/', '/categories/',
+        // Pagination and sorting
+        '/page/', '/sort/', '/order/', '/orderby/',
+        // Common file directories
+        '/images/', '/img/', '/assets/', '/static/', '/media/', '/files/',
+        // Development and testing
+        '/test/', '/testing/', '/dev/', '/development/', '/staging/'
+      ];
       if (skipPaths.some(path => parsedUrl.pathname.toLowerCase().includes(path))) return false;
       
       return true;
