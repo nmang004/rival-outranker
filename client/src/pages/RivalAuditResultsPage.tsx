@@ -360,21 +360,22 @@ export default function RivalAuditResultsPage() {
   // Enhanced audit categories based on the 140+ factor analysis structure
   const getEnhancedCategories = () => {
     if (!isEnhanced && !('totalFactors' in (audit?.summary || {}))) return null;
+    if (!audit) return null; // Guard against undefined audit
     
     console.log('[ResultsPage] Enhanced audit data structure:', {
-      hasContentQuality: 'contentQuality' in audit,
-      hasTechnicalSEO: 'technicalSEO' in audit,
-      hasLocalSEO: 'localSEO' in audit,
-      hasUxPerformance: 'uxPerformance' in audit,
-      contentQualityItems: (audit as any).contentQuality?.items?.length || 0,
-      technicalSEOItems: (audit as any).technicalSEO?.items?.length || 0,
-      localSEOItems: (audit as any).localSEO?.items?.length || 0,
-      uxPerformanceItems: (audit as any).uxPerformance?.items?.length || 0,
-      totalFactors: audit.summary.totalFactors || audit.summary.total || 0
+      hasContentQuality: audit && 'contentQuality' in audit,
+      hasTechnicalSEO: audit && 'technicalSEO' in audit,
+      hasLocalSEO: audit && 'localSEO' in audit,
+      hasUxPerformance: audit && 'uxPerformance' in audit,
+      contentQualityItems: (audit as any)?.contentQuality?.items?.length || 0,
+      technicalSEOItems: (audit as any)?.technicalSEO?.items?.length || 0,
+      localSEOItems: (audit as any)?.localSEO?.items?.length || 0,
+      uxPerformanceItems: (audit as any)?.uxPerformance?.items?.length || 0,
+      totalFactors: audit?.summary?.totalFactors || audit?.summary?.total || 0
     });
     
     // Check if audit has dedicated enhanced categories with actual items
-    const hasEnhancedCategories = 'contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit;
+    const hasEnhancedCategories = audit && 'contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit;
     const hasEnhancedItems = hasEnhancedCategories && (
       ((audit as any).contentQuality?.items?.length || 0) > 0 ||
       ((audit as any).technicalSEO?.items?.length || 0) > 0 ||
