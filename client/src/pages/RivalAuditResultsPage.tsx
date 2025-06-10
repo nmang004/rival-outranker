@@ -35,6 +35,8 @@ import {
   Plus
 } from "lucide-react";
 import { RivalAudit, AuditItem, AuditStatus } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import axios from "axios";
 
 // Import components for the Rival Audit
 import RivalAuditSection from "@/components/features/audit/RivalAuditSection";
@@ -72,11 +74,7 @@ export default function RivalAuditResultsPage() {
       const endpoint = websiteUrl
         ? `/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}`
         : `/api/rival-audit/${auditId}`;
-      const response = await fetch(endpoint);
-      if (!response.ok) {
-        throw new Error("Failed to fetch audit data");
-      }
-      return response.json();
+      return await apiRequest(endpoint);
     },
     enabled: !!auditId,
   });
@@ -127,7 +125,7 @@ export default function RivalAuditResultsPage() {
       });
       
       // Force a fresh crawl with the refresh parameter
-      await fetch(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&refresh=true`);
+      await apiRequest(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&refresh=true`);
       
       // Refetch the data
       const { data: refreshedData } = await refetch();
@@ -192,7 +190,7 @@ export default function RivalAuditResultsPage() {
       });
       
       // Continue crawl with the continue parameter
-      await fetch(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&continue=true`);
+      await apiRequest(`/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}&continue=true`);
       
       // Refetch the data
       await refetch();
@@ -217,8 +215,9 @@ export default function RivalAuditResultsPage() {
     if (!audit) return;
     
     try {
-      const response = await fetch(`/api/rival-audit/${auditId}/export`);
-      const blob = await response.blob();
+      const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await axios.get(`${baseURL}/api/rival-audit/${auditId}/export`, { responseType: 'blob' });
+      const blob = response.data;
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -260,8 +259,9 @@ export default function RivalAuditResultsPage() {
     if (!audit) return;
     
     try {
-      const response = await fetch(`/api/rival-audit/${auditId}/export?format=csv`);
-      const blob = await response.blob();
+      const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await axios.get(`${baseURL}/api/rival-audit/${auditId}/export?format=csv`, { responseType: 'blob' });
+      const blob = response.data;
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
