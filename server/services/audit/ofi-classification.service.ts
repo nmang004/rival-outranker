@@ -44,16 +44,15 @@ export class OFIClassificationService {
     const decisionTree = this.buildDecisionTree(criteriaMet, metrics);
     let priorityCriteriaCount = this.countPriorityCriteria(criteriaMet);
     
-    // EMERGENCY FIX: Default to Standard OFI unless we have VERY strong evidence
+    // BALANCED APPROACH: Use reasonable criteria for Priority OFI classification
     let classification: 'Standard OFI' | 'Priority OFI' = 'Standard OFI';
-    let downgradedReason = 'Default classification for audit items';
+    let downgradedReason = '';
     
-    // Only classify as Priority OFI if we have 3+ criteria AND strong evidence
-    if (priorityCriteriaCount >= 3 && this.hasStrongEvidence(metrics, criteriaMet)) {
+    // Classify as Priority OFI if we have 2+ criteria (original design)
+    if (priorityCriteriaCount >= 2) {
       classification = 'Priority OFI';
-      downgradedReason = '';
-    } else if (priorityCriteriaCount >= 2) {
-      downgradedReason = 'Requires 3+ criteria with strong evidence for Priority OFI';
+    } else {
+      downgradedReason = 'Only meets ' + priorityCriteriaCount + ' priority criteria (requires 2+ for Priority OFI)';
     }
     
     // Additional safety checks

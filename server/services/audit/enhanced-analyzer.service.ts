@@ -401,11 +401,50 @@ class EnhancedAuditAnalyzer {
     results.locationPages.items = [...allItems].filter(item => item.pageType === 'location');
     results.serviceAreaPages.items = [...allItems].filter(item => item.pageType === 'serviceArea');
 
-    results.summary.totalFactors = allItems.length;
-    results.summary.priorityOfiCount = allItems.filter(item => item.status === 'Priority OFI').length;
-    results.summary.ofiCount = allItems.filter(item => item.status === 'OFI').length;
-    results.summary.okCount = allItems.filter(item => item.status === 'OK').length;
-    results.summary.naCount = allItems.filter(item => item.status === 'N/A').length;
+    // CRITICAL: Apply new OFI classification system to ALL items before calculating summary
+    const ofiClassificationService = new (require('./ofi-classification.service').OFIClassificationService)();
+    
+    // Apply classification to all categories
+    this.applyNewClassificationToItems(results.contentQuality.items, ofiClassificationService);
+    this.applyNewClassificationToItems(results.technicalSEO.items, ofiClassificationService);
+    this.applyNewClassificationToItems(results.localSEO.items, ofiClassificationService);
+    this.applyNewClassificationToItems(results.uxPerformance.items, ofiClassificationService);
+    
+    // Recalculate all items after classification
+    const allClassifiedItems = [
+      ...results.contentQuality.items,
+      ...results.technicalSEO.items,
+      ...results.localSEO.items,
+      ...results.uxPerformance.items
+    ];
+
+    results.summary.totalFactors = allClassifiedItems.length;
+    results.summary.priorityOfiCount = allClassifiedItems.filter(item => item.status === 'Priority OFI').length;
+    results.summary.ofiCount = allClassifiedItems.filter(item => item.status === 'OFI').length;
+    results.summary.okCount = allClassifiedItems.filter(item => item.status === 'OK').length;
+    results.summary.naCount = allClassifiedItems.filter(item => item.status === 'N/A').length;
+  }
+
+  /**
+   * Apply new OFI classification system to items
+   */
+  private applyNewClassificationToItems(items: any[], ofiClassificationService: any): void {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      // Only reclassify OFI items - let OK and N/A items stay as they are
+      if (item.status === 'OFI') {
+        const classificationResult = ofiClassificationService.classifyAuditItem(item);
+        
+        // Update status based on new classification
+        item.status = classificationResult.classification === 'Priority OFI' ? 'Priority OFI' : 'OFI';
+        
+        // Add classification justification to notes
+        if (classificationResult.classification === 'Priority OFI') {
+          item.notes = (item.notes || '') + `\n\n[Enhanced Classification] ${classificationResult.justification}`;
+        }
+      }
+    }
   }
 
   /**
@@ -623,7 +662,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Structure Consistency",
       description: "Navigation should be consistent across all pages",
-      status: navigationConsistency >= 80 ? "OK" : navigationConsistency >= 30 ? "OFI" : "Priority OFI",
+      status: navigationConsistency >= 80 ? "OK" : "OFI",
       importance: "High",
       notes: `Navigation consistency score: ${navigationConsistency}%. All pages should have similar navigation structure.`
     });
@@ -633,7 +672,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Depth Optimization",
       description: "Important pages should be accessible within 3 clicks",
-      status: maxDepth <= 3 ? "OK" : maxDepth <= 6 ? "OFI" : "Priority OFI",
+      status: maxDepth <= 3 ? "OK" : "OFI",
       importance: "Medium",
       notes: `Maximum navigation depth: ${maxDepth} clicks. Recommended: 3 or fewer.`
     });
@@ -657,7 +696,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Internal Linking Quality",
       description: "Pages should be well-connected with descriptive anchor text",
-      status: linkingQuality >= 70 ? "OK" : linkingQuality >= 20 ? "OFI" : "Priority OFI",
+      status: linkingQuality >= 70 ? "OK" : linkingQuality >= 20 ? "OFI" : "OFI",
       importance: "High",
       notes: `Internal linking quality score: ${linkingQuality}%. Good internal linking helps with SEO and user navigation.`
     });
@@ -667,7 +706,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Orphaned Pages Detection",
       description: "All pages should be linked from other pages",
-      status: orphanedPages === 0 ? "OK" : orphanedPages <= 5 ? "OFI" : "Priority OFI",
+      status: orphanedPages === 0 ? "OK" : orphanedPages <= 5 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${orphanedPages} potentially orphaned pages. All important pages should be linked from other pages.`
     });
@@ -691,7 +730,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Content Length Consistency",
       description: "Similar page types should have consistent content depth",
-      status: contentConsistency >= 70 ? "OK" : contentConsistency >= 30 ? "OFI" : "Priority OFI",
+      status: contentConsistency >= 70 ? "OK" : contentConsistency >= 30 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Content consistency score: ${contentConsistency}%. Service and location pages should have similar depth.`
     });
@@ -701,7 +740,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Brand Consistency Across Pages",
       description: "Business name and branding should be consistent",
-      status: brandingConsistency >= 80 ? "OK" : brandingConsistency >= 40 ? "OFI" : "Priority OFI",
+      status: brandingConsistency >= 80 ? "OK" : brandingConsistency >= 40 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Branding consistency score: ${brandingConsistency}%. Business name and contact info should be consistent.`
     });
@@ -725,7 +764,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Duplicate Content Detection",
       description: "Each page should have unique, valuable content",
-      status: duplicateContent.percentage < 10 ? "OK" : duplicateContent.percentage < 50 ? "OFI" : "Priority OFI",
+      status: duplicateContent.percentage < 10 ? "OK" : duplicateContent.percentage < 50 ? "OFI" : "OFI",
       importance: "High",
       notes: `${duplicateContent.percentage}% duplicate content detected. ${duplicateContent.pages} pages have similar content.`
     });
@@ -735,7 +774,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Thin Content Detection",
       description: "Pages should have substantial, valuable content",
-      status: thinContent.count === 0 ? "OK" : thinContent.count <= 5 ? "OFI" : "Priority OFI",
+      status: thinContent.count === 0 ? "OK" : thinContent.count <= 5 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${thinContent.count} pages with thin content (< 300 words). Average word count: ${thinContent.averageWords}.`
     });
@@ -949,7 +988,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
-      status: score >= 60 ? "OK" : score >= 20 ? "OFI" : "Priority OFI",
+      status: score >= 60 ? "OK" : score >= 20 ? "OFI" : "OFI",
       importance: "High",
       notes: `Flesch Reading Ease: ${score}/100. Target: 60+ for general audience.`
     };
@@ -960,7 +999,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Sufficient Content Length",
       description: `${pageType} pages should have adequate content depth`,
-      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.3 ? "OFI" : "Priority OFI",
+      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.3 ? "OFI" : "OFI",
       importance: "High",
       notes: `Word count: ${wordCount}. Recommended minimum: ${minWords} words for ${pageType} pages.`
     };
@@ -971,7 +1010,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Keyword Density Optimization",
       description: "Keywords should appear naturally without stuffing (1-3% density)",
-      status: density >= 1 && density <= 3 ? "OK" : density >= 0.1 && density <= 8 ? "OFI" : "Priority OFI",
+      status: density >= 1 && density <= 3 ? "OK" : density >= 0.1 && density <= 8 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Primary keyword density: ${density.toFixed(1)}%. Target: 1-3%.`
     };
@@ -985,7 +1024,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Call-to-Action Optimization",
       description: "Page should have prominent, clear, and compelling calls-to-action",
-      status: combinedScore >= 80 ? "OK" : combinedScore >= 20 ? "OFI" : "Priority OFI",
+      status: combinedScore >= 80 ? "OK" : combinedScore >= 20 ? "OFI" : "OFI",
       importance: "High",
       notes: `Found ${ctaElements} CTA elements with ${ctaQuality.toFixed(1)}% quality score. Optimize quantity and compelling language.`
     };
@@ -1018,7 +1057,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Uniqueness",
       description: "Content should be unique and not duplicated from other sources",
-      status: uniquenessScore >= 80 ? "OK" : uniquenessScore >= 40 ? "OFI" : "Priority OFI",
+      status: uniquenessScore >= 80 ? "OK" : uniquenessScore >= 40 ? "OFI" : "OFI",
       importance: "High",
       notes: `Content uniqueness score: ${uniquenessScore}%. Target: 80%+ unique content.`
     };
@@ -1154,7 +1193,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Heading Structure Hierarchy",
       description: "Proper H1-H6 heading structure improves readability and SEO",
-      status: h1Count === 0 ? "Priority OFI" : hasProperStructure ? "OK" : "OFI",
+      status: h1Count === 0 ? "OFI" : hasProperStructure ? "OK" : "OFI",
       importance: "High",
       notes: `H1: ${h1Count}, H2: ${h2Count}, H3: ${h3Count}. Should have exactly 1 H1 and multiple H2/H3 tags.`
     };
@@ -1168,7 +1207,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Image Content Optimization",
       description: "Images should have descriptive alt text and be relevant to content",
-      status: altTextQuality >= 90 ? "OK" : altTextQuality >= 30 ? "OFI" : "Priority OFI",
+      status: altTextQuality >= 90 ? "OK" : altTextQuality >= 30 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `${imagesWithAlt.length}/${images.length} images have alt text (${altTextQuality.toFixed(1)}%).`
     };
@@ -1210,7 +1249,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Depth and Detail",
       description: "Content should provide comprehensive, detailed information",
-      status: hasGoodDepth ? "OK" : wordCount >= 50 ? "OFI" : "Priority OFI",
+      status: hasGoodDepth ? "OK" : wordCount >= 50 ? "OFI" : "OFI",
       importance: "High",
       notes: `${wordCount} words, ${paragraphCount} paragraphs. Average ${avgWordsPerParagraph.toFixed(1)} words per paragraph.`
     };
@@ -1229,7 +1268,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content-URL Relevance Alignment",
       description: "Content should align with URL structure and page purpose",
-      status: relevanceScore >= 70 ? "OK" : relevanceScore >= 40 ? "OFI" : "Priority OFI",
+      status: relevanceScore >= 70 ? "OK" : relevanceScore >= 40 ? "OFI" : "OFI",
       importance: "High",
       notes: `${relevanceScore.toFixed(1)}% of URL keywords found in content. Good alignment improves SEO.`
     };
@@ -1243,7 +1282,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Engagement Elements",
       description: "Interactive elements and social sharing options improve engagement",
-      status: engagementScore >= 30 ? "OK" : engagementScore >= 15 ? "OFI" : "Priority OFI",
+      status: engagementScore >= 30 ? "OK" : engagementScore >= 15 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${interactiveElements} interactive elements and ${socialElements} social elements.`
     };
@@ -1260,7 +1299,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Social Proof and Credibility",
       description: "Social proof elements build trust and credibility",
-      status: hasSocialProof ? "OK" : keywordMatches >= 1 ? "OFI" : "Priority OFI",
+      status: hasSocialProof ? "OK" : keywordMatches >= 1 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${proofElements} proof elements and ${keywordMatches} credibility keywords.`
     };
@@ -1278,7 +1317,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Scannability",
       description: "Content should be easy to scan with bullets, headings, and emphasis",
-      status: scannabilityScore >= 10 ? "OK" : scannabilityScore >= 5 ? "OFI" : "Priority OFI",
+      status: scannabilityScore >= 10 ? "OK" : scannabilityScore >= 5 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Scannability elements: ${bullets} bullets, ${headings} headings, ${emphasis} emphasis marks.`
     };
@@ -1297,7 +1336,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Tone and Messaging",
       description: "Content should maintain a positive, professional tone",
-      status: toneScore >= 2 ? "OK" : toneScore >= 0 ? "OFI" : "Priority OFI",
+      status: toneScore >= 2 ? "OK" : toneScore >= 0 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${positiveCount} positive and ${negativeCount} negative tone indicators.`
     };
@@ -1315,7 +1354,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Multimedia Content Balance",
       description: "Balanced use of images, videos, and interactive elements",
-      status: hasBalancedMedia ? "OK" : multimediaCount >= 1 ? "OFI" : "Priority OFI",
+      status: hasBalancedMedia ? "OK" : multimediaCount >= 1 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Media elements: ${images} images, ${videos} videos, ${audio} audio, ${charts} charts.`
     };
@@ -1332,7 +1371,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Flow and Organization",
       description: "Content should have logical flow with clear introduction and conclusion",
-      status: flowScore >= 2 ? "OK" : flowScore >= 1 ? "OFI" : "Priority OFI",
+      status: flowScore >= 2 ? "OK" : flowScore >= 1 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Flow elements: ${logicalFlow ? 'logical headings' : 'needs headings'}, ${hasIntroduction ? 'good intro' : 'weak intro'}, ${hasConclusion ? 'good conclusion' : 'weak conclusion'}.`
     };
@@ -1349,7 +1388,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Accuracy and Specificity",
       description: "Content should include specific facts, numbers, and verifiable information",
-      status: accuracyIndicators >= 2 ? "OK" : accuracyIndicators >= 1 ? "OFI" : "Priority OFI",
+      status: accuracyIndicators >= 2 ? "OK" : accuracyIndicators >= 1 ? "OFI" : "OFI",
       importance: "High",
       notes: `Accuracy indicators: ${hasNumbers ? 'specific numbers' : 'no numbers'}, ${hasSources ? 'sources mentioned' : 'no sources'}, ${hasSpecifics ? 'business specifics' : 'generic content'}.`
     };
@@ -1392,7 +1431,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "URL Structure Optimization",
       description: "URLs should be clean, descriptive, and keyword-rich",
-      status: issues.length === 0 ? "OK" : issues.length <= 4 ? "OFI" : "Priority OFI",
+      status: issues.length === 0 ? "OK" : issues.length <= 4 ? "OFI" : "OFI",
       importance: "High",
       notes: issues.length > 0 ? `Issues found: ${issues.join(', ')}` : "URL structure is optimized"
     };
@@ -1403,7 +1442,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "Structured Data Implementation",
       description: "Page should include relevant schema markup",
-      status: schemaTypes.length >= 2 ? "OK" : schemaTypes.length >= 1 ? "OFI" : "Priority OFI",
+      status: schemaTypes.length >= 2 ? "OK" : schemaTypes.length >= 1 ? "OFI" : "OFI",
       importance: "High",
       notes: `Schema types found: ${schemaTypes.join(', ') || 'None'}`
     };
@@ -1414,7 +1453,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "Meta Tags Optimization",
       description: "Title and meta description should be optimized",
-      status: metaIssues.length === 0 ? "OK" : metaIssues.length <= 1 ? "OFI" : "Priority OFI",
+      status: metaIssues.length === 0 ? "OK" : metaIssues.length <= 1 ? "OFI" : "OFI",
       importance: "High",
       notes: metaIssues.length > 0 ? `Issues: ${metaIssues.join(', ')}` : "Meta tags are optimized"
     };
@@ -1436,7 +1475,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "Image Optimization",
       description: "Images should have alt text and be properly optimized",
-      status: imageIssues.length === 0 ? "OK" : imageIssues.length <= 2 ? "OFI" : "Priority OFI",
+      status: imageIssues.length === 0 ? "OK" : imageIssues.length <= 2 ? "OFI" : "OFI",
       importance: "Medium",
       notes: imageIssues.length > 0 ? `Issues: ${imageIssues.join(', ')}` : "Images are optimized"
     };
@@ -1602,7 +1641,7 @@ class TechnicalSEOAnalyzer {
       factors.push({
         name: factor.name,
         description: factor.desc,
-        status: score >= 80 ? "OK" : score >= 60 ? "OFI" : "Priority OFI",
+        status: score >= 80 ? "OK" : score >= 60 ? "OFI" : "OFI",
         importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
         notes: `Technical analysis score: ${score}/100. ${factor.desc.includes('should') ? 'Recommendation: ' + factor.desc : 'Current status evaluated.'}`
       });
@@ -1644,7 +1683,7 @@ class LocalSEOAnalyzer {
     return {
       name: "NAP (Name, Address, Phone) Consistency",
       description: "Business NAP should be consistent and properly formatted",
-      status: napFound.complete ? "OK" : napFound.partial ? "OFI" : "Priority OFI",
+      status: napFound.complete ? "OK" : napFound.partial ? "OFI" : "OFI",
       importance: "High",
       notes: `NAP elements found: ${napFound.elements.join(', ') || 'None'}`
     };
@@ -1657,7 +1696,7 @@ class LocalSEOAnalyzer {
     return {
       name: "Location Signal Optimization",
       description: "Content should include relevant location signals",
-      status: locationSignals >= 3 ? "OK" : locationSignals >= 1 ? "OFI" : isLocationPage ? "Priority OFI" : "OFI",
+      status: locationSignals >= 3 ? "OK" : locationSignals >= 1 ? "OFI" : isLocationPage ? "OFI" : "OFI",
       importance: isLocationPage ? "High" : "Medium",
       notes: `Location signals found: ${locationSignals}. Recommended: 3+ for local pages.`
     };
@@ -1668,7 +1707,7 @@ class LocalSEOAnalyzer {
     return {
       name: "LocalBusiness Schema Implementation",
       description: "Page should include LocalBusiness or Service schema markup",
-      status: hasLocalSchema ? "OK" : "Priority OFI",
+      status: hasLocalSchema ? "OK" : "OFI",
       importance: "High",
       notes: hasLocalSchema ? "LocalBusiness schema found" : "No LocalBusiness schema detected"
     };
@@ -1679,7 +1718,7 @@ class LocalSEOAnalyzer {
     return {
       name: "E-E-A-T Signal Strength",
       description: "Page should demonstrate Experience, Expertise, Authoritativeness, Trustworthiness",
-      status: eeatScore >= 70 ? "OK" : eeatScore >= 40 ? "OFI" : "Priority OFI",
+      status: eeatScore >= 70 ? "OK" : eeatScore >= 40 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `E-E-A-T score: ${eeatScore}/100. Look for certifications, awards, staff bios, reviews.`
     };
@@ -1690,7 +1729,7 @@ class LocalSEOAnalyzer {
     return {
       name: "Service Area Page Quality",
       description: "Service area pages should have unique, location-specific content",
-      status: serviceAreaScore >= 70 ? "OK" : serviceAreaScore >= 50 ? "OFI" : "Priority OFI",
+      status: serviceAreaScore >= 70 ? "OK" : serviceAreaScore >= 50 ? "OFI" : "OFI",
       importance: "High",
       notes: `Service area quality score: ${serviceAreaScore}/100. Pages should have unique content for each location.`
     };
@@ -1712,7 +1751,7 @@ class LocalSEOAnalyzer {
     return {
       name: "Multiple Contact Methods",
       description: "Should provide multiple ways for customers to contact business",
-      status: contactMethods >= 3 ? "OK" : contactMethods >= 2 ? "OFI" : "Priority OFI",
+      status: contactMethods >= 3 ? "OK" : contactMethods >= 2 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${contactMethods} contact methods. Recommended: phone, email, and form.`
     };
@@ -1866,7 +1905,7 @@ class LocalSEOAnalyzer {
       factors.push({
         name: factor.name,
         description: factor.desc,
-        status: score >= 85 ? "OK" : score >= 65 ? "OFI" : "Priority OFI",
+        status: score >= 85 ? "OK" : score >= 65 ? "OFI" : "OFI",
         importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
         notes: `Local SEO analysis score: ${score}/100. ${pageType} page evaluation for ${factor.name.toLowerCase()}.`
       });
@@ -1907,7 +1946,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Mobile Optimization",
       description: "Page should be fully optimized for mobile devices",
-      status: mobileScore >= 80 ? "OK" : mobileScore >= 60 ? "OFI" : "Priority OFI",
+      status: mobileScore >= 80 ? "OK" : mobileScore >= 60 ? "OFI" : "OFI",
       importance: "High",
       notes: `Mobile optimization score: ${mobileScore}/100`
     };
@@ -1918,7 +1957,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Page Load Speed",
       description: "Page should load quickly for better user experience",
-      status: speedScore >= 80 ? "OK" : speedScore >= 60 ? "OFI" : "Priority OFI",
+      status: speedScore >= 80 ? "OK" : speedScore >= 60 ? "OFI" : "OFI",
       importance: "High",
       notes: `Page speed score: ${speedScore}/100`
     };
@@ -1929,7 +1968,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Accessibility Compliance",
       description: "Page should be accessible to users with disabilities",
-      status: accessibilityScore >= 80 ? "OK" : accessibilityScore >= 60 ? "OFI" : "Priority OFI",
+      status: accessibilityScore >= 80 ? "OK" : accessibilityScore >= 60 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Accessibility score: ${accessibilityScore}/100`
     };
@@ -1940,7 +1979,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "User Experience Elements",
       description: "Page should have good visual hierarchy and usability",
-      status: uxScore >= 80 ? "OK" : uxScore >= 60 ? "OFI" : "Priority OFI",
+      status: uxScore >= 80 ? "OK" : uxScore >= 60 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `UX score: ${uxScore}/100`
     };
@@ -1951,7 +1990,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Intrusive Pop-up Detection",
       description: "Page should not have disruptive pop-ups that harm user experience",
-      status: !hasIntrusivePopups ? "OK" : "Priority OFI",
+      status: !hasIntrusivePopups ? "OK" : "OFI",
       importance: "High",
       notes: hasIntrusivePopups ? "Intrusive pop-ups detected that may harm user experience" : "No intrusive pop-ups detected"
     };
@@ -1962,7 +2001,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Form Usability Optimization",
       description: "Forms should be user-friendly and mobile-optimized",
-      status: formScore >= 80 ? "OK" : formScore >= 60 ? "OFI" : "Priority OFI",
+      status: formScore >= 80 ? "OK" : formScore >= 60 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Form usability score: ${formScore}/100. Check field types, labels, and mobile optimization.`
     };
@@ -2236,7 +2275,7 @@ class UXPerformanceAnalyzer {
       factors.push({
         name: factor.name,
         description: factor.desc,
-        status: score >= 80 ? "OK" : score >= 60 ? "OFI" : "Priority OFI",
+        status: score >= 80 ? "OK" : score >= 60 ? "OFI" : "OFI",
         importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
         notes: `UX analysis score: ${score}/100. ${factor.desc} - evaluated for user experience optimization.`
       });
