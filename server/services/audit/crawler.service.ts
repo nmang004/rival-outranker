@@ -8,6 +8,7 @@ import * as dns from 'dns';
 import { promisify } from 'util';
 import * as xml2js from 'xml2js';
 import { Cluster } from 'puppeteer-cluster';
+import { PagePriorityService, PagePriority } from './page-priority.service';
 
 // DNS lookup with promise support
 const dnsLookup = promisify(dns.lookup);
@@ -25,6 +26,10 @@ class Crawler {
   private PREFILTER_CONTENT_TYPES = true; // Enable content-type pre-filtering
   private USE_PUPPETEER_FOR_JS_SITES = true; // Enable Puppeteer for JS-heavy sites
   private PUPPETEER_CLUSTER_SIZE = 2; // Number of browser instances in cluster
+  private USE_TIER_BASED_PUPPETEER = process.env.USE_TIER_BASED_PUPPETEER !== 'false'; // Enable tier-based Puppeteer usage for performance (default: true)
+  
+  // Services
+  private pagePriorityService = new PagePriorityService();
   
   // Map to cache DNS resolutions
   private dnsCache = new Map<string, string>();
@@ -313,8 +318,11 @@ class Crawler {
       // Check if this is a JavaScript-heavy site that needs Puppeteer
       const isJsHeavy = this.detectJavaScriptHeavySite(response.data, normalizedUrl);
       
-      if (isJsHeavy && this.puppeteerCluster && this.USE_PUPPETEER_FOR_JS_SITES) {
-        console.log(`[Crawler] Switching to Puppeteer for JS-heavy site: ${normalizedUrl}`);
+      // Determine if we should use Puppeteer based on page priority and JS detection
+      const shouldUsePuppeteer = this.shouldUsePuppeteerForPage(normalizedUrl, isJsHeavy);
+      
+      if (shouldUsePuppeteer && this.puppeteerCluster && this.USE_PUPPETEER_FOR_JS_SITES) {
+        console.log(`[Crawler] Switching to Puppeteer for priority page: ${normalizedUrl}`);
         try {
           const puppeteerResult = await this.crawlPageWithPuppeteer(normalizedUrl);
           this.responseCache.set(normalizedUrl, puppeteerResult);
@@ -325,6 +333,8 @@ class Crawler {
         }
       } else if (isJsHeavy && !this.puppeteerCluster) {
         console.log(`[Crawler] JS-heavy site detected but Puppeteer unavailable, using regular crawling: ${normalizedUrl}`);
+      } else if (isJsHeavy && !shouldUsePuppeteer) {
+        console.log(`[Crawler] JS-heavy site detected but skipping Puppeteer due to low page priority (performance optimization): ${normalizedUrl}`);
       }
       
       // Check for noindex directive
@@ -1060,6 +1070,116 @@ class Crawler {
     }
   }
   
+  /**
+   * Determine if we should use Puppeteer for this page based on priority and JS detection
+   */
+  private shouldUsePuppeteerForPage(url: string, isJsHeavy: boolean): boolean {
+    if (!this.USE_TIER_BASED_PUPPETEER) {
+      // If tier-based optimization is disabled, use original logic
+      return isJsHeavy;
+    }
+
+    // Get page priority based on URL analysis
+    const pagePriority = this.determinePagePriority(url);
+    
+    // Only use Puppeteer for Tier 1 pages that are JS-heavy
+    if (pagePriority === PagePriority.TIER_1 && isJsHeavy) {
+      console.log(`[Crawler] Using Puppeteer for Tier 1 JS-heavy page: ${url}`);
+      return true;
+    }
+    
+    // For Tier 2 and Tier 3 pages, skip Puppeteer even if JS-heavy
+    if (pagePriority !== PagePriority.TIER_1 && isJsHeavy) {
+      console.log(`[Crawler] Skipping Puppeteer for Tier ${pagePriority} JS-heavy page (performance optimization): ${url}`);
+      return false;
+    }
+    
+    // Not JS-heavy, use regular crawling
+    return false;
+  }
+
+  /**
+   * Determine page priority based on URL analysis
+   */
+  private determinePagePriority(url: string): PagePriority {
+    // Create a mock page object for priority classification
+    const mockPage = {
+      url,
+      title: '',
+      metaDescription: '',
+      bodyText: '',
+      rawHtml: '',
+      h1s: [],
+      h2s: [],
+      h3s: [],
+      headings: { h1: [], h2: [], h3: [] },
+      links: { internal: [], external: [], broken: [] },
+      hasContactForm: false,
+      hasPhoneNumber: false,
+      hasAddress: false,
+      hasNAP: false,
+      images: { total: 0, withAlt: 0, withoutAlt: 0, largeImages: 0, altTexts: [] },
+      hasSchema: false,
+      schemaTypes: [],
+      mobileFriendly: false,
+      wordCount: 0,
+      hasSocialTags: false,
+      hasCanonical: false,
+      hasRobotsMeta: false,
+      hasIcon: false,
+      hasHttps: false,
+      hasHreflang: false,
+      hasSitemap: false,
+      hasAmpVersion: false,
+      pageLoadSpeed: { score: 0, firstContentfulPaint: 0, totalBlockingTime: 0, largestContentfulPaint: 0 },
+      keywordDensity: {},
+      readabilityScore: 0,
+      contentStructure: { hasFAQs: false, hasTable: false, hasLists: false, hasVideo: false, hasEmphasis: false }
+    };
+
+    // Determine page type based on URL patterns
+    const pageType = this.classifyPageType(url);
+    
+    // Get priority from the service
+    return this.pagePriorityService.getPagePriority(mockPage, pageType);
+  }
+
+  /**
+   * Classify page type based on URL patterns
+   */
+  private classifyPageType(url: string): string {
+    const path = new URL(url).pathname.toLowerCase();
+    
+    // Homepage detection
+    if (path === '/' || path === '/index.html' || path === '/home') {
+      return 'homepage';
+    }
+    
+    // Contact page detection
+    if (path.includes('/contact')) {
+      return 'contact';
+    }
+    
+    // Service page detection
+    if (path.includes('/service') || path.includes('/hvac') || path.includes('/plumbing') || 
+        path.includes('/electrical') || path.includes('/repair') || path.includes('/installation')) {
+      return 'service';
+    }
+    
+    // Location page detection
+    if (path.includes('/location') || path.includes('/area') || path.includes('/city')) {
+      return 'location';
+    }
+    
+    // Service area detection
+    if (path.includes('/service-area') || path.includes('/coverage')) {
+      return 'serviceArea';
+    }
+    
+    // Default to other
+    return 'other';
+  }
+
   /**
    * Detect if a site is JavaScript-heavy
    */
