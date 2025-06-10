@@ -32,7 +32,11 @@ import {
   ListFilter,
   LineChart,
   ArrowRight,
-  Plus
+  Plus,
+  FileType,
+  Settings,
+  Users,
+  Smartphone
 } from "lucide-react";
 import { RivalAudit, EnhancedRivalAudit, AuditItem, EnhancedAuditItem, AuditStatus } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -353,6 +357,97 @@ export default function RivalAuditResultsPage() {
     navigate('/rival-audit');
   };
 
+  // Enhanced audit categories based on the 140+ factor analysis structure
+  const getEnhancedCategories = () => {
+    if (!isEnhanced && !('totalFactors' in (audit?.summary || {}))) return null;
+    
+    const allItems = [
+      ...(audit?.onPage?.items || []),
+      ...(audit?.structureNavigation?.items || []),
+      ...(audit?.contactPage?.items || []),
+      ...(audit?.servicePages?.items || []),
+      ...(audit?.locationPages?.items || []),
+      ...(audit?.serviceAreaPages?.items || [])
+    ];
+    
+    // Group items by their category field for enhanced audits
+    const categories = {
+      contentQuality: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('Content Quality') ||
+          item.category.includes('Content') ||
+          item.category.includes('Readability') ||
+          item.category.includes('Engagement') ||
+          item.category.includes('Social Proof') ||
+          item.category.includes('Review') ||
+          item.category.includes('CTA')
+        )
+      ),
+      technicalSEO: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('Technical SEO') ||
+          item.category.includes('Technical') ||
+          item.category.includes('Schema') ||
+          item.category.includes('URL') ||
+          item.category.includes('Meta') ||
+          item.category.includes('Navigation') ||
+          item.category.includes('Internal Linking') ||
+          item.category.includes('Duplicate Content')
+        )
+      ),
+      localSEO: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('Local SEO') ||
+          item.category.includes('Local') ||
+          item.category.includes('NAP') ||
+          item.category.includes('E-E-A-T') ||
+          item.category.includes('Trust') ||
+          item.category.includes('Contact') ||
+          item.category.includes('Service Area') ||
+          item.category.includes('Location')
+        )
+      ),
+      uxPerformance: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('UX') ||
+          item.category.includes('Performance') ||
+          item.category.includes('Mobile') ||
+          item.category.includes('Accessibility') ||
+          item.category.includes('User Experience') ||
+          item.category.includes('Form') ||
+          item.category.includes('Visual')
+        )
+      )
+    };
+    
+    // Add remaining items to legacy organization if not categorized
+    const categorizedItems = new Set([
+      ...categories.contentQuality,
+      ...categories.technicalSEO,
+      ...categories.localSEO,
+      ...categories.uxPerformance
+    ]);
+    
+    const uncategorizedItems = allItems.filter(item => !categorizedItems.has(item));
+    
+    return {
+      ...categories,
+      uncategorized: uncategorizedItems
+    };
+  };
+  
+  const enhancedCategories = getEnhancedCategories();
+  const isEnhancedAuditWithCategories = enhancedCategories !== null;
+
+  // Reset tab to summary if switching between enhanced and legacy audits
+  useEffect(() => {
+    if (audit && isEnhancedAuditWithCategories && !["summary", "contentQuality", "technicalSEO", "localSEO", "uxPerformance", "uncategorized"].includes(activeTab)) {
+      setActiveTab("summary");
+    } else if (audit && !isEnhancedAuditWithCategories && !["summary", "onPage", "structure", "contactPage", "servicePages", "locationPages", "serviceAreaPages"].includes(activeTab)) {
+      setActiveTab("summary");
+    }
+  }, [audit, isEnhancedAuditWithCategories, activeTab]);
+
   if (isLoading || isRefreshing || isContinuing) {
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6">
@@ -549,12 +644,19 @@ export default function RivalAuditResultsPage() {
                   <SelectTrigger className="w-full md:w-[280px]">
                     <SelectValue>
                       {activeTab === "summary" && <div className="flex items-center"><LineChart className="h-4 w-4 mr-2" />Summary</div>}
-                      {activeTab === "onPage" && <div className="flex items-center"><Globe className="h-4 w-4 mr-2" />On-Page</div>}
-                      {activeTab === "structure" && <div className="flex items-center"><ClipboardCheck className="h-4 w-4 mr-2" />Structure</div>}
-                      {activeTab === "contactPage" && <div className="flex items-center"><Phone className="h-4 w-4 mr-2" />Contact</div>}
-                      {activeTab === "servicePages" && <div className="flex items-center"><Briefcase className="h-4 w-4 mr-2" />Services</div>}
-                      {activeTab === "locationPages" && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />Locations</div>}
-                      {activeTab === "serviceAreaPages" && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />Service Areas</div>}
+                      {/* Enhanced Audit Categories */}
+                      {isEnhancedAuditWithCategories && activeTab === "contentQuality" && <div className="flex items-center"><FileType className="h-4 w-4 mr-2" />Content Quality</div>}
+                      {isEnhancedAuditWithCategories && activeTab === "technicalSEO" && <div className="flex items-center"><Settings className="h-4 w-4 mr-2" />Technical SEO</div>}
+                      {isEnhancedAuditWithCategories && activeTab === "localSEO" && <div className="flex items-center"><Users className="h-4 w-4 mr-2" />Local SEO & E-E-A-T</div>}
+                      {isEnhancedAuditWithCategories && activeTab === "uxPerformance" && <div className="flex items-center"><Smartphone className="h-4 w-4 mr-2" />UX & Performance</div>}
+                      {isEnhancedAuditWithCategories && activeTab === "uncategorized" && <div className="flex items-center"><ClipboardCheck className="h-4 w-4 mr-2" />Other Factors</div>}
+                      {/* Legacy Audit Categories */}
+                      {!isEnhancedAuditWithCategories && activeTab === "onPage" && <div className="flex items-center"><Globe className="h-4 w-4 mr-2" />On-Page</div>}
+                      {!isEnhancedAuditWithCategories && activeTab === "structure" && <div className="flex items-center"><ClipboardCheck className="h-4 w-4 mr-2" />Structure</div>}
+                      {!isEnhancedAuditWithCategories && activeTab === "contactPage" && <div className="flex items-center"><Phone className="h-4 w-4 mr-2" />Contact</div>}
+                      {!isEnhancedAuditWithCategories && activeTab === "servicePages" && <div className="flex items-center"><Briefcase className="h-4 w-4 mr-2" />Services</div>}
+                      {!isEnhancedAuditWithCategories && activeTab === "locationPages" && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />Locations</div>}
+                      {!isEnhancedAuditWithCategories && activeTab === "serviceAreaPages" && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" />Service Areas</div>}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -564,55 +666,106 @@ export default function RivalAuditResultsPage() {
                         <span>Summary</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="onPage">
-                      <div className="flex items-center">
-                        <Globe className="h-4 w-4 mr-2 text-primary" />
-                        <span>On-Page</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="structure">
-                      <div className="flex items-center">
-                        <ClipboardCheck className="h-4 w-4 mr-2 text-primary" />
-                        <span>Structure</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="contactPage">
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-2 text-primary" />
-                        <span>Contact</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="servicePages">
-                      <div className="flex items-center">
-                        <Briefcase className="h-4 w-4 mr-2 text-primary" />
-                        <span>Services</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="locationPages">
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-2 text-primary" />
-                        <span>Locations</span>
-                      </div>
-                    </SelectItem>
-                    {audit.serviceAreaPages && (
-                      <SelectItem value="serviceAreaPages">
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-2 text-primary" />
-                          <span>Service Areas</span>
-                        </div>
-                      </SelectItem>
+                    
+                    {isEnhancedAuditWithCategories ? (
+                      // Enhanced Audit Categories
+                      <>
+                        <SelectItem value="contentQuality">
+                          <div className="flex items-center">
+                            <FileType className="h-4 w-4 mr-2 text-primary" />
+                            <span>Content Quality ({enhancedCategories?.contentQuality?.length || 0})</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="technicalSEO">
+                          <div className="flex items-center">
+                            <Settings className="h-4 w-4 mr-2 text-primary" />
+                            <span>Technical SEO ({enhancedCategories?.technicalSEO?.length || 0})</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="localSEO">
+                          <div className="flex items-center">
+                            <Users className="h-4 w-4 mr-2 text-primary" />
+                            <span>Local SEO & E-E-A-T ({enhancedCategories?.localSEO?.length || 0})</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="uxPerformance">
+                          <div className="flex items-center">
+                            <Smartphone className="h-4 w-4 mr-2 text-primary" />
+                            <span>UX & Performance ({enhancedCategories?.uxPerformance?.length || 0})</span>
+                          </div>
+                        </SelectItem>
+                        {enhancedCategories?.uncategorized && enhancedCategories.uncategorized.length > 0 && (
+                          <SelectItem value="uncategorized">
+                            <div className="flex items-center">
+                              <ClipboardCheck className="h-4 w-4 mr-2 text-primary" />
+                              <span>Other Factors ({enhancedCategories.uncategorized.length})</span>
+                            </div>
+                          </SelectItem>
+                        )}
+                      </>
+                    ) : (
+                      // Legacy Audit Categories
+                      <>
+                        <SelectItem value="onPage">
+                          <div className="flex items-center">
+                            <Globe className="h-4 w-4 mr-2 text-primary" />
+                            <span>On-Page</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="structure">
+                          <div className="flex items-center">
+                            <ClipboardCheck className="h-4 w-4 mr-2 text-primary" />
+                            <span>Structure</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="contactPage">
+                          <div className="flex items-center">
+                            <Phone className="h-4 w-4 mr-2 text-primary" />
+                            <span>Contact</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="servicePages">
+                          <div className="flex items-center">
+                            <Briefcase className="h-4 w-4 mr-2 text-primary" />
+                            <span>Services</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="locationPages">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-2 text-primary" />
+                            <span>Locations</span>
+                          </div>
+                        </SelectItem>
+                        {audit.serviceAreaPages && (
+                          <SelectItem value="serviceAreaPages">
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-2 text-primary" />
+                              <span>Service Areas</span>
+                            </div>
+                          </SelectItem>
+                        )}
+                      </>
                     )}
                   </SelectContent>
                 </Select>
                 
                 <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-md">
-                  <span className="font-medium">{activeTab === "summary" ? "Viewing Summary" : 
-                      activeTab === "onPage" ? "Viewing On-Page SEO" :
-                      activeTab === "structure" ? "Viewing Structure & Navigation" :
-                      activeTab === "contactPage" ? "Viewing Contact Page" :
-                      activeTab === "servicePages" ? "Viewing Service Pages" :
-                      activeTab === "locationPages" ? "Viewing Location Pages" :
-                      "Viewing Service Area Pages"}</span>
+                  <span className="font-medium">{
+                    activeTab === "summary" ? "Viewing Summary" :
+                    // Enhanced categories
+                    activeTab === "contentQuality" ? "Viewing Content Quality Analysis" :
+                    activeTab === "technicalSEO" ? "Viewing Technical SEO Analysis" :
+                    activeTab === "localSEO" ? "Viewing Local SEO & E-E-A-T Analysis" :
+                    activeTab === "uxPerformance" ? "Viewing UX & Performance Analysis" :
+                    activeTab === "uncategorized" ? "Viewing Other Factors" :
+                    // Legacy categories
+                    activeTab === "onPage" ? "Viewing On-Page SEO" :
+                    activeTab === "structure" ? "Viewing Structure & Navigation" :
+                    activeTab === "contactPage" ? "Viewing Contact Page" :
+                    activeTab === "servicePages" ? "Viewing Service Pages" :
+                    activeTab === "locationPages" ? "Viewing Location Pages" :
+                    "Viewing Service Area Pages"
+                  }</span>
                 </div>
               </div>
             </div>
@@ -623,7 +776,59 @@ export default function RivalAuditResultsPage() {
               </div>
             )}
             
-            {activeTab === "onPage" && (
+            {/* Enhanced Audit Categories */}
+            {isEnhancedAuditWithCategories && activeTab === "contentQuality" && enhancedCategories && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Content Quality Analysis" 
+                  description="Content readability, structure, engagement, social proof, and call-to-action optimization"
+                  items={enhancedCategories.contentQuality}
+                />
+              </div>
+            )}
+            
+            {isEnhancedAuditWithCategories && activeTab === "technicalSEO" && enhancedCategories && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Technical SEO Analysis" 
+                  description="URL structure, schema markup, meta tags, internal linking, and technical optimization"
+                  items={enhancedCategories.technicalSEO}
+                />
+              </div>
+            )}
+            
+            {isEnhancedAuditWithCategories && activeTab === "localSEO" && enhancedCategories && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Local SEO & E-E-A-T Analysis" 
+                  description="NAP consistency, location signals, trust factors, expertise indicators, and local business optimization"
+                  items={enhancedCategories.localSEO}
+                />
+              </div>
+            )}
+            
+            {isEnhancedAuditWithCategories && activeTab === "uxPerformance" && enhancedCategories && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="UX & Performance Analysis" 
+                  description="Mobile optimization, accessibility, user experience, performance, and form usability"
+                  items={enhancedCategories.uxPerformance}
+                />
+              </div>
+            )}
+            
+            {isEnhancedAuditWithCategories && activeTab === "uncategorized" && enhancedCategories && enhancedCategories.uncategorized.length > 0 && (
+              <div className="mt-0">
+                <RivalAuditSection 
+                  title="Other Audit Factors" 
+                  description="Additional audit factors and legacy analysis results"
+                  items={enhancedCategories.uncategorized}
+                />
+              </div>
+            )}
+            
+            {/* Legacy Audit Categories */}
+            {!isEnhancedAuditWithCategories && activeTab === "onPage" && (
               <div className="mt-0">
                 <RivalAuditSection 
                   title="On-Page SEO Audit" 
@@ -633,7 +838,7 @@ export default function RivalAuditResultsPage() {
               </div>
             )}
             
-            {activeTab === "structure" && (
+            {!isEnhancedAuditWithCategories && activeTab === "structure" && (
               <div className="mt-0">
                 <RivalAuditSection 
                   title="Structure & Navigation Audit" 
@@ -643,7 +848,7 @@ export default function RivalAuditResultsPage() {
               </div>
             )}
             
-            {activeTab === "contactPage" && (
+            {!isEnhancedAuditWithCategories && activeTab === "contactPage" && (
               <div className="mt-0">
                 <RivalAuditSection 
                   title="Contact Page Audit" 
@@ -653,7 +858,7 @@ export default function RivalAuditResultsPage() {
               </div>
             )}
             
-            {activeTab === "servicePages" && (
+            {!isEnhancedAuditWithCategories && activeTab === "servicePages" && (
               <div className="mt-0">
                 <RivalAuditSection 
                   title="Service Pages Audit" 
@@ -663,7 +868,7 @@ export default function RivalAuditResultsPage() {
               </div>
             )}
             
-            {activeTab === "locationPages" && (
+            {!isEnhancedAuditWithCategories && activeTab === "locationPages" && (
               <div className="mt-0">
                 <RivalAuditSection 
                   title="Location Pages Audit" 
@@ -673,7 +878,7 @@ export default function RivalAuditResultsPage() {
               </div>
             )}
             
-            {activeTab === "serviceAreaPages" && audit.serviceAreaPages && (
+            {!isEnhancedAuditWithCategories && activeTab === "serviceAreaPages" && audit.serviceAreaPages && (
               <div className="mt-0">
                 <RivalAuditSection 
                   title="Service Area Pages Audit" 
