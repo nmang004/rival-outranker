@@ -21,6 +21,7 @@ import { AuditItem, EnhancedAuditItem, AuditStatus, SeoImportance } from "@share
 import { AlertCircle, AlertTriangle, CheckCircle, CircleHelp, Search, Filter, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/ui/use-toast";
 import QuickStatusChange from "./QuickStatusChange";
+import { OFIClassificationDisplay, OFIClassificationSummary } from "./OFIClassificationDisplay";
 
 interface RivalAuditSectionProps {
   title: string;
@@ -532,6 +533,9 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
         </div>
       </CardHeader>
       <CardContent>
+        {/* OFI Classification Summary */}
+        <OFIClassificationSummary items={items} sectionName={title} />
+        
         <div className="space-y-4 mb-6">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -622,11 +626,17 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                           
                           <div className="sm:hidden ml-auto space-x-2">
                             {getStatusBadge(item, true)}
+                            {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                              <OFIClassificationDisplay item={item} showFullDetails={false} />
+                            )}
                             <span className="hidden xs:inline-block">{getImportanceBadge(item.importance)}</span>
                           </div>
                         </div>
-                        <div className="hidden sm:flex col-span-2 items-center">
+                        <div className="hidden sm:flex col-span-2 items-center gap-1">
                           {getStatusBadge(item, true)}
+                          {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                            <OFIClassificationDisplay item={item} showFullDetails={false} />
+                          )}
                         </div>
                         <div className="hidden sm:flex col-span-2 items-center">
                           {getImportanceBadge(item.importance)}
@@ -771,6 +781,11 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                             )}
                           </div>
                           
+                          {/* OFI Classification Details */}
+                          {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                            <OFIClassificationDisplay item={item} showFullDetails={true} />
+                          )}
+                          
                           <div className="flex justify-end">
                             <Button 
                               size="sm" 
@@ -821,8 +836,11 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                                 <span>{getStatusIcon(item.status)}</span>
                                 <span className="text-sm font-medium">{item.name}</span>
                               </div>
-                              <div className="flex gap-4 items-center">
+                              <div className="flex gap-2 items-center">
                                 {getStatusBadge(item, true)}
+                                {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                                  <OFIClassificationDisplay item={item} showFullDetails={false} />
+                                )}
                                 {getImportanceBadge(item.importance)}
                               </div>
                             </div>
@@ -911,6 +929,11 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                                     {item.notes || "No notes added yet"}
                                   </p>
                                 </div>
+                                
+                                {/* OFI Classification Details */}
+                                {(item.status === 'OFI' || item.status === 'Priority OFI') && (
+                                  <OFIClassificationDisplay item={item} showFullDetails={true} />
+                                )}
                                 
                                 <div className="flex justify-end">
                                   <Button 

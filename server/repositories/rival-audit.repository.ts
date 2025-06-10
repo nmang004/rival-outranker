@@ -7,7 +7,7 @@ import {
   CrawledContent,
   InsertCrawledContent
 } from '../../shared/schema';
-import { eq, and, lt, desc, asc } from 'drizzle-orm';
+import { eq, and, lt, desc, asc, gte, lte } from 'drizzle-orm';
 
 export class RivalAuditRepository {
   private getDatabase() {
@@ -372,6 +372,43 @@ export class RivalAuditRepository {
     });
     
     return result;
+  }
+
+  /**
+   * Get audits by date range for reporting
+   */
+  async getAuditsByDateRange(startDate: Date, endDate: Date, userId?: number): Promise<RivalAuditRecord[]> {
+    const database = this.getDatabase();
+    
+    const whereConditions = [
+      gte(rivalAudits.createdAt, startDate),
+      lte(rivalAudits.createdAt, endDate),
+      eq(rivalAudits.status, 'completed') // Only completed audits for reporting
+    ];
+
+    if (userId) {
+      whereConditions.push(eq(rivalAudits.userId, userId));
+    }
+
+    return await database
+      .select()
+      .from(rivalAudits)
+      .where(and(...whereConditions))
+      .orderBy(desc(rivalAudits.createdAt));
+  }
+
+  /**
+   * Get audit by ID for reporting
+   */
+  async getAuditById(id: string): Promise<RivalAuditRecord | null> {
+    const database = this.getDatabase();
+    
+    const [audit] = await database
+      .select()
+      .from(rivalAudits)
+      .where(eq(rivalAudits.id, parseInt(id)));
+    
+    return audit || null;
   }
 }
 

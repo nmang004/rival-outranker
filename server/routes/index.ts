@@ -22,6 +22,7 @@ import { rankTrackerRoutes } from "./rank-tracker.routes";
 import { pdfRoutes } from "./pdf.routes";
 import { openaiRoutes } from "./openai.routes";
 import monitoringRoutes from "./monitoring.routes";
+import ofiReportRoutes from "./ofi-report.routes";
 
 // Import middleware
 import { trackInternalApi, trackApiUsage } from "../middleware/apiUsageMiddleware";
@@ -68,6 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Monitoring and health check routes
   app.use('/api', monitoringRoutes);
+  
+  // OFI reporting and classification routes
+  app.use('/api/ofi-reports', trackApiUsage('internal'), ofiReportRoutes);
   
   // Create and return the server
   const server = createServer(app);

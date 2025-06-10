@@ -1,10 +1,16 @@
 import { AuditItem, RivalAudit } from '../../../shared/schema';
 import { PageCrawlResult, SiteStructure } from './audit.service';
+import { OFIClassificationService, OFIAnalysisMetrics } from './ofi-classification.service';
 
 /**
  * Service responsible for generating audit analysis from crawled site structure
  */
 export class AuditAnalyzerService {
+  private ofiClassificationService: OFIClassificationService;
+
+  constructor() {
+    this.ofiClassificationService = new OFIClassificationService();
+  }
 
   /**
    * Generate complete audit based on site structure
@@ -30,14 +36,22 @@ export class AuditAnalyzerService {
     // Generate the service area pages audit items
     const serviceAreaItems = this.generateServiceAreaAuditItems(site);
     
-    // Count totals of each status
+    // Apply proper OFI classification to all items
+    const classifiedOnPageItems = this.applyOFIClassification(onPageItems);
+    const classifiedStructureItems = this.applyOFIClassification(structureItems);
+    const classifiedContactItems = this.applyOFIClassification(contactItems);
+    const classifiedServiceItems = this.applyOFIClassification(serviceItems);
+    const classifiedLocationItems = this.applyOFIClassification(locationItems);
+    const classifiedServiceAreaItems = this.applyOFIClassification(serviceAreaItems);
+
+    // Count totals of each status after proper classification
     const allItems = [
-      ...onPageItems,
-      ...structureItems, 
-      ...contactItems,
-      ...serviceItems,
-      ...locationItems,
-      ...serviceAreaItems
+      ...classifiedOnPageItems,
+      ...classifiedStructureItems, 
+      ...classifiedContactItems,
+      ...classifiedServiceItems,
+      ...classifiedLocationItems,
+      ...classifiedServiceAreaItems
     ];
     
     const priorityOfiCount = allItems.filter(item => item.status === 'Priority OFI').length;
@@ -48,12 +62,12 @@ export class AuditAnalyzerService {
     return {
       url: site.homepage.url,
       timestamp: new Date(),
-      onPage: { items: onPageItems },
-      structureNavigation: { items: structureItems },
-      contactPage: { items: contactItems },
-      servicePages: { items: serviceItems },
-      locationPages: { items: locationItems },
-      serviceAreaPages: { items: serviceAreaItems },
+      onPage: { items: classifiedOnPageItems },
+      structureNavigation: { items: classifiedStructureItems },
+      contactPage: { items: classifiedContactItems },
+      servicePages: { items: classifiedServiceItems },
+      locationPages: { items: classifiedLocationItems },
+      serviceAreaPages: { items: classifiedServiceAreaItems },
       summary: {
         priorityOfiCount,
         ofiCount,
@@ -774,5 +788,109 @@ export class AuditAnalyzerService {
       const content = (page.title + ' ' + page.bodyText).toLowerCase();
       return areaKeywords.some(keyword => content.includes(keyword));
     });
+  }
+
+  /**
+   * Apply proper OFI classification to audit items using the new classification system
+   */
+  private applyOFIClassification(items: AuditItem[]): AuditItem[] {
+    return items.map(item => {
+      // Skip items that are already OK or N/A - no need to reclassify
+      if (item.status === 'OK' || item.status === 'N/A') {
+        return item;
+      }
+
+      // For OFI and Priority OFI items, apply proper classification
+      if (item.status === 'OFI' || item.status === 'Priority OFI') {
+        const classificationResult = this.ofiClassificationService.classifyAuditItem(item);
+        
+        // Update the item status based on classification
+        const updatedItem: AuditItem = {
+          ...item,
+          status: classificationResult.classification === 'Priority OFI' ? 'Priority OFI' : 'OFI'
+        };
+
+        // Add classification justification to notes if Priority OFI
+        if (classificationResult.classification === 'Priority OFI') {
+          const classificationNote = `\n\n[OFI Classification] ${classificationResult.justification}`;
+          updatedItem.notes = (item.notes || '') + classificationNote;
+        }
+
+        // If item was originally Priority OFI but doesn't meet criteria, downgrade
+        if (item.status === 'Priority OFI' && classificationResult.classification === 'Standard OFI') {
+          const downgradedNote = `\n\n[OFI Classification] Downgraded from Priority OFI: ${classificationResult.justification}`;
+          updatedItem.notes = (item.notes || '') + downgradedNote;
+          console.log(`Downgraded "${item.name}" from Priority OFI to Standard OFI`);
+        }
+
+        return updatedItem;
+      }
+
+      return item;
+    });
+  }
+
+  /**
+   * Generate classification report for weekly audit
+   */
+  generateOFIClassificationReport(audit: RivalAudit): {
+    totalItems: number;
+    priorityOFICount: number;
+    standardOFICount: number;
+    downgradedItems: string[];
+    flaggedForReview: string[];
+    recommendations: string[];
+  } {
+    const allItems = [
+      ...audit.onPage.items,
+      ...audit.structureNavigation.items,
+      ...audit.contactPage.items,
+      ...audit.servicePages.items,
+      ...audit.locationPages.items,
+      ...audit.serviceAreaPages.items
+    ];
+
+    const totalItems = allItems.length;
+    const priorityOFICount = allItems.filter(item => item.status === 'Priority OFI').length;
+    const standardOFICount = allItems.filter(item => item.status === 'OFI').length;
+
+    // Find items that were downgraded (contain downgrade note)
+    const downgradedItems = allItems
+      .filter(item => item.notes?.includes('Downgraded from Priority OFI'))
+      .map(item => item.name);
+
+    // Find items flagged for review (Priority OFI items)
+    const flaggedForReview = allItems
+      .filter(item => item.status === 'Priority OFI')
+      .map(item => item.name);
+
+    const recommendations: string[] = [];
+
+    // Generate recommendations based on classification patterns
+    const priorityOFIRate = priorityOFICount / totalItems;
+    if (priorityOFIRate > 0.3) {
+      recommendations.push("Priority OFI rate is high (>30%). Review classification criteria application.");
+    }
+
+    if (downgradedItems.length > 0) {
+      recommendations.push(`${downgradedItems.length} items were downgraded from Priority OFI. Review original classification logic.`);
+    }
+
+    if (priorityOFICount === 0) {
+      recommendations.push("No Priority OFI items identified. Verify classification system is working correctly.");
+    }
+
+    if (priorityOFICount > 10) {
+      recommendations.push("High number of Priority OFI items. Consider stricter classification criteria to focus on truly critical issues.");
+    }
+
+    return {
+      totalItems,
+      priorityOFICount,
+      standardOFICount,
+      downgradedItems,
+      flaggedForReview,
+      recommendations
+    };
   }
 }
