@@ -21,7 +21,10 @@ class Crawler {
   private MAX_REDIRECTS = 10; // Maximum number of redirects to follow
   private CRAWL_DELAY = 500; // Delay between requests in milliseconds
   private MAX_PAGES = 250; // Maximum pages to crawl per site
-  private CONCURRENT_REQUESTS = 5; // Maximum concurrent requests for parallel processing
+  private CONCURRENT_REQUESTS = 5; // Base concurrent requests (will be dynamically adjusted)
+  private MAX_CONCURRENT_REQUESTS = 25; // Maximum allowed concurrent requests
+  private MIN_CONCURRENT_REQUESTS = 3; // Minimum concurrent requests
+  private adaptiveConcurrency = 5; // Current adaptive concurrency level
   private USE_SITEMAP_DISCOVERY = true; // Enable sitemap-based page discovery
   private PREFILTER_CONTENT_TYPES = true; // Enable content-type pre-filtering
   private USE_PUPPETEER_FOR_JS_SITES = true; // Enable Puppeteer for JS-heavy sites
@@ -39,6 +42,10 @@ class Crawler {
   
   // Set to track broken links for verification
   private brokenLinks = new Set<string>();
+  
+  // Performance tracking for adaptive concurrency
+  private performanceWindow: Array<{timestamp: number, responseTime: number}> = [];
+  private lastConcurrencyAdjustment = 0;
   
   // Sitemap discovery cache
   private sitemapUrls = new Set<string>();
@@ -66,15 +73,79 @@ class Crawler {
   };
 
   /**
-   * Pre-filter URLs by content type using HEAD requests
+   * Quick URL validation and early termination checks
+   */
+  private shouldTerminateEarly(url: string): { shouldTerminate: boolean; reason?: string } {
+    try {
+      const parsedUrl = new URL(url);
+      
+      // Check for problematic file extensions
+      const problematicExtensions = [
+        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+        '.zip', '.rar', '.tar', '.gz', '.exe', '.dmg', '.pkg',
+        '.mp4', '.avi', '.mov', '.wmv', '.mp3', '.wav', '.jpg', 
+        '.jpeg', '.png', '.gif', '.svg', '.bmp', '.ico'
+      ];
+      
+      const hasProblematicExtension = problematicExtensions.some(ext => 
+        parsedUrl.pathname.toLowerCase().endsWith(ext)
+      );
+      
+      if (hasProblematicExtension) {
+        return { shouldTerminate: true, reason: 'Non-HTML file extension' };
+      }
+      
+      // Check for problematic URL patterns
+      const problematicPatterns = [
+        /\/wp-content\/uploads\//,
+        /\/wp-includes\//,
+        /\/node_modules\//,
+        /\/\.well-known\//,
+        /\/admin\//,
+        /\/api\/.*\/.*\//,  // Deeply nested API endpoints
+        /\/search\?.*q=/,   // Search result pages
+        /\?.*page=\d+/,     // Pagination
+        /\?.*p=\d+/,        // More pagination
+        /\/page\/\d+/,      // Page numbers
+        /\/\d{4}\/\d{2}\/\d{2}\//, // Date-based URLs (often archives)
+        /\/tag\//,          // Tag pages
+        /\/category\//,     // Category pages that are too deep
+        /\/author\//,       // Author pages
+        /login|register|checkout|cart|account/i // User-specific pages
+      ];
+      
+      const hasProblematicPattern = problematicPatterns.some(pattern => 
+        pattern.test(url)
+      );
+      
+      if (hasProblematicPattern) {
+        return { shouldTerminate: true, reason: 'Problematic URL pattern' };
+      }
+      
+      // Check URL depth (too many slashes might indicate deep nesting)
+      const pathDepth = parsedUrl.pathname.split('/').filter(segment => segment.length > 0).length;
+      if (pathDepth > 5) {
+        return { shouldTerminate: true, reason: 'URL too deep (depth: ' + pathDepth + ')' };
+      }
+      
+      return { shouldTerminate: false };
+      
+    } catch (error) {
+      return { shouldTerminate: true, reason: 'Invalid URL format' };
+    }
+  }
+
+  /**
+   * Pre-filter URLs by content type using HEAD requests with early termination
    */
   private async prefilterUrls(urls: string[]): Promise<string[]> {
     if (!this.PREFILTER_CONTENT_TYPES || urls.length === 0) {
       return urls;
     }
     
-    console.log(`[Crawler] Pre-filtering ${urls.length} URLs by content type...`);
+    console.log(`[Crawler] Pre-filtering ${urls.length} URLs by content type and early termination checks...`);
     const validUrls: string[] = [];
+    let terminatedEarly = 0;
     
     // Process URLs in batches for HEAD requests
     const batchSize = Math.min(this.CONCURRENT_REQUESTS * 2, 10); // More concurrent HEAD requests
@@ -83,6 +154,14 @@ class Crawler {
       const batch = urls.slice(i, i + batchSize);
       
       const headPromises = batch.map(async (url) => {
+        // First, check for early termination
+        const earlyCheck = this.shouldTerminateEarly(url);
+        if (earlyCheck.shouldTerminate) {
+          console.log(`[Crawler] Early termination: ${url} (${earlyCheck.reason})`);
+          terminatedEarly++;
+          return { url, valid: false, reason: earlyCheck.reason };
+        }
+        
         try {
           const response = await axios.head(url, {
             timeout: 3000, // Shorter timeout for HEAD requests
@@ -91,7 +170,20 @@ class Crawler {
             validateStatus: (status) => status < 500, // Accept 4xx to check content type
           });
           
+          // Check for redirect loops or too many redirects
+          if (response.status >= 300 && response.status < 400) {
+            console.log(`[Crawler] Skipping redirect: ${url} (${response.status})`);
+            return { url, valid: false, reason: 'Redirect detected' };
+          }
+          
           const contentType = response.headers['content-type'] || '';
+          const contentLength = parseInt(response.headers['content-length'] || '0', 10);
+          
+          // Skip very large pages (> 10MB)
+          if (contentLength > 10 * 1024 * 1024) {
+            console.log(`[Crawler] Skipping large content: ${url} (${Math.round(contentLength / 1024 / 1024)}MB)`);
+            return { url, valid: false, reason: 'Content too large' };
+          }
           
           // Check if it's HTML content
           if (response.status === 200 && 
@@ -102,7 +194,7 @@ class Crawler {
           }
           
           console.log(`[Crawler] Skipping non-HTML content: ${url} (${contentType})`);
-          return { url, valid: false };
+          return { url, valid: false, reason: 'Non-HTML content' };
           
         } catch (error) {
           // If HEAD request fails, include URL anyway (might be server issue)
@@ -124,20 +216,60 @@ class Crawler {
       }
     }
     
-    console.log(`[Crawler] Pre-filtering complete: ${validUrls.length}/${urls.length} URLs passed filter`);
+    console.log(`[Crawler] Pre-filtering complete: ${validUrls.length}/${urls.length} URLs passed filter (${terminatedEarly} terminated early)`);
     return validUrls;
   }
   
   /**
-   * Process URLs in parallel batches with concurrency limiting
+   * Track response time and adjust concurrency accordingly
    */
-  private async crawlUrlsInParallel(urls: string[], batchSize: number = this.CONCURRENT_REQUESTS): Promise<{ url: string; result: any; error?: string }[]> {
+  private trackPerformanceAndAdjustConcurrency(responseTime: number): void {
+    const now = Date.now();
+    
+    // Add to performance window
+    this.performanceWindow.push({ timestamp: now, responseTime });
+    
+    // Keep only last 10 responses for moving window
+    if (this.performanceWindow.length > 10) {
+      this.performanceWindow.shift();
+    }
+    
+    // Don't adjust too frequently (every 30 seconds minimum)
+    if (now - this.lastConcurrencyAdjustment < 30000) {
+      return;
+    }
+    
+    // Calculate average response time
+    const avgResponseTime = this.performanceWindow.reduce((sum, p) => sum + p.responseTime, 0) / this.performanceWindow.length;
+    
+    // Adjust concurrency based on performance
+    if (avgResponseTime < 1000 && this.adaptiveConcurrency < this.MAX_CONCURRENT_REQUESTS) {
+      // Fast responses: increase concurrency
+      this.adaptiveConcurrency = Math.min(this.adaptiveConcurrency + 2, this.MAX_CONCURRENT_REQUESTS);
+      console.log(`[Crawler] 🚀 Fast responses (${Math.round(avgResponseTime)}ms avg), increasing concurrency to ${this.adaptiveConcurrency}`);
+    } else if (avgResponseTime > 3000 && this.adaptiveConcurrency > this.MIN_CONCURRENT_REQUESTS) {
+      // Slow responses: decrease concurrency
+      this.adaptiveConcurrency = Math.max(this.adaptiveConcurrency - 1, this.MIN_CONCURRENT_REQUESTS);
+      console.log(`[Crawler] 🐌 Slow responses (${Math.round(avgResponseTime)}ms avg), decreasing concurrency to ${this.adaptiveConcurrency}`);
+    } else if (avgResponseTime >= 1000 && avgResponseTime <= 3000) {
+      console.log(`[Crawler] ⚖️ Optimal response time (${Math.round(avgResponseTime)}ms avg), maintaining concurrency at ${this.adaptiveConcurrency}`);
+    }
+    
+    this.lastConcurrencyAdjustment = now;
+  }
+
+  /**
+   * Process URLs in parallel batches with adaptive concurrency
+   */
+  private async crawlUrlsInParallel(urls: string[], batchSize?: number): Promise<{ url: string; result: any; error?: string }[]> {
+    // Use adaptive concurrency if no specific batch size provided
+    const effectiveBatchSize = batchSize || this.adaptiveConcurrency;
     const results: { url: string; result: any; error?: string }[] = [];
     
     // Process URLs in batches to limit concurrent requests
-    for (let i = 0; i < urls.length; i += batchSize) {
-      const batch = urls.slice(i, i + batchSize);
-      console.log(`[Crawler] Processing parallel batch ${Math.floor(i / batchSize) + 1} with ${batch.length} URLs`);
+    for (let i = 0; i < urls.length; i += effectiveBatchSize) {
+      const batch = urls.slice(i, i + effectiveBatchSize);
+      console.log(`[Crawler] Processing parallel batch ${Math.floor(i / effectiveBatchSize) + 1} with ${batch.length} URLs (concurrency: ${effectiveBatchSize})`);
       
       // Process batch in parallel with Promise.allSettled to handle individual failures
       const batchPromises = batch.map(async (url) => {
@@ -146,7 +278,13 @@ class Crawler {
           const randomDelay = Math.random() * 1000; // 0-1 second random delay
           await new Promise(resolve => setTimeout(resolve, randomDelay));
           
+          const crawlStartTime = Date.now();
           const pageData = await this.crawlPage(url);
+          const crawlTime = Date.now() - crawlStartTime;
+          
+          // Track performance for adaptive concurrency
+          this.trackPerformanceAndAdjustConcurrency(crawlTime);
+          
           this.crawledUrls.add(url);
           
           return { url, result: pageData };
@@ -1013,25 +1151,113 @@ class Crawler {
         await page.setViewport({ width: 1920, height: 1080 });
         await page.setUserAgent(this.USER_AGENT);
         
-        // Block unnecessary resources to speed up loading
+        // Enhanced aggressive resource blocking for maximum speed
         await page.setRequestInterception(true);
         page.on('request', (req) => {
           const resourceType = req.resourceType();
-          if (['image', 'font', 'media'].includes(resourceType)) {
+          const url = req.url();
+          
+          // Block resource types that aren't needed for SEO analysis
+          const blockedResourceTypes = [
+            'image', 'font', 'media', 'websocket', 'manifest', 'other'
+          ];
+          
+          if (blockedResourceTypes.includes(resourceType)) {
             req.abort();
-          } else {
-            req.continue();
+            return;
           }
+          
+          // Block third-party analytics, ads, and tracking scripts by URL patterns
+          const blockedUrlPatterns = [
+            // Analytics & Tracking
+            /google-analytics\.com/,
+            /googletagmanager\.com/,
+            /facebook\.net/,
+            /facebook\.com\/tr/,
+            /doubleclick\.net/,
+            /googlesyndication\.com/,
+            /amazon-adsystem\.com/,
+            /adsystem\.amazon/,
+            
+            // Social Media Widgets
+            /twitter\.com\/widgets/,
+            /platform\.twitter\.com/,
+            /connect\.facebook\.net/,
+            /instagram\.com\/embed/,
+            /youtube\.com\/embed/,
+            /linkedin\.com\/widgets/,
+            
+            // Chat/Support Widgets
+            /zendesk\.com/,
+            /intercom\.io/,
+            /crisp\.chat/,
+            /tawk\.to/,
+            /zopim\.com/,
+            /livechatinc\.com/,
+            
+            // Performance & Monitoring
+            /newrelic\.com/,
+            /hotjar\.com/,
+            /fullstory\.com/,
+            /mouseflow\.com/,
+            /crazyegg\.com/,
+            
+            // CDN unnecessary resources
+            /\.woff2?$/,
+            /\.ttf$/,
+            /\.eot$/,
+            /\.svg$/,
+            /\.png$/,
+            /\.jpg$/,
+            /\.jpeg$/,
+            /\.gif$/,
+            /\.webp$/,
+            /\.ico$/,
+            
+            // Common ad networks
+            /adsense\.google\.com/,
+            /amazon\.com\/gp\/ads/,
+            /media\.net/,
+            /outbrain\.com/,
+            /taboola\.com/,
+            /revcontent\.com/
+          ];
+          
+          if (blockedUrlPatterns.some(pattern => pattern.test(url))) {
+            req.abort();
+            return;
+          }
+          
+          // Block non-essential stylesheets (keep only main/critical CSS)
+          if (resourceType === 'stylesheet') {
+            // Allow main CSS files, block third-party and optional CSS
+            const nonEssentialCssPatterns = [
+              /font-awesome/,
+              /bootstrap\.min\.css/,
+              /jquery/,
+              /slick/,
+              /owl\.carousel/,
+              /animate\.css/
+            ];
+            
+            if (nonEssentialCssPatterns.some(pattern => pattern.test(url))) {
+              req.abort();
+              return;
+            }
+          }
+          
+          // Allow essential resources for SEO analysis
+          req.continue();
         });
         
-        // Navigate to page and wait for content
+        // Navigate to page with optimized wait conditions
         await page.goto(url, { 
-          waitUntil: 'networkidle2',
-          timeout: 25000 
+          waitUntil: 'domcontentloaded', // Faster than networkidle2
+          timeout: 15000 // Reduced timeout for faster failures
         });
         
-        // Wait a bit for dynamic content to load
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Minimal wait for critical dynamic content only
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Extract page data
         const data = await page.evaluate(() => {
@@ -1297,6 +1523,11 @@ class Crawler {
     // Reset sitemap discovery
     this.sitemapUrls.clear();
     this.sitemapDiscovered = false;
+    
+    // Reset adaptive concurrency
+    this.adaptiveConcurrency = this.CONCURRENT_REQUESTS;
+    this.performanceWindow = [];
+    this.lastConcurrencyAdjustment = 0;
   }
 
   /**
@@ -1360,12 +1591,15 @@ class Crawler {
         discoveredUrls = sitemapUrls.slice(0, this.MAX_PAGES - 1);
       } else {
         console.log(`[Crawler] Sitemap discovery failed, falling back to link crawling`);
-        // Phase 2: Link crawling fallback
+        // Phase 2: Link crawling fallback with prioritization
         if (homepage.links && homepage.links.internal) {
-          discoveredUrls = homepage.links.internal
+          const internalLinks = homepage.links.internal
             .map((link: any) => typeof link === 'string' ? link : link.url)
-            .filter((link: string) => this.shouldCrawlUrl(link))
-            .slice(0, this.MAX_PAGES - 1); // Reserve space for homepage
+            .filter((link: string) => this.shouldCrawlUrl(link));
+          
+          // Prioritize internal links by importance
+          const prioritizedLinks = this.prioritizeUrlsByImportance(internalLinks, url);
+          discoveredUrls = prioritizedLinks.slice(0, this.MAX_PAGES - 1); // Reserve space for homepage
         }
       }
       
@@ -1378,10 +1612,10 @@ class Crawler {
       let crawledCount = 1; // Already crawled homepage
 
       while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
-        // Get batch of URLs to process in parallel
+        // Get batch of URLs to process in parallel with adaptive concurrency
         const urlsToProcess = this.pendingUrls
           .filter(url => !this.crawledUrls.has(url))
-          .slice(0, Math.min(this.MAX_PAGES - crawledCount, this.CONCURRENT_REQUESTS * 2)) // Process up to 2 batches worth
+          .slice(0, Math.min(this.MAX_PAGES - crawledCount, this.adaptiveConcurrency * 2)) // Process up to 2 batches worth with adaptive sizing
           .slice(0, this.MAX_PAGES - crawledCount); // Don't exceed max pages
         
         if (urlsToProcess.length === 0) break;
@@ -1493,10 +1727,10 @@ class Crawler {
     let crawledCount = this.stats.pagesCrawled;
 
     while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
-      // Get batch of URLs to process in parallel
+      // Get batch of URLs to process in parallel with adaptive concurrency
       const urlsToProcess = this.pendingUrls
         .filter(url => !this.crawledUrls.has(url))
-        .slice(0, Math.min(this.MAX_PAGES - crawledCount, this.CONCURRENT_REQUESTS * 2))
+        .slice(0, Math.min(this.MAX_PAGES - crawledCount, this.adaptiveConcurrency * 2))
         .slice(0, this.MAX_PAGES - crawledCount);
       
       if (urlsToProcess.length === 0) break;
@@ -1631,6 +1865,12 @@ class Crawler {
       // Only crawl same domain
       if (parsedUrl.hostname !== baseDomain) return false;
       
+      // Check early termination conditions
+      const earlyCheck = this.shouldTerminateEarly(url);
+      if (earlyCheck.shouldTerminate) {
+        return false;
+      }
+      
       // Skip certain file types
       const skipExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.css', '.js', '.zip', '.doc', '.docx'];
       if (skipExtensions.some(ext => parsedUrl.pathname.toLowerCase().endsWith(ext))) return false;
@@ -1665,7 +1905,133 @@ class Crawler {
   }
 
   /**
-   * Discover URLs from sitemap.xml with intelligent parsing
+   * Calculate page importance score based on URL characteristics
+   */
+  private calculatePageImportanceScore(url: string, baseUrl: string): number {
+    let score = 50; // Base score
+    
+    try {
+      const parsedUrl = new URL(url);
+      const baseParsed = new URL(baseUrl);
+      const path = parsedUrl.pathname.toLowerCase();
+      
+      // Homepage gets highest priority
+      if (path === '/' || path === '/index.html') {
+        return 100;
+      }
+      
+      // High-value page indicators
+      const highValuePatterns = [
+        { pattern: /\/contact/, score: 25 },
+        { pattern: /\/about/, score: 20 },
+        { pattern: /\/service/, score: 20 },
+        { pattern: /\/product/, score: 18 },
+        { pattern: /\/pricing/, score: 18 },
+        { pattern: /\/quote/, score: 22 },
+        { pattern: /\/estimate/, score: 22 },
+        { pattern: /\/emergency/, score: 25 },
+        { pattern: /\/location/, score: 15 },
+        { pattern: /\/testimonial/, score: 12 },
+        { pattern: /\/review/, score: 12 },
+        { pattern: /\/portfolio/, score: 12 },
+        { pattern: /\/gallery/, score: 10 }
+      ];
+      
+      for (const { pattern, score: patternScore } of highValuePatterns) {
+        if (pattern.test(path)) {
+          score += patternScore;
+          break; // Only apply the first match
+        }
+      }
+      
+      // Low-value page indicators (reduce score)
+      const lowValuePatterns = [
+        { pattern: /\/blog\/\d{4}\//, score: -15 }, // Dated blog posts
+        { pattern: /\/tag\//, score: -20 },
+        { pattern: /\/category\//, score: -10 },
+        { pattern: /\/author\//, score: -15 },
+        { pattern: /\/page\/\d+/, score: -25 }, // Pagination
+        { pattern: /\?page=/, score: -25 },
+        { pattern: /\/search/, score: -30 },
+        { pattern: /\/archive/, score: -20 },
+        { pattern: /\/feed/, score: -35 },
+        { pattern: /\/sitemap/, score: -35 },
+        { pattern: /\/privacy/, score: -5 },
+        { pattern: /\/terms/, score: -5 },
+        { pattern: /\/cookie/, score: -10 }
+      ];
+      
+      for (const { pattern, score: patternScore } of lowValuePatterns) {
+        if (pattern.test(path)) {
+          score += patternScore; // These are negative values
+          break;
+        }
+      }
+      
+      // URL depth penalty (deeper = less important)
+      const pathSegments = path.split('/').filter(segment => segment.length > 0);
+      const depthPenalty = Math.max(0, (pathSegments.length - 2) * 5);
+      score -= depthPenalty;
+      
+      // URL length penalty (very long URLs are often less important)
+      if (path.length > 100) {
+        score -= 10;
+      } else if (path.length > 50) {
+        score -= 5;
+      }
+      
+      // Query parameter penalty (dynamic content often less important)
+      if (parsedUrl.search.length > 0) {
+        score -= 8;
+      }
+      
+      // Business-specific scoring
+      const businessKeywords = [
+        'hvac', 'plumbing', 'electrical', 'repair', 'installation',
+        'heating', 'cooling', 'ac', 'furnace', 'water', 'sewer',
+        'residential', 'commercial', 'licensed', 'certified'
+      ];
+      
+      const businessMatches = businessKeywords.filter(keyword => 
+        path.includes(keyword)
+      ).length;
+      
+      score += businessMatches * 8;
+      
+      // Ensure score stays within reasonable bounds
+      return Math.max(0, Math.min(100, score));
+      
+    } catch (error) {
+      return 30; // Default low score for invalid URLs
+    }
+  }
+
+  /**
+   * Sort URLs by importance score
+   */
+  private prioritizeUrlsByImportance(urls: string[], baseUrl: string): string[] {
+    const urlsWithScores = urls.map(url => ({
+      url,
+      score: this.calculatePageImportanceScore(url, baseUrl)
+    }));
+    
+    // Sort by score descending, then by URL length ascending (shorter URLs often more important)
+    urlsWithScores.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return a.url.length - b.url.length;
+    });
+    
+    const prioritizedUrls = urlsWithScores.map(item => item.url);
+    
+    console.log(`[Crawler] 🧠 Prioritized ${urls.length} URLs by importance (top 5 scores: ${urlsWithScores.slice(0, 5).map(u => Math.round(u.score)).join(', ')})`);
+    
+    return prioritizedUrls;
+  }
+
+  /**
+   * Discover URLs from sitemap.xml with intelligent parsing and prioritization
    */
   private async discoverUrlsFromSitemap(baseUrl: string): Promise<string[]> {
     if (!this.USE_SITEMAP_DISCOVERY || this.sitemapDiscovered) {
@@ -1734,8 +2100,11 @@ class Crawler {
         .filter(url => this.shouldCrawlUrl(url))
         .slice(0, this.MAX_PAGES * 2); // Get more URLs than MAX_PAGES to account for filtering
       
-      console.log(`[Crawler] Sitemap discovery completed. Found ${uniqueUrls.length} valid URLs`);
-      return uniqueUrls;
+      // Prioritize URLs by importance scoring
+      const prioritizedUrls = this.prioritizeUrlsByImportance(uniqueUrls, baseUrl);
+      
+      console.log(`[Crawler] Sitemap discovery completed. Found ${prioritizedUrls.length} valid URLs (prioritized by importance)`);
+      return prioritizedUrls;
       
     } catch (error) {
       console.log(`[Crawler] Sitemap discovery failed:`, error);
