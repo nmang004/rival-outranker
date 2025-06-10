@@ -128,6 +128,7 @@ class EnhancedAuditAnalyzer {
    * Analyze a single page with all applicable factors
    */
   private async analyzePageComprehensive(page: PageCrawlResult, pageType: string): Promise<PageAnalysisResult> {
+    console.log(`[EnhancedAnalyzer] Analyzing ${pageType} page: ${page.url}`);
     const $ = cheerio.load(page.rawHtml);
     
     const results: PageAnalysisResult = {
@@ -137,6 +138,7 @@ class EnhancedAuditAnalyzer {
       uxPerformance: await this.uxAnalyzer.analyze(page, $)
     };
 
+    console.log(`[EnhancedAnalyzer] Page analysis complete for ${page.url}: Content Quality (${results.contentQuality.length}), Technical SEO (${results.technicalSeo.length}), Local SEO (${results.localSeo.length}), UX Performance (${results.uxPerformance.length})`);
     return results;
   }
 
@@ -154,34 +156,53 @@ class EnhancedAuditAnalyzer {
 
   // Analysis merge methods
   private mergeAnalysisResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
+    console.log(`[EnhancedAnalyzer] Merging analysis results for ${pageInfo.type} page: ${pageInfo.url}`);
+    console.log(`[EnhancedAnalyzer] Analysis contains: Content Quality (${analysis.contentQuality.length}), Technical SEO (${analysis.technicalSeo.length}), Local SEO (${analysis.localSeo.length}), UX Performance (${analysis.uxPerformance.length})`);
+    
     // Merge factors into their dedicated enhanced categories
     if (results.contentQuality) {
-      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+      const contentItems = this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo);
+      this.mergeUniqueItems(results.contentQuality.items, contentItems);
+      console.log(`[EnhancedAnalyzer] Added ${contentItems.length} content quality factors. Total now: ${results.contentQuality.items.length}`);
     }
     
     if (results.technicalSEO) {
-      this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+      const technicalItems = this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo);
+      this.mergeUniqueItems(results.technicalSEO.items, technicalItems);
+      console.log(`[EnhancedAnalyzer] Added ${technicalItems.length} technical SEO factors. Total now: ${results.technicalSEO.items.length}`);
     }
     
     if (results.localSEO) {
-      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+      const localItems = this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo);
+      this.mergeUniqueItems(results.localSEO.items, localItems);
+      console.log(`[EnhancedAnalyzer] Added ${localItems.length} local SEO factors. Total now: ${results.localSEO.items.length}`);
     }
     
     if (results.uxPerformance) {
-      this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
+      const uxItems = this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo);
+      this.mergeUniqueItems(results.uxPerformance.items, uxItems);
+      console.log(`[EnhancedAnalyzer] Added ${uxItems.length} UX performance factors. Total now: ${results.uxPerformance.items.length}`);
     }
   }
 
   private mergeContactResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
+    console.log(`[EnhancedAnalyzer] Merging contact page results for: ${pageInfo.url}`);
+    
     // For enhanced audits, merge contact page factors into enhanced categories
     if (results.contentQuality) {
-      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+      const contentItems = this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo);
+      this.mergeUniqueItems(results.contentQuality.items, contentItems);
+      console.log(`[EnhancedAnalyzer] Contact page - Added ${contentItems.length} content quality factors`);
     }
     if (results.localSEO) {
-      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+      const localItems = this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo);
+      this.mergeUniqueItems(results.localSEO.items, localItems);
+      console.log(`[EnhancedAnalyzer] Contact page - Added ${localItems.length} local SEO factors`);
     }
     if (results.uxPerformance) {
-      this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
+      const uxItems = this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo);
+      this.mergeUniqueItems(results.uxPerformance.items, uxItems);
+      console.log(`[EnhancedAnalyzer] Contact page - Added ${uxItems.length} UX performance factors`);
     }
   }
 
