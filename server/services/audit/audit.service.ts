@@ -135,9 +135,13 @@ export class AuditService {
       
       // Step 2: Classify pages by type
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
+      console.log(`[AuditService] Classified site structure - Homepage: ${!!classifiedStructure.homepage}, Contact: ${!!classifiedStructure.contactPage}, Service pages: ${classifiedStructure.servicePages.length}, Location pages: ${classifiedStructure.locationPages.length}, Service area pages: ${classifiedStructure.serviceAreaPages.length}`);
       
       // Step 3: Generate enhanced audit with 140+ factors
+      console.log(`[AuditService] Starting enhanced analysis with classified structure`);
       const enhancedAudit = await this.enhancedAnalyzer.analyzeWebsite(classifiedStructure);
+      console.log(`[AuditService] Enhanced analysis completed - Total factors: ${enhancedAudit.summary.totalFactors}`);
+      console.log(`[AuditService] Enhanced categories populated: Content Quality (${enhancedAudit.contentQuality?.items.length || 0}), Technical SEO (${enhancedAudit.technicalSEO?.items.length || 0}), Local SEO (${enhancedAudit.localSEO?.items.length || 0}), UX Performance (${enhancedAudit.uxPerformance?.items.length || 0})`);
       
       console.log(`Completed enhanced rival audit for: ${url} - analyzed ${enhancedAudit.summary.totalFactors} factors`);
       return {
