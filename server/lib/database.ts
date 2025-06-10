@@ -19,7 +19,7 @@ const DATABASE_CONFIG = {
 
 class DatabaseManager {
   private static instance: DatabaseManager;
-  private pool: Pool | null = null;
+  private pool: InstanceType<typeof Pool> | null = null;
   private db: any = null;
   private isHealthy: boolean = false;
   private lastHealthCheck: number = 0;
@@ -111,7 +111,7 @@ class DatabaseManager {
     }
   }
 
-  getPool(): Pool | null {
+  getPool(): InstanceType<typeof Pool> | null {
     return this.pool;
   }
 

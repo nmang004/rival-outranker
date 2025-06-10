@@ -434,7 +434,7 @@ export const ipFilter = (options: {
   blacklist?: string[];
 } = {}) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
     
     // Check blacklist first
     if (options.blacklist && options.blacklist.includes(clientIP)) {
@@ -601,7 +601,8 @@ export const requestFingerprinting = (req: Request, res: Response, next: NextFun
   ];
   
   for (const { pattern, field } of suspiciousPatterns) {
-    if (pattern.test(fingerprint[field as keyof typeof fingerprint] || '')) {
+    const fieldValue = fingerprint[field as keyof typeof fingerprint];
+    if (pattern.test(String(fieldValue || ''))) {
       console.warn(`Suspicious ${field} detected:`, {
         ...fingerprint,
         fingerprintHash

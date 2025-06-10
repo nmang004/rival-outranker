@@ -1041,7 +1041,7 @@ export const crawledContent = pgTable("crawled_content", {
   qualityScore: integer("quality_score"), // 0-100 quality assessment
   isStale: boolean("is_stale").default(false).notNull(),
   isDuplicate: boolean("is_duplicate").default(false).notNull(),
-  duplicateOf: text("duplicate_of").references(() => crawledContent.id),
+  duplicateOf: text("duplicate_of"),
   wordCount: integer("word_count"),
   readingTime: integer("reading_time"), // minutes
   languageCode: text("language_code").default("en"),
@@ -1053,15 +1053,15 @@ export const crawledContent = pgTable("crawled_content", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   crawledAt: timestamp("crawled_at").defaultNow().notNull(),
-}, (table) => {
-  return [
-    index("idx_content_type").on(table.type),
-    index("idx_content_source").on(table.source),
-    index("idx_content_url").on(table.url),
-    index("idx_content_crawled_at").on(table.crawledAt),
-    index("idx_content_quality").on(table.qualityScore),
-    unique("unique_url_source").on(table.url, table.source)
-  ];
+}, (table): Record<string, any> => {
+  return {
+    idxContentType: index("idx_content_type").on(table.type),
+    idxContentSource: index("idx_content_source").on(table.source),
+    idxContentUrl: index("idx_content_url").on(table.url),
+    idxContentCrawledAt: index("idx_content_crawled_at").on(table.crawledAt),
+    idxContentQuality: index("idx_content_quality").on(table.qualityScore),
+    uniqueUrlSource: unique("unique_url_source").on(table.url, table.source)
+  };
 });
 
 export const crawlMetrics = pgTable("crawl_metrics", {

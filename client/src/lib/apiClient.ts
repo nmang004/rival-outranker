@@ -266,11 +266,11 @@ export class ApiClient {
         clearTimeout(timeoutId);
         
         const apiError: ApiError = error instanceof Error ? error : new Error(String(error));
-        if (error.name === 'AbortError') {
+        if (error instanceof Error && error.name === 'AbortError') {
           apiError.code = 'TIMEOUT';
           apiError.message = 'Request timeout';
         }
-        apiError.originalError = error;
+        apiError.originalError = error instanceof Error ? error : undefined;
         
         throw apiError;
       }
@@ -332,7 +332,6 @@ export class ApiClient {
       headers: {
         // Don't set Content-Type, let browser set it with boundary for FormData
         ...config?.headers,
-        'Content-Type': undefined,
       },
     });
   }
@@ -351,6 +350,3 @@ export class ApiClient {
 
 // Create and export singleton instance
 export const apiClient = new ApiClient();
-
-// Export type for dependency injection in tests
-export type { ApiClient };

@@ -309,7 +309,20 @@ export function useOptimisticRankUpdate(projectId: string) {
   return useOptimisticUpdate<RankTrackerProject>(
     [...queryKeys.keywords.all(), 'rank-tracker', 'project', projectId],
     (oldData, newData) => {
-      if (!oldData) return oldData as RankTrackerProject;
+      if (!oldData) {
+        // Create a minimal default project if oldData is not available
+        return {
+          id: projectId,
+          name: newData.name || 'New Project',
+          domain: newData.domain || '',
+          keywords: newData.keywords || [],
+          location: newData.location || '',
+          device: newData.device || 'desktop',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...newData
+        } as RankTrackerProject;
+      }
       return { ...oldData, ...newData };
     }
   );

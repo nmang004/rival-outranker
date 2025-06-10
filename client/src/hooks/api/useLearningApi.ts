@@ -17,6 +17,7 @@ export interface LearningModule {
   lessons: Lesson[];
   prerequisites: string[];
   learningObjectives: string[];
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

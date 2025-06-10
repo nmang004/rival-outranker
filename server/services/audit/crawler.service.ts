@@ -313,16 +313,18 @@ class Crawler {
       // Check if this is a JavaScript-heavy site that needs Puppeteer
       const isJsHeavy = this.detectJavaScriptHeavySite(response.data, normalizedUrl);
       
-      if (isJsHeavy && this.puppeteerCluster) {
+      if (isJsHeavy && this.puppeteerCluster && this.USE_PUPPETEER_FOR_JS_SITES) {
         console.log(`[Crawler] Switching to Puppeteer for JS-heavy site: ${normalizedUrl}`);
         try {
           const puppeteerResult = await this.crawlPageWithPuppeteer(normalizedUrl);
           this.responseCache.set(normalizedUrl, puppeteerResult);
           return puppeteerResult;
         } catch (puppeteerError) {
-          console.error(`[Crawler] Puppeteer failed, falling back to regular crawling:`, puppeteerError);
+          console.log(`[Crawler] Puppeteer failed for ${normalizedUrl}, falling back to regular crawling:`, puppeteerError instanceof Error ? puppeteerError.message : 'Unknown error');
           // Continue with regular crawling as fallback
         }
+      } else if (isJsHeavy && !this.puppeteerCluster) {
+        console.log(`[Crawler] JS-heavy site detected but Puppeteer unavailable, using regular crawling: ${normalizedUrl}`);
       }
       
       // Check for noindex directive
@@ -973,12 +975,16 @@ class Crawler {
         maxConcurrency: this.PUPPETEER_CLUSTER_SIZE,
         puppeteerOptions: {
           headless: true,
+          executablePath: process.env.CHROME_EXECUTABLE_PATH || undefined,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--disable-gpu',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
             '--window-size=1920x1080'
           ]
         },
@@ -1030,7 +1036,9 @@ class Crawler {
       console.log(`[Crawler] Puppeteer cluster initialized successfully`);
     } catch (error) {
       console.error(`[Crawler] Failed to initialize Puppeteer cluster:`, error);
+      console.log(`[Crawler] Disabling Puppeteer for this session - will use regular crawling for all pages`);
       this.puppeteerCluster = null;
+      this.USE_PUPPETEER_FOR_JS_SITES = false; // Disable for this session
     }
   }
   
@@ -1567,6 +1575,12 @@ class Crawler {
       for (const sitemapPath of sitemapUrls) {
         try {
           const sitemapUrl = sitemapPath.startsWith('http') ? sitemapPath : new URL(sitemapPath, baseUrl).toString();
+          
+          // Skip robots.txt URLs in this loop (already processed above)
+          if (sitemapUrl.endsWith('/robots.txt')) {
+            continue;
+          }
+          
           console.log(`[Crawler] Checking sitemap: ${sitemapUrl}`);
           
           const response = await axios.get(sitemapUrl, {
@@ -1575,7 +1589,14 @@ class Crawler {
             validateStatus: (status) => status === 200
           });
           
-          if (response.data) {
+          // Validate that response is XML content
+          const contentType = response.headers['content-type'] || '';
+          if (!contentType.includes('xml') && !contentType.includes('text/') && contentType !== '') {
+            console.log(`[Crawler] Skipping non-XML sitemap: ${sitemapUrl} (${contentType})`);
+            continue;
+          }
+          
+          if (response.data && typeof response.data === 'string') {
             const urls = await this.parseSitemap(response.data, baseUrl);
             discoveredUrls.push(...urls);
             console.log(`[Crawler] Found ${urls.length} URLs in sitemap: ${sitemapUrl}`);
@@ -1587,7 +1608,7 @@ class Crawler {
             }
           }
         } catch (error) {
-          // Silently continue to next sitemap
+          console.log(`[Crawler] Error processing sitemap ${sitemapPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           continue;
         }
       }
@@ -1612,16 +1633,27 @@ class Crawler {
   private async checkRobotsForSitemaps(baseUrl: string): Promise<string[]> {
     try {
       const robotsUrl = new URL('/robots.txt', baseUrl).toString();
-      const response = await axios.get(robotsUrl, { timeout: 5000 });
+      const response = await axios.get(robotsUrl, { 
+        timeout: 5000,
+        headers: { 'User-Agent': this.USER_AGENT },
+        validateStatus: (status) => status === 200
+      });
+      
+      // Check if response is actually text (not HTML or other format)
+      const contentType = response.headers['content-type'] || '';
+      if (!contentType.includes('text/plain') && !contentType.includes('text/') && contentType !== '') {
+        console.log(`[Crawler] Skipping robots.txt - invalid content type: ${contentType}`);
+        return [];
+      }
       
       const sitemapUrls: string[] = [];
-      const lines = response.data.split('\n');
+      const lines = String(response.data).split('\n');
       
       for (const line of lines) {
         const trimmedLine = line.trim();
         if (trimmedLine.toLowerCase().startsWith('sitemap:')) {
           const sitemapUrl = trimmedLine.substring(8).trim();
-          if (sitemapUrl) {
+          if (sitemapUrl && sitemapUrl.startsWith('http')) {
             sitemapUrls.push(sitemapUrl);
           }
         }
@@ -1629,7 +1661,8 @@ class Crawler {
       
       console.log(`[Crawler] Found ${sitemapUrls.length} sitemap references in robots.txt`);
       return sitemapUrls;
-    } catch {
+    } catch (error) {
+      console.log(`[Crawler] Could not read robots.txt: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return [];
     }
   }
@@ -1641,7 +1674,19 @@ class Crawler {
     const urls: string[] = [];
     
     try {
-      const parser = new xml2js.Parser({ explicitArray: false });
+      // Basic validation that this looks like XML
+      const trimmedData = xmlData.trim();
+      if (!trimmedData.startsWith('<?xml') && !trimmedData.startsWith('<urlset') && !trimmedData.startsWith('<sitemapindex')) {
+        console.log(`[Crawler] Skipping non-XML content in sitemap parsing`);
+        return [];
+      }
+      
+      const parser = new xml2js.Parser({ 
+        explicitArray: false,
+        ignoreAttrs: true,
+        trim: true,
+        normalize: true
+      });
       const result = await parser.parseStringPromise(xmlData);
       
       // Handle sitemap index (contains references to other sitemaps)
@@ -1682,7 +1727,7 @@ class Crawler {
       }
       
     } catch (error) {
-      console.error(`[Crawler] Error parsing sitemap:`, error);
+      console.log(`[Crawler] Could not parse sitemap XML: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
     return urls;

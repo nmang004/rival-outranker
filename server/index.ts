@@ -5,7 +5,7 @@ import { initializeDatabase, closeDatabase, getDatabaseHealth, getDatabaseInfo }
 
 // Railway-specific configuration
 const isProduction = process.env.NODE_ENV === 'production';
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT || '5000', 10);
 const HOST = '0.0.0.0';
 
 const app = express();
@@ -216,7 +216,7 @@ app.use((req, res, next) => {
       const { setupVite } = await import("./vite");
       await setupVite(app, server);
     } catch (error) {
-      console.warn("Could not load Vite for development:", error?.message);
+      console.warn("Could not load Vite for development:", error instanceof Error ? error.message : String(error));
     }
   } else {
     // In production, no need for Vite or static file serving

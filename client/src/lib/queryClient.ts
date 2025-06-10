@@ -202,8 +202,6 @@ export const queryClient = new QueryClient({
       },
       retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
       
-      // Suspense support (for React 18+)
-      suspense: false,
     },
     mutations: {
       retry: (failureCount, error) => {

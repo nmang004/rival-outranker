@@ -393,7 +393,7 @@ export default function ResultsPage() {
                     <SelectItem key={analyzeUrl} value={analyzeUrl}>
                       <div className="flex items-center">
                         <Globe className="h-4 w-4 mr-2 text-primary/70" />
-                        <span className="truncate">{formatUrl(analyzeUrl, 40)}</span>
+                        <span className="truncate">{formatUrl(analyzeUrl)}</span>
                       </div>
                     </SelectItem>
                   ))}

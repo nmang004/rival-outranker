@@ -29,9 +29,11 @@ import {
   type UserProgress,
   type LearningRecommendation,
 } from "@/hooks/api";
+import type { User } from "../../../shared/schema";
 
 export default function LearningPathsPage() {
-  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { user: rawUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const user = rawUser as User | null | undefined;
   const [activeTab, setActiveTab] = useState("all-modules");
   
   // Fetch data using new API hooks
@@ -69,9 +71,27 @@ export default function LearningPathsPage() {
   // Extract data from API responses
   const modules = modulesResponse?.data || [];
   const paths = pathsResponse?.data || [];
-  const userProgress = progressResponse?.data || [];
-  const recommendations = recommendationsResponse?.data || [];
-  const analytics = analyticsResponse?.data;
+  const userProgress = user ? (progressResponse?.data || []) : [];
+  const recommendations = user ? (recommendationsResponse?.data || []) : [];
+  const analytics = user ? (analyticsResponse?.data || {
+    totalTimeSpent: 0,
+    lessonsCompleted: 0,
+    modulesCompleted: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    averageScore: 0,
+    progressByCategory: {},
+    activityHistory: []
+  }) : {
+    totalTimeSpent: 0,
+    lessonsCompleted: 0,
+    modulesCompleted: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    averageScore: 0,
+    progressByCategory: {},
+    activityHistory: []
+  };
   
   // Loading states
   const isLoading = isLoadingModules || isLoadingPaths || (isAuthenticated && (isLoadingProgress || isLoadingRecommendations));

@@ -907,13 +907,13 @@ export default function ModuleDetailPage() {
                                 
                                 // Check if user has unlocked the "Quiz Master" achievement for 100% score
                                 if (score === 100) {
-                                  const quizMasterAchievement = mockAchievements.find(a => a.id === "quiz-master");
-                                  if (quizMasterAchievement) {
-                                    setTimeout(() => {
-                                      setCurrentAchievement(quizMasterAchievement as Achievement);
-                                      setShowAchievement(true);
-                                    }, 1500); // Show achievement after quiz completion dialog
-                                  }
+                                  // const quizMasterAchievement = mockAchievements.find(a => a.id === "quiz-master");
+                                  // if (quizMasterAchievement) {
+                                  //   setTimeout(() => {
+                                  //     setCurrentAchievement(quizMasterAchievement as Achievement);
+                                  //     setShowAchievement(true);
+                                  //   }, 1500); // Show achievement after quiz completion dialog
+                                  // }
                                 }
                               } else {
                                 // Still show completion screen, but with failed message
