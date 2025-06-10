@@ -536,11 +536,9 @@ class EnhancedAuditAnalyzer {
       }
     }
     
-    // Add priority context
+    // Add priority context for high priority items only
     if (status === 'Priority OFI') {
       recommendation = '🚨 HIGH PRIORITY: ' + recommendation + ' This significantly impacts your search rankings and should be addressed immediately.';
-    } else {
-      recommendation = '💡 IMPROVEMENT: ' + recommendation + ' This enhancement will help improve your overall SEO performance.';
     }
     
     return recommendation;
