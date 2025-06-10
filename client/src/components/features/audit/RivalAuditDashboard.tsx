@@ -260,6 +260,9 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   const localSEOTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.localSEO) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
   const uxPerformanceTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.uxPerformance) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
 
+  // Define isEnhancedAuditWithCategories here, before it's used
+  const isEnhancedAuditWithCategories = enhancedCategories !== null;
+
   // Get category progress as percentage (excluding N/A items)
   const getCategoryProgress = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }) => {
     const relevantItems = totals.total - totals.na;
@@ -473,7 +476,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   }
 
   // Calculate total audit progress - ensure consistency with category totals
-  const isEnhancedAuditWithCategories = enhancedCategories !== null;
+  // Note: isEnhancedAuditWithCategories is already defined above
   
   // Debug: Log totals to verify consistency
   console.log('[Dashboard] Progress calculation:', {
