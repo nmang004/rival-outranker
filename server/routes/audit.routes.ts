@@ -1,22 +1,9 @@
 import { Router, Request, Response } from 'express';
-
-// Try-catch wrapper for imports to debug Railway issues
-let rivalAuditCrawler: any;
-let generateRivalAuditExcel: any;
-let generateRivalAuditCsv: any;
-let AuditStatus: any;
-let storage: any;
-
-try {
-  ({ rivalAuditCrawler } = require('../services/audit/rival-audit-crawler.service'));
-  ({ generateRivalAuditExcel } = require('../services/common/excel-exporter.service'));
-  ({ generateRivalAuditCsv } = require('../services/common/csv-exporter.service'));
-  ({ AuditStatus } = require('../../shared/schema'));
-  ({ storage } = require('../storage'));
-  console.log('✅ All audit route imports loaded successfully');
-} catch (error) {
-  console.error('❌ Import error in audit routes:', error);
-}
+import { rivalAuditCrawler } from '../services/audit/rival-audit-crawler.service';
+import { generateRivalAuditExcel } from '../services/common/excel-exporter.service';
+import { generateRivalAuditCsv } from '../services/common/csv-exporter.service';
+import { AuditStatus } from '../../shared/schema';
+import { storage } from '../storage';
 
 const router = Router();
 
