@@ -40,42 +40,27 @@ export class OFIClassificationService {
     context?: any
   ): OFIClassificationResult {
     
-    // AUTO-DOWNGRADE CHECK: Check for workarounds first
-    const hasWorkaround = this.checkForWorkaround(name, description, context);
-    
-    // AUTO-DOWNGRADE CHECK: Check if affects small user base
-    const affectsSmallUserBase = (metrics.userBaseAffected ?? 0) < 10;
-    
-    // AUTO-DOWNGRADE CHECK: Check if performance impact is minimal
-    const minimalPerformanceImpact = (metrics.performanceImpact ?? 0) < 20;
-    
-    // AUTO-DOWNGRADE CHECK: Check if no quantifiable business impact
-    const noBusinessImpact = !metrics.revenueImpactPerDay || metrics.revenueImpactPerDay < 1000;
-    
     const criteriaMet = this.evaluateCriteria(metrics, name, description, context);
     const decisionTree = this.buildDecisionTree(criteriaMet, metrics);
     let priorityCriteriaCount = this.countPriorityCriteria(criteriaMet);
     
-    // Apply auto-downgrade rules
-    let downgradedReason = '';
-    if (hasWorkaround) {
-      priorityCriteriaCount = Math.min(priorityCriteriaCount, 1); // Cannot be Priority OFI
-      downgradedReason = 'Workaround available';
-    } else if (affectsSmallUserBase && noBusinessImpact) {
-      priorityCriteriaCount = Math.min(priorityCriteriaCount, 1);
-      downgradedReason = 'Affects <10% of users with no significant business impact';
-    } else if (minimalPerformanceImpact && noBusinessImpact) {
-      priorityCriteriaCount = Math.min(priorityCriteriaCount, 1);
-      downgradedReason = 'Performance impact <20% with no significant business impact';
+    // EMERGENCY FIX: Default to Standard OFI unless we have VERY strong evidence
+    let classification: 'Standard OFI' | 'Priority OFI' = 'Standard OFI';
+    let downgradedReason = 'Default classification for audit items';
+    
+    // Only classify as Priority OFI if we have 3+ criteria AND strong evidence
+    if (priorityCriteriaCount >= 3 && this.hasStrongEvidence(metrics, criteriaMet)) {
+      classification = 'Priority OFI';
+      downgradedReason = '';
+    } else if (priorityCriteriaCount >= 2) {
+      downgradedReason = 'Requires 3+ criteria with strong evidence for Priority OFI';
     }
     
-    // Must meet AT LEAST 2 criteria for Priority OFI
-    let classification: 'Standard OFI' | 'Priority OFI' = priorityCriteriaCount >= 2 ? 'Priority OFI' : 'Standard OFI';
-    
-    // Final safety check: Default to Standard OFI if uncertain
-    if (classification === 'Priority OFI' && !this.hasStrongEvidence(metrics, criteriaMet)) {
+    // Additional safety checks
+    const hasWorkaround = this.checkForWorkaround(name, description, context);
+    if (hasWorkaround) {
       classification = 'Standard OFI';
-      downgradedReason = 'Insufficient evidence for Priority OFI classification';
+      downgradedReason = 'Workaround available';
     }
     
     const justification = this.buildJustification(

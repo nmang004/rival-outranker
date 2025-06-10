@@ -347,12 +347,13 @@ router.post('/bulk-reclassify', requireAdmin, async (req: Request, res: Response
  */
 router.post('/reclassify-all-recent', requireAdmin, async (req: Request, res: Response) => {
   try {
-    // Get all audits from last 7 days
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const audits = await rivalAuditRepository.getAuditsByDateRange(sevenDaysAgo, new Date());
+    // Get all audits from last 30 days to cover more data
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const audits = await rivalAuditRepository.getAuditsByDateRange(thirtyDaysAgo, new Date());
     
     let totalProcessed = 0;
     let totalDowngraded = 0;
+    let totalConverted = 0; // OFI -> OK conversions
     const results = [];
     
     for (const audit of audits) {
@@ -369,20 +370,46 @@ router.post('/reclassify-all-recent', requireAdmin, async (req: Request, res: Re
       for (let i = 0; i < allItems.length; i++) {
         const item = allItems[i];
         
-        // Only process Priority OFI items
-        if (item.status === 'Priority OFI') {
+        // Process all OFI and Priority OFI items
+        if (item.status === 'Priority OFI' || item.status === 'OFI') {
           totalProcessed++;
           
-          const classificationResult = ofiClassificationService.classifyAuditItem(item);
-          const newStatus = classificationResult.classification === 'Priority OFI' ? 'Priority OFI' : 'OFI';
+          // EMERGENCY FIX: Apply conservative defaults
+          let newStatus = item.status;
+          let reason = '';
+          
+          // Convert most subjective items to OK
+          if (item.name.includes('appealing') || 
+              item.name.includes('intuitive') || 
+              item.name.includes('CTA') || 
+              item.name.includes('engaging') || 
+              item.name.includes('testimonials') ||
+              item.name.includes('meta description') ||
+              item.name.includes('H1') ||
+              item.name.includes('heading structure') ||
+              item.name.includes('schema') ||
+              item.name.includes('social media') ||
+              item.name.includes('favicon')) {
+            newStatus = 'OK';
+            reason = 'Emergency fix: Subjective criteria converted to OK';
+            totalConverted++;
+          }
+          // Downgrade all Priority OFI to Standard OFI unless critical
+          else if (item.status === 'Priority OFI') {
+            // Only keep as Priority OFI if it's truly critical
+            if (item.name.includes('HTTPS') && item.name.includes('security')) {
+              // Keep as Priority OFI for security issues
+            } else {
+              newStatus = 'OFI';
+              reason = 'Emergency fix: Downgraded from Priority OFI to Standard OFI';
+              totalDowngraded++;
+            }
+          }
           
           if (newStatus !== item.status) {
-            totalDowngraded++;
             auditChanged = true;
-            
-            // Update the item in place
             item.status = newStatus;
-            item.notes = (item.notes || '') + '\n\n[Auto-Reclassified] ' + classificationResult.justification;
+            item.notes = (item.notes || '') + `\n\n[Emergency Reclassification] ${reason}`;
           }
         }
       }
@@ -398,7 +425,7 @@ router.post('/reclassify-all-recent', requireAdmin, async (req: Request, res: Re
           auditId: audit.id,
           url: audit.url,
           totalItems: allItems.length,
-          priorityOFIBefore: allItems.filter(item => item.status === 'Priority OFI').length + totalDowngraded,
+          priorityOFIBefore: 'N/A',
           priorityOFIAfter: allItems.filter(item => item.status === 'Priority OFI').length
         });
       }
@@ -406,22 +433,23 @@ router.post('/reclassify-all-recent', requireAdmin, async (req: Request, res: Re
     
     res.json({
       success: true,
-      message: `Reclassified ${audits.length} audits from the last 7 days`,
+      message: `Emergency reclassification completed on ${audits.length} audits from the last 30 days`,
       data: {
         auditsProcessed: audits.length,
         auditsChanged: results.length,
         totalItemsProcessed: totalProcessed,
         totalDowngraded,
-        newPriorityOFIRate: totalProcessed > 0 ? ((totalProcessed - totalDowngraded) / totalProcessed * 100).toFixed(1) : 0,
+        totalConverted,
+        newPriorityOFIRate: totalProcessed > 0 ? (((totalProcessed - totalDowngraded - totalConverted) / totalProcessed) * 100).toFixed(1) : 0,
         results
       }
     });
     
   } catch (error) {
-    console.error('Error in bulk reclassification:', error);
+    console.error('Error in emergency reclassification:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to perform bulk reclassification'
+      error: 'Failed to perform emergency reclassification'
     });
   }
 });

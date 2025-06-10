@@ -93,8 +93,8 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the website appealing? Modern? (i.e. does not look out-of-date)",
       description: "The website should have a modern, professional design",
-      status: homepage.mobileFriendly ? 'OK' : 'OFI', // More lenient - only check mobile friendly
-      importance: 'High',
+      status: 'OK', // Default to OK - design is subjective and not broken
+      importance: 'Medium',
       notes: homepage.pageLoadSpeed.score < 50 ? "Page load speed is slow, which affects user experience" : undefined
     });
     
@@ -102,19 +102,19 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the website intuitive? Usable?",
       description: "Users should be able to easily navigate the site",
-      status: homepage.links.internal.length >= 3 ? 'OK' : 'OFI', // More lenient - 3+ links is OK
-      importance: 'High',
+      status: 'OK', // Default to OK - usability is subjective
+      importance: 'Medium',
       notes: homepage.links.internal.length > 100 ? "Too many navigation links may confuse users" : 
-             homepage.links.internal.length < 5 ? "Very few internal links found, navigation may be limited" : undefined
+             homepage.links.internal.length < 3 ? "Very few internal links found, navigation may be limited" : undefined
     });
     
     // Check for clear primary CTA
     items.push({
       name: "Is there a clear, primary CTA?",
       description: "The homepage should have a prominent call-to-action",
-      status: (homepage.hasContactForm || homepage.hasPhoneNumber || homepage.bodyText.toLowerCase().includes('contact')) ? 'OK' : 'OFI', // More lenient - any contact method
-      importance: 'High',
-      notes: !homepage.hasContactForm ? "No clear contact form or CTA found on homepage" : undefined
+      status: 'OK', // Default to OK - CTA presence is hard to measure automatically
+      importance: 'Medium',
+      notes: !homepage.hasContactForm && !homepage.hasPhoneNumber ? "No clear contact form or phone number found" : undefined
     });
     
     // Check if CTA stands out
@@ -139,7 +139,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the website load fast?",
       description: "Page load speed affects user experience and SEO",
-      status: homepage.pageLoadSpeed.score >= 30 ? 'OK' : 'OFI', // More lenient speed threshold
+      status: homepage.pageLoadSpeed.score >= 20 ? 'OK' : 'OFI', // Very lenient - only flag extremely slow sites
       importance: 'High',
       notes: `Page speed score: ${homepage.pageLoadSpeed.score}/100`
     });
@@ -152,7 +152,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is there quality, substantial content on the homepage?",
       description: "Homepage should have meaningful content",
-      status: homepage.wordCount >= 100 ? 'OK' : 'OFI', // More lenient - 100+ words is OK
+      status: homepage.wordCount >= 50 ? 'OK' : 'OFI', // Very lenient - 50+ words is OK
       importance: 'Medium',
       notes: `Word count: ${homepage.wordCount} words`
     });
@@ -187,7 +187,7 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have an optimized title tag?",
       description: "Title tag should be descriptive and contain target keywords",
-      status: homepage.title.length >= 10 ? 'OK' : 'OFI', // More lenient - any reasonable title is OK
+      status: homepage.title.length >= 5 ? 'OK' : 'OFI', // Very lenient - any title is OK
       importance: 'High',
       notes: `Title length: ${homepage.title.length} characters. Recommended: 30-60 characters.`
     });
@@ -196,8 +196,8 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have an optimized meta description?",
       description: "Meta description should be compelling and descriptive",
-      status: homepage.metaDescription ? 'OK' : 'OFI', // More lenient - any meta description is OK
-      importance: 'High',
+      status: 'OK', // Default to OK - meta description is nice to have but not critical
+      importance: 'Medium',
       notes: homepage.metaDescription ? 
         `Meta description length: ${homepage.metaDescription.length} characters. Recommended: 120-160 characters.` :
         "No meta description found"
@@ -207,8 +207,8 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have a clear H1 tag?",
       description: "H1 should clearly describe the page content",
-      status: homepage.h1s.length >= 1 ? 'OK' : 'OFI', // More lenient - any H1 is OK
-      importance: 'High',
+      status: 'OK', // Default to OK - H1 presence doesn't break functionality
+      importance: 'Medium',
       notes: `Found ${homepage.h1s.length} H1 tag(s)`
     });
     
@@ -216,8 +216,8 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is there a logical heading structure (H1, H2, H3)?",
       description: "Proper heading hierarchy improves SEO and accessibility",
-      status: homepage.h1s.length >= 1 ? 'OK' : 'OFI', // More lenient - just need H1
-      importance: 'Medium',
+      status: 'OK', // Default to OK - heading structure is an enhancement
+      importance: 'Low',
       notes: `Heading structure: ${homepage.h1s.length} H1s, ${homepage.h2s.length} H2s, ${homepage.h3s.length} H3s`
     });
     
@@ -404,9 +404,9 @@ export class AuditAnalyzerService {
       name: "Does the contact page have complete NAP (Name, Address, Phone)?",
       description: "NAP consistency is crucial for local SEO",
       status: contactPage.hasNAP ? 'OK' : 
-              (contactPage.hasPhoneNumber || contactPage.hasAddress) ? 'OFI' : 'Priority OFI',
+              (contactPage.hasPhoneNumber || contactPage.hasAddress) ? 'OFI' : 'OFI', // Never Priority OFI automatically
       importance: 'High',
-      notes: `Phone: ${contactPage.hasPhoneNumber ? 'Found' : 'Missing'}, Address: ${contactPage.hasAddress ? 'Found' : 'Missing'}. Priority OFI only if both missing.`
+      notes: `Phone: ${contactPage.hasPhoneNumber ? 'Found' : 'Missing'}, Address: ${contactPage.hasAddress ? 'Found' : 'Missing'}.`
     });
     
     // Check for contact form
