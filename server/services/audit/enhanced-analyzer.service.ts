@@ -3,7 +3,7 @@ import { PageCrawlResult, SiteStructure } from './audit.service';
 
 /**
  * Enhanced Audit Analyzer Service
- * Handles comprehensive analysis of 140+ SEO factors across all categories
+ * Handles comprehensive analysis of 200+ SEO factors across all categories
  */
 class EnhancedAuditAnalyzer {
   
@@ -20,10 +20,10 @@ class EnhancedAuditAnalyzer {
   private uxAnalyzer = new UXPerformanceAnalyzer();
 
   /**
-   * Perform comprehensive 140+ factor analysis on a website
+   * Perform comprehensive 200+ factor analysis on a website
    */
   async analyzeWebsite(siteStructure: SiteStructure): Promise<EnhancedAuditResult> {
-    console.log('[EnhancedAnalyzer] Starting comprehensive 140+ factor analysis');
+    console.log('[EnhancedAnalyzer] Starting comprehensive 200+ factor analysis');
     
     const results: EnhancedAuditResult = {
       summary: {
@@ -112,46 +112,46 @@ class EnhancedAuditAnalyzer {
 
   // Analysis merge methods
   private mergeAnalysisResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    // Merge content quality factors into on-page
-    results.onPage.items.push(...this.convertToAuditItems(analysis.contentQuality, 'Content Quality'));
+    // Merge content quality factors into on-page (with deduplication)
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality'));
     
-    // Merge technical SEO factors into structure & navigation
-    results.structureNavigation.items.push(...this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO'));
+    // Merge technical SEO factors into structure & navigation (with deduplication)
+    this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO'));
     
-    // Add local SEO factors to on-page
-    results.onPage.items.push(...this.convertToAuditItems(analysis.localSeo, 'Local SEO'));
+    // Add local SEO factors to on-page (with deduplication)
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO'));
     
-    // Add UX factors to on-page
-    results.onPage.items.push(...this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance'));
+    // Add UX factors to on-page (with deduplication)
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance'));
   }
 
   private mergeContactResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    results.contactPage.items.push(...this.convertToAuditItems(analysis.contentQuality, 'Contact Content'));
-    results.contactPage.items.push(...this.convertToAuditItems(analysis.localSeo, 'Contact Local SEO'));
-    results.contactPage.items.push(...this.convertToAuditItems(analysis.uxPerformance, 'Contact UX'));
+    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.contentQuality, 'Contact Content'));
+    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.localSeo, 'Contact Local SEO'));
+    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.uxPerformance, 'Contact UX'));
   }
 
   private mergeServiceResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    results.servicePages.items.push(...this.convertToAuditItems(analysis.contentQuality, 'Service Content'));
-    results.servicePages.items.push(...this.convertToAuditItems(analysis.technicalSeo, 'Service Technical'));
-    results.servicePages.items.push(...this.convertToAuditItems(analysis.localSeo, 'Service Local SEO'));
+    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Content'));
+    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.technicalSeo, 'Service Technical'));
+    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.localSeo, 'Service Local SEO'));
   }
 
   private mergeLocationResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    results.locationPages.items.push(...this.convertToAuditItems(analysis.contentQuality, 'Location Content'));
-    results.locationPages.items.push(...this.convertToAuditItems(analysis.localSeo, 'Location Local SEO'));
+    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.contentQuality, 'Location Content'));
+    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.localSeo, 'Location Local SEO'));
   }
 
   private mergeServiceAreaResults(results: EnhancedAuditResult, analysis: PageAnalysisResult) {
-    results.serviceAreaPages.items.push(...this.convertToAuditItems(analysis.contentQuality, 'Service Area Content'));
-    results.serviceAreaPages.items.push(...this.convertToAuditItems(analysis.localSeo, 'Service Area Local SEO'));
+    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Area Content'));
+    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.localSeo, 'Service Area Local SEO'));
   }
 
   private mergeSiteWideResults(results: EnhancedAuditResult, analysis: SiteWideAnalysisResult) {
-    results.structureNavigation.items.push(...this.convertToAuditItems(analysis.navigation, 'Navigation'));
-    results.structureNavigation.items.push(...this.convertToAuditItems(analysis.internalLinking, 'Internal Linking'));
-    results.onPage.items.push(...this.convertToAuditItems(analysis.contentConsistency, 'Content Consistency'));
-    results.onPage.items.push(...this.convertToAuditItems(analysis.duplicateContent, 'Duplicate Content'));
+    this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.navigation, 'Navigation'));
+    this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.internalLinking, 'Internal Linking'));
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.contentConsistency, 'Content Consistency'));
+    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.duplicateContent, 'Duplicate Content'));
   }
 
   /**
@@ -166,6 +166,43 @@ class EnhancedAuditAnalyzer {
       notes: factor.notes,
       category
     }));
+  }
+
+  /**
+   * Merge audit items while avoiding duplicates based on name
+   */
+  private mergeUniqueItems(targetItems: AuditItem[], newItems: AuditItem[]) {
+    for (const newItem of newItems) {
+      // Check if an item with the same name already exists
+      const existingIndex = targetItems.findIndex(item => item.name === newItem.name);
+      
+      if (existingIndex === -1) {
+        // Item doesn't exist, add it
+        targetItems.push(newItem);
+      } else {
+        // Item exists, merge the results intelligently
+        const existingItem = targetItems[existingIndex];
+        
+        // Combine notes if both have different information
+        if (newItem.notes && existingItem.notes !== newItem.notes) {
+          existingItem.notes = `${existingItem.notes} | ${newItem.notes}`;
+        } else if (newItem.notes && !existingItem.notes) {
+          existingItem.notes = newItem.notes;
+        }
+        
+        // Use the worst status (Priority OFI > OFI > OK > N/A)
+        const statusPriority = { 'Priority OFI': 0, 'OFI': 1, 'OK': 2, 'N/A': 3 };
+        if (statusPriority[newItem.status] < statusPriority[existingItem.status]) {
+          existingItem.status = newItem.status;
+        }
+        
+        // Use the highest importance
+        const importancePriority = { 'High': 0, 'Medium': 1, 'Low': 2 };
+        if (importancePriority[newItem.importance] < importancePriority[existingItem.importance]) {
+          existingItem.importance = newItem.importance;
+        }
+      }
+    }
   }
 
   /**
@@ -495,8 +532,8 @@ class ContentQualityAnalyzer {
     // Keyword Density Analysis
     factors.push(await this.analyzeKeywordDensity(page.bodyText));
     
-    // CTA Analysis
-    factors.push(await this.analyzeCTAs($));
+    // CTA Analysis (comprehensive)
+    factors.push(await this.analyzeCallToActionComprehensive($));
     
     // Review/Testimonial Analysis
     factors.push(await this.analyzeReviewsTestimonials($));
@@ -507,7 +544,7 @@ class ContentQualityAnalyzer {
     // Content Uniqueness
     factors.push(await this.analyzeContentUniqueness(page.bodyText));
     
-    // Additional Content Quality Factors
+    // Additional Content Quality Factors (removed duplicates)
     factors.push(await this.analyzeHeadingStructure($));
     factors.push(await this.analyzeImageContent($));
     factors.push(await this.analyzeVideoContent($));
@@ -516,7 +553,6 @@ class ContentQualityAnalyzer {
     factors.push(await this.analyzeContentRelevance(page.bodyText, page.url));
     factors.push(await this.analyzeContentEngagement($));
     factors.push(await this.analyzeSocialProof($));
-    factors.push(await this.analyzeCallToActionQuality($));
     factors.push(await this.analyzeContentScannability($));
     factors.push(await this.analyzeContentTone(page.bodyText));
     factors.push(await this.analyzeMultimediaUsage($));
@@ -559,14 +595,17 @@ class ContentQualityAnalyzer {
     };
   }
 
-  private async analyzeCTAs($: cheerio.CheerioAPI): Promise<AnalysisFactor> {
+  private async analyzeCallToActionComprehensive($: cheerio.CheerioAPI): Promise<AnalysisFactor> {
     const ctaElements = this.detectCTAs($);
+    const ctaQuality = this.assessCTAQuality($);
+    const combinedScore = (ctaElements >= 2 ? 50 : ctaElements >= 1 ? 30 : 0) + (ctaQuality >= 60 ? 50 : ctaQuality >= 30 ? 30 : 0);
+    
     return {
-      name: "Clear Call-to-Action Elements",
-      description: "Page should have prominent, clear calls-to-action",
-      status: ctaElements >= 2 ? "OK" : ctaElements >= 1 ? "OFI" : "Priority OFI",
+      name: "Call-to-Action Optimization",
+      description: "Page should have prominent, clear, and compelling calls-to-action",
+      status: combinedScore >= 80 ? "OK" : combinedScore >= 50 ? "OFI" : "Priority OFI",
       importance: "High",
-      notes: `Found ${ctaElements} CTA elements. Recommended: 2+ clear CTAs per page.`
+      notes: `Found ${ctaElements} CTA elements with ${ctaQuality.toFixed(1)}% quality score. Optimize quantity and compelling language.`
     };
   }
 
@@ -670,6 +709,16 @@ class ContentQualityAnalyzer {
     ctaCount += $('form').length;
     
     return ctaCount;
+  }
+
+  private assessCTAQuality($: cheerio.CheerioAPI): number {
+    const ctas = $('button, [class*="cta"], [class*="button"]');
+    const strongCTAs = ctas.filter((_, el) => {
+      const text = $(el).text().toLowerCase();
+      return ['call now', 'get quote', 'schedule', 'contact us', 'book', 'start'].some(strong => text.includes(strong));
+    });
+    
+    return ctas.length > 0 ? (strongCTAs.length / ctas.length) * 100 : 0;
   }
 
   private detectReviewsTestimonials($: cheerio.CheerioAPI): boolean {
@@ -835,23 +884,6 @@ class ContentQualityAnalyzer {
     };
   }
 
-  private async analyzeCallToActionQuality($: cheerio.CheerioAPI): Promise<AnalysisFactor> {
-    const ctas = $('button, [class*="cta"], [class*="button"]');
-    const strongCTAs = ctas.filter((_, el) => {
-      const text = $(el).text().toLowerCase();
-      return ['call now', 'get quote', 'schedule', 'contact us', 'book', 'start'].some(strong => text.includes(strong));
-    });
-    
-    const ctaQuality = ctas.length > 0 ? (strongCTAs.length / ctas.length) * 100 : 0;
-    
-    return {
-      name: "Call-to-Action Quality and Clarity",
-      description: "CTAs should be clear, compelling, and action-oriented",
-      status: ctaQuality >= 60 ? "OK" : ctaQuality >= 30 ? "OFI" : "Priority OFI",
-      importance: "High",
-      notes: `${strongCTAs.length}/${ctas.length} CTAs use strong action words (${ctaQuality.toFixed(1)}%).`
-    };
-  }
 
   private async analyzeContentScannability($: cheerio.CheerioAPI): Promise<AnalysisFactor> {
     const bullets = $('ul li, ol li').length;
@@ -961,8 +993,7 @@ class TechnicalSEOAnalyzer {
     // Meta Tags Analysis
     factors.push(await this.analyzeMetaTags(page));
     
-    // Heading Structure Analysis
-    factors.push(await this.analyzeHeadingStructure(page.headings));
+    // Note: Heading structure analysis moved to ContentQualityAnalyzer to avoid duplication
     
     // Image Optimization
     factors.push(await this.analyzeImageOptimization(page.images));

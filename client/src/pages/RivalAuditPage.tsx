@@ -115,7 +115,7 @@ export default function RivalAuditPage() {
                       <div className="space-y-1 leading-none">
                         <FormLabel className="flex items-center font-medium">
                           <Zap className="w-4 h-4 mr-2 text-primary" />
-                          Enhanced Audit (140+ Factors)
+                          Enhanced Audit (200+ Factors)
                         </FormLabel>
                         <p className="text-sm text-muted-foreground">
                           Perform comprehensive analysis including content quality, advanced technical SEO, 
@@ -165,7 +165,7 @@ export default function RivalAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Standard audit evaluates 44 key SEO factors. Enhanced audit analyzes 140+ factors including content quality, E-E-A-T signals, and advanced technical metrics.
+                Standard audit evaluates 44 key SEO factors. Enhanced audit analyzes 200+ factors including content quality, E-E-A-T signals, and advanced technical metrics.
               </p>
             </CardContent>
           </Card>
