@@ -50,6 +50,10 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   // Chart refs for export functionality
   const pieChartRef = useRef<HTMLDivElement>(null);
   const barChartRef = useRef<HTMLDivElement>(null);
+  
+  // Check if this is an enhanced audit
+  const isEnhancedAudit = 'totalFactors' in audit.summary;
+  
   // Calculate total issues for each category
   const getCategoryTotals = (categoryItems: any[]) => {
     return {
@@ -61,6 +65,59 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     };
   };
 
+  // Enhanced audit categories based on item categories
+  const getEnhancedCategories = () => {
+    if (!isEnhancedAudit) return null;
+    
+    const allItems = [
+      ...audit.onPage.items,
+      ...audit.structureNavigation.items,
+      ...audit.contactPage.items,
+      ...audit.servicePages.items,
+      ...audit.locationPages.items,
+      ...(audit.serviceAreaPages?.items || [])
+    ];
+    
+    return {
+      contentQuality: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('Content Quality') ||
+          item.category.includes('Content') ||
+          item.category.includes('Readability') ||
+          item.category.includes('Engagement')
+        )
+      ),
+      technicalSEO: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('Technical SEO') ||
+          item.category.includes('Technical') ||
+          item.category.includes('Schema') ||
+          item.category.includes('URL') ||
+          item.category.includes('Meta')
+        )
+      ),
+      localSEO: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('Local SEO') ||
+          item.category.includes('Local') ||
+          item.category.includes('NAP') ||
+          item.category.includes('E-E-A-T')
+        )
+      ),
+      uxPerformance: allItems.filter(item => 
+        'category' in item && item.category && (
+          item.category.includes('UX') ||
+          item.category.includes('Performance') ||
+          item.category.includes('Mobile') ||
+          item.category.includes('Accessibility')
+        )
+      )
+    };
+  };
+
+  const enhancedCategories = getEnhancedCategories();
+
+  // Legacy category totals
   const onPageTotals = getCategoryTotals(audit.onPage.items);
   const structureTotals = getCategoryTotals(audit.structureNavigation.items);
   const contactTotals = getCategoryTotals(audit.contactPage.items);
@@ -69,6 +126,12 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   const serviceAreaTotals = audit.serviceAreaPages
     ? getCategoryTotals(audit.serviceAreaPages.items)
     : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
+
+  // Enhanced category totals
+  const contentQualityTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.contentQuality) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
+  const technicalSEOTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.technicalSEO) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
+  const localSEOTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.localSEO) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
+  const uxPerformanceTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.uxPerformance) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
 
   // Get category progress as percentage (excluding N/A items)
   const getCategoryProgress = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }) => {
@@ -104,7 +167,36 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   // Ensure we have at least a minimal value (0.1) for all categories to ensure they display
   const ensureMinValue = (val: number) => val === 0 ? 0.1 : val;
   
-  const categoryComparisonData = [
+  const categoryComparisonData = isEnhancedAudit ? [
+    {
+      name: 'Content Quality',
+      'Priority Issues': ensureMinValue(contentQualityTotals.priorityOfi),
+      'Opportunities': ensureMinValue(contentQualityTotals.ofi),
+      'Completed': ensureMinValue(contentQualityTotals.ok),
+      'Not Applicable': ensureMinValue(contentQualityTotals.na),
+    },
+    {
+      name: 'Technical SEO',
+      'Priority Issues': ensureMinValue(technicalSEOTotals.priorityOfi),
+      'Opportunities': ensureMinValue(technicalSEOTotals.ofi),
+      'Completed': ensureMinValue(technicalSEOTotals.ok),
+      'Not Applicable': ensureMinValue(technicalSEOTotals.na),
+    },
+    {
+      name: 'Local SEO & E-E-A-T',
+      'Priority Issues': ensureMinValue(localSEOTotals.priorityOfi),
+      'Opportunities': ensureMinValue(localSEOTotals.ofi),
+      'Completed': ensureMinValue(localSEOTotals.ok),
+      'Not Applicable': ensureMinValue(localSEOTotals.na),
+    },
+    {
+      name: 'UX & Performance',
+      'Priority Issues': ensureMinValue(uxPerformanceTotals.priorityOfi),
+      'Opportunities': ensureMinValue(uxPerformanceTotals.ofi),
+      'Completed': ensureMinValue(uxPerformanceTotals.ok),
+      'Not Applicable': ensureMinValue(uxPerformanceTotals.na),
+    },
+  ] : [
     {
       name: 'On-Page',
       'Priority Issues': ensureMinValue(onPageTotals.priorityOfi),
@@ -142,7 +234,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     },
   ];
 
-  if (audit.serviceAreaPages) {
+  if (!isEnhancedAudit && audit.serviceAreaPages) {
     categoryComparisonData.push({
       name: 'Service Areas',
       'Priority Issues': ensureMinValue(serviceAreaTotals.priorityOfi),
@@ -153,7 +245,28 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   }
 
   // Prepare data for completion progress chart
-  const completionProgressData = [
+  const completionProgressData = isEnhancedAudit ? [
+    {
+      name: 'Content Quality',
+      progress: Math.round(getCategoryProgress(contentQualityTotals)),
+      icon: <FileText className="h-4 w-4 text-primary" />,
+    },
+    {
+      name: 'Technical SEO',
+      progress: Math.round(getCategoryProgress(technicalSEOTotals)),
+      icon: <ClipboardCheck className="h-4 w-4 text-primary" />,
+    },
+    {
+      name: 'Local SEO & E-E-A-T',
+      progress: Math.round(getCategoryProgress(localSEOTotals)),
+      icon: <Phone className="h-4 w-4 text-primary" />,
+    },
+    {
+      name: 'UX & Performance',
+      progress: Math.round(getCategoryProgress(uxPerformanceTotals)),
+      icon: <Briefcase className="h-4 w-4 text-primary" />,
+    },
+  ] : [
     {
       name: 'On-Page',
       progress: Math.round(getCategoryProgress(onPageTotals)),
@@ -181,7 +294,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     },
   ];
 
-  if (audit.serviceAreaPages) {
+  if (!isEnhancedAudit && audit.serviceAreaPages) {
     completionProgressData.push({
       name: 'Service Areas',
       progress: Math.round(getCategoryProgress(serviceAreaTotals)),
@@ -189,23 +302,36 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     });
   }
 
-  // Generate critical issues list
-  const criticalIssues = [
-    ...audit.onPage.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, category: 'On-Page' })),
-    ...audit.structureNavigation.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, category: 'Structure' })),
-    ...audit.contactPage.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, category: 'Contact' })),
-    ...audit.servicePages.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, category: 'Services' })),
-    ...audit.locationPages.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, category: 'Locations' })),
+  // Generate critical issues list  
+  const criticalIssues = isEnhancedAudit && enhancedCategories ? [
+    ...enhancedCategories.contentQuality.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Content Quality' })),
+    ...enhancedCategories.technicalSEO.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Technical SEO' })),
+    ...enhancedCategories.localSEO.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Local SEO & E-E-A-T' })),
+    ...enhancedCategories.uxPerformance.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'UX & Performance' })),
+  ] : [
+    ...audit.onPage.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'On-Page' })),
+    ...audit.structureNavigation.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Structure' })),
+    ...audit.contactPage.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Contact' })),
+    ...audit.servicePages.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Services' })),
+    ...audit.locationPages.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Locations' })),
   ];
 
-  if (audit.serviceAreaPages) {
+  if (!isEnhancedAudit && audit.serviceAreaPages) {
     criticalIssues.push(
-      ...audit.serviceAreaPages.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, category: 'Service Areas' }))
+      ...audit.serviceAreaPages.items.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Service Areas' }))
     );
   }
 
   // Calculate total audit progress
-  const totalRelevantItems = 
+  const isEnhancedAuditWithCategories = enhancedCategories !== null;
+  
+  const totalRelevantItems = isEnhancedAuditWithCategories && enhancedCategories ? 
+    // Enhanced audit calculation
+    (contentQualityTotals.total - contentQualityTotals.na) +
+    (technicalSEOTotals.total - technicalSEOTotals.na) +
+    (localSEOTotals.total - localSEOTotals.na) +
+    (uxPerformanceTotals.total - uxPerformanceTotals.na) :
+    // Legacy audit calculation
     onPageTotals.total - onPageTotals.na +
     structureTotals.total - structureTotals.na +
     contactTotals.total - contactTotals.na +
@@ -213,7 +339,13 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     locationTotals.total - locationTotals.na +
     (serviceAreaTotals.total - serviceAreaTotals.na);
   
-  const totalCompletedItems =
+  const totalCompletedItems = isEnhancedAuditWithCategories && enhancedCategories ?
+    // Enhanced audit calculation
+    contentQualityTotals.ok +
+    technicalSEOTotals.ok +
+    localSEOTotals.ok +
+    uxPerformanceTotals.ok :
+    // Legacy audit calculation
     onPageTotals.ok +
     structureTotals.ok +
     contactTotals.ok +
@@ -225,8 +357,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     ? (totalCompletedItems / totalRelevantItems) * 100 
     : 0;
 
-  // Check if this is an enhanced audit (140+ factors)
-  const isEnhancedAudit = 'totalFactors' in audit.summary || (audit as any).type === 'enhanced';
+  // Get total factors for display
   const totalFactors = isEnhancedAudit && 'totalFactors' in audit.summary 
     ? audit.summary.totalFactors 
     : updatedSummary?.total || ('total' in audit.summary ? audit.summary.total : 0);
@@ -238,17 +369,17 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle>
-              {isEnhancedAudit ? 'Enhanced ' : ''}SEO Health & Performance Dashboard
+              {isEnhancedAudit || isEnhancedAuditWithCategories ? 'Enhanced ' : ''}SEO Health & Performance Dashboard
             </CardTitle>
             <CardDescription>
               Comprehensive view of website's SEO health with {totalFactors} analyzed factors
-              {isEnhancedAudit && ' including advanced content quality, technical SEO, and E-E-A-T analysis'}
+              {(isEnhancedAudit || isEnhancedAuditWithCategories) && ' including advanced content quality, technical SEO, and E-E-A-T analysis'}
             </CardDescription>
           </div>
           <ChartExport 
             chartRef={pieChartRef}
-            filename={isEnhancedAudit ? "enhanced-seo-health-performance-dashboard" : "seo-health-performance-dashboard"}
-            title={`Export ${isEnhancedAudit ? 'Enhanced ' : ''}SEO Dashboard`}
+            filename={(isEnhancedAudit || isEnhancedAuditWithCategories) ? "enhanced-seo-health-performance-dashboard" : "seo-health-performance-dashboard"}
+            title={`Export ${(isEnhancedAudit || isEnhancedAuditWithCategories) ? 'Enhanced ' : ''}SEO Dashboard`}
             size="sm"
           />
         </CardHeader>
@@ -271,7 +402,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className="col-span-1">
                   <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
-                    {isEnhancedAudit ? 'Enhanced ' : ''}SEO Issue Distribution
+                    {(isEnhancedAudit || isEnhancedAuditWithCategories) ? 'Enhanced ' : ''}SEO Issue Distribution
                   </div>
                   <div className="h-[200px] sm:h-[250px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -435,7 +566,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                     <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
                     <div>
                       <div className="font-medium">{issue.name}</div>
-                      <div className="text-sm text-muted-foreground">{issue.category}</div>
+                      <div className="text-sm text-muted-foreground">{(issue as any).categoryLabel || (issue as any).category}</div>
                       {issue.notes && (
                         <div className="mt-1 text-sm">{issue.notes}</div>
                       )}
