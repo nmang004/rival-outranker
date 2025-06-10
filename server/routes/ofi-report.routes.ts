@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { RivalAuditRepository } from '../repositories/rival-audit.repository';
 import { AuditAnalyzerService } from '../services/audit/analyzer.service';
 import { OFIClassificationService } from '../services/audit/ofi-classification.service';
-import { adminOnly } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 
 const router = Router();
 const rivalAuditRepository = new RivalAuditRepository();
@@ -13,7 +13,7 @@ const ofiClassificationService = new OFIClassificationService();
  * GET /api/ofi-reports/weekly
  * Generate weekly OFI classification report
  */
-router.get('/weekly', adminOnly, async (req: Request, res: Response) => {
+router.get('/weekly', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
     
@@ -156,7 +156,7 @@ router.get('/weekly', adminOnly, async (req: Request, res: Response) => {
  * POST /api/ofi-reports/reclassify/:auditId
  * Reclassify an audit using new OFI classification system
  */
-router.post('/reclassify/:auditId', adminOnly, async (req: Request, res: Response) => {
+router.post('/reclassify/:auditId', requireAdmin, async (req: Request, res: Response) => {
   try {
     const { auditId } = req.params;
     
@@ -238,7 +238,7 @@ router.post('/reclassify/:auditId', adminOnly, async (req: Request, res: Respons
  * GET /api/ofi-reports/classification-metrics
  * Get overall classification system health metrics
  */
-router.get('/classification-metrics', adminOnly, async (req: Request, res: Response) => {
+router.get('/classification-metrics', requireAdmin, async (req: Request, res: Response) => {
   try {
     // Get recent audits (last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
