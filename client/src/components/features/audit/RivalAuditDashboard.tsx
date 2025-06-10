@@ -72,7 +72,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   // Get category progress as percentage (excluding N/A items)
   const getCategoryProgress = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }) => {
     const relevantItems = totals.total - totals.na;
-    return relevantItems > 0 ? (totals.ok / relevantItems) * 100 : 0;
+    return relevantItems > 0 ? Math.round((totals.ok / relevantItems) * 100) : 0;
   };
 
   // Prepare data for status distribution chart, using updatedSummary if available

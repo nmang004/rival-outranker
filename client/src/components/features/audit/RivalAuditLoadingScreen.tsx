@@ -65,7 +65,7 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
       totalElapsed += duration;
       const timer = setTimeout(() => {
         setActiveStep(index + 1);
-        setProgress(Math.min(((index + 1) / 6) * 100, 95)); // Cap at 95% until completion
+        setProgress(Math.min(Math.round(((index + 1) / 6) * 100), 95)); // Cap at 95% until completion
       }, totalElapsed);
       timers.push(timer);
     });
