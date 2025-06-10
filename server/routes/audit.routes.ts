@@ -86,6 +86,20 @@ router.post("/enhanced", async (req: Request, res: Response) => {
     
     console.log('🆔 Created enhanced audit ID:', auditRecord.id);
     
+    // Verify audit was created successfully with retry logic
+    let verifyAudit = await rivalAuditRepository.getAudit(auditRecord.id);
+    if (!verifyAudit) {
+      console.log('⏳ Audit not immediately available, retrying in 100ms...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      verifyAudit = await rivalAuditRepository.getAudit(auditRecord.id);
+    }
+    
+    if (!verifyAudit) {
+      console.error('❌ Failed to verify enhanced audit creation after retry:', auditRecord.id);
+      return res.status(500).json({ error: "Failed to create audit record" });
+    }
+    console.log('✅ Verified enhanced audit exists in database:', auditRecord.id);
+    
     // Return the audit ID immediately
     const response = { 
       id: auditRecord.id, 
@@ -183,6 +197,20 @@ router.post("/", async (req: Request, res: Response) => {
     });
     
     console.log('🆔 Created audit ID:', auditRecord.id);
+    
+    // Verify audit was created successfully with retry logic
+    let verifyAudit = await rivalAuditRepository.getAudit(auditRecord.id);
+    if (!verifyAudit) {
+      console.log('⏳ Audit not immediately available, retrying in 100ms...');
+      await new Promise(resolve => setTimeout(resolve, 100));
+      verifyAudit = await rivalAuditRepository.getAudit(auditRecord.id);
+    }
+    
+    if (!verifyAudit) {
+      console.error('❌ Failed to verify audit creation after retry:', auditRecord.id);
+      return res.status(500).json({ error: "Failed to create audit record" });
+    }
+    console.log('✅ Verified audit exists in database:', auditRecord.id);
     
     // Return the audit ID immediately
     const response = { 
@@ -455,15 +483,33 @@ router.get("/:id", async (req: Request, res: Response) => {
     const auditId = parseInt(req.params.id);
     
     if (isNaN(auditId)) {
+      console.log(`❌ Invalid audit ID format: ${req.params.id}`);
       return res.status(400).json({ error: "Invalid audit ID" });
     }
+    
+    console.log(`🔍 Looking up audit ID: ${auditId}`);
     
     // Get audit from database
     const auditRecord = await rivalAuditRepository.getAudit(auditId);
     
     if (!auditRecord) {
-      return res.status(404).json({ error: "Audit not found" });
+      console.log(`❌ Audit not found in database: ${auditId}`);
+      
+      // Check if audit exists in any state for debugging
+      const allAudits = await rivalAuditRepository.getAuditStats();
+      console.log(`📊 Current audit stats:`, allAudits);
+      
+      return res.status(404).json({ 
+        error: "Audit not found",
+        auditId: auditId,
+        debug: {
+          totalAudits: allAudits.total,
+          processingAudits: allAudits.processing
+        }
+      });
     }
+    
+    console.log(`✅ Found audit: ${auditId}, status: ${auditRecord.status}`);
     
     // If still processing, return 202 with status info
     if (auditRecord.status === 'processing') {

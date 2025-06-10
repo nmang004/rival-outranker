@@ -22,36 +22,61 @@ export class RivalAuditRepository {
    * Create a new rival audit record
    */
   async createAudit(auditData: InsertRivalAuditRecord): Promise<RivalAuditRecord> {
-    const database = this.getDatabase();
-    
-    // Set expiration to 10 minutes from now
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
-    
-    const [audit] = await database
-      .insert(rivalAudits)
-      .values({
-        ...auditData,
-        expiresAt,
-        status: auditData.status || 'pending'
-      })
-      .returning();
-    
-    return audit;
+    try {
+      const database = this.getDatabase();
+      
+      // Set expiration to 10 minutes from now
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+      
+      console.log('💾 Creating audit record in database...', {
+        url: auditData.url,
+        status: auditData.status || 'pending',
+        userId: auditData.userId
+      });
+      
+      const [audit] = await database
+        .insert(rivalAudits)
+        .values({
+          ...auditData,
+          expiresAt,
+          status: auditData.status || 'pending'
+        })
+        .returning();
+      
+      console.log('✅ Successfully created audit record:', audit.id);
+      return audit;
+    } catch (error) {
+      console.error('❌ Failed to create audit record:', error);
+      throw new Error(`Failed to create audit: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Get an audit by ID
    */
   async getAudit(id: number): Promise<RivalAuditRecord | undefined> {
-    const database = this.getDatabase();
-    
-    const [audit] = await database
-      .select()
-      .from(rivalAudits)
-      .where(eq(rivalAudits.id, id));
-    
-    return audit;
+    try {
+      const database = this.getDatabase();
+      
+      console.log(`🔍 Querying database for audit ID: ${id}`);
+      
+      const [audit] = await database
+        .select()
+        .from(rivalAudits)
+        .where(eq(rivalAudits.id, id));
+      
+      if (audit) {
+        console.log(`✅ Found audit in database: ${id}, status: ${audit.status}, created: ${audit.createdAt}`);
+      } else {
+        console.log(`❌ Audit not found in database: ${id}`);
+      }
+      
+      return audit;
+    } catch (error) {
+      console.error(`❌ Database error querying audit ${id}:`, error);
+      throw new Error(`Failed to get audit: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
