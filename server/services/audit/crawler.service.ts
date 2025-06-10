@@ -1272,12 +1272,12 @@ class Crawler {
         const newLinksThisRound: string[] = [];
         
         for (const { url, result, error } of parallelResults) {
-          crawledCount++;
-          
           if (error || (result && result.error)) {
             this.stats.errorsEncountered++;
             console.log(`[Crawler] Error crawling ${url}: ${error || result.error}`);
           } else if (result) {
+            // Only increment crawledCount for successful crawls
+            crawledCount++;
             const pageResult = this.convertToPageCrawlResult(result);
             otherPages.push(pageResult);
             this.stats.pagesCrawled++;
@@ -1302,6 +1302,21 @@ class Crawler {
         discoveredNewLinks = uniqueNewLinks.length > 0;
         
         console.log(`[Crawler] Found ${uniqueNewLinks.length} new links, ${this.pendingUrls.length} URLs remaining in queue`);
+        console.log(`[Crawler] Loop status: crawledCount=${crawledCount}, MAX_PAGES=${this.MAX_PAGES}, pendingUrls=${this.pendingUrls.length}, discoveredNewLinks=${discoveredNewLinks}`);
+        
+        // Add explicit loop termination debugging
+        if (crawledCount >= this.MAX_PAGES) {
+          console.log(`[Crawler] Stopping crawl: reached MAX_PAGES limit (${this.MAX_PAGES})`);
+          break;
+        }
+        if (this.pendingUrls.length === 0) {
+          console.log(`[Crawler] Stopping crawl: no more URLs in queue`);
+          break;
+        }
+        if (!discoveredNewLinks) {
+          console.log(`[Crawler] Stopping crawl: no new links discovered in this round`);
+          break;
+        }
       }
 
       // Check for sitemap.xml
@@ -1323,7 +1338,7 @@ class Crawler {
         reachedMaxPages: crawledCount >= this.MAX_PAGES
       };
 
-      console.log(`[Crawler] Site crawl completed. Pages crawled: ${this.stats.pagesCrawled}, Errors: ${this.stats.errorsEncountered}`);
+      console.log(`[Crawler] Site crawl completed. Pages crawled: ${this.stats.pagesCrawled}, Errors: ${this.stats.errorsEncountered}, URLs remaining: ${this.pendingUrls.length}`);
       return result;
 
     } catch (error) {
@@ -1375,16 +1390,24 @@ class Crawler {
       
       // Process results
       for (const { url, result, error } of parallelResults) {
-        crawledCount++;
-        
         if (error || (result && result.error)) {
           this.stats.errorsEncountered++;
           console.log(`[Crawler] Error in continued crawl ${url}: ${error || result.error}`);
         } else if (result) {
+          // Only increment crawledCount for successful crawls
+          crawledCount++;
           const pageResult = this.convertToPageCrawlResult(result);
           otherPages.push(pageResult);
           this.stats.pagesCrawled++;
         }
+      }
+      
+      console.log(`[Crawler] Continue crawl status: crawledCount=${crawledCount}, MAX_PAGES=${this.MAX_PAGES}, pendingUrls=${this.pendingUrls.length}`);
+      
+      // Add explicit termination condition check
+      if (crawledCount >= this.MAX_PAGES) {
+        console.log(`[Crawler] Stopping continued crawl: reached MAX_PAGES limit (${this.MAX_PAGES})`);
+        break;
       }
     }
 
