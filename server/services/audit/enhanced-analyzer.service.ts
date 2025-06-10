@@ -5,7 +5,7 @@ import { PageCrawlResult, SiteStructure } from './audit.service';
  * Enhanced Audit Analyzer Service
  * Handles comprehensive analysis of 140+ SEO factors across all categories
  */
-export class EnhancedAuditAnalyzer {
+class EnhancedAuditAnalyzer {
   
   // Content Quality Analysis
   private contentAnalyzer = new ContentQualityAnalyzer();
