@@ -81,9 +81,9 @@ export function OFIClassificationAdmin() {
       const data = await response.json();
       
       toast({
-        title: "Reclassification Complete!",
-        description: `Successfully processed ${data.data.auditsProcessed} audits. Downgraded ${data.data.totalDowngraded} Priority OFI items. New rate: ${data.data.newPriorityOFIRate}%`,
-        duration: 5000,
+        title: "Emergency Reclassification Complete!",
+        description: `Successfully processed ${data.data.auditsProcessed} audits. Downgraded ${data.data.totalDowngraded} Priority OFI items, converted ${data.data.totalConverted || 0} items to OK. New Priority OFI rate: ${data.data.newPriorityOFIRate}%`,
+        duration: 7000,
       });
       
       fetchMetrics(); // Refresh metrics
