@@ -114,7 +114,7 @@ test.describe('Critical User Journeys', () => {
       await page.fill('input[name="lastName"]', 'TestUser');
       await page.fill('input[name="username"]', 'persistentuser');
       await page.click('button[type="submit"]');
-      await page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (error) {
       // User might already exist, continue to login
     }

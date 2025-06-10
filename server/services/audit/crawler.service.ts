@@ -1021,7 +1021,7 @@ class Crawler {
         });
         
         // Wait a bit for dynamic content to load
-        await page.waitForTimeout(2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Extract page data
         const data = await page.evaluate(() => {
