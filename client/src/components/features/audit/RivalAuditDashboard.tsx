@@ -66,10 +66,21 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     };
   };
 
-  // Enhanced audit categories based on item categories
+  // Enhanced audit categories - use dedicated enhanced categories if available
   const getEnhancedCategories = () => {
     if (!isEnhancedAudit) return null;
     
+    // Check if audit has dedicated enhanced categories
+    if ('contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit) {
+      return {
+        contentQuality: (audit as any).contentQuality?.items || [],
+        technicalSEO: (audit as any).technicalSEO?.items || [],
+        localSEO: (audit as any).localSEO?.items || [],
+        uxPerformance: (audit as any).uxPerformance?.items || []
+      };
+    }
+    
+    // Fallback: categorize from legacy sections by category field
     const allItems = [
       ...audit.onPage.items,
       ...audit.structureNavigation.items,

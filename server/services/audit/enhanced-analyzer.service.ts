@@ -120,6 +120,7 @@ class EnhancedAuditAnalyzer {
     this.calculateWeightedSummary(results, siteStructure, overrides);
 
     console.log(`[EnhancedAnalyzer] Completed analysis: ${results.summary.totalFactors} factors evaluated`);
+    console.log(`[EnhancedAnalyzer] Enhanced categories: Content Quality (${results.contentQuality?.items.length || 0}), Technical SEO (${results.technicalSEO?.items.length || 0}), Local SEO (${results.localSEO?.items.length || 0}), UX Performance (${results.uxPerformance?.items.length || 0})`);
     return results;
   }
 
