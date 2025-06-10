@@ -433,15 +433,22 @@ class EnhancedAuditAnalyzer {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       
-      // Only reclassify OFI items - let OK and N/A items stay as they are
-      if (item.status === 'OFI') {
+      // Reclassify both OFI and Priority OFI items - let OK and N/A items stay as they are
+      if (item.status === 'OFI' || item.status === 'Priority OFI') {
         const classificationResult = ofiClassificationService.classifyAuditItem(item);
         
         // Update status based on new classification
-        item.status = classificationResult.classification === 'Priority OFI' ? 'Priority OFI' : 'OFI';
+        const newStatus = classificationResult.classification === 'Priority OFI' ? 'Priority OFI' : 'OFI';
+        const wasDowngraded = item.status === 'Priority OFI' && newStatus === 'OFI';
+        
+        item.status = newStatus;
         
         // Add classification justification to notes
         if (classificationResult.classification === 'Priority OFI') {
+          item.notes = (item.notes || '') + `\n\n[Enhanced Classification] ${classificationResult.justification}`;
+        } else if (wasDowngraded) {
+          item.notes = (item.notes || '') + `\n\n[Enhanced Classification] Downgraded from Priority OFI: ${classificationResult.justification}`;
+        } else {
           item.notes = (item.notes || '') + `\n\n[Enhanced Classification] ${classificationResult.justification}`;
         }
       }
