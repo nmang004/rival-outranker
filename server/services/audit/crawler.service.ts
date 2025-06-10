@@ -1254,9 +1254,8 @@ class Crawler {
       // Crawl additional pages using parallel processing
       const otherPages: any[] = [];
       let crawledCount = 1; // Already crawled homepage
-      let discoveredNewLinks = true;
 
-      while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES && discoveredNewLinks) {
+      while (this.pendingUrls.length > 0 && crawledCount < this.MAX_PAGES) {
         // Get batch of URLs to process in parallel
         const urlsToProcess = this.pendingUrls
           .filter(url => !this.crawledUrls.has(url))
@@ -1307,10 +1306,9 @@ class Crawler {
           .filter(link => !this.crawledUrls.has(link) && !this.pendingUrls.includes(link));
         
         this.pendingUrls.push(...uniqueNewLinks);
-        discoveredNewLinks = uniqueNewLinks.length > 0;
         
         console.log(`[Crawler] Found ${uniqueNewLinks.length} new links, ${this.pendingUrls.length} URLs remaining in queue`);
-        console.log(`[Crawler] Loop status: crawledCount=${crawledCount}, MAX_PAGES=${this.MAX_PAGES}, pendingUrls=${this.pendingUrls.length}, discoveredNewLinks=${discoveredNewLinks}`);
+        console.log(`[Crawler] Loop status: crawledCount=${crawledCount}, MAX_PAGES=${this.MAX_PAGES}, pendingUrls=${this.pendingUrls.length}`);
         
         // Add explicit loop termination debugging
         if (crawledCount >= this.MAX_PAGES) {
@@ -1319,10 +1317,6 @@ class Crawler {
         }
         if (this.pendingUrls.length === 0) {
           console.log(`[Crawler] Stopping crawl: no more URLs in queue`);
-          break;
-        }
-        if (!discoveredNewLinks) {
-          console.log(`[Crawler] Stopping crawl: no new links discovered in this round`);
           break;
         }
       }
