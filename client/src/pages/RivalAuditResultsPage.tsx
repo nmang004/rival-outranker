@@ -34,7 +34,7 @@ import {
   ArrowRight,
   Plus
 } from "lucide-react";
-import { RivalAudit, AuditItem, AuditStatus } from "@shared/schema";
+import { RivalAudit, EnhancedRivalAudit, AuditItem, EnhancedAuditItem, AuditStatus } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import axios from "axios";
 
@@ -61,14 +61,15 @@ export default function RivalAuditResultsPage() {
   const [isContinuing, setIsContinuing] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "dashboard">("list");
   
-  // Get auditId and URL from URL query params
+  // Get auditId, URL, and enhanced flag from URL query params
   const params = new URLSearchParams(window.location.search);
   const auditId = params.get("id");
   const websiteUrl = params.get("url");
+  const isEnhanced = params.get("enhanced") === "true";
   
   // Fetch the audit data, including the website URL if available
-  const { data: audit, isLoading, isError, error, refetch } = useQuery<RivalAudit>({
-    queryKey: [`/api/rival-audit/${auditId}`],
+  const { data: audit, isLoading, isError, error, refetch } = useQuery<RivalAudit | EnhancedRivalAudit>({
+    queryKey: [`/api/rival-audit/${auditId}`, isEnhanced],
     queryFn: async () => {
       // Include URL in the request to ensure we get the right data
       const endpoint = websiteUrl
@@ -430,13 +431,16 @@ export default function RivalAuditResultsPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col mb-4 sm:mb-6">
           <div className="mb-3 sm:mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold gradient-heading mb-1 sm:mb-2">Rival SEO Audit</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold gradient-heading mb-1 sm:mb-2">
+              {isEnhanced || ('totalFactors' in audit.summary) ? 'Enhanced ' : ''}Rival SEO Audit
+            </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
               Comprehensive SEO audit for <span className="font-medium break-all">{audit.url}</span>
             </p>
-            {audit.summary.total && (
+            {(('total' in audit.summary && audit.summary.total) || ('totalFactors' in audit.summary && audit.summary.totalFactors)) && (
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                Analyzed {audit.summary.total} SEO factors across all categories
+                Analyzed {('totalFactors' in audit.summary) ? audit.summary.totalFactors : ('total' in audit.summary ? audit.summary.total : 0)} SEO factors across all categories
+                {isEnhanced || ('totalFactors' in audit.summary) ? ' with enhanced analysis' : ''}
               </p>
             )}
           </div>

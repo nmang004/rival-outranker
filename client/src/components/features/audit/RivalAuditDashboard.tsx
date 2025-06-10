@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { RivalAudit } from '@shared/schema';
+import { RivalAudit, EnhancedRivalAudit } from '@shared/schema';
 import {
   Card,
   CardContent,
@@ -35,13 +35,14 @@ import {
 import { ChartExport } from "@/components/ui/chart-export";
 
 interface RivalAuditDashboardProps {
-  audit: RivalAudit;
+  audit: RivalAudit | EnhancedRivalAudit;
   updatedSummary: {
     priorityOfiCount: number;
     ofiCount: number;
     okCount: number;
     naCount: number;
     total?: number;
+    totalFactors?: number;
   } | null;
 }
 
@@ -224,21 +225,30 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     ? (totalCompletedItems / totalRelevantItems) * 100 
     : 0;
 
+  // Check if this is an enhanced audit (140+ factors)
+  const isEnhancedAudit = 'totalFactors' in audit.summary || (audit as any).type === 'enhanced';
+  const totalFactors = isEnhancedAudit && 'totalFactors' in audit.summary 
+    ? audit.summary.totalFactors 
+    : updatedSummary?.total || ('total' in audit.summary ? audit.summary.total : 0);
+
   return (
     <div className="space-y-6">
       {/* Overall progress card */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
-            <CardTitle>SEO Health & Performance Dashboard</CardTitle>
+            <CardTitle>
+              {isEnhancedAudit ? 'Enhanced ' : ''}SEO Health & Performance Dashboard
+            </CardTitle>
             <CardDescription>
-              Comprehensive view of website's SEO health with key performance metrics
+              Comprehensive view of website's SEO health with {totalFactors} analyzed factors
+              {isEnhancedAudit && ' including advanced content quality, technical SEO, and E-E-A-T analysis'}
             </CardDescription>
           </div>
           <ChartExport 
             chartRef={pieChartRef}
-            filename="seo-health-performance-dashboard"
-            title="Export SEO Dashboard"
+            filename={isEnhancedAudit ? "enhanced-seo-health-performance-dashboard" : "seo-health-performance-dashboard"}
+            title={`Export ${isEnhancedAudit ? 'Enhanced ' : ''}SEO Dashboard`}
             size="sm"
           />
         </CardHeader>
@@ -260,7 +270,9 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className="col-span-1">
-                  <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">SEO Issue Distribution</div>
+                  <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+                    {isEnhancedAudit ? 'Enhanced ' : ''}SEO Issue Distribution
+                  </div>
                   <div className="h-[200px] sm:h-[250px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -289,7 +301,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                           
                           // Use updated summary if available
                           const summary = updatedSummary || audit.summary;
-                          const total = summary.total || 
+                          const total = ('total' in summary ? summary.total : 0) || 
                             (summary.priorityOfiCount + summary.ofiCount + summary.okCount + summary.naCount);
                           return [`${value} items (${((Number(value)/total) * 100).toFixed(1)}%)`, name];
                         }}

@@ -591,7 +591,24 @@ export const auditItemSchema = z.object({
   description: z.string().optional(),
   status: auditStatusSchema,
   importance: seoImportanceSchema,
-  notes: z.string().optional()
+  notes: z.string().optional(),
+  category: z.string().optional() // For enhanced categorization
+});
+
+// Enhanced audit item with scoring and analysis details
+export const enhancedAuditItemSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  status: auditStatusSchema,
+  importance: seoImportanceSchema,
+  notes: z.string(),
+  category: z.string(),
+  score: z.number().min(0).max(100).optional(), // Numeric score for the factor
+  analysisDetails: z.object({
+    actual: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    expected: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    metrics: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional()
+  }).optional()
 });
 
 // Schemas for specific audit sections
@@ -619,6 +636,43 @@ export const serviceAreaPagesAuditSchema = z.object({
   items: z.array(auditItemSchema)
 });
 
+// Enhanced audit schemas with 140+ factors support
+export const enhancedOnPageAuditSchema = z.object({
+  items: z.array(enhancedAuditItemSchema),
+  score: z.number().min(0).max(100).optional(),
+  completionRate: z.number().min(0).max(100).optional()
+});
+
+export const enhancedStructureNavigationAuditSchema = z.object({
+  items: z.array(enhancedAuditItemSchema),
+  score: z.number().min(0).max(100).optional(),
+  completionRate: z.number().min(0).max(100).optional()
+});
+
+export const enhancedContactPageAuditSchema = z.object({
+  items: z.array(enhancedAuditItemSchema),
+  score: z.number().min(0).max(100).optional(),
+  completionRate: z.number().min(0).max(100).optional()
+});
+
+export const enhancedServicePagesAuditSchema = z.object({
+  items: z.array(enhancedAuditItemSchema),
+  score: z.number().min(0).max(100).optional(),
+  completionRate: z.number().min(0).max(100).optional()
+});
+
+export const enhancedLocationPagesAuditSchema = z.object({
+  items: z.array(enhancedAuditItemSchema),
+  score: z.number().min(0).max(100).optional(),
+  completionRate: z.number().min(0).max(100).optional()
+});
+
+export const enhancedServiceAreaPagesAuditSchema = z.object({
+  items: z.array(enhancedAuditItemSchema),
+  score: z.number().min(0).max(100).optional(),
+  completionRate: z.number().min(0).max(100).optional()
+});
+
 // Complete audit schema
 export const rivalAuditSchema = z.object({
   url: z.string(),
@@ -637,6 +691,39 @@ export const rivalAuditSchema = z.object({
     naCount: z.number(),
     total: z.number().optional()
   })
+});
+
+// Enhanced rival audit schema with 140+ factors
+export const enhancedRivalAuditSchema = z.object({
+  url: z.string(),
+  timestamp: z.date().optional().default(() => new Date()),
+  onPage: enhancedOnPageAuditSchema,
+  structureNavigation: enhancedStructureNavigationAuditSchema,
+  contactPage: enhancedContactPageAuditSchema,
+  servicePages: enhancedServicePagesAuditSchema,
+  locationPages: enhancedLocationPagesAuditSchema,
+  serviceAreaPages: enhancedServiceAreaPagesAuditSchema.optional(),
+  reachedMaxPages: z.boolean().optional(),
+  summary: z.object({
+    totalFactors: z.number(),
+    priorityOfiCount: z.number(),
+    ofiCount: z.number(),
+    okCount: z.number(),
+    naCount: z.number(),
+    overallScore: z.number().min(0).max(100).optional(),
+    categoryScores: z.record(z.string(), z.number()).optional()
+  }),
+  analysisMetadata: z.object({
+    analysisVersion: z.string().default("2.0"),
+    factorCount: z.number(),
+    analysisTime: z.number().optional(), // milliseconds
+    crawlerStats: z.object({
+      pagesCrawled: z.number(),
+      pagesSkipped: z.number(),
+      errorsEncountered: z.number(),
+      crawlTime: z.number()
+    }).optional()
+  }).optional()
 });
 
 // Meta information about the competitor search
@@ -698,6 +785,7 @@ export type CompetitorAnalysisResult = z.infer<typeof competitorAnalysisResultSc
 export type AuditStatus = z.infer<typeof auditStatusSchema>;
 export type SeoImportance = z.infer<typeof seoImportanceSchema>;
 export type AuditItem = z.infer<typeof auditItemSchema>;
+export type EnhancedAuditItem = z.infer<typeof enhancedAuditItemSchema>;
 export type OnPageAudit = z.infer<typeof onPageAuditSchema>;
 export type StructureNavigationAudit = z.infer<typeof structureNavigationAuditSchema>;
 export type ContactPageAudit = z.infer<typeof contactPageAuditSchema>;
@@ -705,6 +793,13 @@ export type ServicePagesAudit = z.infer<typeof servicePagesAuditSchema>;
 export type LocationPagesAudit = z.infer<typeof locationPagesAuditSchema>;
 export type ServiceAreaPagesAudit = z.infer<typeof serviceAreaPagesAuditSchema>;
 export type RivalAudit = z.infer<typeof rivalAuditSchema>;
+export type EnhancedRivalAudit = z.infer<typeof enhancedRivalAuditSchema>;
+export type EnhancedOnPageAudit = z.infer<typeof enhancedOnPageAuditSchema>;
+export type EnhancedStructureNavigationAudit = z.infer<typeof enhancedStructureNavigationAuditSchema>;
+export type EnhancedContactPageAudit = z.infer<typeof enhancedContactPageAuditSchema>;
+export type EnhancedServicePagesAudit = z.infer<typeof enhancedServicePagesAuditSchema>;
+export type EnhancedLocationPagesAudit = z.infer<typeof enhancedLocationPagesAuditSchema>;
+export type EnhancedServiceAreaPagesAudit = z.infer<typeof enhancedServiceAreaPagesAuditSchema>;
 
 // Keyword Tracking Tables
 export const keywords = pgTable("keywords", {

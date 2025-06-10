@@ -1,7 +1,8 @@
-import { RivalAudit } from '../../../shared/schema';
+import { RivalAudit, EnhancedRivalAudit } from '../../../shared/schema';
 import { crawler } from './crawler.service';
 import { AuditAnalyzerService } from './analyzer.service';
 import { PageClassificationService } from './page-classification.service';
+import { EnhancedAuditAnalyzer } from './enhanced-analyzer.service';
 
 // Interface for site structure
 export interface SiteStructure {
@@ -81,11 +82,13 @@ export interface PageCrawlResult {
 export class AuditService {
   private crawler: typeof crawler;
   private analyzer: AuditAnalyzerService;
+  private enhancedAnalyzer: EnhancedAuditAnalyzer;
   private classifier: PageClassificationService;
 
   constructor() {
     this.crawler = crawler;
     this.analyzer = new AuditAnalyzerService();
+    this.enhancedAnalyzer = new EnhancedAuditAnalyzer();
     this.classifier = new PageClassificationService();
   }
 
@@ -113,6 +116,45 @@ export class AuditService {
       
     } catch (error) {
       console.error(`Error during rival audit for ${url}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crawl a website and perform enhanced 140+ factor audit
+   */
+  async crawlAndAuditEnhanced(url: string): Promise<EnhancedRivalAudit> {
+    try {
+      console.log(`Starting enhanced rival audit (140+ factors) for: ${url}`);
+      
+      // Reset state for new audit
+      this.crawler.reset();
+      
+      // Step 1: Crawl the website
+      const siteStructure = await this.crawler.crawlSite(url);
+      
+      // Step 2: Classify pages by type
+      const classifiedStructure = await this.classifier.classifyPages(siteStructure);
+      
+      // Step 3: Generate enhanced audit with 140+ factors
+      const enhancedAudit = await this.enhancedAnalyzer.analyzeWebsite(classifiedStructure);
+      
+      console.log(`Completed enhanced rival audit for: ${url} - analyzed ${enhancedAudit.summary.totalFactors} factors`);
+      return {
+        url,
+        timestamp: new Date(),
+        ...enhancedAudit,
+        reachedMaxPages: siteStructure.reachedMaxPages,
+        analysisMetadata: {
+          analysisVersion: "2.0",
+          factorCount: enhancedAudit.summary.totalFactors,
+          analysisTime: Date.now(),
+          crawlerStats: this.crawler.getStats()
+        }
+      };
+      
+    } catch (error) {
+      console.error(`Error during enhanced rival audit for ${url}:`, error);
       throw error;
     }
   }

@@ -21,17 +21,18 @@ import {
   FileSpreadsheet,
   Download
 } from "lucide-react";
-import { RivalAudit } from "@shared/schema";
+import { RivalAudit, EnhancedRivalAudit } from "@shared/schema";
 import { useToast } from "@/hooks/ui/use-toast";
 
 interface RivalAuditSummaryProps {
-  audit: RivalAudit;
+  audit: RivalAudit | EnhancedRivalAudit;
   updatedSummary?: {
     priorityOfiCount: number;
     ofiCount: number;
     okCount: number;
     naCount: number;
     total?: number;
+    totalFactors?: number;
   } | null;
 }
 
@@ -94,15 +95,20 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
   // Calculate progress using either the updated summary or the original data
   const summary = updatedSummary || audit.summary;
   
-  // Get total items
-  const totalItems = summary.total || (
-    onPageTotals.total +
-    structureTotals.total +
-    contactTotals.total +
-    serviceTotals.total +
-    locationTotals.total +
-    serviceAreaTotals.total
-  );
+  // Check if this is an enhanced audit (140+ factors)
+  const isEnhancedAudit = 'totalFactors' in audit.summary || (audit as any).type === 'enhanced';
+  
+  // Get total items - prioritize totalFactors for enhanced audits
+  const totalItems = isEnhancedAudit && 'totalFactors' in audit.summary 
+    ? audit.summary.totalFactors 
+    : ('total' in summary ? summary.total : 0) || (
+        onPageTotals.total +
+        structureTotals.total +
+        contactTotals.total +
+        serviceTotals.total +
+        locationTotals.total +
+        serviceAreaTotals.total
+      );
   
   // Get total N/A items
   const totalNaItems = summary.naCount;
@@ -126,9 +132,12 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Overall Audit Status</CardTitle>
+            <CardTitle>
+              {isEnhancedAudit ? 'Enhanced ' : ''}Overall Audit Status
+            </CardTitle>
             <CardDescription>
               Summary of findings across all audit categories
+              {isEnhancedAudit && ` (${totalItems} total factors analyzed)`}
             </CardDescription>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
@@ -186,7 +195,9 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
                 <span className="text-xs sm:text-sm font-medium">{updatedSummary?.naCount ?? audit.summary.naCount} N/A</span>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 bg-blue-500/10 p-2 rounded-md text-blue-600 col-span-2 sm:col-span-1">
-                <span className="text-xs sm:text-sm font-medium">{updatedSummary?.total ?? audit.summary.total ?? (onPageTotals.total + structureTotals.total + contactTotals.total + serviceTotals.total + locationTotals.total + serviceAreaTotals.total)} Total</span>
+                <span className="text-xs sm:text-sm font-medium">
+                  {totalItems} {isEnhancedAudit ? 'Factors' : 'Total'}
+                </span>
               </div>
             </div>
           </div>

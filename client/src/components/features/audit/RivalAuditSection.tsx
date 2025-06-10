@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { AuditItem, AuditStatus, SeoImportance } from "@shared/schema";
+import { AuditItem, EnhancedAuditItem, AuditStatus, SeoImportance } from "@shared/schema";
 import { AlertCircle, AlertTriangle, CheckCircle, CircleHelp, Search, Filter, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/ui/use-toast";
 import QuickStatusChange from "./QuickStatusChange";
@@ -25,7 +25,7 @@ import QuickStatusChange from "./QuickStatusChange";
 interface RivalAuditSectionProps {
   title: string;
   description: string;
-  items: AuditItem[];
+  items: AuditItem[] | EnhancedAuditItem[];
 }
 
 export default function RivalAuditSection({ title, description, items }: RivalAuditSectionProps) {
@@ -41,7 +41,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const [editStatus, setEditStatus] = useState<AuditStatus>("OK");
   const [isUpdating, setIsUpdating] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [currentItemForStatusChange, setCurrentItemForStatusChange] = useState<AuditItem | null>(null);
+  const [currentItemForStatusChange, setCurrentItemForStatusChange] = useState<AuditItem | EnhancedAuditItem | null>(null);
   const [isAnalyzingServicePages, setIsAnalyzingServicePages] = useState(false);
   
   // Get URL params to extract the audit ID
@@ -76,7 +76,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   // Group items by categories
   const itemCategories = useMemo(() => {
     // Define categories based on the items we have
-    const categories: Record<string, AuditItem[]> = {
+    const categories: Record<string, (AuditItem | EnhancedAuditItem)[]> = {
       "UX/CTA": [],
       "On-Page": [],
       "Footer": [],
@@ -142,7 +142,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   };
 
   // Get status badge styling with click handler for quick updates
-  const getStatusBadge = (item: AuditItem, clickable: boolean = true) => {
+  const getStatusBadge = (item: AuditItem | EnhancedAuditItem, clickable: boolean = true) => {
     // Open the status change dialog when clicked
     const handleStatusClick = (e: React.MouseEvent) => {
       if (!clickable) return;
@@ -245,7 +245,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
     });
     
     // Apply filtering to category items as well
-    const filteredCategories: Record<string, AuditItem[]> = {};
+    const filteredCategories: Record<string, (AuditItem | EnhancedAuditItem)[]> = {};
     Object.keys(itemCategories).forEach(category => {
       filteredCategories[category] = itemCategories[category].filter(item => {
         const matchesSearch = !searchTerm || 
@@ -294,13 +294,13 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   const filteredItems = filteredAndSortedItems.sorted;
 
   // Handle edit item
-  const handleEditClick = (item: AuditItem) => {
+  const handleEditClick = (item: AuditItem | EnhancedAuditItem) => {
     setEditModeItem(item.name);
     setEditNotes(item.notes || "");
     setEditStatus(item.status);
   };
 
-  const handleSaveItem = async (item: AuditItem) => {
+  const handleSaveItem = async (item: AuditItem | EnhancedAuditItem) => {
     try {
       setIsUpdating(true);
       
@@ -385,7 +385,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
   };
 
   // Handle item update from the QuickStatusChange dialog
-  const handleItemUpdated = (updatedItem: AuditItem) => {
+  const handleItemUpdated = (updatedItem: AuditItem | EnhancedAuditItem) => {
     // Find and update the item in the items array
     const itemIndex = items.findIndex(item => item.name === updatedItem.name);
     if (itemIndex !== -1) {
@@ -396,7 +396,7 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
       // Force update by directly modifying the items array using mutable approach
       // This is necessary since items is passed as a prop and we can't setState on it
       items.splice(0, items.length);
-      updatedItems.forEach(item => items.push(item));
+      updatedItems.forEach(item => (items as any).push(item));
       
       // Force component to re-render
       setSearchTerm(searchTerm + " ");
@@ -643,6 +643,15 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                           <div>
                             <h4 className="text-sm font-semibold mb-1">Description</h4>
                             <p className="text-sm text-muted-foreground">{item.description}</p>
+                            
+                            {/* Show category for enhanced audit items */}
+                            {'category' in item && item.category && (
+                              <div className="mt-2">
+                                <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                                  {item.category}
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                           
                           <div>
@@ -721,6 +730,15 @@ export default function RivalAuditSection({ title, description, items }: RivalAu
                           <div>
                             <h4 className="text-sm font-semibold mb-1">Description</h4>
                             <p className="text-sm text-muted-foreground">{item.description}</p>
+                            
+                            {/* Show category for enhanced audit items */}
+                            {'category' in item && item.category && (
+                              <div className="mt-2">
+                                <Badge variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                                  {item.category}
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                           
                           <div>

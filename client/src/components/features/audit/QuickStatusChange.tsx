@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AuditItem, AuditStatus } from "@shared/schema";
+import { AuditItem, EnhancedAuditItem, AuditStatus } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,12 +14,12 @@ import {
 import { useToast } from "@/hooks/ui/use-toast";
 
 interface QuickStatusChangeProps {
-  item: AuditItem;
+  item: AuditItem | EnhancedAuditItem;
   auditId: string;
   sectionName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: (updatedItem: AuditItem) => void;
+  onSuccess?: (updatedItem: AuditItem | EnhancedAuditItem) => void;
 }
 
 export default function QuickStatusChange({

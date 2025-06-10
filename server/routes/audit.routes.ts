@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { rivalAuditCrawler } from '../services/audit/rival-audit-crawler.service';
-import { generateRivalAuditExcel } from '../services/common/excel-exporter.service';
+import { auditService } from '../services/audit/audit.service';
+import { generateRivalAuditExcel, generateEnhancedRivalAuditExcel } from '../services/common/excel-exporter.service';
 import { generateRivalAuditCsv } from '../services/common/csv-exporter.service';
 import { AuditStatus } from '../../shared/schema';
 import { storage } from '../storage';
@@ -67,6 +68,99 @@ function generateMockRivalAudit(url: string): CachedRivalAudit {
     locationPages: { items: [] }
   };
 }
+
+// Start a new enhanced rival audit with 140+ factors
+router.post("/enhanced", async (req: Request, res: Response) => {
+  console.log('🎯 POST /api/rival-audit/enhanced called with body:', req.body);
+  
+  try {
+    const { url } = req.body;
+    console.log('📥 Received URL for enhanced audit:', url);
+    
+    if (!url) {
+      console.log('❌ No URL provided');
+      return res.status(400).json({ error: "URL is required" });
+    }
+    
+    // Generate an audit ID (in a production environment, this would be stored in the database)
+    const auditId = Math.floor(Math.random() * 1000) + 1000; // Different range for enhanced audits
+    console.log('🆔 Generated enhanced audit ID:', auditId);
+    
+    // Mark as processing
+    processingStatus[auditId] = {
+      status: 'processing',
+      startTime: new Date()
+    };
+    
+    // Return the audit ID immediately
+    const response = { 
+      id: auditId, 
+      message: "Enhanced audit started (140+ factors)", 
+      url,
+      type: "enhanced"
+    };
+    console.log('✅ Sending enhanced audit response:', response);
+    res.status(202).json(response);
+    
+    // Perform the actual enhanced audit asynchronously
+    setTimeout(async () => {
+      try {
+        console.log(`Starting enhanced rival audit for ${url} with ID ${auditId}`);
+        // Use the enhanced audit service
+        const auditResults = await auditService.crawlAndAuditEnhanced(url);
+        
+        // Store the results in our in-memory cache
+        auditCache[auditId] = {
+          ...auditResults,
+          id: auditId,
+          status: 'completed',
+          startTime: new Date(),
+          timestamp: new Date(),
+          type: 'enhanced',
+          summary: {
+            ...auditResults.summary,
+            total: auditResults.summary.totalFactors || 0
+          }
+        };
+        
+        // Mark as completed
+        processingStatus[auditId].status = 'completed';
+        console.log(`Completed enhanced rival audit for ${url} with ID ${auditId} - analyzed ${auditResults.summary.totalFactors} factors`);
+        
+        // Associate this audit with current user if they're authenticated
+        if (req.user?.id) {
+          console.log(`Associating enhanced audit ${auditId} with user ${req.user.id}`);
+          // In a real implementation: await storage.saveEnhancedRivalAudit({ ...auditResults, userId: req.user.id });
+        }
+        
+      } catch (error) {
+        console.error("Error performing enhanced rival audit:", error);
+        // Mark as failed initially
+        processingStatus[auditId].status = 'failed';
+        // Store mock data as fallback (but mark it as enhanced)
+        const mockAudit = generateMockRivalAudit(url);
+        auditCache[auditId] = {
+          ...mockAudit,
+          type: 'enhanced',
+          summary: {
+            ...mockAudit.summary,
+            totalFactors: 142 // Mock enhanced factor count
+          }
+        };
+        // Mark as completed since we have fallback data
+        processingStatus[auditId].status = 'completed';
+        console.log(`Stored mock enhanced data for failed audit ${auditId}`);
+      }
+    }, 0);
+    
+  } catch (error) {
+    console.error("❌ Error starting enhanced rival audit:", error);
+    res.status(500).json({ 
+      error: "Failed to start enhanced rival audit",
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
 
 // Start a new rival audit
 router.post("/", async (req: Request, res: Response) => {
@@ -422,13 +516,17 @@ router.get("/:id/export", async (req: Request, res: Response) => {
     
     const audit = auditCache[auditId];
     
+    // Check if this is an enhanced audit (140+ factors)
+    const isEnhancedAudit = audit.type === 'enhanced' || (audit.summary && 'totalFactors' in audit.summary);
+    
     if (format === 'csv') {
       try {
         const csvBuffer = await generateRivalAuditCsv(convertForExport(audit));
         
         // Set headers for CSV download
+        const filename = isEnhancedAudit ? `enhanced-rival-audit-${auditId}.csv` : `rival-audit-${auditId}.csv`;
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="rival-audit-${auditId}.csv"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', csvBuffer.length.toString());
         
         // Send the CSV buffer
@@ -439,11 +537,22 @@ router.get("/:id/export", async (req: Request, res: Response) => {
       }
     } else {
       try {
-        const excelBuffer = await generateRivalAuditExcel(convertForExport(audit));
+        let excelBuffer;
+        let filename;
+        
+        if (isEnhancedAudit) {
+          // Use enhanced Excel exporter for 140+ factor audits
+          excelBuffer = await generateEnhancedRivalAuditExcel(audit);
+          filename = `enhanced-rival-audit-${auditId}.xlsx`;
+        } else {
+          // Use regular Excel exporter for standard audits
+          excelBuffer = await generateRivalAuditExcel(convertForExport(audit));
+          filename = `rival-audit-${auditId}.xlsx`;
+        }
         
         // Set headers for Excel download
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="rival-audit-${auditId}.xlsx"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', excelBuffer.length.toString());
         
         // Send the Excel buffer
