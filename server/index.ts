@@ -22,22 +22,35 @@ const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
 
 app.use(cors({
   origin: function(origin, callback) {
+    console.log(`🔍 CORS check for origin: ${origin}`);
+    
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ No origin - allowing request');
+      return callback(null, true);
+    }
     
     // Check if origin matches allowed patterns
     const isAllowed = allowedOrigins.some(allowedOrigin => {
+      console.log(`🔍 Checking ${origin} against ${allowedOrigin}`);
       if (allowedOrigin.includes('*')) {
         const pattern = allowedOrigin.replace('*', '.*');
-        return new RegExp(pattern).test(origin);
+        const regex = new RegExp(pattern);
+        const matches = regex.test(origin);
+        console.log(`🔍 Wildcard pattern ${pattern} matches ${origin}: ${matches}`);
+        return matches;
       }
-      return allowedOrigin === origin;
+      const exactMatch = allowedOrigin === origin;
+      console.log(`🔍 Exact match ${allowedOrigin} === ${origin}: ${exactMatch}`);
+      return exactMatch;
     });
     
     if (isAllowed) {
+      console.log(`✅ CORS allowing origin: ${origin}`);
       callback(null, true);
     } else {
-      console.warn(`CORS blocked origin: ${origin}`);
+      console.warn(`❌ CORS blocked origin: ${origin}`);
+      console.warn(`❌ Allowed origins:`, allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
