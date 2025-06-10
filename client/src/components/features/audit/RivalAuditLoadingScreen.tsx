@@ -55,20 +55,24 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
   const [progress, setProgress] = React.useState(0);
   
   React.useEffect(() => {
-    // Simulate progression through the steps
-    const timer = setInterval(() => {
-      setActiveStep((prevStep) => {
-        if (prevStep < 5) {
-          // Update progress based on steps
-          setProgress((prevStep + 1) * 20);
-          return prevStep + 1;
-        }
-        clearInterval(timer);
-        return prevStep;
-      });
-    }, 1500); // Change step every 1.5 seconds
+    // More realistic progression timing for actual crawling
+    const stepTimings = [3000, 5000, 4000, 6000, 4000, 3000]; // Different timing for each step
+    let totalElapsed = 0;
     
-    return () => clearInterval(timer);
+    const timers: NodeJS.Timeout[] = [];
+    
+    stepTimings.forEach((duration, index) => {
+      totalElapsed += duration;
+      const timer = setTimeout(() => {
+        setActiveStep(index + 1);
+        setProgress(Math.min(((index + 1) / 6) * 100, 95)); // Cap at 95% until completion
+      }, totalElapsed);
+      timers.push(timer);
+    });
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
   }, []);
   
   return (
@@ -134,7 +138,10 @@ export default function RivalAuditLoadingScreen({ url }: RivalAuditLoadingScreen
           
           <div className="mt-8 text-center">
             <div className="text-sm text-muted-foreground">
-              This might take a minute or two, depending on the size of the website
+              This typically takes 30 seconds to 3 minutes, depending on website size
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              We're crawling and analyzing every page to provide comprehensive results
             </div>
           </div>
         </CardContent>

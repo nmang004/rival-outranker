@@ -67,16 +67,42 @@ export default function RivalAuditResultsPage() {
   const websiteUrl = params.get("url");
   
   // Fetch the audit data, including the website URL if available
-  const { data: audit, isLoading, isError, refetch } = useQuery<RivalAudit>({
+  const { data: audit, isLoading, isError, error, refetch } = useQuery<RivalAudit>({
     queryKey: [`/api/rival-audit/${auditId}`],
     queryFn: async () => {
       // Include URL in the request to ensure we get the right data
       const endpoint = websiteUrl
         ? `/api/rival-audit/${auditId}?url=${encodeURIComponent(websiteUrl)}`
         : `/api/rival-audit/${auditId}`;
-      return await apiRequest(endpoint);
+      
+      try {
+        const result = await apiRequest(endpoint);
+        return result;
+      } catch (error) {
+        // If we get a 404, the audit might still be processing
+        if (error instanceof Error && error.message.includes('404')) {
+          throw new Error('AUDIT_PROCESSING');
+        }
+        throw error;
+      }
     },
     enabled: !!auditId,
+    retry: (failureCount, error) => {
+      // Keep retrying if audit is still processing, up to 30 attempts (5 minutes)
+      if (error instanceof Error && error.message === 'AUDIT_PROCESSING') {
+        return failureCount < 30;
+      }
+      // For other errors, use standard retry logic
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex, error) => {
+      // If audit is processing, check every 10 seconds
+      if (error instanceof Error && error.message === 'AUDIT_PROCESSING') {
+        return 10000; // 10 seconds
+      }
+      // For other errors, use exponential backoff
+      return Math.min(1000 * 2 ** attemptIndex, 30000);
+    },
   });
 
   // Listen for status updates from the RivalAuditSection components
@@ -325,6 +351,26 @@ export default function RivalAuditResultsPage() {
   }
 
   if (isError || !audit) {
+    // Check if this is a processing error vs actual error
+    const isProcessingError = isError && error instanceof Error && error.message === 'AUDIT_PROCESSING';
+    
+    if (isProcessingError) {
+      // Show loading screen if audit is still processing
+      return (
+        <div className="container mx-auto py-8 px-4 sm:px-6">
+          {websiteUrl ? (
+            <RivalAuditLoadingScreen url={websiteUrl} />
+          ) : (
+            <div className="max-w-6xl mx-auto text-center">
+              <h1 className="text-3xl font-bold mb-2">Processing Audit...</h1>
+              <p className="text-muted-foreground">Your audit is being generated. Please wait...</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    // Show actual error for real failures
     return (
       <div className="container mx-auto py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
@@ -332,7 +378,7 @@ export default function RivalAuditResultsPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
-              Failed to load audit results. Please try again or create a new audit.
+              Failed to load audit results. The audit may have failed or expired. Please try creating a new audit.
             </AlertDescription>
           </Alert>
           <div className="flex gap-4">
