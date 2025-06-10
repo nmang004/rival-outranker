@@ -731,6 +731,19 @@ export const enhancedRivalAuditSchema = z.object({
   servicePages: enhancedServicePagesAuditSchema,
   locationPages: enhancedLocationPagesAuditSchema,
   serviceAreaPages: enhancedServiceAreaPagesAuditSchema.optional(),
+  // Enhanced audit categories
+  contentQuality: z.object({
+    items: z.array(enhancedAuditItemSchema)
+  }).optional(),
+  technicalSEO: z.object({
+    items: z.array(enhancedAuditItemSchema)
+  }).optional(),
+  localSEO: z.object({
+    items: z.array(enhancedAuditItemSchema)
+  }).optional(),
+  uxPerformance: z.object({
+    items: z.array(enhancedAuditItemSchema)
+  }).optional(),
   reachedMaxPages: z.boolean().optional(),
   summary: z.object({
     totalFactors: z.number(),

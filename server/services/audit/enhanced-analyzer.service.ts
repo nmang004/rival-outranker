@@ -43,7 +43,12 @@ class EnhancedAuditAnalyzer {
       contactPage: { items: [] },
       servicePages: { items: [] },
       locationPages: { items: [] },
-      serviceAreaPages: { items: [] }
+      serviceAreaPages: { items: [] },
+      // Enhanced audit categories
+      contentQuality: { items: [] },
+      technicalSEO: { items: [] },
+      localSEO: { items: [] },
+      uxPerformance: { items: [] }
     };
 
     // Analyze homepage with all factors
@@ -148,39 +153,68 @@ class EnhancedAuditAnalyzer {
 
   // Analysis merge methods
   private mergeAnalysisResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
-    // Merge content quality factors into on-page (with deduplication)
-    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    // Merge factors into their dedicated enhanced categories
+    if (results.contentQuality) {
+      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    }
     
-    // Merge technical SEO factors into structure & navigation (with deduplication)
-    this.mergeUniqueItems(results.structureNavigation.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+    if (results.technicalSEO) {
+      this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+    }
     
-    // Add local SEO factors to on-page (with deduplication)
-    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO', pageInfo));
+    if (results.localSEO) {
+      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    }
     
-    // Add UX factors to on-page (with deduplication)
-    this.mergeUniqueItems(results.onPage.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
+    if (results.uxPerformance) {
+      this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
+    }
   }
 
   private mergeContactResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
-    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.contentQuality, 'Contact Content', pageInfo));
-    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.localSeo, 'Contact Local SEO', pageInfo));
-    this.mergeUniqueItems(results.contactPage.items, this.convertToAuditItems(analysis.uxPerformance, 'Contact UX', pageInfo));
+    // For enhanced audits, merge contact page factors into enhanced categories
+    if (results.contentQuality) {
+      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    }
+    if (results.localSEO) {
+      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    }
+    if (results.uxPerformance) {
+      this.mergeUniqueItems(results.uxPerformance.items, this.convertToAuditItems(analysis.uxPerformance, 'UX & Performance', pageInfo));
+    }
   }
 
   private mergeServiceResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
-    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Content', pageInfo));
-    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.technicalSeo, 'Service Technical', pageInfo));
-    this.mergeUniqueItems(results.servicePages.items, this.convertToAuditItems(analysis.localSeo, 'Service Local SEO', pageInfo));
+    // For enhanced audits, merge service page factors into enhanced categories
+    if (results.contentQuality) {
+      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    }
+    if (results.technicalSEO) {
+      this.mergeUniqueItems(results.technicalSEO.items, this.convertToAuditItems(analysis.technicalSeo, 'Technical SEO', pageInfo));
+    }
+    if (results.localSEO) {
+      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    }
   }
 
   private mergeLocationResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
-    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.contentQuality, 'Location Content', pageInfo));
-    this.mergeUniqueItems(results.locationPages.items, this.convertToAuditItems(analysis.localSeo, 'Location Local SEO', pageInfo));
+    // For enhanced audits, merge location page factors into enhanced categories
+    if (results.contentQuality) {
+      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    }
+    if (results.localSEO) {
+      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    }
   }
 
   private mergeServiceAreaResults(results: EnhancedAuditResult, analysis: PageAnalysisResult, pageInfo: { url: string; title: string; type: string }) {
-    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.contentQuality, 'Service Area Content', pageInfo));
-    this.mergeUniqueItems(results.serviceAreaPages.items, this.convertToAuditItems(analysis.localSeo, 'Service Area Local SEO', pageInfo));
+    // For enhanced audits, merge service area page factors into enhanced categories
+    if (results.contentQuality) {
+      this.mergeUniqueItems(results.contentQuality.items, this.convertToAuditItems(analysis.contentQuality, 'Content Quality', pageInfo));
+    }
+    if (results.localSEO) {
+      this.mergeUniqueItems(results.localSEO.items, this.convertToAuditItems(analysis.localSeo, 'Local SEO & E-E-A-T', pageInfo));
+    }
   }
 
   private mergeSiteWideResults(results: EnhancedAuditResult, analysis: SiteWideAnalysisResult) {
@@ -248,17 +282,30 @@ class EnhancedAuditAnalyzer {
   }
 
   /**
-   * Calculate summary statistics
+   * Calculate summary statistics for enhanced audit
    */
   private calculateSummary(results: EnhancedAuditResult) {
-    const allItems = [
-      ...results.onPage.items,
-      ...results.structureNavigation.items,
-      ...results.contactPage.items,
-      ...results.servicePages.items,
-      ...results.locationPages.items,
-      ...results.serviceAreaPages.items
-    ];
+    let allItems = [];
+    
+    // For enhanced audits, count factors from enhanced categories
+    if (results.contentQuality?.items || results.technicalSEO?.items || results.localSEO?.items || results.uxPerformance?.items) {
+      allItems = [
+        ...(results.contentQuality?.items || []),
+        ...(results.technicalSEO?.items || []),
+        ...(results.localSEO?.items || []),
+        ...(results.uxPerformance?.items || [])
+      ];
+    } else {
+      // Fallback to legacy sections for backward compatibility
+      allItems = [
+        ...results.onPage.items,
+        ...results.structureNavigation.items,
+        ...results.contactPage.items,
+        ...results.servicePages.items,
+        ...results.locationPages.items,
+        ...results.serviceAreaPages.items
+      ];
+    }
 
     results.summary.totalFactors = allItems.length;
     results.summary.priorityOfiCount = allItems.filter(item => item.status === 'Priority OFI').length;
@@ -1685,36 +1732,28 @@ class LocalSEOAnalyzer {
   private async generateAdditionalLocalSEOFactors(page: PageCrawlResult, $: cheerio.CheerioAPI, pageType: string): Promise<AnalysisFactor[]> {
     const factors: AnalysisFactor[] = [];
     
+    // Local SEO & E-E-A-T specific factors (removed overlaps with Content Quality and UX analyzers)
     const localSEOFactors = [
       { name: "Google Business Profile Optimization", desc: "GBP should be complete and optimized" },
       { name: "Local Citations Consistency", desc: "Business citations should be consistent across directories" },
-      { name: "Location Pages Content Quality", desc: "Location pages should have unique, relevant content" },
       { name: "Service Area Geographic Targeting", desc: "Content should target specific service areas" },
       { name: "Local Keyword Optimization", desc: "Content should include location-specific keywords" },
       { name: "Business Hours Display", desc: "Business hours should be clearly displayed" },
-      { name: "Contact Information Prominence", desc: "Contact info should be easily findable" },
       { name: "Google Maps Integration", desc: "Maps should be embedded for location context" },
-      { name: "Local Schema Markup", desc: "LocalBusiness schema should be implemented" },
-      { name: "Review Integration", desc: "Customer reviews should be displayed prominently" },
       { name: "Local Landing Page Optimization", desc: "City/area pages should be well-optimized" },
       { name: "Address Consistency", desc: "Address format should be consistent site-wide" },
       { name: "Phone Number Click-to-Call", desc: "Phone numbers should be clickable on mobile" },
       { name: "Local Business Categories", desc: "Business should be properly categorized" },
       { name: "Expertise Demonstration", desc: "Content should demonstrate industry expertise" },
       { name: "Authority Building Content", desc: "Content should build topical authority" },
-      { name: "Trust Signal Implementation", desc: "Trust badges and certifications should be displayed" },
-      { name: "Team/Staff Information", desc: "Staff credentials and bios should be included" },
-      { name: "Case Studies and Portfolio", desc: "Work examples should be prominently featured" },
       { name: "Industry Certifications", desc: "Relevant certifications should be displayed" },
       { name: "Awards and Recognition", desc: "Industry awards should be highlighted" },
-      { name: "Client Testimonials Quality", desc: "Testimonials should be detailed and credible" },
       { name: "Service Area Coverage", desc: "Service areas should be clearly defined" },
       { name: "Local Partnership Display", desc: "Local partnerships should be highlighted" },
       { name: "Community Involvement", desc: "Community engagement should be showcased" },
       { name: "Local Event Participation", desc: "Local events and sponsorships should be mentioned" },
       { name: "Industry Association Memberships", desc: "Professional memberships should be displayed" },
       { name: "Years of Experience Highlight", desc: "Business experience should be prominently featured" },
-      { name: "Before/After Showcases", desc: "Work examples should show transformation" },
       { name: "Local SEO Content Freshness", desc: "Location-specific content should be regularly updated" },
       { name: "Geographic Content Relevance", desc: "Content should be relevant to local market" },
       { name: "Service Area Keyword Density", desc: "Location keywords should be naturally integrated" },
@@ -2075,26 +2114,17 @@ class UXPerformanceAnalyzer {
   private async generateAdditionalUXFactors(page: PageCrawlResult, $: cheerio.CheerioAPI): Promise<AnalysisFactor[]> {
     const factors: AnalysisFactor[] = [];
     
+    // UX-specific factors only (removed overlaps with Content Quality and Local SEO analyzers)
     const uxFactors = [
-      { name: "Page Load Speed Optimization", desc: "Page should load within 3 seconds" },
       { name: "Mobile Touch Target Size", desc: "Touch targets should be at least 44px" },
       { name: "Contrast Ratio Compliance", desc: "Text should meet WCAG contrast requirements" },
       { name: "Font Size Readability", desc: "Font sizes should be readable on all devices" },
       { name: "Navigation Usability", desc: "Navigation should be intuitive and accessible" },
       { name: "Search Functionality", desc: "Site search should be prominent and functional" },
       { name: "Error Page Handling", desc: "404 and error pages should be user-friendly" },
-      { name: "Contact Form Usability", desc: "Forms should be easy to complete" },
-      { name: "Visual Hierarchy Design", desc: "Content hierarchy should guide user attention" },
-      { name: "Call-to-Action Prominence", desc: "CTAs should be visually prominent" },
-      { name: "Content Layout Balance", desc: "Content should be well-spaced and organized" },
-      { name: "Image Loading Optimization", desc: "Images should load efficiently" },
-      { name: "Video Content Performance", desc: "Videos should not impact page speed" },
       { name: "Interactive Element Feedback", desc: "Interactive elements should provide clear feedback" },
       { name: "Breadcrumb Usability", desc: "Breadcrumbs should aid navigation" },
       { name: "Footer Information Access", desc: "Important info should be accessible in footer" },
-      { name: "Social Media Integration", desc: "Social links should be properly integrated" },
-      { name: "Content Readability", desc: "Content should be scannable and readable" },
-      { name: "Trust Signal Placement", desc: "Trust indicators should be strategically placed" },
       { name: "Form Field Optimization", desc: "Form fields should have clear labels" },
       { name: "Progressive Enhancement", desc: "Site should work without JavaScript" },
       { name: "Browser Compatibility", desc: "Site should work across major browsers" },
@@ -2133,6 +2163,11 @@ interface EnhancedAuditResult {
   servicePages: { items: AuditItem[] };
   locationPages: { items: AuditItem[] };
   serviceAreaPages: { items: AuditItem[] };
+  // Enhanced audit categories
+  contentQuality?: { items: AuditItem[] };
+  technicalSEO?: { items: AuditItem[] };
+  localSEO?: { items: AuditItem[] };
+  uxPerformance?: { items: AuditItem[] };
   pageIssues?: PageIssueSummary[];
 }
 
