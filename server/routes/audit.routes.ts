@@ -541,6 +541,15 @@ router.get("/:id", async (req: Request, res: Response) => {
         url: auditRecord.url
       };
       
+      // Debug: Log enhanced categories in API response
+      console.log(`[API] Returning audit ${auditId} with enhanced categories:`, {
+        contentQuality: audit.contentQuality?.items?.length || 0,
+        technicalSEO: audit.technicalSEO?.items?.length || 0,
+        localSEO: audit.localSEO?.items?.length || 0,
+        uxPerformance: audit.uxPerformance?.items?.length || 0,
+        totalFactors: audit.summary?.totalFactors || 0
+      });
+      
       res.json(audit);
     } else {
       return res.status(404).json({ error: "Audit results not found" });

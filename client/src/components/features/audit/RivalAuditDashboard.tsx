@@ -70,6 +70,19 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
   const getEnhancedCategories = () => {
     if (!isEnhancedAudit) return null;
     
+    // Debug: Log what we received
+    console.log('[Dashboard] Enhanced audit data received:', {
+      hasContentQuality: 'contentQuality' in audit,
+      hasTechnicalSEO: 'technicalSEO' in audit,
+      hasLocalSEO: 'localSEO' in audit,
+      hasUxPerformance: 'uxPerformance' in audit,
+      contentQualityItems: (audit as any).contentQuality?.items?.length || 0,
+      technicalSEOItems: (audit as any).technicalSEO?.items?.length || 0,
+      localSEOItems: (audit as any).localSEO?.items?.length || 0,
+      uxPerformanceItems: (audit as any).uxPerformance?.items?.length || 0,
+      totalFactors: audit.summary.totalFactors || audit.summary.total || 0
+    });
+    
     // Check if audit has dedicated enhanced categories
     if ('contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit) {
       return {
