@@ -377,7 +377,7 @@ export class RivalAuditRepository {
   /**
    * Get audits by date range for reporting
    */
-  async getAuditsByDateRange(startDate: Date, endDate: Date, userId?: number): Promise<RivalAuditRecord[]> {
+  async getAuditsByDateRange(startDate: Date, endDate: Date, userId?: number | string): Promise<RivalAuditRecord[]> {
     const database = this.getDatabase();
     
     const whereConditions = [
@@ -387,7 +387,7 @@ export class RivalAuditRepository {
     ];
 
     if (userId) {
-      whereConditions.push(eq(rivalAudits.userId, userId));
+      whereConditions.push(eq(rivalAudits.userId, userId.toString()));
     }
 
     return await database
@@ -395,6 +395,17 @@ export class RivalAuditRepository {
       .from(rivalAudits)
       .where(and(...whereConditions))
       .orderBy(desc(rivalAudits.createdAt));
+  }
+
+  /**
+   * Get an audit by string ID (for backward compatibility)
+   */
+  async getAuditById(id: string): Promise<RivalAuditRecord | undefined> {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) {
+      return undefined;
+    }
+    return this.getAudit(numericId);
   }
 
   /**

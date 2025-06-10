@@ -40,18 +40,50 @@ export class OFIClassificationService {
     context?: any
   ): OFIClassificationResult {
     
+    // AUTO-DOWNGRADE CHECK: Check for workarounds first
+    const hasWorkaround = this.checkForWorkaround(name, description, context);
+    
+    // AUTO-DOWNGRADE CHECK: Check if affects small user base
+    const affectsSmallUserBase = (metrics.userBaseAffected ?? 0) < 10;
+    
+    // AUTO-DOWNGRADE CHECK: Check if performance impact is minimal
+    const minimalPerformanceImpact = (metrics.performanceImpact ?? 0) < 20;
+    
+    // AUTO-DOWNGRADE CHECK: Check if no quantifiable business impact
+    const noBusinessImpact = !metrics.revenueImpactPerDay || metrics.revenueImpactPerDay < 1000;
+    
     const criteriaMet = this.evaluateCriteria(metrics, name, description, context);
     const decisionTree = this.buildDecisionTree(criteriaMet, metrics);
-    const priorityCriteriaCount = this.countPriorityCriteria(criteriaMet);
+    let priorityCriteriaCount = this.countPriorityCriteria(criteriaMet);
+    
+    // Apply auto-downgrade rules
+    let downgradedReason = '';
+    if (hasWorkaround) {
+      priorityCriteriaCount = Math.min(priorityCriteriaCount, 1); // Cannot be Priority OFI
+      downgradedReason = 'Workaround available';
+    } else if (affectsSmallUserBase && noBusinessImpact) {
+      priorityCriteriaCount = Math.min(priorityCriteriaCount, 1);
+      downgradedReason = 'Affects <10% of users with no significant business impact';
+    } else if (minimalPerformanceImpact && noBusinessImpact) {
+      priorityCriteriaCount = Math.min(priorityCriteriaCount, 1);
+      downgradedReason = 'Performance impact <20% with no significant business impact';
+    }
     
     // Must meet AT LEAST 2 criteria for Priority OFI
-    const classification = priorityCriteriaCount >= 2 ? 'Priority OFI' : 'Standard OFI';
+    let classification: 'Standard OFI' | 'Priority OFI' = priorityCriteriaCount >= 2 ? 'Priority OFI' : 'Standard OFI';
+    
+    // Final safety check: Default to Standard OFI if uncertain
+    if (classification === 'Priority OFI' && !this.hasStrongEvidence(metrics, criteriaMet)) {
+      classification = 'Standard OFI';
+      downgradedReason = 'Insufficient evidence for Priority OFI classification';
+    }
     
     const justification = this.buildJustification(
       classification,
       criteriaMet,
       priorityCriteriaCount,
-      metrics
+      metrics,
+      downgradedReason
     );
 
     return {
@@ -109,29 +141,31 @@ export class OFIClassificationService {
     description: string
   ): boolean {
     
-    // Check for crashes/corruption
-    const crashKeywords = ['crash', 'corrupt', 'fail', 'break', 'error', 'exception'];
-    const hasCrashRisk = crashKeywords.some(keyword => 
+    // STRICT: Check for ACTUAL crashes/corruption - not just keywords
+    const severeKeywords = ['crash', 'corrupt', 'data loss', 'system failure'];
+    const criticalKeywords = ['critical', 'severe', 'complete'];
+    const hasSevereCrashRisk = severeKeywords.some(keyword => 
       name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && criticalKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
     );
 
-    // Check memory leaks
+    // Check memory leaks - only if explicitly measured
     const hasMemoryLeak = (metrics.memoryLeakRate ?? 0) > 100;
 
-    // Check performance degradation
+    // Check performance degradation - only if explicitly measured
     const hasPerformanceIssue = (metrics.performanceImpact ?? 0) > 50;
 
-    // Check security vulnerabilities
+    // Check security vulnerabilities - only if explicitly scored
     const hasSecurityVuln = (metrics.cvssScore ?? 0) >= 7.0;
 
-    // Security-specific keywords
-    const securityKeywords = ['https', 'secure', 'ssl', 'vulnerability', 'security'];
-    const hasSecurityKeyword = securityKeywords.some(keyword => 
-      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    );
+    // HTTPS missing is NOT automatically a system stability issue
+    // Only if it's combined with actual security vulnerabilities
+    const isHttpsIssue = name.toLowerCase().includes('https') && 
+                        !name.toLowerCase().includes('not') &&
+                        hasSecurityVuln;
 
-    return hasCrashRisk || hasMemoryLeak || hasPerformanceIssue || hasSecurityVuln || 
-           (hasSecurityKeyword && name.toLowerCase().includes('not'));
+    return hasSevereCrashRisk || hasMemoryLeak || hasPerformanceIssue || hasSecurityVuln || isHttpsIssue;
   }
 
   /**
@@ -311,13 +345,49 @@ export class OFIClassificationService {
   }
 
   /**
+   * Check if there's a workaround available
+   */
+  private checkForWorkaround(name: string, description: string, context?: any): boolean {
+    const workaroundKeywords = ['workaround', 'alternative', 'can use', 'instead', 'manually'];
+    const hasWorkaroundInText = workaroundKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+    
+    // Check if notes mention a workaround
+    const hasWorkaroundInNotes = context?.notes && workaroundKeywords.some(keyword => 
+      context.notes.toLowerCase().includes(keyword)
+    );
+    
+    return hasWorkaroundInText || hasWorkaroundInNotes;
+  }
+
+  /**
+   * Check if there's strong evidence for Priority OFI
+   */
+  private hasStrongEvidence(metrics: OFIAnalysisMetrics, criteria: OFIClassificationCriteria): boolean {
+    // Must have at least one concrete metric
+    const hasConcreteMetrics = 
+      (metrics.performanceImpact && metrics.performanceImpact > 50) ||
+      (metrics.userBaseAffected && metrics.userBaseAffected > 30) ||
+      (metrics.revenueImpactPerDay && metrics.revenueImpactPerDay > 10000) ||
+      (metrics.cvssScore && metrics.cvssScore >= 7.0) ||
+      (metrics.supportTicketsPerDay && metrics.supportTicketsPerDay > 10);
+    
+    // Must have at least 2 criteria strongly met
+    const strongCriteriaCount = Object.values(criteria).filter(Boolean).length;
+    
+    return hasConcreteMetrics && strongCriteriaCount >= 2;
+  }
+
+  /**
    * Build detailed justification for the classification
    */
   private buildJustification(
     classification: 'Standard OFI' | 'Priority OFI',
     criteria: OFIClassificationCriteria,
     count: number,
-    metrics: OFIAnalysisMetrics
+    metrics: OFIAnalysisMetrics,
+    downgradedReason?: string
   ): string {
     
     let justification = `Classification: ${classification}\n`;
@@ -383,6 +453,10 @@ export class OFIClassificationService {
       justification += "✗ Technical Debt Criticality: Manageable technical debt\n";
     }
 
+    if (downgradedReason) {
+      justification += `\n⬇️  AUTO-DOWNGRADED: ${downgradedReason}\n`;
+    }
+
     if (classification === 'Priority OFI') {
       justification += `\n✅ PRIORITY OFI: Meets ${count} criteria (minimum 2 required)`;
       justification += "\n⚠️  Requires immediate attention and validation";
@@ -400,35 +474,36 @@ export class OFIClassificationService {
   private extractMetricsFromAuditItem(item: AuditItem): OFIAnalysisMetrics {
     const metrics: OFIAnalysisMetrics = {};
 
-    // Extract performance metrics from notes
+    // Extract performance metrics from notes - BE CONSERVATIVE
     if (item.notes) {
       const speedMatch = item.notes.match(/speed score[:\s]*(\d+)/i);
       if (speedMatch) {
         const score = parseInt(speedMatch[1]);
-        metrics.performanceImpact = score < 30 ? 70 : score < 50 ? 50 : 25;
+        // Only count as performance impact if EXTREMELY slow (under 20)
+        metrics.performanceImpact = score < 20 ? 60 : score < 30 ? 40 : 0;
       }
 
       const percentMatch = item.notes.match(/(\d+)%/);
       if (percentMatch) {
         const percent = parseInt(percentMatch[1]);
-        if (item.name.toLowerCase().includes('image') || item.name.toLowerCase().includes('alt')) {
-          metrics.userBaseAffected = percent < 50 ? 40 : 20;
+        // Only count user impact if it's a critical blocking issue
+        if (item.name.toLowerCase().includes('block') || item.name.toLowerCase().includes('prevent')) {
+          metrics.userBaseAffected = percent > 70 ? 35 : 0;
         }
       }
     }
 
-    // Security-related items get higher scores
-    if (item.name.toLowerCase().includes('https') && item.status === 'Priority OFI') {
+    // HTTPS alone is NOT a security vulnerability
+    // Only assign CVSS score if there's actual security risk mentioned
+    if (item.name.toLowerCase().includes('security') && 
+        item.description.toLowerCase().includes('vulnerability')) {
       metrics.cvssScore = 7.5;
     }
 
-    // Critical items affecting user workflows
-    if (item.importance === 'High' && item.status === 'Priority OFI') {
-      if (item.name.toLowerCase().includes('h1') || 
-          item.name.toLowerCase().includes('title') ||
-          item.name.toLowerCase().includes('contact')) {
-        metrics.userBaseAffected = 35;
-      }
+    // Missing H1 or title is NOT automatically a critical user workflow blocker
+    // Only assign user impact if it actually prevents users from doing something
+    if (item.importance === 'High' && item.description.toLowerCase().includes('block')) {
+      metrics.userBaseAffected = 25; // Still below the 30% threshold
     }
 
     return metrics;

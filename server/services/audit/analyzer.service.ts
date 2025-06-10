@@ -139,10 +139,9 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the website load fast?",
       description: "Page load speed affects user experience and SEO",
-      status: homepage.pageLoadSpeed.score >= 75 ? 'OK' : 
-              homepage.pageLoadSpeed.score >= 30 ? 'OFI' : 'Priority OFI',
+      status: homepage.pageLoadSpeed.score >= 50 ? 'OK' : 'OFI', // Default to OK or OFI, never Priority OFI
       importance: 'High',
-      notes: `Page speed score: ${homepage.pageLoadSpeed.score}/100. Priority OFI only if extremely slow (under 30).`
+      notes: `Page speed score: ${homepage.pageLoadSpeed.score}/100`
     });
     
     // ==========================================
@@ -210,10 +209,9 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have a clear H1 tag?",
       description: "H1 should clearly describe the page content",
-      status: homepage.h1s.length === 0 ? 'Priority OFI' :
-              homepage.h1s.length === 1 ? 'OK' : 'OFI',
+      status: homepage.h1s.length === 1 ? 'OK' : 'OFI', // Default to OFI if missing or multiple
       importance: 'High',
-      notes: `Found ${homepage.h1s.length} H1 tag(s). Priority OFI only if completely missing (0). Multiple H1s are just OFI.`
+      notes: `Found ${homepage.h1s.length} H1 tag(s)`
     });
     
     // Check heading structure
@@ -256,9 +254,9 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the website secure (HTTPS)?",
       description: "HTTPS is essential for security and SEO",
-      status: homepage.hasHttps ? 'OK' : 'Priority OFI',
+      status: homepage.hasHttps ? 'OK' : 'OFI', // Default to OFI, not Priority OFI
       importance: 'High',
-      notes: !homepage.hasHttps ? "Site is not using HTTPS encryption - this is a security risk" : undefined
+      notes: !homepage.hasHttps ? "Site is not using HTTPS encryption" : undefined
     });
     
     // Check canonical URL

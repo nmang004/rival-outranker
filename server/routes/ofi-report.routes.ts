@@ -235,6 +235,113 @@ router.post('/reclassify/:auditId', requireAdmin, async (req: Request, res: Resp
 });
 
 /**
+ * POST /api/ofi-reports/bulk-reclassify
+ * Bulk reclassify all Priority OFI items in recent audits
+ */
+router.post('/bulk-reclassify', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { days = 30, dryRun = false } = req.body;
+    
+    // Get recent audits
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const audits = await rivalAuditRepository.getAuditsByDateRange(startDate, new Date());
+    
+    let totalProcessed = 0;
+    let totalDowngraded = 0;
+    let totalUpgraded = 0;
+    const reclassificationDetails: any[] = [];
+    
+    for (const audit of audits) {
+      const auditResult = {
+        auditId: audit.id,
+        url: audit.url,
+        timestamp: audit.timestamp,
+        changes: [] as any[]
+      };
+      
+      // Process all sections
+      const sections = ['onPage', 'structureNavigation', 'contactPage', 'servicePages', 'locationPages', 'serviceAreaPages'];
+      
+      for (const sectionName of sections) {
+        const section = (audit as any)[sectionName];
+        if (!section || !section.items) continue;
+        
+        for (let i = 0; i < section.items.length; i++) {
+          const item = section.items[i];
+          
+          // Only process Priority OFI items
+          if (item.status === 'Priority OFI') {
+            totalProcessed++;
+            
+            const classificationResult = ofiClassificationService.classifyAuditItem(item);
+            const newStatus = classificationResult.classification === 'Priority OFI' ? 'Priority OFI' : 'OFI';
+            
+            if (newStatus !== item.status) {
+              totalDowngraded++;
+              
+              auditResult.changes.push({
+                section: sectionName,
+                itemName: item.name,
+                oldStatus: item.status,
+                newStatus: newStatus,
+                justification: classificationResult.justification
+              });
+              
+              // Update the item if not dry run
+              if (!dryRun) {
+                section.items[i] = {
+                  ...item,
+                  status: newStatus,
+                  notes: (item.notes || '') + '\n\n[Bulk Reclassification] ' + classificationResult.justification
+                };
+              }
+            }
+          }
+        }
+      }
+      
+      // Save the audit if changes were made and not dry run
+      if (auditResult.changes.length > 0) {
+        reclassificationDetails.push(auditResult);
+        
+        if (!dryRun) {
+          await rivalAuditRepository.updateAudit(audit.id, {
+            results: audit.results,
+            summary: audit.summary
+          });
+        }
+      }
+    }
+    
+    const successRate = totalProcessed > 0 ? ((totalProcessed - totalDowngraded) / totalProcessed * 100).toFixed(1) : 100;
+    
+    res.json({
+      success: true,
+      data: {
+        dryRun,
+        period: `${days} days`,
+        auditsProcessed: audits.length,
+        totalItemsProcessed: totalProcessed,
+        totalDowngraded,
+        totalUpgraded,
+        successRate,
+        recommendation: totalDowngraded > totalProcessed * 0.5 ? 
+          'High downgrade rate indicates previous classification was too strict' :
+          'Classification system is working as expected',
+        details: reclassificationDetails
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in bulk reclassification:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to perform bulk reclassification'
+    });
+  }
+});
+
+/**
  * GET /api/ofi-reports/classification-metrics
  * Get overall classification system health metrics
  */

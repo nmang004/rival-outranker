@@ -35,6 +35,7 @@ import {
 } from "recharts";
 import { Helmet } from "react-helmet";
 import { ChartExport } from "@/components/ui/chart-export";
+import { OFIClassificationAdmin } from "@/components/features/audit";
 
 // API usage interface
 interface ApiUsage {
@@ -394,6 +395,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="records">Records</TabsTrigger>
           <TabsTrigger value="errors">Errors</TabsTrigger>
+          <TabsTrigger value="ofi-classification">OFI Classification</TabsTrigger>
         </TabsList>
         
         {/* Overview Tab */}
@@ -844,6 +846,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+        
+        {/* OFI Classification Tab */}
+        <TabsContent value="ofi-classification">
+          <OFIClassificationAdmin />
         </TabsContent>
       </Tabs>
     </div>

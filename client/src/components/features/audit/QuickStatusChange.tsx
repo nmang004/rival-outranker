@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { AuditItem, EnhancedAuditItem, AuditStatus } from "@shared/schema";
+import { useState, useEffect } from "react";
+import { AuditItem, EnhancedAuditItem, AuditStatus, RivalAudit } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/ui/use-toast";
+import { PriorityOFIWarningDialog } from "./PriorityOFIWarningDialog";
 
 interface QuickStatusChangeProps {
   item: AuditItem | EnhancedAuditItem;
@@ -34,6 +35,59 @@ export default function QuickStatusChange({
   const [editStatus, setEditStatus] = useState<AuditStatus>(item.status);
   const [editNotes, setEditNotes] = useState(item.notes || "");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showPriorityWarning, setShowPriorityWarning] = useState(false);
+  const [auditStats, setAuditStats] = useState<{ priorityOFIPercentage: number; totalPriorityOFI: number; totalItems: number } | null>(null);
+
+  // Fetch current audit stats on mount
+  useEffect(() => {
+    const fetchAuditStats = async () => {
+      try {
+        const response = await fetch(`/api/rival-audit/${auditId}`);
+        if (response.ok) {
+          const audit: RivalAudit = await response.json();
+          const allItems = [
+            ...audit.onPage.items,
+            ...audit.structureNavigation.items,
+            ...audit.contactPage.items,
+            ...audit.servicePages.items,
+            ...audit.locationPages.items,
+            ...(audit.serviceAreaPages?.items || [])
+          ];
+          const totalItems = allItems.length;
+          const totalPriorityOFI = allItems.filter(item => item.status === 'Priority OFI').length;
+          const priorityOFIPercentage = totalItems > 0 ? (totalPriorityOFI / totalItems) * 100 : 0;
+          
+          setAuditStats({
+            priorityOFIPercentage,
+            totalPriorityOFI,
+            totalItems
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching audit stats:', error);
+      }
+    };
+    
+    if (open && auditId) {
+      fetchAuditStats();
+    }
+  }, [open, auditId]);
+
+  const handleStatusClick = (status: AuditStatus) => {
+    if (status === "Priority OFI" && item.status !== "Priority OFI") {
+      // Show warning dialog when selecting Priority OFI
+      setEditStatus(status);
+      setShowPriorityWarning(true);
+    } else {
+      setEditStatus(status);
+    }
+  };
+
+  const handlePriorityOFIConfirm = (justification: string) => {
+    // Add justification to notes
+    setEditNotes(editNotes + (editNotes ? "\n\n" : "") + "[Priority OFI Justification] " + justification);
+    setShowPriorityWarning(false);
+  };
 
   const handleSave = async () => {
     try {
@@ -118,6 +172,7 @@ export default function QuickStatusChange({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -139,7 +194,7 @@ export default function QuickStatusChange({
               <Badge 
                 variant="outline" 
                 className={`border-destructive bg-destructive/10 text-destructive cursor-pointer ${editStatus === "Priority OFI" ? 'ring-2 ring-destructive' : ''}`}
-                onClick={() => setEditStatus("Priority OFI")}
+                onClick={() => handleStatusClick("Priority OFI")}
               >
                 Priority OFI
               </Badge>
@@ -194,5 +249,23 @@ export default function QuickStatusChange({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Priority OFI Warning Dialog */}
+    {auditStats && (
+      <PriorityOFIWarningDialog
+        open={showPriorityWarning}
+        onOpenChange={(open) => {
+          if (!open) {
+            // If cancelled, revert status change
+            setEditStatus(item.status);
+          }
+          setShowPriorityWarning(open);
+        }}
+        onConfirm={handlePriorityOFIConfirm}
+        currentStats={auditStats}
+        itemName={item.name}
+      />
+    )}
+    </>
   );
 }

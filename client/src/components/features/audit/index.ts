@@ -1,3 +1,7 @@
+export * from './OFIClassificationAdmin';
+export * from './OFIClassificationDisplay';
+export * from './OFIWeeklyReport';
+export * from './PriorityOFIWarningDialog';
 export * from './QuickStatusChange';
 export * from './RivalAuditDashboard';
 export * from './RivalAuditLoadingScreen';
