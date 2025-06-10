@@ -47,6 +47,31 @@ class Crawler {
   private performanceWindow: Array<{timestamp: number, responseTime: number}> = [];
   private lastConcurrencyAdjustment = 0;
   
+  // Content similarity detection
+  private contentHashes = new Map<string, string>(); // hash -> url
+  private similarityThreshold = 0.8; // 80% similarity threshold
+  
+  // Site fingerprinting and CMS detection
+  private detectedCMS: string | null = null;
+  private siteFingerprint: {
+    hasWordPress: boolean;
+    hasShopify: boolean;
+    hasSquarespace: boolean;
+    hasWix: boolean;
+    hasJoomla: boolean;
+    hasDrupal: boolean;
+    hasCustom: boolean;
+    framework?: string;
+  } = {
+    hasWordPress: false,
+    hasShopify: false,
+    hasSquarespace: false,
+    hasWix: false,
+    hasJoomla: false,
+    hasDrupal: false,
+    hasCustom: true
+  };
+  
   // Sitemap discovery cache
   private sitemapUrls = new Set<string>();
   private sitemapDiscovered = false;
@@ -71,6 +96,285 @@ class Crawler {
     startTime: 0,
     endTime: 0
   };
+
+  /**
+   * Detect CMS and site architecture from homepage content and headers
+   */
+  private detectCMSAndFingerprint(html: string, headers: any, url: string): void {
+    const htmlLower = html.toLowerCase();
+    
+    // WordPress detection
+    if (htmlLower.includes('/wp-content/') || 
+        htmlLower.includes('/wp-includes/') ||
+        htmlLower.includes('wp-json') ||
+        htmlLower.includes('wordpress') ||
+        headers['x-powered-by']?.includes('WordPress')) {
+      this.siteFingerprint.hasWordPress = true;
+      this.detectedCMS = 'WordPress';
+    }
+    
+    // Shopify detection
+    if (htmlLower.includes('shopify') ||
+        htmlLower.includes('cdn.shopify.com') ||
+        headers['x-shopid'] ||
+        headers['x-shopify-shop']) {
+      this.siteFingerprint.hasShopify = true;
+      this.detectedCMS = 'Shopify';
+    }
+    
+    // Squarespace detection
+    if (htmlLower.includes('squarespace') ||
+        htmlLower.includes('assets.squarespace.com') ||
+        htmlLower.includes('static1.squarespace.com')) {
+      this.siteFingerprint.hasSquarespace = true;
+      this.detectedCMS = 'Squarespace';
+    }
+    
+    // Wix detection
+    if (htmlLower.includes('wix.com') ||
+        htmlLower.includes('static.wixstatic.com') ||
+        htmlLower.includes('wix-code')) {
+      this.siteFingerprint.hasWix = true;
+      this.detectedCMS = 'Wix';
+    }
+    
+    // Joomla detection
+    if (htmlLower.includes('joomla') ||
+        htmlLower.includes('/components/com_') ||
+        htmlLower.includes('mootools') ||
+        headers['x-content-encoded-by']?.includes('Joomla')) {
+      this.siteFingerprint.hasJoomla = true;
+      this.detectedCMS = 'Joomla';
+    }
+    
+    // Drupal detection
+    if (htmlLower.includes('drupal') ||
+        htmlLower.includes('/sites/default/files/') ||
+        htmlLower.includes('drupal.js') ||
+        headers['x-generator']?.includes('Drupal')) {
+      this.siteFingerprint.hasDrupal = true;
+      this.detectedCMS = 'Drupal';
+    }
+    
+    // Framework detection
+    if (htmlLower.includes('react') || htmlLower.includes('_reactroot')) {
+      this.siteFingerprint.framework = 'React';
+    } else if (htmlLower.includes('angular') || htmlLower.includes('ng-app')) {
+      this.siteFingerprint.framework = 'Angular';
+    } else if (htmlLower.includes('vue') || htmlLower.includes('vue.js')) {
+      this.siteFingerprint.framework = 'Vue.js';
+    }
+    
+    // If no CMS detected, mark as custom
+    if (!this.detectedCMS) {
+      this.siteFingerprint.hasCustom = true;
+      this.detectedCMS = 'Custom';
+    } else {
+      this.siteFingerprint.hasCustom = false;
+    }
+    
+    console.log(`[Crawler] 🔍 Site fingerprint detected: ${this.detectedCMS}${this.siteFingerprint.framework ? ` (${this.siteFingerprint.framework})` : ''}`);
+  }
+
+  /**
+   * Get CMS-specific crawling optimizations
+   */
+  private getCMSOptimizations(): {
+    priorityPatterns: string[];
+    skipPatterns: string[];
+    maxDepth: number;
+    specialHandling: string[];
+  } {
+    const baseConfig = {
+      priorityPatterns: ['/contact', '/about', '/services'],
+      skipPatterns: ['/wp-admin', '/wp-content/uploads'],
+      maxDepth: 4,
+      specialHandling: []
+    };
+    
+    switch (this.detectedCMS) {
+      case 'WordPress':
+        return {
+          priorityPatterns: ['/contact', '/about', '/services', '/shop', '/blog'],
+          skipPatterns: [
+            '/wp-admin', '/wp-content/uploads', '/wp-includes',
+            '/feed', '?replytocom=', '?preview=', '/tag/', '/category/',
+            '/author/', '/page/', '?m=', '?paged='
+          ],
+          maxDepth: 3,
+          specialHandling: ['wp-json', 'wp-sitemap']
+        };
+        
+      case 'Shopify':
+        return {
+          priorityPatterns: ['/products', '/collections', '/pages/contact', '/pages/about'],
+          skipPatterns: [
+            '/admin', '/cart', '/account', '/collections/all',
+            '/search', '?sort_by=', '?page=', '/blogs/news/tagged/'
+          ],
+          maxDepth: 3,
+          specialHandling: ['collections.json', 'products.json']
+        };
+        
+      case 'Squarespace':
+        return {
+          priorityPatterns: ['/contact', '/about', '/work', '/services'],
+          skipPatterns: ['/config', '/universal', '?format=json'],
+          maxDepth: 3,
+          specialHandling: ['squarespace-headers']
+        };
+        
+      case 'Wix':
+        return {
+          priorityPatterns: ['/contact', '/about', '/services'],
+          skipPatterns: ['/_api/', '/wix-blog-backend'],
+          maxDepth: 2, // Wix sites tend to be simpler
+          specialHandling: ['wix-public-html-info-webapp']
+        };
+        
+      default:
+        return baseConfig;
+    }
+  }
+
+  /**
+   * Apply CMS-specific URL filtering
+   */
+  private applyCMSFiltering(urls: string[]): string[] {
+    const optimizations = this.getCMSOptimizations();
+    
+    // Filter out CMS-specific skip patterns
+    const filteredUrls = urls.filter(url => {
+      const urlLower = url.toLowerCase();
+      return !optimizations.skipPatterns.some(pattern => 
+        urlLower.includes(pattern.toLowerCase())
+      );
+    });
+    
+    console.log(`[Crawler] 🎯 CMS filtering (${this.detectedCMS}): ${urls.length} → ${filteredUrls.length} URLs (removed ${urls.length - filteredUrls.length} CMS-specific URLs)`);
+    
+    return filteredUrls;
+  }
+
+  /**
+   * Generate a simple hash from content for similarity detection
+   */
+  private generateContentHash(content: string): string {
+    // Simple hash function for content similarity
+    let hash = 0;
+    const cleanContent = content
+      .replace(/<script[^>]*>.*?<\/script>/gis, '') // Remove scripts
+      .replace(/<style[^>]*>.*?<\/style>/gis, '') // Remove styles
+      .replace(/<[^>]*>/g, ' ') // Remove HTML tags
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .toLowerCase()
+      .trim();
+    
+    for (let i = 0; i < cleanContent.length; i++) {
+      const char = cleanContent.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    
+    return Math.abs(hash).toString(36);
+  }
+
+  /**
+   * Calculate content similarity between two strings using simple metrics
+   */
+  private calculateContentSimilarity(content1: string, content2: string): number {
+    // Normalize both contents
+    const normalize = (text: string) => text
+      .replace(/<script[^>]*>.*?<\/script>/gis, '')
+      .replace(/<style[^>]*>.*?<\/style>/gis, '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .toLowerCase()
+      .trim();
+    
+    const norm1 = normalize(content1);
+    const norm2 = normalize(content2);
+    
+    if (norm1.length === 0 || norm2.length === 0) return 0;
+    
+    // Simple word-based similarity
+    const words1 = norm1.split(' ').filter(w => w.length > 3);
+    const words2 = norm2.split(' ').filter(w => w.length > 3);
+    
+    if (words1.length === 0 || words2.length === 0) return 0;
+    
+    const set1 = new Set(words1);
+    const set2 = new Set(words2);
+    
+    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const union = new Set([...set1, ...set2]);
+    
+    return intersection.size / union.size;
+  }
+
+  /**
+   * Check if content is similar to already crawled pages
+   */
+  private checkContentSimilarity(content: string, url: string): { isDuplicate: boolean; similarUrl?: string; similarity?: number } {
+    const contentHash = this.generateContentHash(content);
+    
+    // Check for exact hash match first (fastest)
+    if (this.contentHashes.has(contentHash)) {
+      const existingUrl = this.contentHashes.get(contentHash)!;
+      return { 
+        isDuplicate: true, 
+        similarUrl: existingUrl, 
+        similarity: 1.0 
+      };
+    }
+    
+    // For performance, only check similarity against a sample of recent pages
+    const recentHashes = Array.from(this.contentHashes.entries()).slice(-20);
+    
+    for (const [hash, existingUrl] of recentHashes) {
+      // Skip if it's the same URL
+      if (existingUrl === url) continue;
+      
+      // Check if the hashes are similar (simple string similarity)
+      if (Math.abs(hash.length - contentHash.length) <= 2) {
+        // For similar hash lengths, do a more detailed check
+        // This is a simplified approach - in production you might want more sophisticated algorithms
+        const hashSimilarity = this.calculateSimpleStringSimilarity(hash, contentHash);
+        
+        if (hashSimilarity > 0.9) { // Very similar hashes indicate very similar content
+          return { 
+            isDuplicate: true, 
+            similarUrl: existingUrl, 
+            similarity: hashSimilarity 
+          };
+        }
+      }
+    }
+    
+    // Store this content hash
+    this.contentHashes.set(contentHash, url);
+    
+    return { isDuplicate: false };
+  }
+
+  /**
+   * Simple string similarity calculation
+   */
+  private calculateSimpleStringSimilarity(str1: string, str2: string): number {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    let matches = 0;
+    for (let i = 0; i < shorter.length; i++) {
+      if (longer[i] === shorter[i]) {
+        matches++;
+      }
+    }
+    
+    return matches / longer.length;
+  }
 
   /**
    * Quick URL validation and early termination checks
@@ -453,6 +757,15 @@ class Crawler {
       // Parse the HTML
       const $ = cheerio.load(response.data);
       
+      // Check for content similarity/duplication before proceeding
+      const similarityCheck = this.checkContentSimilarity(response.data, normalizedUrl);
+      if (similarityCheck.isDuplicate) {
+        console.log(`[Crawler] 🔍 Skipping duplicate content: ${normalizedUrl} (similar to ${similarityCheck.similarUrl}, ${Math.round((similarityCheck.similarity || 0) * 100)}% match)`);
+        const duplicateResult = this.createDuplicateContentResult(normalizedUrl, similarityCheck.similarUrl!, similarityCheck.similarity || 1.0);
+        this.responseCache.set(normalizedUrl, duplicateResult);
+        return duplicateResult;
+      }
+      
       // Check if this is a JavaScript-heavy site that needs Puppeteer
       const isJsHeavy = this.detectJavaScriptHeavySite(response.data, normalizedUrl);
       
@@ -551,6 +864,61 @@ class Crawler {
     }
   }
   
+  /**
+   * Create standardized duplicate content output
+   */
+  private createDuplicateContentResult(url: string, similarUrl: string, similarity: number): CrawlerOutput {
+    return {
+      url,
+      title: `Duplicate Content (${Math.round(similarity * 100)}% similar to ${similarUrl})`,
+      statusCode: 200,
+      meta: { 
+        description: "Duplicate content detected", 
+        ogTags: {}, 
+        twitterTags: {} 
+      },
+      content: { 
+        text: `This page has ${Math.round(similarity * 100)}% similar content to ${similarUrl}`, 
+        wordCount: 10, 
+        paragraphs: [`Duplicate content detected - similar to ${similarUrl}`] 
+      },
+      headings: { 
+        h1: ['Duplicate Content'], 
+        h2: [], h3: [], h4: [], h5: [], h6: [] 
+      },
+      links: { internal: [], external: [] },
+      images: [],
+      schema: [],
+      mobileCompatible: false,
+      performance: { loadTime: 0, resourceCount: 0, resourceSize: 0 },
+      security: {
+        hasHttps: url.startsWith('https://'),
+        hasMixedContent: false,
+        hasSecurityHeaders: false
+      },
+      accessibility: {
+        hasAccessibleElements: false,
+        missingAltText: 0,
+        hasAriaAttributes: false,
+        hasProperHeadingStructure: false
+      },
+      seoIssues: {
+        noindex: false,
+        brokenLinks: 0,
+        missingAltText: 0,
+        duplicateMetaTags: false,
+        thinContent: true,
+        missingHeadings: true,
+        robots: null
+      },
+      isDuplicate: true,
+      similarUrl,
+      similarity,
+      html: `<html><body><h1>Duplicate Content</h1><p>This page is ${Math.round(similarity * 100)}% similar to <a href="${similarUrl}">${similarUrl}</a></p></body></html>`,
+      rawHtml: `<html><body><h1>Duplicate Content</h1><p>This page is ${Math.round(similarity * 100)}% similar to <a href="${similarUrl}">${similarUrl}</a></p></body></html>`
+    };
+  }
+
   /**
    * Create standardized error output
    */
@@ -1528,6 +1896,21 @@ class Crawler {
     this.adaptiveConcurrency = this.CONCURRENT_REQUESTS;
     this.performanceWindow = [];
     this.lastConcurrencyAdjustment = 0;
+    
+    // Reset content similarity detection
+    this.contentHashes.clear();
+    
+    // Reset CMS detection
+    this.detectedCMS = null;
+    this.siteFingerprint = {
+      hasWordPress: false,
+      hasShopify: false,
+      hasSquarespace: false,
+      hasWix: false,
+      hasJoomla: false,
+      hasDrupal: false,
+      hasCustom: true
+    };
   }
 
   /**
@@ -1560,6 +1943,11 @@ class Crawler {
       // Crawl the homepage first
       const homepage = await this.crawlPage(url);
       this.stats.pagesCrawled++;
+      
+      // Detect CMS and site fingerprint from homepage
+      if (homepage && homepage.html && !homepage.error) {
+        this.detectCMSAndFingerprint(homepage.html, {}, url);
+      }
       
       if (homepage.error) {
         console.error(`[Crawler] Failed to crawl homepage: ${homepage.error}`);
@@ -1605,7 +1993,10 @@ class Crawler {
       
       // Pre-filter URLs by content type
       const validUrls = await this.prefilterUrls(discoveredUrls);
-      this.pendingUrls = validUrls;
+      
+      // Apply CMS-specific filtering
+      const cmsFilteredUrls = this.applyCMSFiltering(validUrls);
+      this.pendingUrls = cmsFilteredUrls;
 
       // Crawl additional pages using parallel processing
       const otherPages: any[] = [];
