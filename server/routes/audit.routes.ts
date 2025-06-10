@@ -4,11 +4,11 @@ import { auditService } from '../services/audit/audit.service';
 import { generateRivalAuditExcel, generateEnhancedRivalAuditExcel } from '../services/common/excel-exporter.service';
 import { generateRivalAuditCsv } from '../services/common/csv-exporter.service';
 import { AuditStatus } from '../../shared/schema';
-import { storage } from '../storage';
+import { rivalAuditRepository } from '../repositories/rival-audit.repository';
 
 const router = Router();
 
-// Type for cached rival audit (should be moved to shared types)
+// Type for cached rival audit (for backward compatibility)
 interface CachedRivalAudit {
   id: number;
   url: string;
@@ -30,12 +30,6 @@ interface CachedRivalAudit {
   serviceAreaPages?: any;
   [key: string]: any;
 }
-
-// In-memory cache for audit results (should be replaced with database storage)
-const auditCache: Record<number, CachedRivalAudit> = {};
-
-// Track processing status separately
-const processingStatus: Record<number, { status: 'processing' | 'completed' | 'failed', startTime: Date }> = {};
 
 // Generate mock rival audit data (fallback function)
 function generateMockRivalAudit(url: string): CachedRivalAudit {
@@ -82,19 +76,19 @@ router.post("/enhanced", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "URL is required" });
     }
     
-    // Generate an audit ID (in a production environment, this would be stored in the database)
-    const auditId = Math.floor(Math.random() * 1000) + 1000; // Different range for enhanced audits
-    console.log('🆔 Generated enhanced audit ID:', auditId);
-    
-    // Mark as processing
-    processingStatus[auditId] = {
+    // Create audit record in database
+    const auditRecord = await rivalAuditRepository.createAudit({
+      url,
       status: 'processing',
-      startTime: new Date()
-    };
+      userId: req.user?.id || null,
+      auditType: 'enhanced'
+    });
+    
+    console.log('🆔 Created enhanced audit ID:', auditRecord.id);
     
     // Return the audit ID immediately
     const response = { 
-      id: auditId, 
+      id: auditRecord.id, 
       message: "Enhanced audit started (140+ factors)", 
       url,
       type: "enhanced"
@@ -105,51 +99,56 @@ router.post("/enhanced", async (req: Request, res: Response) => {
     // Perform the actual enhanced audit asynchronously
     setTimeout(async () => {
       try {
-        console.log(`Starting enhanced rival audit for ${url} with ID ${auditId}`);
+        console.log(`Starting enhanced rival audit for ${url} with ID ${auditRecord.id}`);
         // Use the enhanced audit service
         const auditResults = await auditService.crawlAndAuditEnhanced(url);
         
-        // Store the results in our in-memory cache
-        auditCache[auditId] = {
-          ...auditResults,
-          id: auditId,
-          status: 'completed',
-          startTime: new Date(),
-          timestamp: new Date(),
-          type: 'enhanced',
-          summary: {
-            ...auditResults.summary,
-            total: auditResults.summary.totalFactors || 0
-          }
-        };
+        // Store the results in database
+        await rivalAuditRepository.completeAudit(
+          auditRecord.id,
+          {
+            ...auditResults,
+            type: 'enhanced',
+            summary: {
+              ...auditResults.summary,
+              total: auditResults.summary.totalFactors || 0
+            }
+          },
+          auditResults.summary,
+          auditResults.summary.total || 0,
+          auditResults.reachedMaxPages || false
+        );
         
-        // Mark as completed
-        processingStatus[auditId].status = 'completed';
-        console.log(`Completed enhanced rival audit for ${url} with ID ${auditId} - analyzed ${auditResults.summary.totalFactors} factors`);
-        
-        // Associate this audit with current user if they're authenticated
-        if (req.user?.id) {
-          console.log(`Associating enhanced audit ${auditId} with user ${req.user.id}`);
-          // In a real implementation: await storage.saveEnhancedRivalAudit({ ...auditResults, userId: req.user.id });
-        }
+        console.log(`Completed enhanced rival audit for ${url} with ID ${auditRecord.id} - analyzed ${auditResults.summary.totalFactors} factors`);
         
       } catch (error) {
         console.error("Error performing enhanced rival audit:", error);
-        // Mark as failed initially
-        processingStatus[auditId].status = 'failed';
-        // Store mock data as fallback (but mark it as enhanced)
-        const mockAudit = generateMockRivalAudit(url);
-        auditCache[auditId] = {
-          ...mockAudit,
-          type: 'enhanced',
-          summary: {
-            ...mockAudit.summary,
-            totalFactors: 142 // Mock enhanced factor count
-          }
-        };
-        // Mark as completed since we have fallback data
-        processingStatus[auditId].status = 'completed';
-        console.log(`Stored mock enhanced data for failed audit ${auditId}`);
+        
+        try {
+          // Store mock data as fallback
+          const mockAudit = generateMockRivalAudit(url);
+          await rivalAuditRepository.completeAudit(
+            auditRecord.id,
+            {
+              ...mockAudit,
+              type: 'enhanced',
+              summary: {
+                ...mockAudit.summary,
+                totalFactors: 142 // Mock enhanced factor count
+              }
+            },
+            {
+              ...mockAudit.summary,
+              totalFactors: 142
+            },
+            45, // Mock page count
+            false
+          );
+          console.log(`Stored mock enhanced data for failed audit ${auditRecord.id}`);
+        } catch (dbError) {
+          console.error(`Failed to store fallback data for audit ${auditRecord.id}:`, dbError);
+          await rivalAuditRepository.failAudit(auditRecord.id, error instanceof Error ? error.message : 'Unknown error');
+        }
       }
     }, 0);
     
@@ -175,19 +174,19 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "URL is required" });
     }
     
-    // Generate an audit ID (in a production environment, this would be stored in the database)
-    const auditId = Math.floor(Math.random() * 1000) + 1;
-    console.log('🆔 Generated audit ID:', auditId);
-    
-    // Mark as processing
-    processingStatus[auditId] = {
+    // Create audit record in database
+    const auditRecord = await rivalAuditRepository.createAudit({
+      url,
       status: 'processing',
-      startTime: new Date()
-    };
+      userId: req.user?.id || null,
+      auditType: 'standard'
+    });
+    
+    console.log('🆔 Created audit ID:', auditRecord.id);
     
     // Return the audit ID immediately
     const response = { 
-      id: auditId, 
+      id: auditRecord.id, 
       message: continueCrawl ? "Continuing audit" : "Audit started", 
       url 
     };
@@ -197,64 +196,50 @@ router.post("/", async (req: Request, res: Response) => {
     // Perform the actual audit asynchronously
     setTimeout(async () => {
       try {
+        let auditResults;
+        
         if (continueCrawl) {
-          console.log(`Continuing rival audit for ${url} with ID ${auditId}`);
+          console.log(`Continuing rival audit for ${url} with ID ${auditRecord.id}`);
           // Continue crawling from where it left off
-          const auditResults = await rivalAuditCrawler.continueCrawl(url);
-          // Store the results in our in-memory cache
-          auditCache[auditId] = {
-            ...auditResults,
-            id: auditId,
-            status: 'completed',
-            startTime: new Date(),
-            timestamp: new Date(),
-            summary: {
-              ...auditResults.summary,
-              total: auditResults.summary.total || 0
-            }
-          };
-          // Mark as completed
-          processingStatus[auditId].status = 'completed';
-          console.log(`Completed continued rival audit for ${url} with ID ${auditId}`);
+          auditResults = await rivalAuditCrawler.continueCrawl(url);
+          console.log(`Completed continued rival audit for ${url} with ID ${auditRecord.id}`);
         } else {
-          console.log(`Starting new rival audit for ${url} with ID ${auditId}`);
+          console.log(`Starting new rival audit for ${url} with ID ${auditRecord.id}`);
           // Crawl and analyze the website using our new crawler
-          const auditResults = await rivalAuditCrawler.crawlAndAudit(url);
-          // Store the results in our in-memory cache
-          auditCache[auditId] = {
-            ...auditResults,
-            id: auditId,
-            status: 'completed',
-            startTime: new Date(),
-            timestamp: new Date(),
-            summary: {
-              ...auditResults.summary,
-              total: auditResults.summary.total || 0
-            }
-          };
-          // Mark as completed
-          processingStatus[auditId].status = 'completed';
-          console.log(`Completed rival audit for ${url} with ID ${auditId}`);
+          auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          console.log(`Completed rival audit for ${url} with ID ${auditRecord.id}`);
         }
         
-        console.log(`Found ${auditCache[auditId].summary.priorityOfiCount} Priority OFIs, ${auditCache[auditId].summary.ofiCount} OFIs`);
-        console.log(`Cached audit results for ID ${auditId}`);
+        // Store the results in database
+        await rivalAuditRepository.completeAudit(
+          auditRecord.id,
+          auditResults,
+          auditResults.summary,
+          auditResults.summary.total || 0,
+          auditResults.reachedMaxPages || false
+        );
         
-        // Associate this audit with current user if they're authenticated
-        if (req.user?.id) {
-          console.log(`Associating audit ${auditId} with user ${req.user.id}`);
-          // In a real implementation: await storage.saveRivalAudit({ ...auditResults, userId: req.user.id });
-        }
+        console.log(`Found ${auditResults.summary.priorityOfiCount} Priority OFIs, ${auditResults.summary.ofiCount} OFIs`);
+        console.log(`Stored audit results for ID ${auditRecord.id}`);
         
       } catch (error) {
         console.error("Error performing rival audit:", error);
-        // Mark as failed initially
-        processingStatus[auditId].status = 'failed';
-        // Store mock data as fallback
-        auditCache[auditId] = generateMockRivalAudit(url);
-        // Mark as completed since we have fallback data
-        processingStatus[auditId].status = 'completed';
-        console.log(`Stored mock data for failed audit ${auditId}`);
+        
+        try {
+          // Store mock data as fallback
+          const mockAudit = generateMockRivalAudit(url);
+          await rivalAuditRepository.completeAudit(
+            auditRecord.id,
+            mockAudit,
+            mockAudit.summary,
+            45, // Mock page count
+            false
+          );
+          console.log(`Stored mock data for failed audit ${auditRecord.id}`);
+        } catch (dbError) {
+          console.error(`Failed to store fallback data for audit ${auditRecord.id}:`, dbError);
+          await rivalAuditRepository.failAudit(auditRecord.id, error instanceof Error ? error.message : 'Unknown error');
+        }
       }
     }, 0);
     
@@ -279,13 +264,14 @@ router.post("/:id/analyze-service-pages", async (req: Request, res: Response) =>
       return res.status(400).json({ error: "Invalid audit ID" });
     }
     
-    // Check if we have cached results for this ID
-    if (!auditCache[auditId]) {
+    // Get audit from database
+    const auditRecord = await rivalAuditRepository.getAudit(auditId);
+    if (!auditRecord || !auditRecord.results) {
       return res.status(404).json({ error: "Audit not found" });
     }
     
     // Clone the audit to avoid direct mutations
-    const audit = JSON.parse(JSON.stringify(auditCache[auditId]));
+    const audit = JSON.parse(JSON.stringify(auditRecord.results));
     
     // Make sure the service pages section exists
     if (!audit.servicePages || !audit.servicePages.items) {
@@ -345,8 +331,11 @@ router.post("/:id/analyze-service-pages", async (req: Request, res: Response) =>
     // Recalculate summary counts
     updateAuditSummary(audit);
     
-    // Update the cache with our modified audit
-    auditCache[auditId] = audit;
+    // Update the database with our modified audit
+    await rivalAuditRepository.updateAudit(auditId, {
+      results: audit,
+      summary: audit.summary
+    });
     
     console.log("Successfully updated service page analysis");
     
@@ -385,13 +374,14 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid status value" });
     }
     
-    // Check if we have cached results for this ID
-    if (!auditCache[auditId]) {
+    // Get audit from database
+    const auditRecord = await rivalAuditRepository.getAudit(auditId);
+    if (!auditRecord || !auditRecord.results) {
       return res.status(404).json({ error: "Audit not found" });
     }
     
     // Get the appropriate section
-    const audit = auditCache[auditId];
+    const audit = auditRecord.results;
     let section;
     
     switch (sectionName) {
@@ -440,6 +430,12 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     // Update the summary counts
     updateAuditSummary(audit);
     
+    // Update the database
+    await rivalAuditRepository.updateAudit(auditId, {
+      results: audit,
+      summary: audit.summary
+    });
+    
     return res.json({
       success: true,
       updatedItem: item,
@@ -462,16 +458,16 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid audit ID" });
     }
     
-    // Check processing status first
-    const status = processingStatus[auditId];
+    // Get audit from database
+    const auditRecord = await rivalAuditRepository.getAudit(auditId);
     
-    if (!status) {
+    if (!auditRecord) {
       return res.status(404).json({ error: "Audit not found" });
     }
     
     // If still processing, return 202 with status info
-    if (status.status === 'processing') {
-      const timeElapsed = Date.now() - status.startTime.getTime();
+    if (auditRecord.status === 'processing') {
+      const timeElapsed = Date.now() - auditRecord.createdAt.getTime();
       return res.status(202).json({ 
         status: 'processing',
         message: 'Audit is still being processed',
@@ -479,20 +475,30 @@ router.get("/:id", async (req: Request, res: Response) => {
       });
     }
     
-    // If failed without results, return error
-    if (status.status === 'failed' && !auditCache[auditId]) {
-      return res.status(500).json({ error: "Audit failed to complete" });
+    // If failed, return error
+    if (auditRecord.status === 'failed') {
+      return res.status(500).json({ 
+        error: "Audit failed to complete",
+        message: auditRecord.errorMessage || "Unknown error"
+      });
     }
     
-    // Check if we have cached results
-    if (!auditCache[auditId]) {
+    // Check if we have results
+    if (auditRecord.status === 'completed' && auditRecord.results) {
+      // Return the audit results with proper structure
+      const audit = {
+        ...auditRecord.results,
+        id: auditRecord.id,
+        status: auditRecord.status,
+        startTime: auditRecord.createdAt,
+        endTime: auditRecord.completedAt,
+        url: auditRecord.url
+      };
+      
+      res.json(audit);
+    } else {
       return res.status(404).json({ error: "Audit results not found" });
     }
-    
-    const audit = auditCache[auditId];
-    
-    // Return the audit results
-    res.json(audit);
   } catch (error) {
     console.error("Error retrieving rival audit:", error);
     res.status(500).json({ error: "Failed to retrieve audit results" });
@@ -509,12 +515,13 @@ router.get("/:id/export", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid audit ID" });
     }
     
-    // Check if we have cached results for this ID
-    if (!auditCache[auditId]) {
+    // Get audit from database
+    const auditRecord = await rivalAuditRepository.getAudit(auditId);
+    if (!auditRecord || !auditRecord.results) {
       return res.status(404).json({ error: "Audit not found" });
     }
     
-    const audit = auditCache[auditId];
+    const audit = auditRecord.results;
     
     // Check if this is an enhanced audit (140+ factors)
     const isEnhancedAudit = audit.type === 'enhanced' || (audit.summary && 'totalFactors' in audit.summary);
