@@ -116,9 +116,9 @@ export class AuditAnalyzerService {
     items.push({
       name: "Is the website mobile-friendly?",
       description: "Site should work well on mobile devices",
-      status: homepage.mobileFriendly ? 'OK' : 'Priority OFI',
+      status: homepage.mobileFriendly ? 'OK' : 'OFI',
       importance: 'High',
-      notes: !homepage.mobileFriendly ? "No mobile viewport meta tag found" : undefined
+      notes: !homepage.mobileFriendly ? "No mobile viewport meta tag found - consider adding for better mobile experience" : undefined
     });
     
     // Check site speed
@@ -126,9 +126,9 @@ export class AuditAnalyzerService {
       name: "Does the website load fast?",
       description: "Page load speed affects user experience and SEO",
       status: homepage.pageLoadSpeed.score >= 75 ? 'OK' : 
-              homepage.pageLoadSpeed.score >= 50 ? 'OFI' : 'Priority OFI',
+              homepage.pageLoadSpeed.score >= 30 ? 'OFI' : 'Priority OFI',
       importance: 'High',
-      notes: `Page speed score: ${homepage.pageLoadSpeed.score}/100`
+      notes: `Page speed score: ${homepage.pageLoadSpeed.score}/100. Priority OFI only if extremely slow (under 30).`
     });
     
     // ==========================================
@@ -196,10 +196,10 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the homepage have a clear H1 tag?",
       description: "H1 should clearly describe the page content",
-      status: homepage.h1s.length === 1 ? 'OK' : 
-              homepage.h1s.length > 1 ? 'OFI' : 'Priority OFI',
+      status: homepage.h1s.length === 0 ? 'Priority OFI' :
+              homepage.h1s.length === 1 ? 'OK' : 'OFI',
       importance: 'High',
-      notes: `Found ${homepage.h1s.length} H1 tag(s). Recommended: exactly 1 H1 per page.`
+      notes: `Found ${homepage.h1s.length} H1 tag(s). Priority OFI only if completely missing (0). Multiple H1s are just OFI.`
     });
     
     // Check heading structure
@@ -244,7 +244,7 @@ export class AuditAnalyzerService {
       description: "HTTPS is essential for security and SEO",
       status: homepage.hasHttps ? 'OK' : 'Priority OFI',
       importance: 'High',
-      notes: !homepage.hasHttps ? "Site is not using HTTPS encryption" : undefined
+      notes: !homepage.hasHttps ? "Site is not using HTTPS encryption - this is a security risk" : undefined
     });
     
     // Check canonical URL
@@ -393,9 +393,10 @@ export class AuditAnalyzerService {
     items.push({
       name: "Does the contact page have complete NAP (Name, Address, Phone)?",
       description: "NAP consistency is crucial for local SEO",
-      status: contactPage.hasNAP ? 'OK' : 'Priority OFI',
+      status: contactPage.hasNAP ? 'OK' : 
+              (contactPage.hasPhoneNumber || contactPage.hasAddress) ? 'OFI' : 'Priority OFI',
       importance: 'High',
-      notes: `Phone: ${contactPage.hasPhoneNumber ? 'Found' : 'Missing'}, Address: ${contactPage.hasAddress ? 'Found' : 'Missing'}`
+      notes: `Phone: ${contactPage.hasPhoneNumber ? 'Found' : 'Missing'}, Address: ${contactPage.hasAddress ? 'Found' : 'Missing'}. Priority OFI only if both missing.`
     });
     
     // Check for contact form

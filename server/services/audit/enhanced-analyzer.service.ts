@@ -482,7 +482,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Structure Consistency",
       description: "Navigation should be consistent across all pages",
-      status: navigationConsistency >= 80 ? "OK" : navigationConsistency >= 60 ? "OFI" : "Priority OFI",
+      status: navigationConsistency >= 80 ? "OK" : navigationConsistency >= 30 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Navigation consistency score: ${navigationConsistency}%. All pages should have similar navigation structure.`
     });
@@ -492,7 +492,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Depth Optimization",
       description: "Important pages should be accessible within 3 clicks",
-      status: maxDepth <= 3 ? "OK" : maxDepth <= 4 ? "OFI" : "Priority OFI",
+      status: maxDepth <= 3 ? "OK" : maxDepth <= 6 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Maximum navigation depth: ${maxDepth} clicks. Recommended: 3 or fewer.`
     });
@@ -516,7 +516,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Internal Linking Quality",
       description: "Pages should be well-connected with descriptive anchor text",
-      status: linkingQuality >= 70 ? "OK" : linkingQuality >= 50 ? "OFI" : "Priority OFI",
+      status: linkingQuality >= 70 ? "OK" : linkingQuality >= 20 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Internal linking quality score: ${linkingQuality}%. Good internal linking helps with SEO and user navigation.`
     });
@@ -526,7 +526,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Orphaned Pages Detection",
       description: "All pages should be linked from other pages",
-      status: orphanedPages === 0 ? "OK" : orphanedPages <= 2 ? "OFI" : "Priority OFI",
+      status: orphanedPages === 0 ? "OK" : orphanedPages <= 5 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Found ${orphanedPages} potentially orphaned pages. All important pages should be linked from other pages.`
     });
@@ -550,7 +550,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Content Length Consistency",
       description: "Similar page types should have consistent content depth",
-      status: contentConsistency >= 70 ? "OK" : contentConsistency >= 50 ? "OFI" : "Priority OFI",
+      status: contentConsistency >= 70 ? "OK" : contentConsistency >= 30 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Content consistency score: ${contentConsistency}%. Service and location pages should have similar depth.`
     });
@@ -560,7 +560,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Brand Consistency Across Pages",
       description: "Business name and branding should be consistent",
-      status: brandingConsistency >= 80 ? "OK" : brandingConsistency >= 60 ? "OFI" : "Priority OFI",
+      status: brandingConsistency >= 80 ? "OK" : brandingConsistency >= 40 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Branding consistency score: ${brandingConsistency}%. Business name and contact info should be consistent.`
     });
@@ -584,7 +584,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Duplicate Content Detection",
       description: "Each page should have unique, valuable content",
-      status: duplicateContent.percentage < 10 ? "OK" : duplicateContent.percentage < 25 ? "OFI" : "Priority OFI",
+      status: duplicateContent.percentage < 10 ? "OK" : duplicateContent.percentage < 50 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `${duplicateContent.percentage}% duplicate content detected. ${duplicateContent.pages} pages have similar content.`
     });
@@ -594,7 +594,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Thin Content Detection",
       description: "Pages should have substantial, valuable content",
-      status: thinContent.count === 0 ? "OK" : thinContent.count <= 2 ? "OFI" : "Priority OFI",
+      status: thinContent.count === 0 ? "OK" : thinContent.count <= 5 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Found ${thinContent.count} pages with thin content (< 300 words). Average word count: ${thinContent.averageWords}.`
     });
@@ -806,7 +806,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
-      status: score >= 60 ? "OK" : score >= 30 ? "OFI" : "Priority OFI",
+      status: score >= 60 ? "OK" : score >= 20 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Flesch Reading Ease: ${score}/100. Target: 60+ for general audience.`
     };
@@ -817,7 +817,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Sufficient Content Length",
       description: `${pageType} pages should have adequate content depth`,
-      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.7 ? "OFI" : "Priority OFI",
+      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.3 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Word count: ${wordCount}. Recommended minimum: ${minWords} words for ${pageType} pages.`
     };
@@ -828,7 +828,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Keyword Density Optimization",
       description: "Keywords should appear naturally without stuffing (1-3% density)",
-      status: density >= 1 && density <= 3 ? "OK" : density < 1 ? "OFI" : "Priority OFI",
+      status: density >= 1 && density <= 3 ? "OK" : density >= 0.1 && density <= 8 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Primary keyword density: ${density.toFixed(1)}%. Target: 1-3%.`
     };
@@ -842,7 +842,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Call-to-Action Optimization",
       description: "Page should have prominent, clear, and compelling calls-to-action",
-      status: combinedScore >= 80 ? "OK" : combinedScore >= 50 ? "OFI" : "Priority OFI",
+      status: combinedScore >= 80 ? "OK" : combinedScore >= 20 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Found ${ctaElements} CTA elements with ${ctaQuality.toFixed(1)}% quality score. Optimize quantity and compelling language.`
     };
@@ -875,7 +875,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Uniqueness",
       description: "Content should be unique and not duplicated from other sources",
-      status: uniquenessScore >= 80 ? "OK" : uniquenessScore >= 60 ? "OFI" : "Priority OFI",
+      status: uniquenessScore >= 80 ? "OK" : uniquenessScore >= 40 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Content uniqueness score: ${uniquenessScore}%. Target: 80%+ unique content.`
     };
@@ -1011,7 +1011,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Heading Structure Hierarchy",
       description: "Proper H1-H6 heading structure improves readability and SEO",
-      status: hasProperStructure ? "OK" : h1Count === 1 ? "OFI" : "Priority OFI",
+      status: h1Count === 0 ? "Priority OFI" : hasProperStructure ? "OK" : "OFI",
       importance: "High",
       notes: `H1: ${h1Count}, H2: ${h2Count}, H3: ${h3Count}. Should have exactly 1 H1 and multiple H2/H3 tags.`
     };
@@ -1025,7 +1025,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Image Content Optimization",
       description: "Images should have descriptive alt text and be relevant to content",
-      status: altTextQuality >= 90 ? "OK" : altTextQuality >= 70 ? "OFI" : "Priority OFI",
+      status: altTextQuality >= 90 ? "OK" : altTextQuality >= 30 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `${imagesWithAlt.length}/${images.length} images have alt text (${altTextQuality.toFixed(1)}%).`
     };
@@ -1067,7 +1067,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Depth and Detail",
       description: "Content should provide comprehensive, detailed information",
-      status: hasGoodDepth ? "OK" : wordCount >= 150 ? "OFI" : "Priority OFI",
+      status: hasGoodDepth ? "OK" : wordCount >= 50 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `${wordCount} words, ${paragraphCount} paragraphs. Average ${avgWordsPerParagraph.toFixed(1)} words per paragraph.`
     };
@@ -1248,7 +1248,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "URL Structure Optimization",
       description: "URLs should be clean, descriptive, and keyword-rich",
-      status: issues.length === 0 ? "OK" : issues.length <= 2 ? "OFI" : "Priority OFI",
+      status: issues.length === 0 ? "OK" : issues.length <= 4 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: issues.length > 0 ? `Issues found: ${issues.join(', ')}` : "URL structure is optimized"
     };
