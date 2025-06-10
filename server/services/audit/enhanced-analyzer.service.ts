@@ -827,6 +827,7 @@ class EnhancedAuditAnalyzer {
  */
 class ContentQualityAnalyzer {
   async analyze(page: PageCrawlResult, $: cheerio.CheerioAPI): Promise<AnalysisFactor[]> {
+    console.log(`[ContentQualityAnalyzer] Starting analysis for page: ${page.url}`);
     const factors: AnalysisFactor[] = [];
     
     // Phase 1: Content Quality Analysis (20+ factors)
@@ -867,6 +868,7 @@ class ContentQualityAnalyzer {
     factors.push(await this.analyzeContentFlow($));
     factors.push(await this.analyzeContentAccuracy(page.bodyText));
 
+    console.log(`[ContentQualityAnalyzer] Completed analysis for ${page.url} - Generated ${factors.length} content quality factors`);
     return factors;
   }
 
@@ -1288,6 +1290,7 @@ class ContentQualityAnalyzer {
  */
 class TechnicalSEOAnalyzer {
   async analyze(page: PageCrawlResult, $: cheerio.CheerioAPI): Promise<AnalysisFactor[]> {
+    console.log(`[TechnicalSEOAnalyzer] Starting analysis for page: ${page.url}`);
     const factors: AnalysisFactor[] = [];
     
     // Phase 2: Advanced Technical Analysis (30+ factors)
@@ -1533,6 +1536,7 @@ class TechnicalSEOAnalyzer {
       });
     });
 
+    console.log(`[TechnicalSEOAnalyzer] Completed analysis - Generated ${factors.length} technical SEO factors`);
     return factors;
   }
 }
