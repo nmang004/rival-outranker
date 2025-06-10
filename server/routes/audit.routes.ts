@@ -508,28 +508,48 @@ router.get("/:id/debug", async (req: Request, res: Response) => {
     
     const results = auditRecord.results as any;
     
+    // DETAILED DEBUG: Log what's actually in the database
+    console.log(`[DEBUG] Audit ${auditId} raw database results keys:`, Object.keys(results));
+    console.log(`[DEBUG] contentQuality exists:`, !!results.contentQuality);
+    console.log(`[DEBUG] technicalSEO exists:`, !!results.technicalSEO);
+    console.log(`[DEBUG] localSEO exists:`, !!results.localSEO);
+    console.log(`[DEBUG] uxPerformance exists:`, !!results.uxPerformance);
+    
+    if (results.contentQuality) {
+      console.log(`[DEBUG] contentQuality structure:`, {
+        hasItems: !!results.contentQuality.items,
+        itemCount: results.contentQuality.items?.length || 0,
+        firstItemSample: results.contentQuality.items?.[0] || null
+      });
+    }
+    
     res.json({
       auditId,
+      rawDatabaseKeys: Object.keys(results),
       hasEnhancedCategories: !!(results.contentQuality || results.technicalSEO || results.localSEO || results.uxPerformance),
       contentQuality: {
         exists: !!results.contentQuality,
         itemCount: results.contentQuality?.items?.length || 0,
-        sampleItems: results.contentQuality?.items?.slice(0, 2) || []
+        sampleItems: results.contentQuality?.items?.slice(0, 2) || [],
+        fullStructure: results.contentQuality || null
       },
       technicalSEO: {
         exists: !!results.technicalSEO,
         itemCount: results.technicalSEO?.items?.length || 0,
-        sampleItems: results.technicalSEO?.items?.slice(0, 2) || []
+        sampleItems: results.technicalSEO?.items?.slice(0, 2) || [],
+        fullStructure: results.technicalSEO || null
       },
       localSEO: {
         exists: !!results.localSEO,
         itemCount: results.localSEO?.items?.length || 0,
-        sampleItems: results.localSEO?.items?.slice(0, 2) || []
+        sampleItems: results.localSEO?.items?.slice(0, 2) || [],
+        fullStructure: results.localSEO || null
       },
       uxPerformance: {
         exists: !!results.uxPerformance,
         itemCount: results.uxPerformance?.items?.length || 0,
-        sampleItems: results.uxPerformance?.items?.slice(0, 2) || []
+        sampleItems: results.uxPerformance?.items?.slice(0, 2) || [],
+        fullStructure: results.uxPerformance || null
       },
       legacyCategories: {
         onPage: results.onPage?.items?.length || 0,
@@ -540,7 +560,14 @@ router.get("/:id/debug", async (req: Request, res: Response) => {
         serviceAreaPages: results.serviceAreaPages?.items?.length || 0
       },
       summary: results.summary,
-      type: results.type
+      type: results.type,
+      storageMetadata: {
+        auditRecordId: auditRecord.id,
+        auditStatus: auditRecord.status,
+        completedAt: auditRecord.completedAt,
+        resultsType: typeof auditRecord.results,
+        resultsIsObject: typeof auditRecord.results === 'object'
+      }
     });
   } catch (error) {
     console.error("Error in debug endpoint:", error);

@@ -131,6 +131,19 @@ export class RivalAuditRepository {
   ): Promise<RivalAuditRecord> {
     const database = this.getDatabase();
     
+    // ENHANCED DEBUG: Log what we're storing before saving
+    console.log(`[Repository] Storing audit ${id} results. Keys:`, Object.keys(results));
+    console.log(`[Repository] Enhanced categories being stored:`, {
+      contentQuality: !!results.contentQuality,
+      technicalSEO: !!results.technicalSEO,
+      localSEO: !!results.localSEO,
+      uxPerformance: !!results.uxPerformance,
+      contentQualityItems: results.contentQuality?.items?.length || 0,
+      technicalSEOItems: results.technicalSEO?.items?.length || 0,
+      localSEOItems: results.localSEO?.items?.length || 0,
+      uxPerformanceItems: results.uxPerformance?.items?.length || 0
+    });
+    
     const [audit] = await database
       .update(rivalAudits)
       .set({
@@ -144,6 +157,19 @@ export class RivalAuditRepository {
       })
       .where(eq(rivalAudits.id, id))
       .returning();
+    
+    // ENHANCED DEBUG: Verify what was stored immediately after saving
+    console.log(`[Repository] Stored audit ${id}. Verifying stored data...`);
+    if (audit.results) {
+      const storedResults = audit.results as any;
+      console.log(`[Repository] Verified stored keys:`, Object.keys(storedResults));
+      console.log(`[Repository] Verified enhanced categories stored:`, {
+        contentQuality: !!storedResults.contentQuality,
+        technicalSEO: !!storedResults.technicalSEO,
+        localSEO: !!storedResults.localSEO,
+        uxPerformance: !!storedResults.uxPerformance
+      });
+    }
     
     return audit;
   }
