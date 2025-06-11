@@ -62,39 +62,81 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     };
   }
   
-  // Get counts for each category
-  const categoryData = [
-    {
-      name: 'On-Page',
-      items: audit.onPage.items,
-      score: audit.onPage.score,
-      icon: '📄'
-    },
-    {
-      name: 'Structure & Navigation',
-      items: audit.structureNavigation.items,
-      score: audit.structureNavigation.score,
-      icon: '🧭'
-    },
-    {
-      name: 'Contact Page',
-      items: audit.contactPage.items,
-      score: audit.contactPage.score,
-      icon: '📞'
-    },
-    {
-      name: 'Service Pages',
-      items: audit.servicePages.items,
-      score: audit.servicePages.score,
-      icon: '🛠️'
-    },
-    {
-      name: 'Location Pages',
-      items: audit.locationPages.items,
-      score: audit.locationPages.score,
+  // Get counts for each category - UPDATED for enhanced categories
+  const categoryData = [];
+  
+  // Add enhanced categories if they exist (new structure)
+  if (audit.contentQuality && audit.contentQuality.items) {
+    categoryData.push({
+      name: 'Content Quality',
+      items: audit.contentQuality.items,
+      score: audit.contentQuality.score,
+      icon: '📝'
+    });
+  }
+  
+  if (audit.technicalSEO && audit.technicalSEO.items) {
+    categoryData.push({
+      name: 'Technical SEO',
+      items: audit.technicalSEO.items,
+      score: audit.technicalSEO.score,
+      icon: '⚙️'
+    });
+  }
+  
+  if (audit.localSEO && audit.localSEO.items) {
+    categoryData.push({
+      name: 'Local SEO & E-E-A-T',
+      items: audit.localSEO.items,
+      score: audit.localSEO.score,
       icon: '📍'
-    }
-  ];
+    });
+  }
+  
+  if (audit.uxPerformance && audit.uxPerformance.items) {
+    categoryData.push({
+      name: 'UX & Performance',
+      items: audit.uxPerformance.items,
+      score: audit.uxPerformance.score,
+      icon: '🚀'
+    });
+  }
+  
+  // Fallback to legacy categories if enhanced categories don't exist
+  if (categoryData.length === 0) {
+    categoryData.push(
+      {
+        name: 'On-Page',
+        items: audit.onPage?.items || [],
+        score: audit.onPage?.score,
+        icon: '📄'
+      },
+      {
+        name: 'Structure & Navigation',
+        items: audit.structureNavigation?.items || [],
+        score: audit.structureNavigation?.score,
+        icon: '🧭'
+      },
+      {
+        name: 'Contact Page',
+        items: audit.contactPage?.items || [],
+        score: audit.contactPage?.score,
+        icon: '📞'
+      },
+      {
+        name: 'Service Pages',
+        items: audit.servicePages?.items || [],
+        score: audit.servicePages?.score,
+        icon: '🛠️'
+      },
+      {
+        name: 'Location Pages',
+        items: audit.locationPages?.items || [],
+        score: audit.locationPages?.score,
+        icon: '📍'
+      }
+    );
+  }
   
   // Add service area pages to category data if they exist
   if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
@@ -197,14 +239,15 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
   summarySheet.getColumn(6).width = 15;
   summarySheet.getColumn(7).width = 15;
   
-  // Add detailed worksheets for each category with enhanced items
-  addEnhancedCategoryWorksheet(workbook, 'On-Page', audit.onPage.items);
-  addEnhancedCategoryWorksheet(workbook, 'Structure-Navigation', audit.structureNavigation.items);
-  addEnhancedCategoryWorksheet(workbook, 'Contact-Page', audit.contactPage.items);
-  addEnhancedCategoryWorksheet(workbook, 'Service-Pages', audit.servicePages.items);
-  addEnhancedCategoryWorksheet(workbook, 'Location-Pages', audit.locationPages.items);
+  // Add detailed worksheets for each category - UPDATED for enhanced categories
+  categoryData.forEach(category => {
+    if (category.items && category.items.length > 0) {
+      const sheetName = category.name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '-');
+      addEnhancedCategoryWorksheet(workbook, sheetName, category.items);
+    }
+  });
   
-  // Add service area pages worksheet if it exists
+  // Add service area pages worksheet if it exists (legacy support)
   if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
     addEnhancedCategoryWorksheet(workbook, 'Service-Area-Pages', audit.serviceAreaPages.items);
   }
@@ -956,14 +999,31 @@ function addEnhancedCategoryWorksheet(workbook: Excel.Workbook, name: string, it
  * @param audit The complete enhanced rival audit
  */
 function addEnhancedPriorityOfiWorksheet(workbook: Excel.Workbook, audit: EnhancedRivalAudit): void {
-  // Collect all Priority OFI items from each section
-  const priorityOfiItems: EnhancedAuditItem[] = [
-    ...audit.onPage.items.filter(item => item.status === 'Priority OFI'),
-    ...audit.structureNavigation.items.filter(item => item.status === 'Priority OFI'),
-    ...audit.contactPage.items.filter(item => item.status === 'Priority OFI'),
-    ...audit.servicePages.items.filter(item => item.status === 'Priority OFI'),
-    ...audit.locationPages.items.filter(item => item.status === 'Priority OFI')
-  ];
+  // Collect all Priority OFI items from enhanced categories first, then fallback to legacy
+  const priorityOfiItems: EnhancedAuditItem[] = [];
+  
+  // Enhanced categories (new structure)
+  if (audit.contentQuality && audit.contentQuality.items) {
+    priorityOfiItems.push(...audit.contentQuality.items.filter(item => item.status === 'Priority OFI'));
+  }
+  if (audit.technicalSEO && audit.technicalSEO.items) {
+    priorityOfiItems.push(...audit.technicalSEO.items.filter(item => item.status === 'Priority OFI'));
+  }
+  if (audit.localSEO && audit.localSEO.items) {
+    priorityOfiItems.push(...audit.localSEO.items.filter(item => item.status === 'Priority OFI'));
+  }
+  if (audit.uxPerformance && audit.uxPerformance.items) {
+    priorityOfiItems.push(...audit.uxPerformance.items.filter(item => item.status === 'Priority OFI'));
+  }
+  
+  // Fallback to legacy categories if no enhanced categories found
+  if (priorityOfiItems.length === 0) {
+    if (audit.onPage?.items) priorityOfiItems.push(...audit.onPage.items.filter(item => item.status === 'Priority OFI'));
+    if (audit.structureNavigation?.items) priorityOfiItems.push(...audit.structureNavigation.items.filter(item => item.status === 'Priority OFI'));
+    if (audit.contactPage?.items) priorityOfiItems.push(...audit.contactPage.items.filter(item => item.status === 'Priority OFI'));
+    if (audit.servicePages?.items) priorityOfiItems.push(...audit.servicePages.items.filter(item => item.status === 'Priority OFI'));
+    if (audit.locationPages?.items) priorityOfiItems.push(...audit.locationPages.items.filter(item => item.status === 'Priority OFI'));
+  }
   
   // Add service area pages items if they exist
   if (audit.serviceAreaPages && audit.serviceAreaPages.items) {

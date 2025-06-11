@@ -422,11 +422,25 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Audit not found" });
     }
     
-    // Get the appropriate section
+    // Get the appropriate section - UPDATED to handle enhanced categories
     const audit = auditRecord.results;
     let section;
     
     switch (sectionName) {
+      // Enhanced categories
+      case "contentQuality":
+        section = audit.contentQuality;
+        break;
+      case "technicalSEO":
+        section = audit.technicalSEO;
+        break;
+      case "localSEO":
+        section = audit.localSEO;
+        break;
+      case "uxPerformance":
+        section = audit.uxPerformance;
+        break;
+      // Legacy categories
       case "onPage":
         section = audit.onPage;
         break;
@@ -750,7 +764,7 @@ function convertForExport(audit: CachedRivalAudit) {
   };
 }
 
-// Helper function to update the summary counts
+// Helper function to update the summary counts - UPDATED for enhanced categories
 function updateAuditSummary(audit: CachedRivalAudit) {
   // Reset counts
   audit.summary.priorityOfiCount = 0;
@@ -759,15 +773,28 @@ function updateAuditSummary(audit: CachedRivalAudit) {
   audit.summary.naCount = 0;
   audit.summary.total = 0;
   
-  // Count items in each section
-  const sections = [
-    audit.onPage,
-    audit.structureNavigation, 
-    audit.contactPage, 
-    audit.servicePages, 
-    audit.locationPages,
-    audit.serviceAreaPages
-  ];
+  // Count items in each section - handle both enhanced and legacy structures
+  const sections = [];
+  
+  // Check for enhanced categories first
+  if ((audit as any).contentQuality || (audit as any).technicalSEO || (audit as any).localSEO || (audit as any).uxPerformance) {
+    sections.push(
+      (audit as any).contentQuality,
+      (audit as any).technicalSEO,
+      (audit as any).localSEO,
+      (audit as any).uxPerformance
+    );
+  } else {
+    // Fallback to legacy categories
+    sections.push(
+      audit.onPage,
+      audit.structureNavigation,
+      audit.contactPage,
+      audit.servicePages,
+      audit.locationPages,
+      audit.serviceAreaPages
+    );
+  }
   
   sections.forEach(section => {
     if (section && section.items) {

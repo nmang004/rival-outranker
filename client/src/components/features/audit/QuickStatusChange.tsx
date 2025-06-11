@@ -45,14 +45,29 @@ export default function QuickStatusChange({
         const response = await fetch(`/api/rival-audit/${auditId}`);
         if (response.ok) {
           const audit: RivalAudit = await response.json();
-          const allItems = [
-            ...audit.onPage.items,
-            ...audit.structureNavigation.items,
-            ...audit.contactPage.items,
-            ...audit.servicePages.items,
-            ...audit.locationPages.items,
-            ...(audit.serviceAreaPages?.items || [])
-          ];
+          
+          // Handle both enhanced and legacy category structures
+          let allItems: any[] = [];
+          
+          // Check for enhanced categories first
+          if ((audit as any).contentQuality || (audit as any).technicalSEO || (audit as any).localSEO || (audit as any).uxPerformance) {
+            allItems = [
+              ...((audit as any).contentQuality?.items || []),
+              ...((audit as any).technicalSEO?.items || []),
+              ...((audit as any).localSEO?.items || []),
+              ...((audit as any).uxPerformance?.items || [])
+            ];
+          } else {
+            // Fallback to legacy categories
+            allItems = [
+              ...audit.onPage.items,
+              ...audit.structureNavigation.items,
+              ...audit.contactPage.items,
+              ...audit.servicePages.items,
+              ...audit.locationPages.items,
+              ...(audit.serviceAreaPages?.items || [])
+            ];
+          }
           const totalItems = allItems.length;
           const totalPriorityOFI = allItems.filter(item => item.status === 'Priority OFI').length;
           const priorityOFIPercentage = totalItems > 0 ? (totalPriorityOFI / totalItems) * 100 : 0;
