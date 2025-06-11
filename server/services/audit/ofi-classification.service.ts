@@ -1,10 +1,10 @@
 import { AuditItem } from '../../../shared/schema';
 
 export interface OFIClassificationCriteria {
-  systemStabilityImpact: boolean;
-  userImpactSeverity: boolean;
+  seoVisibilityImpact: boolean;
+  userExperienceImpact: boolean;
   businessImpact: boolean;
-  technicalDebtCriticality: boolean;
+  complianceRisk: boolean;
 }
 
 export interface OFIAnalysisMetrics {
@@ -105,96 +105,109 @@ export class OFIClassificationService {
   ): OFIClassificationCriteria {
     
     return {
-      systemStabilityImpact: this.evaluateSystemStabilityImpact(metrics, name, description),
-      userImpactSeverity: this.evaluateUserImpactSeverity(metrics, name, description),
+      seoVisibilityImpact: this.evaluateSeoVisibilityImpact(metrics, name, description),
+      userExperienceImpact: this.evaluateUserExperienceImpact(metrics, name, description),
       businessImpact: this.evaluateBusinessImpact(metrics, name, description),
-      technicalDebtCriticality: this.evaluateTechnicalDebtCriticality(metrics, name, description, context)
+      complianceRisk: this.evaluateComplianceRisk(metrics, name, description, context)
     };
   }
 
   /**
-   * System Stability Impact Criteria:
-   * - Causes system crashes or data corruption
-   * - Memory leaks exceeding 100MB/hour
-   * - Performance degradation >50% of baseline
-   * - Security vulnerabilities (CVSS score ≥7.0)
+   * SEO Visibility Impact Criteria:
+   * - Missing or poor meta titles/descriptions
+   * - Core Web Vitals failures (LCP >2.5s, CLS >0.1, FID >100ms)
+   * - Critical indexing issues (noindex, blocked in robots.txt)
+   * - Severe mobile usability problems
    */
-  private evaluateSystemStabilityImpact(
+  private evaluateSeoVisibilityImpact(
     metrics: OFIAnalysisMetrics,
     name: string,
     description: string
   ): boolean {
     
-    // STRICT: Check for ACTUAL crashes/corruption - not just keywords
-    const severeKeywords = ['crash', 'corrupt', 'data loss', 'system failure'];
-    const criticalKeywords = ['critical', 'severe', 'complete'];
-    const hasSevereCrashRisk = severeKeywords.some(keyword => 
+    // Critical SEO blocking issues
+    const criticalSeoKeywords = ['meta title', 'meta description', 'missing title', 'no title', 'duplicate title'];
+    const hasCriticalMetaIssues = criticalSeoKeywords.some(keyword => 
       name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    ) && criticalKeywords.some(keyword => 
-      description.toLowerCase().includes(keyword)
     );
 
-    // Check memory leaks - only if explicitly measured
-    const hasMemoryLeak = (metrics.memoryLeakRate ?? 0) > 100;
+    // Core Web Vitals issues
+    const coreWebVitalsKeywords = ['core web vitals', 'lcp', 'cls', 'fid', 'page speed', 'loading', 'performance'];
+    const hasCoreWebVitalsIssues = coreWebVitalsKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && (description.toLowerCase().includes('slow') || description.toLowerCase().includes('poor'));
 
-    // Check performance degradation - only if explicitly measured
-    const hasPerformanceIssue = (metrics.performanceImpact ?? 0) > 50;
+    // Indexing blockers
+    const indexingKeywords = ['noindex', 'robots.txt', 'blocked', 'not indexed', 'crawl'];
+    const hasIndexingIssues = indexingKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && (description.toLowerCase().includes('blocked') || description.toLowerCase().includes('missing'));
 
-    // Check security vulnerabilities - only if explicitly scored
-    const hasSecurityVuln = (metrics.cvssScore ?? 0) >= 7.0;
+    // Mobile usability issues
+    const mobileKeywords = ['mobile', 'responsive', 'viewport', 'mobile-friendly'];
+    const hasMobileIssues = mobileKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && (description.toLowerCase().includes('not') || description.toLowerCase().includes('missing') || description.toLowerCase().includes('poor'));
 
-    // HTTPS missing is NOT automatically a system stability issue
-    // Only if it's combined with actual security vulnerabilities
-    const isHttpsIssue = name.toLowerCase().includes('https') && 
-                        !name.toLowerCase().includes('not') &&
-                        hasSecurityVuln;
-
-    return hasSevereCrashRisk || hasMemoryLeak || hasPerformanceIssue || hasSecurityVuln || isHttpsIssue;
+    return hasCriticalMetaIssues || hasCoreWebVitalsIssues || hasIndexingIssues || hasMobileIssues;
   }
 
   /**
-   * User Impact Severity Criteria:
-   * - Blocks critical user workflows entirely
-   * - Affects >30% of active user base
-   * - Generates >10 support tickets per day
-   * - Results in data loss or irreversible actions
+   * User Experience Impact Criteria:
+   * - Navigation completely broken or confusing
+   * - Forms don't work or submit incorrectly
+   * - Content is unreadable or inaccessible
+   * - Site search returns no/wrong results
    */
-  private evaluateUserImpactSeverity(
+  private evaluateUserExperienceImpact(
     metrics: OFIAnalysisMetrics,
     name: string,
     description: string
   ): boolean {
     
-    // Check if blocks critical workflows
-    const blockingKeywords = ['block', 'prevent', 'unable', 'cannot', 'missing', 'broken'];
-    const criticalKeywords = ['critical', 'essential', 'required', 'necessary'];
-    const blocksWorkflow = blockingKeywords.some(keyword => 
+    // Navigation issues
+    const navigationKeywords = ['navigation', 'menu', 'breadcrumb', 'sitemap'];
+    const brokenKeywords = ['broken', 'missing', 'not working', 'error', 'failed'];
+    const hasNavigationIssues = navigationKeywords.some(keyword => 
       name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    ) && criticalKeywords.some(keyword => 
+    ) && brokenKeywords.some(keyword => 
       description.toLowerCase().includes(keyword)
     );
 
-    // Check user base impact
-    const affectsLargeUserBase = (metrics.userBaseAffected ?? 0) > 30;
-
-    // Check support ticket volume
-    const generatesTickets = (metrics.supportTicketsPerDay ?? 0) > 10;
-
-    // Check for data loss potential
-    const dataLossKeywords = ['data loss', 'irreversible', 'permanent', 'lost'];
-    const causesDataLoss = dataLossKeywords.some(keyword => 
+    // Form functionality issues
+    const formKeywords = ['form', 'contact', 'submit', 'input'];
+    const hasFormIssues = formKeywords.some(keyword => 
       name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && brokenKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
     );
 
-    return blocksWorkflow || affectsLargeUserBase || generatesTickets || causesDataLoss;
+    // Content readability issues
+    const contentKeywords = ['content', 'text', 'readability', 'accessibility'];
+    const readabilityKeywords = ['unreadable', 'hard to read', 'poor contrast', 'too small'];
+    const hasContentIssues = contentKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && readabilityKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    // Search functionality
+    const searchKeywords = ['search', 'find', 'filter'];
+    const hasSearchIssues = searchKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && brokenKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    return hasNavigationIssues || hasFormIssues || hasContentIssues || hasSearchIssues;
   }
 
   /**
    * Business Impact Criteria:
-   * - Revenue loss potential >$10K/day
-   * - Compliance/regulatory violations
-   * - SLA breaches
-   * - Reputational damage risk
+   * - Direct revenue loss from poor SEO rankings
+   * - Missing conversion opportunities (CTA, contact info)
+   * - Brand credibility issues (unprofessional appearance)
+   * - Competitor advantage in search results
    */
   private evaluateBusinessImpact(
     metrics: OFIAnalysisMetrics,
@@ -202,66 +215,90 @@ export class OFIClassificationService {
     description: string
   ): boolean {
     
-    // Check revenue impact
-    const hasRevenueImpact = (metrics.revenueImpactPerDay ?? 0) > 10000;
-
-    // Check compliance/regulatory issues
-    const complianceKeywords = ['compliance', 'regulatory', 'gdpr', 'hipaa', 'pci', 'sox'];
-    const hasComplianceIssue = complianceKeywords.some(keyword => 
+    // SEO ranking impact
+    const rankingKeywords = ['ranking', 'serp', 'position', 'visibility', 'organic traffic'];
+    const lossKeywords = ['drop', 'decrease', 'lost', 'poor', 'low'];
+    const hasRankingImpact = rankingKeywords.some(keyword => 
       name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    );
-
-    // Check SLA breaches
-    const slaKeywords = ['sla', 'service level', 'uptime', 'availability'];
-    const hasSLAIssue = slaKeywords.some(keyword => 
-      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    );
-
-    // Check reputational damage
-    const reputationKeywords = ['reputation', 'brand', 'customer satisfaction', 'public'];
-    const hasReputationRisk = reputationKeywords.some(keyword => 
+    ) && lossKeywords.some(keyword => 
       description.toLowerCase().includes(keyword)
     );
 
-    return hasRevenueImpact || hasComplianceIssue || hasSLAIssue || hasReputationRisk;
+    // Conversion issues
+    const conversionKeywords = ['contact', 'phone', 'email', 'cta', 'call to action', 'conversion'];
+    const missingKeywords = ['missing', 'no', 'absent', 'not found', 'hard to find'];
+    const hasConversionIssues = conversionKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && missingKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    // Brand credibility
+    const brandKeywords = ['professional', 'trust', 'credibility', 'brand', 'design'];
+    const negativeKeywords = ['unprofessional', 'poor', 'outdated', 'broken', 'low quality'];
+    const hasBrandIssues = brandKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && negativeKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    // Competitor advantage
+    const competitorKeywords = ['competitor', 'competition', 'advantage', 'behind'];
+    const hasCompetitorIssues = competitorKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    return hasRankingImpact || hasConversionIssues || hasBrandIssues || hasCompetitorIssues;
   }
 
   /**
-   * Technical Debt Criticality Criteria:
-   * - Blocks 3+ other development initiatives
-   * - Increases incident rate by >25%
-   * - Requires architectural overhaul if delayed
-   * - Dependencies with announced EOL <6 months
+   * Compliance Risk Criteria:
+   * - GDPR/privacy violations (missing privacy policy)
+   * - Accessibility compliance issues (WCAG violations)
+   * - Security compliance (missing HTTPS, insecure forms)
+   * - Industry-specific compliance requirements
    */
-  private evaluateTechnicalDebtCriticality(
+  private evaluateComplianceRisk(
     metrics: OFIAnalysisMetrics,
     name: string,
     description: string,
     context?: any
   ): boolean {
     
-    // Check blocked initiatives
-    const blocksInitiatives = (metrics.blockedInitiatives ?? 0) >= 3;
-
-    // Check incident rate increase
-    const increasesIncidents = (metrics.incidentRateIncrease ?? 0) > 25;
-
-    // Check architectural overhaul need
-    const architecturalKeywords = ['architecture', 'overhaul', 'refactor', 'redesign'];
-    const needsOverhaul = architecturalKeywords.some(keyword => 
+    // GDPR/Privacy issues
+    const privacyKeywords = ['privacy', 'gdpr', 'cookies', 'tracking', 'data collection'];
+    const violationKeywords = ['missing', 'no', 'violates', 'non-compliant'];
+    const hasPrivacyIssues = privacyKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && violationKeywords.some(keyword => 
       description.toLowerCase().includes(keyword)
     );
 
-    // Check EOL dependencies
-    const hasEOLRisk = (metrics.eolMonths ?? 12) < 6;
-
-    // Legacy/deprecated technology indicators
-    const legacyKeywords = ['legacy', 'deprecated', 'outdated', 'end of life', 'eol'];
-    const hasLegacyRisk = legacyKeywords.some(keyword => 
+    // Accessibility compliance
+    const accessibilityKeywords = ['accessibility', 'wcag', 'ada', 'alt text', 'screen reader'];
+    const hasAccessibilityIssues = accessibilityKeywords.some(keyword => 
       name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && violationKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
     );
 
-    return blocksInitiatives || increasesIncidents || needsOverhaul || hasEOLRisk || hasLegacyRisk;
+    // Security compliance
+    const securityKeywords = ['https', 'ssl', 'security', 'encryption', 'secure'];
+    const hasSecurityIssues = securityKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && violationKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    // Industry compliance
+    const industryKeywords = ['hipaa', 'pci', 'sox', 'compliance', 'regulation'];
+    const hasIndustryIssues = industryKeywords.some(keyword => 
+      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
+    ) && violationKeywords.some(keyword => 
+      description.toLowerCase().includes(keyword)
+    );
+
+    return hasPrivacyIssues || hasAccessibilityIssues || hasSecurityIssues || hasIndustryIssues;
   }
 
   /**

@@ -38,6 +38,14 @@ export default function QuickStatusChange({
   const [showPriorityWarning, setShowPriorityWarning] = useState(false);
   const [auditStats, setAuditStats] = useState<{ priorityOFIPercentage: number; totalPriorityOFI: number; totalItems: number } | null>(null);
 
+  // Reset edit status when dialog opens
+  useEffect(() => {
+    if (open) {
+      setEditStatus(item.status);
+      setEditNotes(item.notes || "");
+    }
+  }, [open, item.status, item.notes]);
+
   // Fetch current audit stats on mount
   useEffect(() => {
     const fetchAuditStats = async () => {

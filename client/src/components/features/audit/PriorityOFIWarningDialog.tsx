@@ -36,10 +36,10 @@ export function PriorityOFIWarningDialog({
 }: PriorityOFIWarningDialogProps) {
   const [justification, setJustification] = useState("");
   const [checkedCriteria, setCheckedCriteria] = useState({
-    systemStability: false,
-    userImpact: false,
+    seoVisibility: false,
+    userExperience: false,
     businessImpact: false,
-    technicalDebt: false
+    complianceRisk: false
   });
 
   const checkedCount = Object.values(checkedCriteria).filter(Boolean).length;
@@ -58,10 +58,10 @@ export function PriorityOFIWarningDialog({
       // Reset form
       setJustification("");
       setCheckedCriteria({
-        systemStability: false,
-        userImpact: false,
+        seoVisibility: false,
+        userExperience: false,
         businessImpact: false,
-        technicalDebt: false
+        complianceRisk: false
       });
     }
   };
@@ -126,36 +126,36 @@ export function PriorityOFIWarningDialog({
               <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <Checkbox
-                    id="systemStability"
-                    checked={checkedCriteria.systemStability}
+                    id="seoVisibility"
+                    checked={checkedCriteria.seoVisibility}
                     onCheckedChange={(checked) => 
-                      setCheckedCriteria(prev => ({ ...prev, systemStability: checked as boolean }))
+                      setCheckedCriteria(prev => ({ ...prev, seoVisibility: checked as boolean }))
                     }
                   />
                   <div className="space-y-1">
-                    <label htmlFor="systemStability" className="text-sm font-medium cursor-pointer">
-                      System Stability Impact
+                    <label htmlFor="seoVisibility" className="text-sm font-medium cursor-pointer">
+                      SEO Visibility Impact
                     </label>
                     <p className="text-xs text-gray-600">
-                      Causes crashes, data corruption, &gt;50% performance loss, or CVSS ≥7.0
+                      Missing meta titles/descriptions, Core Web Vitals failures, indexing blocks
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
                   <Checkbox
-                    id="userImpact"
-                    checked={checkedCriteria.userImpact}
+                    id="userExperience"
+                    checked={checkedCriteria.userExperience}
                     onCheckedChange={(checked) => 
-                      setCheckedCriteria(prev => ({ ...prev, userImpact: checked as boolean }))
+                      setCheckedCriteria(prev => ({ ...prev, userExperience: checked as boolean }))
                     }
                   />
                   <div className="space-y-1">
-                    <label htmlFor="userImpact" className="text-sm font-medium cursor-pointer">
-                      User Impact Severity
+                    <label htmlFor="userExperience" className="text-sm font-medium cursor-pointer">
+                      User Experience Impact
                     </label>
                     <p className="text-xs text-gray-600">
-                      Blocks &gt;30% of users, no workaround, &gt;10 tickets/day
+                      Broken navigation/forms, unreadable content, non-functional site features
                     </p>
                   </div>
                 </div>
@@ -173,25 +173,25 @@ export function PriorityOFIWarningDialog({
                       Business Impact
                     </label>
                     <p className="text-xs text-gray-600">
-                      &gt;$10K/day revenue loss, compliance violations, SLA breaches
+                      SEO ranking drops, missing conversion opportunities, brand credibility issues
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
                   <Checkbox
-                    id="technicalDebt"
-                    checked={checkedCriteria.technicalDebt}
+                    id="complianceRisk"
+                    checked={checkedCriteria.complianceRisk}
                     onCheckedChange={(checked) => 
-                      setCheckedCriteria(prev => ({ ...prev, technicalDebt: checked as boolean }))
+                      setCheckedCriteria(prev => ({ ...prev, complianceRisk: checked as boolean }))
                     }
                   />
                   <div className="space-y-1">
-                    <label htmlFor="technicalDebt" className="text-sm font-medium cursor-pointer">
-                      Technical Debt Criticality
+                    <label htmlFor="complianceRisk" className="text-sm font-medium cursor-pointer">
+                      Compliance Risk
                     </label>
                     <p className="text-xs text-gray-600">
-                      Blocks 3+ initiatives, &gt;25% incident increase, EOL &lt;6 months
+                      GDPR violations, accessibility issues, security non-compliance, missing HTTPS
                     </p>
                   </div>
                 </div>
