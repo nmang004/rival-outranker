@@ -36,6 +36,7 @@ export default function QuickStatusChange({
   const [editNotes, setEditNotes] = useState(item.notes || "");
   const [isUpdating, setIsUpdating] = useState(false);
   const [showPriorityWarning, setShowPriorityWarning] = useState(false);
+  const [priorityOFIConfirmed, setPriorityOFIConfirmed] = useState(false);
   const [auditStats, setAuditStats] = useState<{ priorityOFIPercentage: number; totalPriorityOFI: number; totalItems: number } | null>(null);
 
   // Reset edit status when dialog opens
@@ -109,6 +110,9 @@ export default function QuickStatusChange({
   const handlePriorityOFIConfirm = (justification: string) => {
     // Add justification to notes
     setEditNotes(editNotes + (editNotes ? "\n\n" : "") + "[Priority OFI Justification] " + justification);
+    // Mark as confirmed and keep Priority OFI status
+    setPriorityOFIConfirmed(true);
+    setEditStatus("Priority OFI");
     setShowPriorityWarning(false);
   };
 
@@ -278,11 +282,15 @@ export default function QuickStatusChange({
       <PriorityOFIWarningDialog
         open={showPriorityWarning}
         onOpenChange={(open) => {
-          if (!open) {
-            // If cancelled, revert status change
+          if (!open && !priorityOFIConfirmed) {
+            // If user cancelled (not confirmed), revert status change
             setEditStatus(item.status);
           }
           setShowPriorityWarning(open);
+          // Reset confirmation flag when dialog opens
+          if (open) {
+            setPriorityOFIConfirmed(false);
+          }
         }}
         onConfirm={handlePriorityOFIConfirm}
         currentStats={auditStats}
