@@ -138,14 +138,18 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     );
   }
   
-  // Add service area pages to category data if they exist
-  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
-    categoryData.push({
-      name: 'Service Area Pages',
-      items: audit.serviceAreaPages.items,
-      score: audit.serviceAreaPages.score,
-      icon: '🌐'
-    });
+  // Add service area pages to category data if they exist and have meaningful content
+  if (audit.serviceAreaPages && audit.serviceAreaPages.items && audit.serviceAreaPages.items.length > 0) {
+    // Only include if there are items that aren't all N/A
+    const relevantItems = audit.serviceAreaPages.items.filter(item => item.status !== 'N/A');
+    if (relevantItems.length > 0) {
+      categoryData.push({
+        name: 'Service Area Pages',
+        items: audit.serviceAreaPages.items,
+        score: audit.serviceAreaPages.score,
+        icon: '🌐'
+      });
+    }
   }
   
   // Add data rows
@@ -247,10 +251,7 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     }
   });
   
-  // Add service area pages worksheet if it exists (legacy support)
-  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
-    addEnhancedCategoryWorksheet(workbook, 'Service-Area-Pages', audit.serviceAreaPages.items);
-  }
+  // Note: Service area pages are now included in the main categoryData loop above, no need for duplicate worksheet
   
   // Add Priority OFI Summary worksheet for quick review
   addEnhancedPriorityOfiWorksheet(workbook, audit);
@@ -347,13 +348,17 @@ export async function generateRivalAuditExcel(audit: RivalAudit): Promise<any> {
     }
   ];
   
-  // Add service area pages to category data if they exist
-  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
-    categoryData.push({
-      name: 'Service Area Pages',
-      items: audit.serviceAreaPages.items,
-      icon: '🌐'
-    });
+  // Add service area pages to category data if they exist and have meaningful content
+  if (audit.serviceAreaPages && audit.serviceAreaPages.items && audit.serviceAreaPages.items.length > 0) {
+    // Only include if there are items that aren't all N/A
+    const relevantItems = audit.serviceAreaPages.items.filter(item => item.status !== 'N/A');
+    if (relevantItems.length > 0) {
+      categoryData.push({
+        name: 'Service Area Pages',
+        items: audit.serviceAreaPages.items,
+        icon: '🌐'
+      });
+    }
   }
   
   // Add data rows
@@ -428,12 +433,7 @@ export async function generateRivalAuditExcel(audit: RivalAudit): Promise<any> {
   addCategoryWorksheet(workbook, 'Service-Pages', audit.servicePages.items);
   addCategoryWorksheet(workbook, 'Location-Pages', audit.locationPages.items);
   
-  // Add service area pages worksheet if it exists
-  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
-    // Make sure the worksheet name matches what we're showing in the summary
-    addCategoryWorksheet(workbook, 'Service-Area-Pages', audit.serviceAreaPages.items);
-    console.log("Adding Service Area Pages worksheet with", audit.serviceAreaPages.items.length, "items");
-  }
+  // Note: Service area pages are now included in the main categoryData loop above, no need for duplicate worksheet
   
   // Add Priority OFI Summary worksheet for quick review
   addPriorityOfiWorksheet(workbook, audit);
@@ -642,9 +642,12 @@ function addPriorityOfiWorksheet(workbook: Excel.Workbook, audit: RivalAudit): v
     ...audit.locationPages.items.filter(item => item.status === 'Priority OFI')
   ];
   
-  // Add service area pages items if they exist
-  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
-    priorityOfiItems.push(...audit.serviceAreaPages.items.filter(item => item.status === 'Priority OFI'));
+  // Add service area pages items if they exist and have meaningful content
+  if (audit.serviceAreaPages && audit.serviceAreaPages.items && audit.serviceAreaPages.items.length > 0) {
+    const relevantServiceAreaItems = audit.serviceAreaPages.items.filter(item => item.status !== 'N/A');
+    if (relevantServiceAreaItems.length > 0) {
+      priorityOfiItems.push(...audit.serviceAreaPages.items.filter(item => item.status === 'Priority OFI'));
+    }
   }
   
   if (priorityOfiItems.length === 0) {
@@ -1025,9 +1028,12 @@ function addEnhancedPriorityOfiWorksheet(workbook: Excel.Workbook, audit: Enhanc
     if (audit.locationPages?.items) priorityOfiItems.push(...audit.locationPages.items.filter(item => item.status === 'Priority OFI'));
   }
   
-  // Add service area pages items if they exist
-  if (audit.serviceAreaPages && audit.serviceAreaPages.items) {
-    priorityOfiItems.push(...audit.serviceAreaPages.items.filter(item => item.status === 'Priority OFI'));
+  // Add service area pages items if they exist and have meaningful content
+  if (audit.serviceAreaPages && audit.serviceAreaPages.items && audit.serviceAreaPages.items.length > 0) {
+    const relevantServiceAreaItems = audit.serviceAreaPages.items.filter(item => item.status !== 'N/A');
+    if (relevantServiceAreaItems.length > 0) {
+      priorityOfiItems.push(...audit.serviceAreaPages.items.filter(item => item.status === 'Priority OFI'));
+    }
   }
   
   if (priorityOfiItems.length === 0) {
