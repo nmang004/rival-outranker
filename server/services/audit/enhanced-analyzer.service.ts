@@ -1036,6 +1036,7 @@ class EnhancedAuditAnalyzer {
 class ContentQualityAnalyzer {
   async analyze(page: PageCrawlResult, $: cheerio.CheerioAPI): Promise<AnalysisFactor[]> {
     console.log(`[ContentQualityAnalyzer] Starting analysis for page: ${page.url}`);
+    console.log(`[ContentQualityAnalyzer] USING NEW BALANCED THRESHOLDS - Build 6a9fb90`);
     const factors: AnalysisFactor[] = [];
     
     // Phase 1: Content Quality Analysis (20+ factors)
@@ -1082,10 +1083,12 @@ class ContentQualityAnalyzer {
 
   private async analyzeReadability(text: string): Promise<AnalysisFactor> {
     const score = this.calculateFleschReadingEase(text);
+    const status = score >= 40 ? "OK" : score >= 15 ? "OFI" : "N/A";
+    console.log(`[ContentQualityAnalyzer] Readability: score=${score}, status=${status} (NEW THRESHOLD: 40+ for OK)`);
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
-      status: score >= 40 ? "OK" : score >= 15 ? "OFI" : "N/A",
+      status,
       importance: "High",
       notes: `Flesch Reading Ease: ${score}/100. Target: 60+ for general audience.`
     };
@@ -1734,7 +1737,7 @@ class TechnicalSEOAnalyzer {
     ];
 
     additionalFactors.forEach((factor, index) => {
-      // More realistic score distribution: 40% OK, 35% OFI, 20% N/A, 5% Priority OFI potential
+      // More realistic score distribution: 55% OK, 30% OFI, 12% N/A, 3% Priority OFI potential
       const rand = Math.random();
       let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
       let score: number;
@@ -1751,6 +1754,11 @@ class TechnicalSEOAnalyzer {
       } else { // 3% potential Priority OFI (will be validated by classification system)
         status = "Priority OFI";
         score = Math.floor(Math.random() * 30) + 10; // Score 10-40
+      }
+      
+      // DEBUG: Log distribution for first few items
+      if (index < 3) {
+        console.log(`[TechnicalSEOAnalyzer] NEW DISTRIBUTION: ${factor.name} -> ${status} (rand=${rand.toFixed(2)}, score=${score})`);
       }
       
       factors.push({
