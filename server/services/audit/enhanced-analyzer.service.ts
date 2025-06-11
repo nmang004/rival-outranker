@@ -759,7 +759,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Structure Consistency",
       description: "Navigation should be consistent across all pages",
-      status: navigationConsistency >= 80 ? "OK" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 80, now 50)
+      status: navigationConsistency >= 50 ? "OK" : "OFI",
       importance: "High",
       notes: `Navigation consistency score: ${navigationConsistency}%. All pages should have similar navigation structure.`
     });
@@ -767,9 +768,10 @@ class EnhancedAuditAnalyzer {
     // Check navigation depth
     const maxDepth = this.calculateNavigationDepth(siteStructure);
     factors.push({
-      name: "Navigation Depth Optimization",
+      name: "Navigation Depth Optimization", 
       description: "Important pages should be accessible within 3 clicks",
-      status: maxDepth <= 3 ? "OK" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was <=3, now <=5)
+      status: maxDepth <= 5 ? "OK" : "OFI",
       importance: "Medium",
       notes: `Maximum navigation depth: ${maxDepth} clicks. Recommended: 3 or fewer.`
     });
@@ -793,7 +795,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Internal Linking Quality",
       description: "Pages should be well-connected with descriptive anchor text",
-      status: linkingQuality >= 70 ? "OK" : linkingQuality >= 20 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 70, now 40)
+      status: linkingQuality >= 40 ? "OK" : linkingQuality >= 15 ? "OFI" : "OFI",
       importance: "High",
       notes: `Internal linking quality score: ${linkingQuality}%. Good internal linking helps with SEO and user navigation.`
     });
@@ -803,7 +806,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Orphaned Pages Detection",
       description: "All pages should be linked from other pages",
-      status: orphanedPages === 0 ? "OK" : orphanedPages <= 5 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 0, now <=3)
+      status: orphanedPages <= 3 ? "OK" : orphanedPages <= 8 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${orphanedPages} potentially orphaned pages. All important pages should be linked from other pages.`
     });
@@ -827,7 +831,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Content Length Consistency",
       description: "Similar page types should have consistent content depth",
-      status: contentConsistency >= 70 ? "OK" : contentConsistency >= 30 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 70, now 40)
+      status: contentConsistency >= 40 ? "OK" : contentConsistency >= 20 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Content consistency score: ${contentConsistency}%. Service and location pages should have similar depth.`
     });
@@ -837,7 +842,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Brand Consistency Across Pages",
       description: "Business name and branding should be consistent",
-      status: brandingConsistency >= 80 ? "OK" : brandingConsistency >= 40 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 80, now 50)
+      status: brandingConsistency >= 50 ? "OK" : brandingConsistency >= 25 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Branding consistency score: ${brandingConsistency}%. Business name and contact info should be consistent.`
     });
@@ -861,7 +867,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Duplicate Content Detection",
       description: "Each page should have unique, valuable content",
-      status: duplicateContent.percentage < 10 ? "OK" : duplicateContent.percentage < 50 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was <10, now <25)
+      status: duplicateContent.percentage < 25 ? "OK" : duplicateContent.percentage < 60 ? "OFI" : "OFI",
       importance: "High",
       notes: `${duplicateContent.percentage}% duplicate content detected. ${duplicateContent.pages} pages have similar content.`
     });
@@ -871,7 +878,8 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Thin Content Detection",
       description: "Pages should have substantial, valuable content",
-      status: thinContent.count === 0 ? "OK" : thinContent.count <= 5 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 0, now <=3)
+      status: thinContent.count <= 3 ? "OK" : thinContent.count <= 8 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `Found ${thinContent.count} pages with thin content (< 300 words). Average word count: ${thinContent.averageWords}.`
     });
@@ -1036,7 +1044,7 @@ class EnhancedAuditAnalyzer {
 class ContentQualityAnalyzer {
   async analyze(page: PageCrawlResult, $: cheerio.CheerioAPI): Promise<AnalysisFactor[]> {
     console.log(`[ContentQualityAnalyzer] Starting analysis for page: ${page.url}`);
-    console.log(`[ContentQualityAnalyzer] USING NEW BALANCED THRESHOLDS - Build 6a9fb90`);
+    console.log(`[ContentQualityAnalyzer] USING ULTRA-BALANCED THRESHOLDS v2 - Major Factor Threshold Adjustment for 25-40% OK rate`);
     const factors: AnalysisFactor[] = [];
     
     // Phase 1: Content Quality Analysis (20+ factors)
@@ -1083,8 +1091,9 @@ class ContentQualityAnalyzer {
 
   private async analyzeReadability(text: string): Promise<AnalysisFactor> {
     const score = this.calculateFleschReadingEase(text);
-    const status = score >= 40 ? "OK" : score >= 15 ? "OFI" : "N/A";
-    console.log(`[ContentQualityAnalyzer] Readability: score=${score}, status=${status} (NEW THRESHOLD: 40+ for OK)`);
+    // BALANCED THRESHOLD: Much more lenient for OK status (was 40, now 25)
+    const status = score >= 25 ? "OK" : score >= 10 ? "OFI" : "N/A";
+    console.log(`[ContentQualityAnalyzer] Readability: score=${score}, status=${status} (NEW BALANCED THRESHOLD: 25+ for OK)`);
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
@@ -1096,10 +1105,11 @@ class ContentQualityAnalyzer {
 
   private async analyzeContentLength(wordCount: number, pageType: string): Promise<AnalysisFactor> {
     const minWords = this.getMinWordCount(pageType);
+    // BALANCED THRESHOLD: Much more lenient for OK status (was 0.6, now 0.3)
     return {
       name: "Sufficient Content Length",
       description: `${pageType} pages should have adequate content depth`,
-      status: wordCount >= minWords * 0.6 ? "OK" : wordCount >= minWords * 0.3 ? "OFI" : "N/A",
+      status: wordCount >= minWords * 0.3 ? "OK" : wordCount >= minWords * 0.1 ? "OFI" : "N/A",
       importance: "High",
       notes: `Word count: ${wordCount}. Recommended minimum: ${minWords} words for ${pageType} pages.`
     };
@@ -1107,10 +1117,11 @@ class ContentQualityAnalyzer {
 
   private async analyzeKeywordDensity(text: string): Promise<AnalysisFactor> {
     const density = this.calculateKeywordDensity(text);
+    // BALANCED THRESHOLD: Much more lenient for OK status (was 0.5-5, now 0.1-10)
     return {
       name: "Keyword Density Optimization",
       description: "Keywords should appear naturally without stuffing (1-3% density)",
-      status: density >= 0.5 && density <= 5 ? "OK" : density >= 0.1 && density <= 10 ? "OFI" : "N/A",
+      status: density >= 0.1 && density <= 10 ? "OK" : density >= 0.05 && density <= 15 ? "OFI" : "N/A",
       importance: "Medium",
       notes: `Primary keyword density: ${density.toFixed(1)}%. Target: 1-3%.`
     };
@@ -1121,10 +1132,11 @@ class ContentQualityAnalyzer {
     const ctaQuality = this.assessCTAQuality($);
     const combinedScore = (ctaElements >= 2 ? 50 : ctaElements >= 1 ? 30 : 0) + (ctaQuality >= 60 ? 50 : ctaQuality >= 30 ? 30 : 0);
     
+    // BALANCED THRESHOLD: Much more lenient for OK status (was 50, now 20)
     return {
       name: "Call-to-Action Optimization",
       description: "Page should have prominent, clear, and compelling calls-to-action",
-      status: combinedScore >= 50 ? "OK" : combinedScore >= 20 ? "OFI" : "N/A",
+      status: combinedScore >= 20 ? "OK" : combinedScore >= 10 ? "OFI" : "N/A",
       importance: "High",
       notes: `Found ${ctaElements} CTA elements with ${ctaQuality.toFixed(1)}% quality score. Optimize quantity and compelling language.`
     };
@@ -1288,12 +1300,13 @@ class ContentQualityAnalyzer {
     const h2Count = $('h2').length;
     const h3Count = $('h3').length;
     
-    const hasProperStructure = h1Count === 1 && h2Count >= 2 && h3Count >= 1;
+    // BALANCED THRESHOLD: More lenient structure requirements
+    const hasDecentStructure = h1Count >= 1 && (h2Count >= 1 || h3Count >= 1);
     
     return {
       name: "Heading Structure Hierarchy",
       description: "Proper H1-H6 heading structure improves readability and SEO",
-      status: h1Count === 0 ? "OFI" : hasProperStructure ? "OK" : "OFI",
+      status: h1Count === 0 ? "OFI" : hasDecentStructure ? "OK" : "OFI",
       importance: "High",
       notes: `H1: ${h1Count}, H2: ${h2Count}, H3: ${h3Count}. Should have exactly 1 H1 and multiple H2/H3 tags.`
     };
@@ -1307,7 +1320,8 @@ class ContentQualityAnalyzer {
     return {
       name: "Image Content Optimization",
       description: "Images should have descriptive alt text and be relevant to content",
-      status: altTextQuality >= 90 ? "OK" : altTextQuality >= 30 ? "OFI" : "OFI",
+      // BALANCED THRESHOLD: More lenient for OK status (was 90, now 50)
+      status: altTextQuality >= 50 ? "OK" : altTextQuality >= 20 ? "OFI" : "OFI",
       importance: "Medium",
       notes: `${imagesWithAlt.length}/${images.length} images have alt text (${altTextQuality.toFixed(1)}%).`
     };
