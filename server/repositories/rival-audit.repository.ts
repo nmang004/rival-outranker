@@ -25,9 +25,9 @@ export class RivalAuditRepository {
     try {
       const database = this.getDatabase();
       
-      // Set expiration to 10 minutes from now
+      // Set expiration to 30 minutes from now
       const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
       
       console.log('💾 Creating audit record in database...', {
         url: auditData.url,
@@ -223,7 +223,7 @@ export class RivalAuditRepository {
   }
 
   /**
-   * Delete expired audits (older than 10 minutes)
+   * Delete expired audits (older than 30 minutes)
    */
   async cleanupExpiredAudits(): Promise<number> {
     const database = this.getDatabase();
@@ -329,13 +329,13 @@ export class RivalAuditRepository {
   }
 
   /**
-   * Extend audit expiration by 10 minutes (for continue crawl functionality)
+   * Extend audit expiration by 30 minutes (for continue crawl functionality)
    */
   async extendAuditExpiration(id: number): Promise<RivalAuditRecord> {
     const database = this.getDatabase();
     
     const newExpiresAt = new Date();
-    newExpiresAt.setMinutes(newExpiresAt.getMinutes() + 10);
+    newExpiresAt.setMinutes(newExpiresAt.getMinutes() + 30);
     
     const [audit] = await database
       .update(rivalAudits)
