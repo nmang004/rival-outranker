@@ -39,13 +39,16 @@ export default function QuickStatusChange({
   const [priorityOFIConfirmed, setPriorityOFIConfirmed] = useState(false);
   const [auditStats, setAuditStats] = useState<{ priorityOFIPercentage: number; totalPriorityOFI: number; totalItems: number } | null>(null);
 
-  // Reset edit status when dialog opens
+  // Reset edit status when dialog opens (but not if Priority OFI is selected)
   useEffect(() => {
-    if (open) {
+    if (open && editStatus !== "Priority OFI") {
+      console.log('🔧 useEffect: Resetting editStatus from', editStatus, 'to', item.status);
       setEditStatus(item.status);
       setEditNotes(item.notes || "");
+    } else if (open) {
+      console.log('🔧 useEffect: NOT resetting because editStatus is Priority OFI');
     }
-  }, [open, item.status, item.notes]);
+  }, [open]);
 
   // Fetch current audit stats on mount
   useEffect(() => {
@@ -98,12 +101,15 @@ export default function QuickStatusChange({
   }, [open, auditId]);
 
   const handleStatusClick = (status: AuditStatus) => {
+    console.log('🔧 handleStatusClick called with:', status, 'current editStatus:', editStatus);
     if (status === "Priority OFI" && item.status !== "Priority OFI") {
       // Show warning dialog when selecting Priority OFI
       setEditStatus(status);
       setShowPriorityWarning(true);
+      console.log('🔧 Set editStatus to Priority OFI and showing warning dialog');
     } else {
       setEditStatus(status);
+      console.log('🔧 Set editStatus to:', status);
     }
   };
 
@@ -114,11 +120,23 @@ export default function QuickStatusChange({
     setPriorityOFIConfirmed(true);
     setEditStatus("Priority OFI");
     setShowPriorityWarning(false);
+    
+    // DEBUG: Confirm Priority OFI status is set
+    console.log('🔧 Priority OFI confirmed, editStatus set to:', "Priority OFI");
   };
 
   const handleSave = async () => {
     try {
       setIsUpdating(true);
+      
+      // DEBUG: Log what we're sending to backend
+      console.log('🔧 QuickStatusChange: Sending to backend:', {
+        sectionName,
+        itemName: item.name,
+        status: editStatus,
+        notes: editNotes,
+        originalItemStatus: item.status
+      });
       
       // Send update to the backend
       const response = await fetch(`/api/rival-audit/${auditId}/update-item`, {
@@ -140,6 +158,9 @@ export default function QuickStatusChange({
       
       const result = await response.json();
       
+      // DEBUG: Log backend response
+      console.log('🔧 QuickStatusChange: Backend response:', result);
+      
       // Create updated item with new status and notes
       const updatedItem = {
         ...item,
@@ -147,10 +168,12 @@ export default function QuickStatusChange({
         notes: editNotes
       };
       
-      // Show success toast
+      // Show success toast using backend response
       toast({
         title: "Item updated",
-        description: `Status changed to ${editStatus}`,
+        description: result.oldStatus && result.newStatus ? 
+          `Status changed from "${result.oldStatus}" to "${result.newStatus}"` :
+          `Status changed to ${editStatus}`,
         duration: 3000,
       });
       
