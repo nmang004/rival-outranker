@@ -319,40 +319,39 @@ export class OFIClassificationService {
 
     tree.push("START: New issue identified");
 
-    // Step 1: System stability
-    if (criteria.systemStabilityImpact) {
-      tree.push("✓ STEP 1: Causes system instability/crashes - YES");
+    // Step 1: SEO visibility
+    if (criteria.seoVisibilityImpact) {
+      tree.push("✓ STEP 1: Critical SEO visibility impact - YES");
       tree.push("→ Checking additional criteria...");
     } else {
-      tree.push("✗ STEP 1: Causes system instability/crashes - NO");
+      tree.push("✗ STEP 1: Critical SEO visibility impact - NO");
       tree.push("→ Continue to Step 2");
     }
 
-    // Step 2: User impact
-    if (criteria.userImpactSeverity) {
-      tree.push("✓ STEP 2: Blocks >30% of users - YES");
+    // Step 2: User experience
+    if (criteria.userExperienceImpact) {
+      tree.push("✓ STEP 2: Severe user experience impact - YES");
       tree.push("→ Checking additional criteria...");
     } else {
-      tree.push("✗ STEP 2: Blocks >30% of users - NO");
+      tree.push("✗ STEP 2: Severe user experience impact - NO");
       tree.push("→ Continue to Step 3");
     }
 
-    // Step 3: Security/compliance
+    // Step 3: Business impact
     if (criteria.businessImpact) {
-      tree.push("✓ STEP 3: Compliance/security breach risk - YES");
+      tree.push("✓ STEP 3: Significant business impact - YES");
       tree.push("→ Checking additional criteria...");
     } else {
-      tree.push("✗ STEP 3: Compliance/security breach risk - NO");
+      tree.push("✗ STEP 3: Significant business impact - NO");
       tree.push("→ Continue to Step 4");
     }
 
-    // Step 4: Revenue impact
-    const revenueImpact = metrics.revenueImpactPerDay ?? 0;
-    if (revenueImpact > 10000) {
-      tree.push("✓ STEP 4: Revenue impact >$10K/day - YES");
+    // Step 4: Compliance risk
+    if (criteria.complianceRisk) {
+      tree.push("✓ STEP 4: Compliance/security risk - YES");
       tree.push("→ Checking additional criteria...");
     } else {
-      tree.push("✗ STEP 4: Revenue impact >$10K/day - NO");
+      tree.push("✗ STEP 4: Compliance/security risk - NO");
     }
 
     const priorityCount = this.countPriorityCriteria(criteria);
@@ -416,62 +415,52 @@ export class OFIClassificationService {
 
     justification += "Criteria Evaluation:\n";
     
-    if (criteria.systemStabilityImpact) {
-      justification += "✓ System Stability Impact: ";
+    if (criteria.seoVisibilityImpact) {
+      justification += "✓ SEO Visibility Impact: ";
       if (metrics.performanceImpact && metrics.performanceImpact > 50) {
-        justification += `Performance degradation ${metrics.performanceImpact}%`;
-      } else if (metrics.cvssScore && metrics.cvssScore >= 7.0) {
-        justification += `Security vulnerability (CVSS: ${metrics.cvssScore})`;
-      } else if (metrics.memoryLeakRate && metrics.memoryLeakRate > 100) {
-        justification += `Memory leak ${metrics.memoryLeakRate}MB/hour`;
+        justification += `Core Web Vitals failure (${metrics.performanceImpact}% degradation)`;
       } else {
-        justification += "System crash/corruption risk identified";
+        justification += "Missing meta tags, indexing issues, or mobile problems identified";
       }
       justification += "\n";
     } else {
-      justification += "✗ System Stability Impact: No critical stability risks identified\n";
+      justification += "✗ SEO Visibility Impact: No critical SEO visibility issues identified\n";
     }
 
-    if (criteria.userImpactSeverity) {
-      justification += "✓ User Impact Severity: ";
+    if (criteria.userExperienceImpact) {
+      justification += "✓ User Experience Impact: ";
       if (metrics.userBaseAffected && metrics.userBaseAffected > 30) {
-        justification += `Affects ${metrics.userBaseAffected}% of users`;
-      } else if (metrics.supportTicketsPerDay && metrics.supportTicketsPerDay > 10) {
-        justification += `Generates ${metrics.supportTicketsPerDay} tickets/day`;
+        justification += `Affects ${metrics.userBaseAffected}% of users' ability to navigate/use site`;
       } else {
-        justification += "Blocks critical user workflows";
+        justification += "Broken navigation, forms, or unreadable content identified";
       }
       justification += "\n";
     } else {
-      justification += "✗ User Impact Severity: Limited user impact\n";
+      justification += "✗ User Experience Impact: No critical UX issues identified\n";
     }
 
     if (criteria.businessImpact) {
       justification += "✓ Business Impact: ";
       if (metrics.revenueImpactPerDay && metrics.revenueImpactPerDay > 10000) {
-        justification += `Revenue risk $${metrics.revenueImpactPerDay.toLocaleString()}/day`;
+        justification += `SEO ranking/revenue risk $${metrics.revenueImpactPerDay.toLocaleString()}/day`;
       } else {
-        justification += "Compliance/regulatory/SLA risk identified";
+        justification += "SEO ranking drops, missing conversions, or brand credibility issues identified";
       }
       justification += "\n";
     } else {
-      justification += "✗ Business Impact: No significant business risk\n";
+      justification += "✗ Business Impact: No significant business impact identified\n";
     }
 
-    if (criteria.technicalDebtCriticality) {
-      justification += "✓ Technical Debt Criticality: ";
-      if (metrics.blockedInitiatives && metrics.blockedInitiatives >= 3) {
-        justification += `Blocks ${metrics.blockedInitiatives} initiatives`;
-      } else if (metrics.incidentRateIncrease && metrics.incidentRateIncrease > 25) {
-        justification += `Increases incident rate ${metrics.incidentRateIncrease}%`;
-      } else if (metrics.eolMonths && metrics.eolMonths < 6) {
-        justification += `EOL dependency (${metrics.eolMonths} months)`;
+    if (criteria.complianceRisk) {
+      justification += "✓ Compliance Risk: ";
+      if (metrics.cvssScore && metrics.cvssScore >= 7.0) {
+        justification += `Security compliance issue (CVSS: ${metrics.cvssScore})`;
       } else {
-        justification += "Critical technical debt identified";
+        justification += "GDPR violations, accessibility issues, or security non-compliance identified";
       }
       justification += "\n";
     } else {
-      justification += "✗ Technical Debt Criticality: Manageable technical debt\n";
+      justification += "✗ Compliance Risk: No critical compliance issues identified\n";
     }
 
     if (downgradedReason) {
