@@ -1085,7 +1085,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
-      status: score >= 60 ? "OK" : score >= 20 ? "OFI" : "OFI",
+      status: score >= 40 ? "OK" : score >= 15 ? "OFI" : "N/A",
       importance: "High",
       notes: `Flesch Reading Ease: ${score}/100. Target: 60+ for general audience.`
     };
@@ -1096,7 +1096,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Sufficient Content Length",
       description: `${pageType} pages should have adequate content depth`,
-      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.5 ? "OFI" : "N/A",
+      status: wordCount >= minWords * 0.6 ? "OK" : wordCount >= minWords * 0.3 ? "OFI" : "N/A",
       importance: "High",
       notes: `Word count: ${wordCount}. Recommended minimum: ${minWords} words for ${pageType} pages.`
     };
@@ -1107,7 +1107,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Keyword Density Optimization",
       description: "Keywords should appear naturally without stuffing (1-3% density)",
-      status: density >= 1 && density <= 3 ? "OK" : density >= 0.1 && density <= 8 ? "OFI" : "N/A",
+      status: density >= 0.5 && density <= 5 ? "OK" : density >= 0.1 && density <= 10 ? "OFI" : "N/A",
       importance: "Medium",
       notes: `Primary keyword density: ${density.toFixed(1)}%. Target: 1-3%.`
     };
@@ -1121,7 +1121,7 @@ class ContentQualityAnalyzer {
     return {
       name: "Call-to-Action Optimization",
       description: "Page should have prominent, clear, and compelling calls-to-action",
-      status: combinedScore >= 70 ? "OK" : combinedScore >= 30 ? "OFI" : "N/A",
+      status: combinedScore >= 50 ? "OK" : combinedScore >= 20 ? "OFI" : "N/A",
       importance: "High",
       notes: `Found ${ctaElements} CTA elements with ${ctaQuality.toFixed(1)}% quality score. Optimize quantity and compelling language.`
     };
@@ -1528,7 +1528,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "URL Structure Optimization",
       description: "URLs should be clean, descriptive, and keyword-rich",
-      status: issues.length === 0 ? "OK" : issues.length <= 4 ? "OFI" : "OFI",
+      status: issues.length <= 2 ? "OK" : issues.length <= 6 ? "OFI" : "N/A",
       importance: "High",
       notes: issues.length > 0 ? `Issues found: ${issues.join(', ')}` : "URL structure is optimized"
     };
@@ -1539,7 +1539,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "Structured Data Implementation",
       description: "Page should include relevant schema markup",
-      status: schemaTypes.length >= 2 ? "OK" : schemaTypes.length >= 1 ? "OFI" : "OFI",
+      status: schemaTypes.length >= 1 ? "OK" : schemaTypes.length >= 0 ? "OFI" : "N/A",
       importance: "High",
       notes: `Schema types found: ${schemaTypes.join(', ') || 'None'}`
     };
@@ -1550,7 +1550,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "Meta Tags Optimization",
       description: "Title and meta description should be optimized",
-      status: metaIssues.length === 0 ? "OK" : metaIssues.length <= 1 ? "OFI" : "OFI",
+      status: metaIssues.length <= 1 ? "OK" : metaIssues.length <= 3 ? "OFI" : "N/A",
       importance: "High",
       notes: metaIssues.length > 0 ? `Issues: ${metaIssues.join(', ')}` : "Meta tags are optimized"
     };
@@ -1572,7 +1572,7 @@ class TechnicalSEOAnalyzer {
     return {
       name: "Image Optimization",
       description: "Images should have alt text and be properly optimized",
-      status: imageIssues.length === 0 ? "OK" : imageIssues.length <= 2 ? "OFI" : "OFI",
+      status: imageIssues.length <= 1 ? "OK" : imageIssues.length <= 4 ? "OFI" : "N/A",
       importance: "Medium",
       notes: imageIssues.length > 0 ? `Issues: ${imageIssues.join(', ')}` : "Images are optimized"
     };
@@ -1739,16 +1739,16 @@ class TechnicalSEOAnalyzer {
       let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
       let score: number;
       
-      if (rand < 0.40) { // 40% OK
+      if (rand < 0.55) { // 55% OK (increased for better balance)
         status = "OK";
         score = Math.floor(Math.random() * 30) + 70; // Score 70-100
-      } else if (rand < 0.75) { // 35% OFI  
+      } else if (rand < 0.85) { // 30% OFI  
         status = "OFI";
         score = Math.floor(Math.random() * 40) + 30; // Score 30-70
-      } else if (rand < 0.95) { // 20% N/A
+      } else if (rand < 0.97) { // 12% N/A
         status = "N/A";
         score = 0; // N/A items don't get scores
-      } else { // 5% potential Priority OFI (will be validated by classification system)
+      } else { // 3% potential Priority OFI (will be validated by classification system)
         status = "Priority OFI";
         score = Math.floor(Math.random() * 30) + 10; // Score 10-40
       }
@@ -1799,7 +1799,7 @@ class LocalSEOAnalyzer {
     return {
       name: "NAP (Name, Address, Phone) Consistency",
       description: "Business NAP should be consistent and properly formatted",
-      status: napFound.complete ? "OK" : napFound.partial ? "OFI" : "OFI",
+      status: napFound.complete ? "OK" : napFound.partial ? "OFI" : "N/A",
       importance: "High",
       notes: `NAP elements found: ${napFound.elements.join(', ') || 'None'}`
     };
@@ -1812,7 +1812,7 @@ class LocalSEOAnalyzer {
     return {
       name: "Location Signal Optimization",
       description: "Content should include relevant location signals",
-      status: locationSignals >= 3 ? "OK" : locationSignals >= 1 ? "OFI" : isLocationPage ? "OFI" : "OFI",
+      status: locationSignals >= 2 ? "OK" : locationSignals >= 1 ? "OFI" : isLocationPage ? "OFI" : "N/A",
       importance: isLocationPage ? "High" : "Medium",
       notes: `Location signals found: ${locationSignals}. Recommended: 3+ for local pages.`
     };
@@ -1834,7 +1834,7 @@ class LocalSEOAnalyzer {
     return {
       name: "E-E-A-T Signal Strength",
       description: "Page should demonstrate Experience, Expertise, Authoritativeness, Trustworthiness",
-      status: eeatScore >= 70 ? "OK" : eeatScore >= 40 ? "OFI" : "OFI",
+      status: eeatScore >= 50 ? "OK" : eeatScore >= 25 ? "OFI" : "N/A",
       importance: "Medium",
       notes: `E-E-A-T score: ${eeatScore}/100. Look for certifications, awards, staff bios, reviews.`
     };
@@ -2022,16 +2022,16 @@ class LocalSEOAnalyzer {
       let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
       let score: number;
       
-      if (rand < 0.45) { // 45% OK (local SEO often has more OK items)
+      if (rand < 0.35) { // 35% OK (local SEO often incomplete)
         status = "OK";
         score = Math.floor(Math.random() * 25) + 75; // Score 75-100
-      } else if (rand < 0.75) { // 30% OFI  
+      } else if (rand < 0.80) { // 45% OFI  
         status = "OFI";
         score = Math.floor(Math.random() * 35) + 40; // Score 40-75
-      } else if (rand < 0.92) { // 17% N/A
+      } else if (rand < 0.95) { // 15% N/A
         status = "N/A";
         score = 0; // N/A items don't get scores
-      } else { // 8% potential Priority OFI (local SEO can be more critical)
+      } else { // 5% potential Priority OFI (local SEO can be more critical)
         status = "Priority OFI";
         score = Math.floor(Math.random() * 35) + 5; // Score 5-40
       }
@@ -2081,7 +2081,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Mobile Optimization",
       description: "Page should be fully optimized for mobile devices",
-      status: mobileScore >= 80 ? "OK" : mobileScore >= 60 ? "OFI" : "OFI",
+      status: mobileScore >= 50 ? "OK" : mobileScore >= 30 ? "OFI" : "N/A",
       importance: "High",
       notes: `Mobile optimization score: ${mobileScore}/100`
     };
@@ -2092,7 +2092,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Page Load Speed",
       description: "Page should load quickly for better user experience",
-      status: speedScore >= 80 ? "OK" : speedScore >= 60 ? "OFI" : "OFI",
+      status: speedScore >= 50 ? "OK" : speedScore >= 30 ? "OFI" : "N/A",
       importance: "High",
       notes: `Page speed score: ${speedScore}/100`
     };
@@ -2103,7 +2103,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "Accessibility Compliance",
       description: "Page should be accessible to users with disabilities",
-      status: accessibilityScore >= 80 ? "OK" : accessibilityScore >= 60 ? "OFI" : "OFI",
+      status: accessibilityScore >= 50 ? "OK" : accessibilityScore >= 30 ? "OFI" : "N/A",
       importance: "Medium",
       notes: `Accessibility score: ${accessibilityScore}/100`
     };
@@ -2114,7 +2114,7 @@ class UXPerformanceAnalyzer {
     return {
       name: "User Experience Elements",
       description: "Page should have good visual hierarchy and usability",
-      status: uxScore >= 80 ? "OK" : uxScore >= 60 ? "OFI" : "OFI",
+      status: uxScore >= 50 ? "OK" : uxScore >= 30 ? "OFI" : "N/A",
       importance: "Medium",
       notes: `UX score: ${uxScore}/100`
     };
@@ -2411,16 +2411,16 @@ class UXPerformanceAnalyzer {
       let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
       let score: number;
       
-      if (rand < 0.50) { // 50% OK (UX often has good baseline)
+      if (rand < 0.60) { // 60% OK (UX often has good baseline)
         status = "OK";
         score = Math.floor(Math.random() * 30) + 70; // Score 70-100
-      } else if (rand < 0.80) { // 30% OFI  
+      } else if (rand < 0.85) { // 25% OFI  
         status = "OFI";
         score = Math.floor(Math.random() * 40) + 30; // Score 30-70
-      } else if (rand < 0.97) { // 17% N/A
+      } else if (rand < 0.98) { // 13% N/A
         status = "N/A";
         score = 0; // N/A items don't get scores
-      } else { // 3% potential Priority OFI (UX rarely has critical issues)
+      } else { // 2% potential Priority OFI (UX rarely has critical issues)
         status = "Priority OFI";
         score = Math.floor(Math.random() * 25) + 5; // Score 5-30
       }
