@@ -8,20 +8,32 @@ export class PageClassificationService {
   /**
    * Classify all pages in the site structure
    */
-  async classifyPages(structure: SiteStructure): Promise<SiteStructure> {
+  async classifyPages(structure: any): Promise<SiteStructure> {
     console.log('Classifying pages by type...');
     
+    // Handle different structure formats
+    const otherPages = structure.otherPages || structure.additionalPages || [];
+    const homepage = structure.homepage;
+    
     const classified: SiteStructure = {
-      ...structure,
+      homepage,
       contactPage: undefined,
       servicePages: [],
       locationPages: [],
       serviceAreaPages: [],
-      otherPages: []
+      otherPages: [],
+      hasSitemapXml: structure.hasSitemapXml || false,
+      reachedMaxPages: structure.reachedMaxPages || false
     };
     
+    // Ensure otherPages is iterable
+    if (!Array.isArray(otherPages)) {
+      console.log('[PageClassification] No additional pages to classify or invalid format');
+      return classified;
+    }
+    
     // Classify all other pages
-    for (const page of structure.otherPages) {
+    for (const page of otherPages) {
       if (this.isContactPage(page)) {
         classified.contactPage = page;
       } else if (this.isServicePage(page)) {

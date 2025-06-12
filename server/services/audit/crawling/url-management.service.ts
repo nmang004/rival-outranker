@@ -167,8 +167,9 @@ export class URLManagementService {
             return { url, valid: false, reason: 'Redirect detected' };
           }
           
-          const contentType = response.headers['content-type'] || '';
-          const contentLength = parseInt(response.headers['content-length'] || '0', 10);
+          const headers = response.headers || {};
+          const contentType = headers['content-type'] || '';
+          const contentLength = parseInt(headers['content-length'] || '0', 10);
           
           // Skip non-HTML content
           if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
