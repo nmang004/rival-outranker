@@ -154,6 +154,11 @@ export class URLManagementService {
         }
         
         try {
+          // Check if axios is available
+          if (!options.axios || typeof options.axios.head !== 'function') {
+            return { url, valid: true, reason: 'Axios not available - allowing through' };
+          }
+          
           const response = await options.axios.head(url, {
             timeout: 3000, // Shorter timeout for HEAD requests
             headers: { 'User-Agent': options.userAgent },

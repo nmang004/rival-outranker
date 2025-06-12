@@ -302,7 +302,7 @@ export class CrawlerOrchestratorService {
       prefilterContentTypes: true,
       concurrentRequests: this.adaptiveConcurrency,
       userAgent: this.USER_AGENT,
-      axios: null
+      axios: axios
     });
     
     // Apply CMS-specific filtering
