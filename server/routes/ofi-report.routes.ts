@@ -51,13 +51,21 @@ router.get('/weekly', requireAdmin, async (req: Request, res: Response) => {
     const allRecommendations: string[] = [];
 
     // Analyze each audit
-    for (const audit of audits) {
+    for (const auditRecord of audits) {
+      // Convert database record to RivalAudit format
+      const audit = {
+        ...auditRecord.results as any,
+        url: auditRecord.url,
+        timestamp: auditRecord.createdAt,
+        summary: auditRecord.summary || { priorityOfiCount: 0, ofiCount: 0, okCount: 0, naCount: 0 }
+      };
+      
       const classificationReport = auditAnalyzerService.generateOFIClassificationReport(audit);
       
       auditSummaries.push({
-        auditId: audit.id,
-        url: audit.url,
-        timestamp: audit.timestamp,
+        auditId: auditRecord.id,
+        url: auditRecord.url,
+        timestamp: auditRecord.createdAt,
         ...classificationReport
       });
 
@@ -160,22 +168,30 @@ router.post('/reclassify/:auditId', requireAdmin, async (req: Request, res: Resp
   try {
     const { auditId } = req.params;
     
-    const audit = await rivalAuditRepository.getAuditById(auditId);
-    if (!audit) {
+    const auditRecord = await rivalAuditRepository.getAuditById(auditId);
+    if (!auditRecord) {
       return res.status(404).json({
         success: false,
         error: 'Audit not found'
       });
     }
 
+    // Convert database record to audit format
+    const audit = {
+      ...auditRecord.results as any,
+      url: auditRecord.url,
+      timestamp: auditRecord.createdAt,
+      summary: auditRecord.summary || { priorityOfiCount: 0, ofiCount: 0, okCount: 0, naCount: 0 }
+    };
+
     // Get all items from the audit
     const allItems = [
-      ...audit.onPage.items,
-      ...audit.structureNavigation.items,
-      ...audit.contactPage.items,
-      ...audit.servicePages.items,
-      ...audit.locationPages.items,
-      ...audit.serviceAreaPages.items
+      ...(audit.onPage?.items || []),
+      ...(audit.structureNavigation?.items || []),
+      ...(audit.contactPage?.items || []),
+      ...(audit.servicePages?.items || []),
+      ...(audit.locationPages?.items || []),
+      ...(audit.serviceAreaPages?.items || [])
     ];
 
     const reclassificationResults = [];
@@ -255,7 +271,7 @@ router.post('/bulk-reclassify', requireAdmin, async (req: Request, res: Response
       const auditResult = {
         auditId: audit.id,
         url: audit.url,
-        timestamp: audit.timestamp,
+        timestamp: audit.createdAt,
         changes: [] as any[]
       };
       
@@ -356,13 +372,21 @@ router.post('/reclassify-all-recent', requireAdmin, async (req: Request, res: Re
     let totalConverted = 0; // OFI -> OK conversions
     const results = [];
     
-    for (const audit of audits) {
+    for (const auditRecord of audits) {
+      // Convert database record to audit format
+      const audit = {
+        ...auditRecord.results as any,
+        url: auditRecord.url,
+        timestamp: auditRecord.createdAt,
+        summary: auditRecord.summary || { priorityOfiCount: 0, ofiCount: 0, okCount: 0, naCount: 0 }
+      };
+      
       const allItems = [
-        ...audit.onPage.items,
-        ...audit.structureNavigation.items,
-        ...audit.contactPage.items,
-        ...audit.servicePages.items,
-        ...audit.locationPages.items,
+        ...(audit.onPage?.items || []),
+        ...(audit.structureNavigation?.items || []),
+        ...(audit.contactPage?.items || []),
+        ...(audit.servicePages?.items || []),
+        ...(audit.locationPages?.items || []),
         ...(audit.serviceAreaPages?.items || [])
       ];
       
@@ -470,14 +494,22 @@ router.get('/classification-metrics', requireAdmin, async (req: Request, res: Re
     let potentialDowngrades = 0;
 
     // Analyze classification patterns
-    for (const audit of audits) {
+    for (const auditRecord of audits) {
+      // Convert database record to audit format
+      const audit = {
+        ...auditRecord.results as any,
+        url: auditRecord.url,
+        timestamp: auditRecord.createdAt,
+        summary: auditRecord.summary || { priorityOfiCount: 0, ofiCount: 0, okCount: 0, naCount: 0 }
+      };
+      
       const allItems = [
-        ...audit.onPage.items,
-        ...audit.structureNavigation.items,
-        ...audit.contactPage.items,
-        ...audit.servicePages.items,
-        ...audit.locationPages.items,
-        ...audit.serviceAreaPages.items
+        ...(audit.onPage?.items || []),
+        ...(audit.structureNavigation?.items || []),
+        ...(audit.contactPage?.items || []),
+        ...(audit.servicePages?.items || []),
+        ...(audit.locationPages?.items || []),
+        ...(audit.serviceAreaPages?.items || [])
       ];
 
       for (const item of allItems) {

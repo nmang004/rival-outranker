@@ -81,6 +81,7 @@ router.post("/enhanced", async (req: Request, res: Response) => {
       url,
       status: 'processing',
       userId: req.user?.id || null,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       metadata: { auditType: 'enhanced' }
     });
     
@@ -143,7 +144,7 @@ router.post("/enhanced", async (req: Request, res: Response) => {
           auditRecord.id,
           resultsToStore,
           auditResults.summary,
-          auditResults.summary.total || 0,
+          ('total' in auditResults.summary ? (auditResults.summary as any).total : ('totalFactors' in auditResults.summary ? (auditResults.summary as any).totalFactors : 0)) || 0,
           auditResults.reachedMaxPages || false
         );
         
@@ -207,6 +208,7 @@ router.post("/", async (req: Request, res: Response) => {
       url,
       status: 'processing',
       userId: req.user?.id || null,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       metadata: { auditType: 'standard' }
     });
     
@@ -257,7 +259,7 @@ router.post("/", async (req: Request, res: Response) => {
           auditRecord.id,
           auditResults,
           auditResults.summary,
-          auditResults.summary.total || 0,
+          ('total' in auditResults.summary ? (auditResults.summary as any).total : ('totalFactors' in auditResults.summary ? (auditResults.summary as any).totalFactors : 0)) || 0,
           auditResults.reachedMaxPages || false
         );
         
@@ -423,7 +425,11 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     }
     
     // Get the appropriate section - UPDATED to handle enhanced categories
-    const audit = auditRecord.results;
+    const audit = auditRecord.results as any;
+    if (!audit || typeof audit !== 'object') {
+      return res.status(404).json({ error: "Audit results not found or invalid" });
+    }
+    
     let section;
     
     switch (sectionName) {
@@ -483,8 +489,21 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
       item.notes = notes;
     }
     
+    // Create a compatible structure for summary update
+    const cachedAudit: CachedRivalAudit = {
+      id: auditId,
+      url: auditRecord.url,
+      status: auditRecord.status,
+      startTime: auditRecord.startedAt,
+      summary: audit.summary || { priorityOfiCount: 0, ofiCount: 0, okCount: 0, naCount: 0 },
+      ...audit
+    };
+    
     // Update the summary counts
-    updateAuditSummary(audit);
+    updateAuditSummary(cachedAudit);
+    
+    // Update the audit object with new summary
+    audit.summary = cachedAudit.summary;
     
     // Update the database
     await rivalAuditRepository.updateAudit(auditId, {
@@ -644,8 +663,9 @@ router.get("/:id", async (req: Request, res: Response) => {
     // Check if we have results
     if (auditRecord.status === 'completed' && auditRecord.results) {
       // Return the audit results with proper structure
+      const results = auditRecord.results as any || {};
       const audit = {
-        ...auditRecord.results,
+        ...results,
         id: auditRecord.id,
         status: auditRecord.status,
         startTime: auditRecord.createdAt,
@@ -654,16 +674,16 @@ router.get("/:id", async (req: Request, res: Response) => {
       };
       
       // Debug: Check if enhanced categories exist and have items
-      const hasCategories = audit.contentQuality || audit.technicalSEO || audit.localSEO || audit.uxPerformance;
+      const hasCategories = results.contentQuality || results.technicalSEO || results.localSEO || results.uxPerformance;
       console.log(`[API] Enhanced categories exist: ${!!hasCategories}`);
       if (!hasCategories) {
         console.log(`[API] WARNING: No enhanced categories found in audit result. Available properties:`, Object.keys(audit));
       } else {
         console.log(`[API] Returning audit ${auditId} with enhanced categories:`, {
-          contentQuality: audit.contentQuality?.items?.length || 0,
-          technicalSEO: audit.technicalSEO?.items?.length || 0,
-          localSEO: audit.localSEO?.items?.length || 0,
-          uxPerformance: audit.uxPerformance?.items?.length || 0,
+          contentQuality: results.contentQuality?.items?.length || 0,
+          technicalSEO: results.technicalSEO?.items?.length || 0,
+          localSEO: results.localSEO?.items?.length || 0,
+          uxPerformance: results.uxPerformance?.items?.length || 0,
           totalFactors: audit.summary?.totalFactors || 0
         });
       }
@@ -694,7 +714,20 @@ router.get("/:id/export", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Audit not found" });
     }
     
-    const audit = auditRecord.results;
+    const audit = auditRecord.results as any;
+    if (!audit || typeof audit !== 'object') {
+      return res.status(404).json({ error: "Audit results not found or invalid" });
+    }
+    
+    // Create a compatible structure for export
+    const cachedAudit: CachedRivalAudit = {
+      id: auditId,
+      url: auditRecord.url,
+      status: auditRecord.status,
+      startTime: auditRecord.startedAt,
+      summary: audit.summary || { priorityOfiCount: 0, ofiCount: 0, okCount: 0, naCount: 0 },
+      ...audit
+    };
     
     // Check if this is an enhanced audit (140+ factors)
     const isEnhancedAudit = audit.type === 'enhanced' || (audit.summary && 'totalFactors' in audit.summary);
@@ -726,7 +759,7 @@ router.get("/:id/export", async (req: Request, res: Response) => {
           filename = `enhanced-rival-audit-${auditId}.xlsx`;
         } else {
           // Use regular Excel exporter for standard audits
-          excelBuffer = await generateRivalAuditExcel(convertForExport(audit));
+          excelBuffer = await generateRivalAuditExcel(convertForExport(cachedAudit));
           filename = `rival-audit-${auditId}.xlsx`;
         }
         

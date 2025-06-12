@@ -10,14 +10,18 @@ import { BaseRepository } from './base.repository';
 /**
  * Repository for managing page classification overrides
  */
-export class PageClassificationOverrideRepository extends BaseRepository {
+export class PageClassificationOverrideRepository extends BaseRepository<PageClassificationOverride, InsertPageClassificationOverride> {
+  
+  constructor() {
+    super(pageClassificationOverrides);
+  }
   
   /**
    * Create a new page classification override
    */
   async create(override: InsertPageClassificationOverride): Promise<PageClassificationOverride> {
     try {
-      const [result] = await db
+      const [result] = await db()
         .insert(pageClassificationOverrides)
         .values(override)
         .returning();
@@ -33,7 +37,7 @@ export class PageClassificationOverrideRepository extends BaseRepository {
    */
   async getByAuditId(auditId: number): Promise<PageClassificationOverride[]> {
     try {
-      return await db
+      return await db()
         .select()
         .from(pageClassificationOverrides)
         .where(eq(pageClassificationOverrides.auditId, auditId));
@@ -47,7 +51,7 @@ export class PageClassificationOverrideRepository extends BaseRepository {
    */
   async getByUserId(userId: string): Promise<PageClassificationOverride[]> {
     try {
-      return await db
+      return await db()
         .select()
         .from(pageClassificationOverrides)
         .where(eq(pageClassificationOverrides.userId, userId));
@@ -61,7 +65,7 @@ export class PageClassificationOverrideRepository extends BaseRepository {
    */
   async getByAuditAndPage(auditId: number, pageUrl: string): Promise<PageClassificationOverride | null> {
     try {
-      const results = await db
+      const results = await db()
         .select()
         .from(pageClassificationOverrides)
         .where(
@@ -87,7 +91,7 @@ export class PageClassificationOverrideRepository extends BaseRepository {
     updates: Partial<InsertPageClassificationOverride>
   ): Promise<PageClassificationOverride | null> {
     try {
-      const [result] = await db
+      const [result] = await db()
         .update(pageClassificationOverrides)
         .set({
           ...updates,
@@ -112,7 +116,7 @@ export class PageClassificationOverrideRepository extends BaseRepository {
    */
   async delete(auditId: number, pageUrl: string): Promise<boolean> {
     try {
-      const result = await db
+      const result = await db()
         .delete(pageClassificationOverrides)
         .where(
           and(
@@ -153,7 +157,7 @@ export class PageClassificationOverrideRepository extends BaseRepository {
    */
   async deleteByAuditId(auditId: number): Promise<number> {
     try {
-      const result = await db
+      const result = await db()
         .delete(pageClassificationOverrides)
         .where(eq(pageClassificationOverrides.auditId, auditId));
 

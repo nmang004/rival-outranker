@@ -79,7 +79,10 @@ export class CrawlingSchedulerService {
 
   private scheduleSystemJob(name: string, schedule: string, handler: () => Promise<void>): void {
     if (this.scheduledJobs.has(name)) {
-      this.scheduledJobs.get(name)?.destroy();
+      const existingJob = this.scheduledJobs.get(name);
+      if (existingJob && 'destroy' in existingJob) {
+        (existingJob as any).destroy();
+      }
     }
 
     const task = cron.schedule(schedule, async () => {
@@ -116,7 +119,10 @@ export class CrawlingSchedulerService {
 
   private scheduleJob(job: any): void {
     if (this.scheduledJobs.has(job.id)) {
-      this.scheduledJobs.get(job.id)?.destroy();
+      const existingJob = this.scheduledJobs.get(job.id);
+      if (existingJob && 'destroy' in existingJob) {
+        (existingJob as any).destroy();
+      }
     }
 
     const task = cron.schedule(job.schedule, async () => {
@@ -310,7 +316,7 @@ export class CrawlingSchedulerService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 30); // Remove data older than 30 days
       
-      const result = await db.delete(crawledContent)
+      const result = await db().delete(crawledContent)
         .where(lt(crawledContent.createdAt, cutoffDate));
       
       console.log(`Data cleanup completed: removed old content`);
@@ -342,7 +348,7 @@ export class CrawlingSchedulerService {
       const sources = await db().select().from(crawlSources)
         .where(and(eq(crawlSources.type, 'news'), eq(crawlSources.isActive, true)));
       
-      return sources.map(source => ({
+      return sources.map((source: any) => ({
         id: source.id,
         name: source.name,
         url: source.url,
@@ -451,7 +457,7 @@ export class CrawlingSchedulerService {
   async getMetrics(): Promise<CrawlMetrics> {
     try {
       const jobs = await db().select().from(crawlJobs);
-      const activeJobs = jobs.filter(job => job.isActive);
+      const activeJobs = jobs.filter((job: any) => job.isActive);
       
       return {
         totalJobs: jobs.length,
@@ -476,7 +482,7 @@ export class CrawlingSchedulerService {
     console.log('Stopping crawling scheduler...');
     
     for (const [name, task] of this.scheduledJobs) {
-      task.destroy();
+      task.stop();
       console.log(`Stopped scheduled job: ${name}`);
     }
     

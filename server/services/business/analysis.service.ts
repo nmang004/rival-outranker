@@ -3,7 +3,7 @@ import { Analysis, InsertAnalysis, SeoAnalysisResult } from '../../../shared/sch
 import { analysisRepository } from '../../repositories';
 import { analyzer } from '../analysis/analyzer.service';
 import { crawler } from '../audit/crawler.service';
-import { competitorAnalyzer } from '../analysis/competitor-analyzer.service';
+// Removed: import { competitorAnalyzer } from '../analysis/competitor-analyzer.service';
 import { deepContentAnalyzer } from '../analysis/content-analyzer.service';
 import { searchService } from '../external/search.service';
 
@@ -539,7 +539,7 @@ export class AnalysisService implements IAnalysisService {
         };
       } else {
         // Fallback to competitor analyzer
-        return await competitorAnalyzer.analyzeCompetitors(url, keyword, location);
+        // Competitor analyzer has been removed - return empty result\n        return {\n          competitors: [],\n          analysis: {\n            strengths: [],\n            weaknesses: [],\n            opportunities: [],\n            threats: []\n          }\n        };
       }
     } catch (error) {
       console.error('[AnalysisService] Competitor analysis failed:', error);

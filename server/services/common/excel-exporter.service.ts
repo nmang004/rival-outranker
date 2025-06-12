@@ -70,7 +70,7 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     categoryData.push({
       name: 'Content Quality',
       items: audit.contentQuality.items,
-      score: audit.contentQuality.score,
+      score: (audit.contentQuality as any).score || 0,
       icon: '📝'
     });
   }
@@ -79,7 +79,7 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     categoryData.push({
       name: 'Technical SEO',
       items: audit.technicalSEO.items,
-      score: audit.technicalSEO.score,
+      score: (audit.technicalSEO as any).score || 0,
       icon: '⚙️'
     });
   }
@@ -88,7 +88,7 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     categoryData.push({
       name: 'Local SEO & E-E-A-T',
       items: audit.localSEO.items,
-      score: audit.localSEO.score,
+      score: (audit.localSEO as any).score || 0,
       icon: '📍'
     });
   }
@@ -97,7 +97,7 @@ export async function generateEnhancedRivalAuditExcel(audit: EnhancedRivalAudit)
     categoryData.push({
       name: 'UX & Performance',
       items: audit.uxPerformance.items,
-      score: audit.uxPerformance.score,
+      score: (audit.uxPerformance as any).score || 0,
       icon: '🚀'
     });
   }

@@ -371,7 +371,7 @@ export default function RivalAuditResultsPage() {
       technicalSEOItems: (audit as any)?.technicalSEO?.items?.length || 0,
       localSEOItems: (audit as any)?.localSEO?.items?.length || 0,
       uxPerformanceItems: (audit as any)?.uxPerformance?.items?.length || 0,
-      totalFactors: audit?.summary?.totalFactors || audit?.summary?.total || 0
+      totalFactors: (audit?.summary && 'totalFactors' in audit.summary ? (audit.summary as any).totalFactors : (audit?.summary && 'total' in audit.summary ? (audit.summary as any).total : 0)) || 0
     });
     
     // Check if audit has dedicated enhanced categories with actual items

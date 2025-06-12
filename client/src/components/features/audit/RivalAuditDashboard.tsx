@@ -94,7 +94,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
       technicalSEOItems: (audit as any)?.technicalSEO?.items?.length || 0,
       localSEOItems: (audit as any)?.localSEO?.items?.length || 0,
       uxPerformanceItems: (audit as any)?.uxPerformance?.items?.length || 0,
-      totalFactors: ('totalFactors' in (audit?.summary || {}) ? (audit.summary as any).totalFactors : audit?.summary?.total) || 0
+      totalFactors: ('totalFactors' in (audit?.summary || {}) ? (audit.summary as any).totalFactors : ('total' in (audit?.summary || {}) ? (audit.summary as any).total : 0)) || 0
     });
     
     // Check if audit has dedicated enhanced categories with actual items
@@ -818,7 +818,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             </div>
 
             {/* Weighted overall score display */}
-            {audit.summary.weightedOverallScore && (
+            {'weightedOverallScore' in audit.summary && (audit.summary as any).weightedOverallScore && (
               <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-800">
                 <div className="flex justify-between items-center">
                   <div>
@@ -831,11 +831,11 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                      {Math.round(audit.summary.weightedOverallScore)}%
+                      {Math.round((audit.summary as any).weightedOverallScore)}%
                     </div>
-                    {audit.summary.overallScore && (
+                    {'overallScore' in audit.summary && (audit.summary as any).overallScore && (
                       <div className="text-xs text-gray-600 dark:text-gray-400">
-                        Standard: {Math.round(audit.summary.overallScore)}%
+                        Standard: {Math.round((audit.summary as any).overallScore)}%
                       </div>
                     )}
                   </div>

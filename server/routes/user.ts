@@ -17,6 +17,9 @@ userRouter.use(authenticate);
 // Get user profile
 userRouter.get('/profile', async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const user = await storage.getUser(userId);
     
@@ -37,6 +40,9 @@ userRouter.get('/profile', async (req: Request, res: Response) => {
 // Update user profile
 userRouter.put('/profile', async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const userId = req.user.id;
     
     // Validate request body
@@ -66,6 +72,9 @@ userRouter.put('/profile', async (req: Request, res: Response) => {
 // Change password
 userRouter.put('/change-password', async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
     
@@ -112,6 +121,9 @@ userRouter.put('/change-password', async (req: Request, res: Response) => {
 // Get user analyses
 userRouter.get('/analyses', async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const analyses = await storage.getAnalysesByUserId(userId);
     

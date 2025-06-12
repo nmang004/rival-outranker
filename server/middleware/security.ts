@@ -129,8 +129,17 @@ declare global {
       fingerprintId?: string;
       user?: {
         id: string;
-        email: string;
-        role?: string;
+        email: string | null;
+        role?: string | null;
+        userId?: string | null;
+        password?: string | null;
+        username?: string | null;
+        firstName?: string | null;
+        lastName?: string | null;
+        profileImageUrl?: string | null;
+        company?: string | null;
+        chatUsageResetDate?: Date | null;
+        [key: string]: any;
       };
       session?: {
         csrfToken?: string;

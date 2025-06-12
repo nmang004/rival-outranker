@@ -843,7 +843,7 @@ export class AuditAnalyzerService {
       ...audit.contactPage.items,
       ...audit.servicePages.items,
       ...audit.locationPages.items,
-      ...audit.serviceAreaPages.items
+      ...(audit.serviceAreaPages?.items || [])
     ];
 
     const totalItems = allItems.length;

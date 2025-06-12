@@ -12,7 +12,7 @@
  * - Device fingerprinting
  */
 
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
@@ -213,24 +213,28 @@ export class EnhancedAuthService {
       sessionId
     };
 
+    const accessTokenOptions: SignOptions = {
+      expiresIn: config.jwt.accessTokenExpiry as any,
+      issuer: config.jwt.issuer,
+      audience: config.jwt.audience
+    };
+    
     const accessToken = jwt.sign(
       accessTokenPayload,
       process.env.JWT_SECRET!,
-      {
-        expiresIn: config.jwt.accessTokenExpiry,
-        issuer: config.jwt.issuer,
-        audience: config.jwt.audience
-      }
+      accessTokenOptions
     );
 
+    const refreshTokenOptions: SignOptions = {
+      expiresIn: config.jwt.refreshTokenExpiry as any,
+      issuer: config.jwt.issuer,
+      audience: config.jwt.audience
+    };
+    
     const refreshToken = jwt.sign(
       refreshTokenPayload,
       process.env.JWT_REFRESH_SECRET!,
-      {
-        expiresIn: config.jwt.refreshTokenExpiry,
-        issuer: config.jwt.issuer,
-        audience: config.jwt.audience
-      }
+      refreshTokenOptions
     );
 
     // Store refresh token data

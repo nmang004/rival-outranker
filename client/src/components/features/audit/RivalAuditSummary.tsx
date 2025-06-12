@@ -111,7 +111,7 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
       technicalSEOItems: (audit as any).technicalSEO?.items?.length || 0,
       localSEOItems: (audit as any).localSEO?.items?.length || 0,
       uxPerformanceItems: (audit as any).uxPerformance?.items?.length || 0,
-      totalFactors: audit.summary.totalFactors || 0
+      totalFactors: ('totalFactors' in audit.summary ? (audit.summary as any).totalFactors : ('total' in audit.summary ? (audit.summary as any).total : 0)) || 0
     });
     
     // Check if audit has dedicated enhanced categories with actual items

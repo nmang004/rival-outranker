@@ -236,7 +236,7 @@ export class RivalAuditRepository {
       .from(rivalAudits)
       .where(lt(rivalAudits.expiresAt, now));
     
-    const expiredIds = expiredAudits.map(audit => audit.id);
+    const expiredIds = expiredAudits.map((audit: any) => audit.id);
     
     // Delete related crawled content first (if we're storing it separately)
     if (expiredIds.length > 0) {
@@ -274,7 +274,7 @@ export class RivalAuditRepository {
   ): Promise<CrawledContent> {
     const database = this.getDatabase();
     
-    const crawledData: InsertCrawledContent = {
+    const crawledData = {
       id: `audit_${auditId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'rival_audit',
       source: `audit_${auditId}`,
@@ -426,14 +426,6 @@ export class RivalAuditRepository {
   /**
    * Get an audit by string ID (for backward compatibility)
    */
-  async getAuditById(id: string): Promise<RivalAuditRecord | undefined> {
-    const numericId = parseInt(id, 10);
-    if (isNaN(numericId)) {
-      return undefined;
-    }
-    return this.getAudit(numericId);
-  }
-
   /**
    * Get audit by ID for reporting
    */

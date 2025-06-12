@@ -168,7 +168,7 @@ export class ContentQualityAnalyzer {
 
   private async analyzeImageContent($: cheerio.CheerioAPI): Promise<AnalysisFactor> {
     const images = $('img');
-    const imagesWithAlt = images.filter((_, img) => $(img).attr('alt')?.length > 0);
+    const imagesWithAlt = images.filter((_, img) => ($(img).attr('alt')?.length || 0) > 0);
     const altTextQuality = images.length > 0 ? (imagesWithAlt.length / images.length) * 100 : 100;
     
     return {

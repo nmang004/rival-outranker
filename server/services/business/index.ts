@@ -9,7 +9,7 @@
 export type { IUserService } from '../interfaces/user.service.interface';
 export type { IAnalysisService } from '../interfaces/analysis.service.interface';
 export type { IProjectService } from '../interfaces/project.service.interface';
-export type { IKeywordService } from '../interfaces/keyword.service.interface';
+// Removed: export type { IKeywordService } from '../interfaces/keyword.service.interface';
 
 // Service implementations
 export { UserService, userService } from './user.service';

@@ -91,7 +91,7 @@ export class OFIClassificationService {
       notes: item.notes
     };
 
-    return this.classifyOFI(item.name, item.description, metrics, context);
+    return this.classifyOFI(item.name, item.description || '', metrics, context);
   }
 
   /**
@@ -396,7 +396,7 @@ export class OFIClassificationService {
     // Must have at least 2 criteria strongly met
     const strongCriteriaCount = Object.values(criteria).filter(Boolean).length;
     
-    return hasConcreteMetrics && strongCriteriaCount >= 2;
+    return Boolean(hasConcreteMetrics && strongCriteriaCount >= 2);
   }
 
   /**
@@ -506,13 +506,13 @@ export class OFIClassificationService {
     // HTTPS alone is NOT a security vulnerability
     // Only assign CVSS score if there's actual security risk mentioned
     if (item.name.toLowerCase().includes('security') && 
-        item.description.toLowerCase().includes('vulnerability')) {
+        item.description?.toLowerCase().includes('vulnerability')) {
       metrics.cvssScore = 7.5;
     }
 
     // Missing H1 or title is NOT automatically a critical user workflow blocker
     // Only assign user impact if it actually prevents users from doing something
-    if (item.importance === 'High' && item.description.toLowerCase().includes('block')) {
+    if (item.importance === 'High' && item.description?.toLowerCase().includes('block')) {
       metrics.userBaseAffected = 25; // Still below the 30% threshold
     }
 

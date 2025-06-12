@@ -589,8 +589,8 @@ class EnhancedAuditAnalyzer {
     );
 
     // Update summary with weighted calculations including normalization
-    results.summary.weightedOverallScore = weightedScore.weightedScore;
-    results.summary.priorityBreakdown = {
+    (results.summary as any).weightedOverallScore = weightedScore.weightedScore;
+    (results.summary as any).priorityBreakdown = {
       tier1: weightedOFI.breakdown.tier1,
       tier2: weightedOFI.breakdown.tier2,
       tier3: weightedOFI.breakdown.tier3,
@@ -767,7 +767,7 @@ class EnhancedAuditAnalyzer {
       ...siteStructure.servicePages,
       ...siteStructure.locationPages,
       ...siteStructure.serviceAreaPages
-    ].filter(Boolean);
+    ].filter(Boolean) as PageCrawlResult[];
 
     // Check navigation consistency
     const navigationConsistency = this.checkNavigationConsistency(allPages);
@@ -803,7 +803,7 @@ class EnhancedAuditAnalyzer {
       ...siteStructure.servicePages,
       ...siteStructure.locationPages,
       ...siteStructure.serviceAreaPages
-    ].filter(Boolean);
+    ].filter(Boolean) as PageCrawlResult[];
 
     // Analyze internal linking structure
     const linkingQuality = this.assessInternalLinkingQuality(allPages);
@@ -839,7 +839,7 @@ class EnhancedAuditAnalyzer {
       ...siteStructure.servicePages,
       ...siteStructure.locationPages,
       ...siteStructure.serviceAreaPages
-    ].filter(Boolean);
+    ].filter(Boolean) as PageCrawlResult[];
 
     // Check content length consistency
     const contentConsistency = this.analyzeContentLengthConsistency(allPages);
@@ -875,7 +875,7 @@ class EnhancedAuditAnalyzer {
       ...siteStructure.servicePages,
       ...siteStructure.locationPages,
       ...siteStructure.serviceAreaPages
-    ].filter(Boolean);
+    ].filter(Boolean) as PageCrawlResult[];
 
     // Check for duplicate content
     const duplicateContent = this.detectDuplicateContent(allPages);
@@ -928,9 +928,10 @@ class EnhancedAuditAnalyzer {
       ...siteStructure.servicePages,
       ...siteStructure.locationPages,
       ...siteStructure.serviceAreaPages
-    ].filter(Boolean);
+    ].filter(Boolean) as PageCrawlResult[];
 
     const maxDepth = Math.max(...allPages.map(page => {
+      if (!page) return 0;
       const pathParts = new URL(page.url).pathname.split('/').filter(Boolean);
       return pathParts.length;
     }));

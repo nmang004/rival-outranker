@@ -4,7 +4,20 @@ import { authService } from '../services/auth/auth.service';
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: string;
+        email: string | null;
+        role?: string | null;
+        userId?: string | null;
+        password?: string | null;
+        username?: string | null;
+        firstName?: string | null;
+        lastName?: string | null;
+        profileImageUrl?: string | null;
+        company?: string | null;
+        chatUsageResetDate?: Date | null;
+        [key: string]: any;
+      };
       token?: string;
     }
   }

@@ -111,7 +111,7 @@ export class CrawlerOrchestratorService {
       if (options.followSitemaps !== false) {
         discoveredUrls = await this.sitemapDiscoveryService.discoverUrlsFromSitemap(
           initialUrl,
-          this.adaptiveTimeout
+          this.adaptiveTimeout.toString()
         );
       }
 
@@ -156,7 +156,7 @@ export class CrawlerOrchestratorService {
       console.log(`[CrawlerOrchestrator] 📄 Crawling page: ${url}`);
       
       // Check if URL should be skipped
-      if (this.urlManagementService.shouldSkipUrl(url)) {
+      if (this.urlManagementService.shouldSkipUrl(url, this.crawledUrls)) {
         return this.createErrorOutput(url, "Skipped Page", 0, "Skipped due to blacklist or duplicate pattern");
       }
 
@@ -178,7 +178,7 @@ export class CrawlerOrchestratorService {
       }
 
       // Determine if we should use Puppeteer for this page
-      const shouldUsePuppeteer = this.puppeteerHandlerService.shouldUsePuppeteerForPage(normalizedUrl);
+      const shouldUsePuppeteer = this.puppeteerHandlerService.shouldUsePuppeteerForPage(normalizedUrl, false);
       
       let crawlResult: CrawlerOutput;
       if (shouldUsePuppeteer) {
@@ -215,7 +215,7 @@ export class CrawlerOrchestratorService {
     } catch (error) {
       console.error(`[CrawlerOrchestrator] ❌ Error crawling ${url}:`, error);
       this.stats.errorsEncountered++;
-      return this.createErrorOutput(url, "Crawl Error", -1, error.message);
+      return this.createErrorOutput(url, "Crawl Error", -1, error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -298,7 +298,12 @@ export class CrawlerOrchestratorService {
     console.log(`[CrawlerOrchestrator] 🔧 Preprocessing ${urls.length} URLs...`);
     
     // Apply URL management filtering
-    const prefiltered = await this.urlManagementService.prefilterUrls(urls, this.adaptiveTimeout);
+    const prefiltered = await this.urlManagementService.prefilterUrls(urls, {
+      prefilterContentTypes: true,
+      concurrentRequests: this.adaptiveConcurrency,
+      userAgent: this.USER_AGENT,
+      axios: null
+    });
     
     // Apply CMS-specific filtering
     const cmsFiltered = this.cmsDetectionService.applyCMSFiltering(prefiltered);
@@ -518,7 +523,7 @@ export class CrawlerOrchestratorService {
       this.dnsCache.set(hostname, hostname);
       return { available: true };
     } catch (error) {
-      return { available: false, error: error.message };
+      return { available: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 

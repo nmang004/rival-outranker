@@ -1,7 +1,6 @@
 import { eq, SQL, and, or, desc, asc, count } from 'drizzle-orm';
 import { PgTableWithColumns, TableConfig } from 'drizzle-orm/pg-core';
 import { db as getDb } from '../db';
-const db = getDb();
 
 /**
  * Base repository class providing common database operations
@@ -13,11 +12,22 @@ export abstract class BaseRepository<
   protected constructor(protected table: any) {}
 
   /**
+   * Handle database errors with consistent error formatting
+   */
+  protected handleError(error: any, message: string): Error {
+    console.error(`Database Error: ${message}`, error);
+    if (error instanceof Error) {
+      return new Error(`${message}: ${error.message}`);
+    }
+    return new Error(message);
+  }
+
+  /**
    * Find record by ID
    */
   async findById(id: string | number): Promise<T | null> {
     const idColumn = this.getIdColumn();
-    const result = await db
+    const result = await getDb()
       .select()
       .from(this.table)
       .where(eq(idColumn, id))
@@ -35,7 +45,7 @@ export abstract class BaseRepository<
     limit?: number;
     offset?: number;
   }): Promise<T[]> {
-    let query = db.select().from(this.table);
+    let query = getDb().select().from(this.table);
 
     if (options?.where) {
       query = query.where(options.where);
@@ -60,7 +70,7 @@ export abstract class BaseRepository<
    * Find single record with optional filtering
    */
   async findOne(where: SQL): Promise<T | null> {
-    const result = await db
+    const result = await getDb()
       .select()
       .from(this.table)
       .where(where)
@@ -73,7 +83,7 @@ export abstract class BaseRepository<
    * Create a new record
    */
   async create(data: TInsert): Promise<T> {
-    const result = await db
+    const result = await getDb()
       .insert(this.table)
       .values(data)
       .returning();
@@ -85,7 +95,7 @@ export abstract class BaseRepository<
    * Create multiple records
    */
   async createMany(data: TInsert[]): Promise<T[]> {
-    const result = await db
+    const result = await getDb()
       .insert(this.table)
       .values(data)
       .returning();
@@ -98,7 +108,7 @@ export abstract class BaseRepository<
    */
   async updateById(id: string | number, data: Partial<TInsert>): Promise<T | null> {
     const idColumn = this.getIdColumn();
-    const result = await db
+    const result = await getDb()
       .update(this.table)
       .set(data)
       .where(eq(idColumn, id))
@@ -111,7 +121,7 @@ export abstract class BaseRepository<
    * Update records with custom where clause
    */
   async updateWhere(where: SQL, data: Partial<TInsert>): Promise<T[]> {
-    const result = await db
+    const result = await getDb()
       .update(this.table)
       .set(data)
       .where(where)
@@ -125,7 +135,7 @@ export abstract class BaseRepository<
    */
   async deleteById(id: string | number): Promise<boolean> {
     const idColumn = this.getIdColumn();
-    const result = await db
+    const result = await getDb()
       .delete(this.table)
       .where(eq(idColumn, id))
       .returning();
@@ -137,7 +147,7 @@ export abstract class BaseRepository<
    * Delete records with custom where clause
    */
   async deleteWhere(where: SQL): Promise<number> {
-    const result = await db
+    const result = await getDb()
       .delete(this.table)
       .where(where)
       .returning();
@@ -149,7 +159,7 @@ export abstract class BaseRepository<
    * Count records with optional filtering
    */
   async count(where?: SQL): Promise<number> {
-    let query = db.select({ count: count() }).from(this.table);
+    let query = getDb().select({ count: count() }).from(this.table);
     
     if (where) {
       query = query.where(where);

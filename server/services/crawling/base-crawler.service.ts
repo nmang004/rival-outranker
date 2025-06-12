@@ -56,7 +56,7 @@ export class BaseCrawlerService {
     if (this.browser) return;
 
     this.browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_EXECUTABLE_PATH || undefined,
       args: [
         '--no-sandbox',
@@ -178,7 +178,7 @@ export class BaseCrawlerService {
                 if (selector.attribute) {
                   return el.getAttribute(selector.attribute);
                 } else {
-                  return selector.innerText ? el.innerText?.trim() : el.textContent?.trim();
+                  return selector.innerText ? (el as HTMLElement).innerText?.trim() : el.textContent?.trim();
                 }
               }).filter(Boolean);
             } else {
@@ -187,7 +187,7 @@ export class BaseCrawlerService {
                 if (selector.attribute) {
                   result[key] = element.getAttribute(selector.attribute);
                 } else {
-                  result[key] = selector.innerText ? element.innerText?.trim() : element.textContent?.trim();
+                  result[key] = selector.innerText ? (element as HTMLElement).innerText?.trim() : element.textContent?.trim();
                 }
               } else {
                 result[key] = null;

@@ -40,7 +40,7 @@ router.get('/recent', requireAdmin, async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 20;
     const userId = req.query.userId as string;
     
-    let audits;
+    let audits: any[];
     if (userId) {
       audits = await rivalAuditRepository.getAuditsByUser(userId, limit);
     } else {

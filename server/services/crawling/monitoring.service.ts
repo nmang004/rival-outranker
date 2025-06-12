@@ -20,7 +20,7 @@ export interface CrawlMetrics {
   successRate: number;
   averageDuration: number;
   errorRate: number;
-  lastActivity: Date | null;
+  lastActivity: Date | undefined;
   resourceUsage: {
     memoryUsage: number;
     cpuUsage: number;
@@ -236,7 +236,7 @@ export class CrawlingMonitoringService extends EventEmitter {
         successRate: 0,
         errorRate: 0,
         averageDuration: 0,
-        lastActivity: null,
+        lastActivity: undefined,
         resourceUsage: {
           memoryUsage: 0,
           cpuUsage: 0,

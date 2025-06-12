@@ -44,6 +44,7 @@ class Analyzer {
       overallScore: { score: 50, category: 'needs-work' },
       strengths: [],
       weaknesses: [errorMessage || "Analysis could not be completed. Please try again."],
+      recommendations: ["Please check the URL and try again", "Ensure the website is accessible"],
       keywordAnalysis: AnalysisFactory.createDefaultKeywordAnalysis(""),
       metaTagsAnalysis: AnalysisFactory.createDefaultMetaTagsAnalysis(),
       contentAnalysis: {
@@ -98,13 +99,12 @@ class Analyzer {
         recommendations: ['Retry analysis with a valid URL']
       },
       enhancedContentAnalysis: {
-        headingStructure: { score: 50, hasH1: true, hasProperHierarchy: true, avgWordCount: 5 },
-        keywordUsage: { score: 50, density: 1.5, inTitle: true, inHeadings: true, inFirstParagraph: true },
+        score: 50,
+        assessment: "needs-work",
+        wordCount: 0,
         readability: { score: 50, grade: "8th grade", fleschKincaidGrade: 60, averageWordsPerSentence: 15, complexWordPercentage: 2 },
-        contentQuality: { score: 50, hasOriginalContent: true, hasThinContent: false },
-        contentStructure: { score: 50, hasBulletLists: true, hasNumberedLists: true, hasSections: true },
-        contentIssues: ["Analysis could not be completed"],
-        contentRecommendations: ["Retry analysis with a valid URL"]
+        issues: ["Analysis could not be completed"],
+        recommendations: ["Retry analysis with a valid URL"]
       }
     };
   }

@@ -4,8 +4,8 @@ import { User, InsertUser, UpdateUser, LoginCredentials } from '../../../shared/
 import { 
   userRepository, 
   analysisRepository, 
-  projectRepository, 
-  keywordRepository 
+  projectRepository 
+  // Removed: keywordRepository 
 } from '../../repositories';
 
 /**
@@ -190,17 +190,18 @@ export class UserService implements IUserService {
       throw new Error('User not found');
     }
 
-    const [analysisCount, projectCount, keywordCount] = await Promise.all([
+    const [analysisCount, projectCount] = await Promise.all([
       analysisRepository.countByUserId(userId),
       // We'll need to implement a countByUserId method for projects
-      0, // Placeholder for now
-      keywordRepository.countByUserId(userId)
+      0 // Placeholder for now
     ]);
+    
+    const keywordCount = 0; // Keyword repository has been removed
 
     return {
       analysisCount,
       projectCount,
-      keywordCount,
+      keywordCount: keywordCount,
       chatUsage: user.chatUsageCount || 0,
       lastLoginAt: user.lastLoginAt,
       memberSince: user.createdAt

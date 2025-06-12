@@ -1,10 +1,13 @@
 import { db } from './db';
 import * as schema from '../shared/schema';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { migrate } from 'drizzle-orm/neon-serverless/migrator';
-import { Pool } from '@neondatabase/serverless';
+// NOTE: This file is for Neon database migrations - not currently used
+// import { drizzle } from 'drizzle-orm/neon-serverless';
+// import { migrate } from 'drizzle-orm/neon-serverless/migrator';
+// import { Pool } from '@neondatabase/serverless';
 
 // Connect to the database and run migrations
+// NOTE: This migration system is disabled - using direct Drizzle with PostgreSQL
+/*
 async function runMigrations() {
   console.log("Starting database migration...");
   
@@ -32,4 +35,7 @@ async function runMigrations() {
 }
 
 // Run migrations
-runMigrations();
+runMigrations();*/
+
+// This migration system is disabled for now
+export default {};

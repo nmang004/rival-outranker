@@ -634,6 +634,14 @@ export class URLManagementService {
       return false;
     }
   }
+
+  /**
+   * Reset service state for new crawl session
+   */
+  reset(): void {
+    this.detectedCMS = '';
+    console.log('[UrlManager] Service state reset');
+  }
 }
 
 // Create and export singleton instance

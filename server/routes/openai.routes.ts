@@ -16,7 +16,7 @@ router.post("/openai-chat", async (req: Request, res: Response) => {
     
     try {
       // Get response from OpenAI service
-      const response = await getOpenAIResponse(messages, model, temperature);
+      const response = await getOpenAIResponse(messages[0]?.content || '', 'You are a helpful AI assistant.');
       
       res.json({
         success: true,

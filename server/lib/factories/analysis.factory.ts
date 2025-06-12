@@ -212,23 +212,21 @@ export class AnalysisFactory {
   /**
    * Create default keyword analysis
    */
-  static createDefaultKeywordAnalysis(primaryKeyword: string = ''): KeywordAnalysis {
+  static createDefaultKeywordAnalysis(primaryKeyword: string = ''): any {
     const score = primaryKeyword ? 50 : 40; // Slightly lower if no keyword detected
     
     return {
       primaryKeyword: primaryKeyword || 'no keyword detected',
       density: 0,
       relatedKeywords: [],
-      keywordPlacement: {
-        title: false,
-        h1: false,
-        h2: false,
-        metaDescription: false,
-        firstParagraph: false,
-        lastParagraph: false,
-        altText: false,
-        url: false
-      },
+      // Note: These are the expected properties from the schema
+      titlePresent: false,
+      descriptionPresent: false,
+      h1Present: false,
+      headingsPresent: false,
+      contentPresent: false,
+      urlPresent: false,
+      altTextPresent: false,
       overallScore: ScoreUtils.getScoreResult(score)
     };
   }
@@ -236,33 +234,18 @@ export class AnalysisFactory {
   /**
    * Create default meta tags analysis
    */
-  static createDefaultMetaTagsAnalysis(): MetaTagsAnalysis {
+  static createDefaultMetaTagsAnalysis(): any {
     return {
-      title: {
-        content: '',
-        length: 0,
-        hasKeyword: false,
-        isOptimized: false
-      },
-      description: {
-        content: '',
-        length: 0,
-        hasKeyword: false,
-        isOptimized: false
-      },
-      keywords: [],
-      openGraph: {
-        hasOgTitle: false,
-        hasOgDescription: false,
-        hasOgImage: false,
-        hasOgUrl: false
-      },
-      twitterCard: {
-        hasTwitterCard: false,
-        hasTwitterTitle: false,
-        hasTwitterDescription: false,
-        hasTwitterImage: false
-      },
+      title: '',
+      titleLength: 0,
+      titleKeywordPosition: undefined,
+      description: '',
+      descriptionLength: 0,
+      descriptionHasKeyword: false,
+      hasCanonical: false,
+      hasRobots: false,
+      hasOpenGraph: false,
+      hasTwitterCard: false,
       overallScore: ScoreUtils.getScoreResult(50)
     };
   }
