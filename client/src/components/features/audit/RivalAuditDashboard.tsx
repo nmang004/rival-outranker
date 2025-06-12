@@ -271,8 +271,18 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
 
   // Calculate accurate status distribution from our categorized data
   const calculateStatusDistribution = () => {
-    if (isEnhancedAuditWithCategories && enhancedCategories) {
-      // Use our enhanced category totals for accurate counts
+    // CRITICAL FIX: Always prioritize updatedSummary if available for real-time updates
+    if (updatedSummary) {
+      console.log('[Dashboard] Using updatedSummary for status distribution:', updatedSummary);
+      return {
+        priorityOfiCount: updatedSummary.priorityOfiCount,
+        ofiCount: updatedSummary.ofiCount,
+        okCount: updatedSummary.okCount,
+        naCount: updatedSummary.naCount
+      };
+    } else if (isEnhancedAuditWithCategories && enhancedCategories) {
+      // Use our enhanced category totals for accurate counts when no real-time updates
+      console.log('[Dashboard] Using enhanced category totals for status distribution');
       return {
         priorityOfiCount: contentQualityTotals.priorityOfi + technicalSEOTotals.priorityOfi + localSEOTotals.priorityOfi + uxPerformanceTotals.priorityOfi,
         ofiCount: contentQualityTotals.ofi + technicalSEOTotals.ofi + localSEOTotals.ofi + uxPerformanceTotals.ofi,
@@ -280,8 +290,9 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
         naCount: contentQualityTotals.na + technicalSEOTotals.na + localSEOTotals.na + uxPerformanceTotals.na
       };
     } else {
-      // Use updatedSummary if available, otherwise fall back to audit summary
-      return updatedSummary || {
+      // Fall back to audit summary for legacy audits
+      console.log('[Dashboard] Using audit summary for status distribution');
+      return {
         priorityOfiCount: audit.summary.priorityOfiCount,
         ofiCount: audit.summary.ofiCount,
         okCount: audit.summary.okCount,

@@ -406,6 +406,15 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     
     const { sectionName, itemName, status, notes } = req.body;
     
+    // DEBUG: Log incoming request for Priority OFI tracking
+    console.log('🔧 Backend update-item request:', {
+      auditId,
+      sectionName,
+      itemName,
+      status,
+      notes: notes ? notes.substring(0, 100) + '...' : 'No notes'
+    });
+    
     if (!sectionName || !itemName || !status) {
       return res.status(400).json({ error: "Missing required fields: sectionName, itemName, status" });
     }
@@ -413,7 +422,13 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     // Validate status is a valid AuditStatus
     const validStatuses = ["Priority OFI", "OFI", "OK", "N/A"];
     if (!validStatuses.includes(status)) {
+      console.log('🔧 Backend ERROR: Invalid status received:', status);
       return res.status(400).json({ error: "Invalid status value" });
+    }
+    
+    // Extra validation for Priority OFI
+    if (status === "Priority OFI") {
+      console.log('🔧 Backend: Processing Priority OFI status change');
     }
     
     // Get audit from database
@@ -476,7 +491,23 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     
     // Update the status and notes
     const oldStatus = item.status;
+    
+    // DEBUG: Log status change details
+    console.log('🔧 Backend: Updating item status:', {
+      itemName: item.name,
+      oldStatus: oldStatus,
+      newStatus: status,
+      statusType: typeof status
+    });
+    
     item.status = status as AuditStatus;
+    
+    // Verify the status was actually set
+    console.log('🔧 Backend: Status after assignment:', {
+      itemStatusAfterAssignment: item.status,
+      requestedStatus: status,
+      statusesMatch: item.status === status
+    });
     
     // Update notes if provided
     if (notes !== undefined) {
@@ -490,6 +521,15 @@ router.post("/:id/update-item", async (req: Request, res: Response) => {
     await rivalAuditRepository.updateAudit(auditId, {
       results: audit,
       summary: audit.summary
+    });
+    
+    // Final verification before response
+    const finalStatus = item.status;
+    console.log('🔧 Backend: Final response data:', {
+      oldStatus,
+      newStatus: status,
+      finalItemStatus: finalStatus,
+      allStatusesMatch: oldStatus !== finalStatus && finalStatus === status
     });
     
     return res.json({

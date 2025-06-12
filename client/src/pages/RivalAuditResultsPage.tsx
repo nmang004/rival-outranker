@@ -142,18 +142,24 @@ export default function RivalAuditResultsPage() {
   // Listen for status updates from the RivalAuditSection components
   useEffect(() => {
     function handleAuditItemUpdated(event: CustomEvent) {
+      console.log('🔧 RivalAuditResultsPage: Received audit-item-updated event:', event.detail);
+      
       // Update the local summary state with the new counts
       if (event.detail && event.detail.summary) {
+        console.log('🔧 RivalAuditResultsPage: Updating summary with:', event.detail.summary);
         setUpdatedSummary(event.detail.summary);
         
         // Show notification of the status change
         if (event.detail.oldStatus && event.detail.newStatus) {
+          console.log('🔧 RivalAuditResultsPage: Showing toast for status change:', event.detail.oldStatus, '->', event.detail.newStatus);
           toast({
             title: "Item Status Updated",
             description: `Status changed from "${event.detail.oldStatus}" to "${event.detail.newStatus}"`,
             variant: "default"
           });
         }
+      } else {
+        console.log('🔧 RivalAuditResultsPage: Event received but no summary found in detail:', event.detail);
       }
     }
     
