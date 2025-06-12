@@ -25,7 +25,7 @@ export interface EarlyTerminationResult {
   reason?: string;
 }
 
-export class UrlManagementService {
+export class URLManagementService {
   // Domain blacklist for spam/malicious domains
   private domainBlacklist = new Set([
     'spam-domain.com',
@@ -637,4 +637,4 @@ export class UrlManagementService {
 }
 
 // Create and export singleton instance
-export const urlManagementService = new UrlManagementService();
+export const urlManagementService = new URLManagementService();
