@@ -223,17 +223,19 @@ export class DataQualityService {
 
     // Validate each page
     for (let i = 0; i < data.pages.length; i++) {
-      const pageResult = await this.validateSeoData(data.pages[i], {
+      const pageResult = {
         isValid: true,
         errors: [],
         warnings: []
-      });
+      };
+      
+      await this.validateSeoData(data.pages[i], pageResult);
 
       if (!pageResult.isValid) {
         result.errors.push(`Page ${i + 1}: ${pageResult.errors.join(', ')}`);
       }
       
-      result.warnings.push(...pageResult.warnings.map(w => `Page ${i + 1}: ${w}`));
+      result.warnings.push(...pageResult.warnings.map((w: string) => `Page ${i + 1}: ${w}`));
     }
 
     // Check for reasonable metrics
@@ -292,7 +294,7 @@ export class DataQualityService {
       .groupBy(crawledContent.url)
       .having(sql`count(*) > 1`);
 
-      report.duplicateRecords = duplicatesResult.reduce((sum, dup) => sum + (dup.count - 1), 0);
+      report.duplicateRecords = duplicatesResult.reduce((sum: number, dup: any) => sum + (dup.count - 1), 0);
 
       if (report.duplicateRecords > 0) {
         report.issues.push({
@@ -496,7 +498,7 @@ export class DataQualityService {
       .from(crawledContent)
       .groupBy(crawledContent.type);
 
-      metrics.contentDistribution = distributionResult.reduce((acc, row) => {
+      metrics.contentDistribution = distributionResult.reduce((acc: any, row: any) => {
         acc[row.type] = row.count;
         return acc;
       }, {} as Record<string, number>);
@@ -511,7 +513,7 @@ export class DataQualityService {
       .groupBy(sql`DATE(created_at)`)
       .orderBy(sql`DATE(created_at)`);
 
-      metrics.recentCrawlActivity = activityResult.map(row => ({
+      metrics.recentCrawlActivity = activityResult.map((row: any) => ({
         date: row.date,
         count: row.count
       }));
