@@ -48,7 +48,7 @@ export class CrawlingSchedulerService {
 
   private async loadScheduledJobs(): Promise<void> {
     try {
-      const jobs = await db.select().from(crawlJobs).where(eq(crawlJobs.isActive, true));
+      const jobs = await db().select().from(crawlJobs).where(eq(crawlJobs.isActive, true));
       
       for (const job of jobs) {
         this.scheduleJob(job);
@@ -339,7 +339,7 @@ export class CrawlingSchedulerService {
 
   private async getActiveNewsSources(): Promise<NewsSource[]> {
     try {
-      const sources = await db.select().from(crawlSources)
+      const sources = await db().select().from(crawlSources)
         .where(and(eq(crawlSources.type, 'news'), eq(crawlSources.isActive, true)));
       
       return sources.map(source => ({
@@ -360,7 +360,7 @@ export class CrawlingSchedulerService {
   private async saveNewsData(result: NewsCrawlResult): Promise<void> {
     try {
       for (const article of result.articles) {
-        await db.insert(crawledContent).values({
+        await db().insert(crawledContent).values({
           id: crypto.randomUUID(),
           type: 'news',
           source: result.source,
@@ -379,7 +379,7 @@ export class CrawlingSchedulerService {
 
   private async saveSeoData(seoData: any): Promise<void> {
     try {
-      await db.insert(crawledContent).values({
+      await db().insert(crawledContent).values({
         id: crypto.randomUUID(),
         type: 'seo',
         source: 'seo-crawler',
@@ -397,7 +397,7 @@ export class CrawlingSchedulerService {
 
   private async saveCompetitorData(competitorData: CompetitorData): Promise<void> {
     try {
-      await db.insert(crawledContent).values({
+      await db().insert(crawledContent).values({
         id: crypto.randomUUID(),
         type: 'competitor',
         source: 'competitor-crawler',
@@ -425,7 +425,7 @@ export class CrawlingSchedulerService {
 
   private async updateJobLastRun(jobId: string, success: boolean): Promise<void> {
     try {
-      await db.update(crawlJobs)
+      await db().update(crawlJobs)
         .set({ 
           lastRun: new Date(),
           ...(success && { retryAttempts: 0 })
@@ -450,7 +450,7 @@ export class CrawlingSchedulerService {
 
   async getMetrics(): Promise<CrawlMetrics> {
     try {
-      const jobs = await db.select().from(crawlJobs);
+      const jobs = await db().select().from(crawlJobs);
       const activeJobs = jobs.filter(job => job.isActive);
       
       return {

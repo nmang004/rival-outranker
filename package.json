@@ -1,8 +1,26 @@
 {
-  "name": "rest-express",
-  "version": "1.0.0",
+  "name": "rival-outranker",
+  "version": "2.0.0",
+  "description": "Professional SEO analysis and audit platform with AI-powered insights for digital marketers and agencies",
   "type": "module",
   "license": "MIT",
+  "keywords": [
+    "seo",
+    "audit", 
+    "analysis",
+    "ai",
+    "chatbot",
+    "web-performance",
+    "technical-seo",
+    "openai",
+    "professional-audit"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nickmangubat/rival-outranker.git"
+  },
+  "author": "Nick Mangubat",
+  "main": "server/index.ts",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "dev:netlify": "netlify dev",

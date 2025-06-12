@@ -37,47 +37,15 @@ OPENAI_API_KEY=sk-proj-...
 
 ## Optional Variables with Fallbacks
 
-### DataForSEO API (Keyword Research)
-```env
-# DataForSEO API credentials (OPTIONAL - uses sample data if missing)
-DATAFORSEO_API_LOGIN=your_username
-DATAFORSEO_API_PASSWORD=your_password
-```
-**Usage**:
-- `server/services/dataForSeoService.ts` - Keyword research, SERP analysis
-**Status**: 🟡 Optional with mock data fallback
-**Fallback**: Sample keyword data and SERP results
-
 ### Google APIs
 ```env
 # Google PageSpeed Insights API (OPTIONAL)
 GOOGLE_API_KEY=your_google_api_key
-
-# Google Custom Search API (OPTIONAL)  
-GOOGLE_SEARCH_API_KEY=your_search_api_key
-GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 ```
 **Usage**:
-- `server/services/pageSpeedService.ts` - Website performance analysis
-- `server/services/searchService.ts` - Search result data
+- `server/services/external/google-pagespeed.service.ts` - Website performance analysis
 **Status**: 🟡 Optional with sample data fallback
-**Fallback**: Mock PageSpeed scores and search results
-
-### Google Ads API
-```env
-# Google Ads API (OPTIONAL - extensive configuration)
-GOOGLE_ADS_CLIENT_ID=your_client_id
-GOOGLE_ADS_CLIENT_SECRET=your_client_secret
-GOOGLE_ADS_REFRESH_TOKEN=your_refresh_token
-GOOGLE_ADS_DEVELOPER_TOKEN=your_developer_token
-GOOGLE_ADS_CUSTOMER_ID=your_customer_id
-GOOGLE_ADS_LOGIN_CUSTOMER_ID=your_login_customer_id
-```
-**Usage**:
-- `server/services/googleAdsService.ts` - Keyword volume and competition data
-- `server/routes/googleAdsAuth.ts` - OAuth flow
-**Status**: 🟡 Optional with sample data fallback
-**Fallback**: Mock keyword volume and competition metrics
+**Fallback**: Mock PageSpeed scores and performance metrics
 
 ## Development Variables
 
@@ -141,25 +109,7 @@ if (!apiKey) {
 }
 ```
 
-**File**: `server/services/dataForSeoService.ts`
-```typescript
-const login = process.env.DATAFORSEO_API_LOGIN;
-const password = process.env.DATAFORSEO_API_PASSWORD;
-// Falls back to mock data if missing
-```
-
-**File**: `server/services/googleAdsService.ts`
-```typescript
-export function getRequiredSecrets() {
-  return {
-    clientId: process.env.GOOGLE_ADS_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_ADS_CLIENT_SECRET,
-    // ... other Google Ads variables
-  };
-}
-```
-
-**File**: `server/services/pageSpeedService.ts`
+**File**: `server/services/external/google-pagespeed.service.ts`
 ```typescript
 const apiKey = process.env.GOOGLE_API_KEY;
 // Uses sample data if API key missing
@@ -203,9 +153,7 @@ const sessionSecret = process.env.SESSION_SECRET || 'development-session-secret'
 2. `OPENAI_API_KEY` - AI-powered features
 
 ### Medium Priority (Enhanced features)
-1. `DATAFORSEO_API_LOGIN/PASSWORD` - Real keyword data
-2. `GOOGLE_API_KEY` - PageSpeed insights
-3. Google Ads variables - Keyword volume data
+1. `GOOGLE_API_KEY` - PageSpeed insights
 
 ### Low Priority (Development convenience)
 1. `JWT_SECRET` - Has development default
@@ -229,14 +177,8 @@ DATABASE_URL=postgresql://username:password@host:port/database
 # OpenAI (Required for AI features)  
 OPENAI_API_KEY=sk-your-openai-key
 
-# DataForSEO (Recommended for real keyword data)
-DATAFORSEO_API_LOGIN=your_username
-DATAFORSEO_API_PASSWORD=your_password
-
 # Google APIs (Recommended)
 GOOGLE_API_KEY=your_google_api_key
-GOOGLE_SEARCH_API_KEY=your_search_api_key
-GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 
 # Development
 NODE_ENV=development
@@ -245,7 +187,7 @@ SESSION_SECRET=your-session-secret
 ```
 
 ### Full Setup (All features)
-Add Google Ads API variables to the recommended setup above.
+The recommended setup above includes all currently used APIs.
 
 ## Environment-Specific Configurations
 
@@ -338,7 +280,7 @@ Replit automatically provided these variables that now need manual setup:
 
 ---
 
-**Last Updated**: December 8, 2025
-**Total Variables**: 15+ (4 required, 11 optional)
+**Last Updated**: December 12, 2025
+**Total Variables**: 6 (2 required, 4 optional)
 **Fallback Coverage**: 100% (app works without any external APIs)
 **Security Status**: ✅ All secrets externalized

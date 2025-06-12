@@ -130,7 +130,7 @@ export class DataQualityService {
   private async validateNewsArticle(data: any, result: DataValidationResult): Promise<void> {
     // Check for duplicate URLs
     if (data.url) {
-      const existing = await db.select({ id: crawledContent.id })
+      const existing = await db().select({ id: crawledContent.id })
         .from(crawledContent)
         .where(and(
           eq(crawledContent.type, 'news'),
@@ -274,7 +274,7 @@ export class DataQualityService {
 
     try {
       // Get total record count
-      const totalResult = await db.select({ count: sql<number>`count(*)` })
+      const totalResult = await db().select({ count: sql<number>`count(*)` })
         .from(crawledContent);
       report.totalRecords = totalResult[0]?.count || 0;
 
@@ -284,7 +284,7 @@ export class DataQualityService {
       }
 
       // Find duplicates
-      const duplicatesResult = await db.select({
+      const duplicatesResult = await db().select({
         url: crawledContent.url,
         count: sql<number>`count(*)`
       })
@@ -309,7 +309,7 @@ export class DataQualityService {
       const staleDate = new Date();
       staleDate.setDate(staleDate.getDate() - 7);
 
-      const staleResult = await db.select({ count: sql<number>`count(*)` })
+      const staleResult = await db().select({ count: sql<number>`count(*)` })
         .from(crawledContent)
         .where(lt(crawledContent.updatedAt, staleDate));
 
@@ -354,7 +354,7 @@ export class DataQualityService {
     // Sample a subset of records for validation
     const sampleSize = Math.min(100, Math.max(10, Math.floor(report.totalRecords * 0.1)));
     
-    const sampleRecords = await db.select()
+    const sampleRecords = await db().select()
       .from(crawledContent)
       .limit(sampleSize);
 
@@ -407,7 +407,7 @@ export class DataQualityService {
         )
       `;
 
-      const result = await db.execute(duplicatesQuery);
+      const result = await db().execute(duplicatesQuery);
       return result.rowCount || 0;
     } catch (error) {
       console.error('Failed to cleanup duplicates:', error);
@@ -420,7 +420,7 @@ export class DataQualityService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
-      const result = await db.update(crawledContent)
+      const result = await db().update(crawledContent)
         .set({ 
           metadata: sql`jsonb_set(metadata, '{isStale}', 'true')`
         })
@@ -446,14 +446,14 @@ export class DataQualityService {
 
     try {
       // Check for missing URLs
-      const missingUrlsResult = await db.select({ count: sql<number>`count(*)` })
+      const missingUrlsResult = await db().select({ count: sql<number>`count(*)` })
         .from(crawledContent)
         .where(sql`url IS NULL OR url = ''`);
       
       integrity.missingUrls = missingUrlsResult[0]?.count || 0;
 
       // Check for corrupted metadata
-      const records = await db.select({ id: crawledContent.id, metadata: crawledContent.metadata })
+      const records = await db().select({ id: crawledContent.id, metadata: crawledContent.metadata })
         .from(crawledContent)
         .limit(1000);
 
@@ -489,7 +489,7 @@ export class DataQualityService {
       };
 
       // Get content type distribution
-      const distributionResult = await db.select({
+      const distributionResult = await db().select({
         type: crawledContent.type,
         count: sql<number>`count(*)`
       })
@@ -502,7 +502,7 @@ export class DataQualityService {
       }, {} as Record<string, number>);
 
       // Get recent activity (last 7 days)
-      const activityResult = await db.select({
+      const activityResult = await db().select({
         date: sql<string>`DATE(created_at)`,
         count: sql<number>`count(*)`
       })

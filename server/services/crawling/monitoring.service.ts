@@ -187,10 +187,10 @@ export class CrawlingMonitoringService extends EventEmitter {
   private async calculateCurrentMetrics(): Promise<CrawlMetrics> {
     try {
       // Get job statistics
-      const totalJobsResult = await db.select({ count: sql<number>`count(*)` })
+      const totalJobsResult = await db().select({ count: sql<number>`count(*)` })
         .from(crawlJobs);
       
-      const activeJobsResult = await db.select({ count: sql<number>`count(*)` })
+      const activeJobsResult = await db().select({ count: sql<number>`count(*)` })
         .from(crawlJobs)
         .where(eq(crawlJobs.isActive, true));
 
@@ -214,7 +214,7 @@ export class CrawlingMonitoringService extends EventEmitter {
       // Get last activity
       const lastActivity = this.eventBuffer.length > 0 
         ? this.eventBuffer[this.eventBuffer.length - 1].timestamp
-        : null;
+        : undefined;
 
       // Get resource usage
       const resourceUsage = this.getResourceUsage();

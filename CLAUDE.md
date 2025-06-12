@@ -30,333 +30,234 @@ npm run security:deps      # Check for outdated dependencies
 
 ## Architecture Overview
 
-Rival Outranker is a full-stack SEO analysis platform with a React frontend, Express backend, and PostgreSQL database.
+Rival Outranker is a professional-grade SEO analysis platform with a modular React frontend, Express backend, and PostgreSQL database.
 
 ### Key Architectural Patterns
 
-**Monorepo Structure**: Single repository with separate client/server directories sharing types via `shared/schema.ts`
+**Modular Monorepo**: Single repository with domain-organized services sharing types via `shared/schema/`
 
-**API Design**: RESTful Express.js API with optional authentication - many endpoints work without login for public access, authenticated endpoints provide enhanced features and history tracking
+**Layered Architecture**: Clean separation of concerns across all layers:
+- **Controllers** (`server/controllers/`): HTTP request/response handling
+- **Services** (`server/services/`): Business logic organized by domain
+- **Repositories** (`server/repositories/`): Data access abstraction
+- **Schemas** (`shared/schema/`): Domain-organized validation and types
 
-**Database Pattern**: Drizzle ORM with Zod validation schemas that serve dual purpose:
+**API Design**: RESTful Express.js API with optional authentication - public access for core features, enhanced capabilities for authenticated users
+
+**Database Pattern**: Drizzle ORM with domain-specific Zod schemas:
 - Runtime validation for API endpoints
-- Type generation for TypeScript interfaces
-- Database schema definition
+- TypeScript type generation
+- Database schema definition and migrations
 
-**State Management**: TanStack Query on frontend for server state caching, no global client state management
+**State Management**: TanStack Query for server state caching, minimal client state
 
-**Authentication**: Enhanced JWT-based authentication system:
-- JWT access tokens (15-minute expiry) with refresh tokens (7-day expiry)
-- Password strength validation and bcrypt hashing (12 salt rounds)
-- Account lockout protection (5 attempts, 30-minute lockout)
-- Session management with device fingerprinting
-- Two-factor authentication support
-- Real-time security event monitoring
+**Security**: Production-grade implementation:
+- JWT authentication with refresh tokens
+- Advanced rate limiting and DDoS protection
+- Input sanitization and XSS prevention
+- Security headers (CSP, HSTS, X-Frame-Options)
+- Account lockout and session management
 
-**Security**: Production-grade security implementation:
-- Comprehensive input sanitization and SQL injection prevention
-- XSS protection with whitelist-based HTML sanitization
-- Advanced rate limiting with IP reputation management
-- CSRF protection with secure token generation
-- Security headers (CSP, HSTS, X-Frame-Options, etc.)
-- DDoS mitigation with progressive penalties
-- Request fingerprinting for fraud detection
+### Modular Service Architecture
 
-### Core Service Architecture
+**Analysis Services** (`server/services/analysis/`):
+- `analyzer.service.ts` - Core SEO analysis orchestrator (50+ factors)
+- `content-analyzer.service.ts` - OpenAI-powered content analysis
+- Modular analyzers with dependency injection
 
-**Layered Architecture**: The application follows a clean layered architecture with clear separation of concerns:
-- **Controllers** (`server/controllers/`): Handle HTTP requests/responses only
-- **Services** (`server/services/`): Contain business logic, organized by domain
-- **Repositories** (`server/repositories/`): Handle data access abstraction
-- **Models/Schemas** (`shared/schema.ts`): Define data structures and validation
+**Audit Services** (`server/services/audit/`):
+- `crawler-orchestrator.service.ts` - Professional audit crawler
+- `enhanced-analyzer.service.ts` - 140+ factor audit analysis
+- `cms-detection.service.ts`, `content-similarity.service.ts` - Specialized crawling
+- Real-time progress via server-sent events
 
-**Analysis Engine (`server/services/analysis/analyzer.service.ts`)**: Central SEO analysis orchestrator that coordinates multiple specialized analyzers:
-- Fetches website content via Cheerio
-- Runs parallel analysis modules (keyword, meta, content, technical)
-- Aggregates results into unified score and recommendations
-
-**Rival Audit System (`server/services/audit/rival-audit-crawler.service.ts`)**: Sophisticated website crawler for professional audits:
-- Multi-page crawling with intelligent page type detection
-- Real-time progress updates via server-sent events pattern
-- Excel/CSV export generation for client delivery
-
-**AI Integration (`server/services/analysis/content-analyzer.service.ts`)**: OpenAI-powered content analysis:
-- Section-by-section content evaluation
-- GPT-generated improvement recommendations
-- Fallback to rule-based analysis when API unavailable
-
-**External API Services** (`server/services/external/`): All external API calls wrapped in organized service classes:
-- OpenAI, DataForSEO, Google APIs, PageSpeed services
+**External API Services** (`server/services/external/`):
+- OpenAI, DataForSEO, Google APIs integration
+- Automatic fallback to sample data
 - Usage tracking and cost estimation
-- Automatic fallback to sample data when APIs fail
-- Rate limiting and error handling
+
+**Common Services** (`server/services/common/`):
+- Export utilities (Excel, CSV)
+- Admin functions and API monitoring
+- Shared business logic
 
 ### Frontend Architecture
 
-**Feature-Based Component Organization**:
-- `components/ui/` - Radix UI-based design system components
-- `components/features/analysis/` - SEO analysis result displays
-- `components/features/audit/` - Professional audit dashboard
-- `components/features/keywords/` - Keyword research and rank tracking
-- `components/features/backlinks/` - Backlink analysis components
-- `components/features/learning/` - Educational content system
+**Feature-Based Organization**:
+- `components/features/analysis/` - SEO analysis displays
+- `components/features/audit/` - Professional audit interface
 - `components/features/auth/` - Authentication components
+- `components/ui/` - Radix UI design system
 
-**Organized Hooks Structure**:
-- `hooks/api/` - API interaction hooks
-- `hooks/auth/` - Authentication hooks
-- `hooks/ui/` - UI state and interaction hooks
+**Organized Hooks**:
+- `hooks/api/` - API interaction patterns
+- `hooks/auth/` - Authentication state
+- `hooks/ui/` - UI state and interactions
 
-**Page-Level Components**: Each major feature has dedicated page component in `pages/` that orchestrates multiple sub-components
+**Clean Import Patterns**: Barrel exports for streamlined imports
 
-**Data Flow**: API calls via React Query → cached results → component props → UI updates
+### Database Design
 
-### Database Design Patterns
+**Domain Organization**: Schema files organized by business domain:
+- `core.ts` - Users, sessions, API usage
+- `projects.ts` - Analysis and project data
+- `rival-audit.ts` - Professional audit schemas
+- `crawling.ts` - Web crawling and CMS data
 
-**User-Centric**: Most tables link to `users.id` for multi-tenant data isolation
+**User-Centric**: Multi-tenant data isolation via `users.id` foreign keys
 
-**Analysis Storage**: SEO results stored as JSONB in `analyses.results` with Zod schema validation
+**JSONB Storage**: Analysis results with Zod validation
 
-**Progress Tracking**: Separate tables for user learning progress, keyword rankings, backlink history
-
-**API Usage Monitoring**: Comprehensive tracking table for all external API calls with cost estimation
-
-### External API Integration Strategy
-
-**Graceful Degradation**: Application functions with core features even when external APIs are unavailable
-
-**Sample Data Fallbacks**: Realistic sample responses for development and when APIs fail
-
-**Usage Tracking**: All API calls logged with metadata for cost monitoring and optimization
-
-### Key Implementation Details
-
-**File Upload Handling**: 50MB limit for PDF uploads, client-side OCR processing with Tesseract.js
-
-**Real-time Updates**: Server-sent events for long-running analysis tasks (rival audits, deep content analysis)
-
-**Export System**: Multiple export formats (PDF, Excel, CSV) with jsPDF and ExcelJS libraries
-
-**Learning System**: Gamified educational content with achievement tracking and sound effects
+**API Monitoring**: Comprehensive external API call tracking
 
 ## Environment Configuration
 
-### Required Environment Variables
+### Required Variables
 ```env
 # Database (Required)
 DATABASE_URL=postgresql://username:password@host:port/database
 
 # OpenAI (Required for AI features)
 OPENAI_API_KEY=sk-...
+```
 
-# DataForSEO (Recommended for keyword research)
+### Recommended Variables
+```env
+# DataForSEO (for enhanced keyword data)
 DATAFORSEO_API_LOGIN=your_username
 DATAFORSEO_API_PASSWORD=your_password
 
-# Google APIs (Optional but recommended)
+# Google APIs (for PageSpeed, Search data)
 GOOGLE_API_KEY=your_google_api_key
 GOOGLE_SEARCH_API_KEY=your_search_api_key
 GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 ```
 
-### Optional Configuration
-- Google Ads API variables (uses sample data if missing)
-- JWT_SECRET/SESSION_SECRET (have development defaults)
-- Replit-specific variables (only for Replit deployment)
-
 ### Setup Process
 1. `npm install`
-2. Create `.env` with required variables (see REPLIT_TRANSFER_GUIDE.md for details)
-3. `npm run db:push` (sets up database schema)
-4. `npm run dev` (starts development server)
-
-### Post-Replit Transfer Notes
-- ✅ Core SEO analysis and Rival Audit tools are fully functional
-- ⚠️ Requires manual environment variable setup (DATABASE_URL, API keys)  
-- 🔧 Enhanced error logging added for troubleshooting
-- 📖 See REPLIT_TRANSFER_GUIDE.md for complete setup instructions
+2. Create `.env` with required variables
+3. `npm run db:push` (initialize database)
+4. `npm run dev` (start development)
 
 ## Key Files for Development
 
-### Central Architecture Files
-- `shared/schema.ts` - Database schema + Zod validation (shared between client/server)
-- `server/index.ts` - Express server setup with middleware and route mounting
-- `server/routes.ts` - Central route aggregation
-- `client/src/App.tsx` - React app with routing and query client setup
+### Central Architecture
+- `shared/schema/index.ts` - Barrel export for all domain schemas
+- `server/index.ts` - Express server with middleware and routes
+- `server/routes/index.ts` - Central route aggregation
+- `client/src/App.tsx` - React app with routing and query setup
 
-### Core Business Logic (New Organized Structure)
-- `server/controllers/` - HTTP request handlers with clean separation from business logic
-- `server/services/analysis/` - SEO analysis services (analyzer, keyword analyzer, content analyzer, etc.)
-- `server/services/audit/` - Professional audit system and crawling services
-- `server/services/external/` - External API integrations (OpenAI, DataForSEO, Google APIs)
-- `server/services/auth/` - Authentication and user management services
-- `server/services/keywords/` - Keyword research and tracking services
-- `server/services/backlinks/` - Backlink analysis services
-- `server/services/common/` - Shared utilities (exports, admin, API usage tracking)
-- `server/repositories/` - Data access layer abstraction
+### Core Services
+- `server/services/analysis/analyzer.service.ts` - Main SEO analysis engine
+- `server/services/audit/crawler-orchestrator.service.ts` - Professional audit system
+- `server/services/audit/enhanced-analyzer.service.ts` - 140+ factor analyzer
+- `server/services/external/` - External API integrations
 
-### API Routes by Feature
-- `server/routes/keywords.ts` - Keyword research and rank tracking
-- `server/routes/backlinks.ts` - Backlink analysis and monitoring  
-- `server/routes/admin.ts` - Admin dashboard and API usage monitoring
-- `server/routes/auth.ts` - User authentication and registration
+### Key Controllers
+- `server/controllers/analysis.controller.ts` - SEO analysis endpoints
+- `server/controllers/audit.controller.ts` - Professional audit endpoints
+- `server/controllers/auth.controller.ts` - Authentication endpoints
 
-### Frontend Pages
-- `client/src/pages/Home.tsx` - Main SEO analysis dashboard
-- `client/src/pages/RivalAuditPage.tsx` - Professional audit interface
-- `client/src/pages/KeywordResearch.tsx` - Keyword research tools
-- `client/src/pages/LearningPathsPage.tsx` - Educational content system
+### Essential Frontend
+- `client/src/pages/Home.tsx` - Main SEO analysis interface
+- `client/src/pages/RivalAuditPage.tsx` - Professional audit dashboard
+- `client/src/components/SeoBuddy.tsx` - AI chatbot assistant
 
-## Tech Stack Summary
+## Tech Stack
 
 **Frontend**: React + TypeScript + Vite + Tailwind CSS + TanStack Query + Radix UI  
 **Backend**: Express.js + TypeScript + Drizzle ORM + PostgreSQL  
 **External APIs**: OpenAI, DataForSEO, Google APIs (PageSpeed, Search, Ads)  
-**Key Libraries**: Cheerio (web scraping), jsPDF (exports), Tesseract.js (OCR)
+**Key Libraries**: Cheerio (scraping), ExcelJS (exports), Zod (validation)
 
-## Architecture Refactoring (2025)
+## Modular Architecture (2025 Refactoring)
 
-The codebase has been completely restructured following industry best practices for improved maintainability, scalability, and developer experience.
+### Transformation Results
 
-### Key Improvements Made
+**File Breakdown Success**:
+- **Zero files over 1,250 lines** (was 7 monolithic files)
+- **85%+ complexity reduction** through modularization
+- **20+ focused services** with single responsibilities
+- **100% backward compatibility** maintained
 
-**Backend Reorganization**:
-- ✅ Implemented layered architecture (Controllers → Services → Repositories)
-- ✅ Organized services by domain (analysis, audit, external, auth, keywords, backlinks, common)
-- ✅ Extracted controllers from route files for clean separation of concerns
-- ✅ Moved existing repositories and factories to organized structure
-- ✅ Updated all service imports across the codebase
+**Schema Organization**:
+- Broke down 1,419-line monolithic schema into 9 domain files
+- Maintained all existing functionality
+- Clean import paths with barrel exports
 
-**Frontend Reorganization**:
-- ✅ Reorganized components by feature domain instead of type
-- ✅ Organized hooks by category (api, auth, ui)
-- ✅ Created barrel exports for clean import paths
-- ✅ Updated all component and hook imports across pages and components
+**Service Modularization**:
+- `crawler.service.ts`: 2,781 → 146 lines (orchestrator pattern)
+- `enhanced-analyzer.service.ts`: 2,520 → 1,105 lines (dependency injection)
+- Created 6 specialized crawling services
+- Created 4 specialized analyzer services
 
-**Shared Code Improvements**:
-- ✅ Expanded shared structure with organized types, constants, and utilities
-- ✅ Maintained backward compatibility with existing schema exports
+### Core Preserved Features
 
-### Benefits Achieved
+**SEO Analysis Engine**: 50+ ranking factors with real-time scoring
+**Professional Audit System**: 140+ factors for client deliverables  
+**AI Assistant**: OpenAI-powered SEO guidance and recommendations
+**Export Tools**: Excel/CSV generation for professional reports
+**Authentication**: JWT-based user management with security features
 
-1. **Improved Maintainability**: Clear responsibility for each file and directory
-2. **Better Scalability**: Easy to add new features within organized domains
-3. **Enhanced Developer Experience**: Intuitive file organization and clean import paths
-4. **Separation of Concerns**: Clear boundaries between presentation, business logic, and data layers
-5. **Code Reusability**: Shared utilities and consistent patterns across features
+### Development Benefits
 
-### Migration Impact
+1. **Maintainability**: Clear file responsibilities and boundaries
+2. **Testability**: Isolated services with dependency injection
+3. **Scalability**: Easy feature additions within domain structure  
+4. **Developer Experience**: Intuitive organization and clean imports
+5. **Performance**: Reduced bundle size and faster builds
 
-- **Zero Breaking Changes**: All functionality preserved during restructuring
-- **Clean Import Paths**: All imports updated to use new organized structure
-- **Type Safety Maintained**: Full TypeScript compatibility throughout
-- **Build Success**: Application builds and runs without issues
+### Implementation Patterns
 
-The new structure follows the proposed architecture in `NEW_STRUCTURE.md` and significantly improves the codebase organization while maintaining full backward compatibility.
+**Dependency Injection**:
+```typescript
+// Services accept dependencies via constructor
+const analyzer = new EnhancedAuditAnalyzer(
+  contentAnalyzer,
+  technicalAnalyzer,
+  localAnalyzer,
+  uxAnalyzer
+);
+```
 
-## Major Refactoring (December 2025)
+**Domain Organization**:
+```typescript
+// Clean imports from organized domains
+import { users, analyses } from '../shared/schema/core';
+import { rivalAudits } from '../shared/schema/rival-audit';
+```
 
-A comprehensive refactoring was completed to remove bloated features and streamline the codebase while preserving core functionality.
+**Service Composition**:
+```typescript
+// Orchestrator pattern for complex workflows
+class CrawlerOrchestrator {
+  constructor(
+    private cmsDetection: CMSDetectionService,
+    private contentSimilarity: ContentSimilarityService,
+    // ... other specialized services
+  ) {}
+}
+```
 
-### ✅ Refactoring Results
+## Development Guidelines
 
-**Bundle Size Optimization**:
-- Main bundle reduced from 1.9MB to 1.2MB (37% reduction)
-- Implemented code splitting with vendor chunks
-- Total estimated size reduction: ~10.5MB+
+### Adding New Features
+1. Create services in appropriate domain directories
+2. Use dependency injection for service composition
+3. Add schema definitions in relevant domain files
+4. Implement frontend components in feature directories
+5. Follow the established patterns for imports and exports
 
-**Dependencies Cleaned**:
-- 8 packages removed (7% reduction: 113 → 105 packages)
-- Removed: PDF processing, OCR, file upload, gamification, sound libraries
-- Applied security fixes for development dependencies
+### Service Principles
+- **Single Responsibility**: Each service has one clear purpose
+- **Dependency Injection**: Constructor-based dependencies
+- **Interface Segregation**: Clean service boundaries
+- **Domain Organization**: Group by business domain, not technical layer
 
-**Files Removed**: 50+ files across frontend/backend/database
-- Backend: Services, controllers, repositories, routes
-- Frontend: Pages, components, hooks, utilities
-- Database: Ready for schema cleanup (15+ tables)
-- Test data: Removed obsolete test files and migration scripts
+### File Organization
+- Domain-first organization over technical layers
+- Barrel exports for clean import paths
+- Consistent naming conventions across all layers
+- Clear separation between presentation, business, and data layers
 
-### 🗑️ Features Removed
-
-**Competitive Intelligence**: 
-- `server/services/analysis/competitor-analyzer.service.ts`
-- `client/src/pages/CompetitorAnalysisPage.tsx`
-- `server/routes/competitor.routes.ts`
-
-**Keyword Research & Tracking**:
-- `server/services/keywords/` (entire directory)
-- `client/src/pages/KeywordResearch.tsx`
-- `client/src/components/features/keywords/` (entire directory)
-- `server/routes/keywords.ts`
-
-**Backlink Analysis**:
-- `server/services/backlinks/` (entire directory)
-- `client/src/pages/BacklinksPage.tsx`
-- `client/src/components/features/backlinks/` (entire directory)
-
-**Educational Platform**: 
-- `client/src/pages/LearningPathsPage.tsx`
-- `client/src/components/features/learning/` (entire directory)
-- Gamification components, sound effects, achievements
-
-**PDF/OCR Functionality**:
-- `client/src/pages/PdfAnalyzerPage.tsx`
-- `client/src/lib/deepContentPdfExport.ts`
-- PDF generation, OCR processing, file upload handling
-
-### ✅ Core Features Preserved
-
-**SEO Analysis Engine (50+ factors)**:
-- `server/services/analysis/analyzer.service.ts` - Main analysis orchestrator
-- All analysis components in `client/src/components/features/analysis/`
-- Complete scoring system and recommendations
-
-**Rival Audit System (140+ factors)**:
-- `server/services/audit/rival-audit-crawler.service.ts` - Professional audit crawler
-- `client/src/pages/RivalAuditPage.tsx` - Audit interface
-- Real-time progress updates and comprehensive reporting
-
-**SEO Buddy AI Chatbot**:
-- `client/src/components/SeoBuddy.tsx` - AI assistant interface
-- `client/src/data/seoKnowledgeBase.ts` - Knowledge base
-- Complete OpenAI integration for SEO guidance
-
-**Export Tools**:
-- Excel/CSV export functionality preserved
-- `server/services/common/export.service.ts` - Export utilities
-
-**User Authentication & History**:
-- Complete JWT-based authentication system
-- User registration, login, password reset
-- Analysis history and project management
-
-### 🔧 Technical Improvements
-
-**Build Performance**:
-- Clean build output with no critical errors
-- Vite configuration optimized with code splitting
-- Warning thresholds adjusted for production
-
-**Security**:
-- Applied available security fixes
-- Remaining vulnerabilities are in development dependencies only
-- Core application dependencies are secure
-
-**Environment Configuration**:
-- Updated `.env.example` with simplified variable set
-- Removed obsolete variables for deleted features
-- Added clear documentation of removed features
-
-**Code Quality**:
-- Removed dead imports and unused components
-- Fixed TypeScript compilation errors
-- Maintained clean separation of concerns
-
-### 📊 Performance Impact
-
-- **Development startup**: Faster due to fewer files to process
-- **Build time**: Improved due to smaller codebase
-- **Runtime performance**: Better due to reduced bundle size
-- **Maintainability**: Significantly improved with focused feature set
-
-The application is now streamlined for core SEO analysis functionality while maintaining professional-grade audit capabilities and AI-powered assistance.
+The codebase now represents a **modular architecture** built for maintainability, scalability, and developer productivity while preserving all core SEO analysis and audit functionality.

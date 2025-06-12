@@ -65,7 +65,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     isEnhancedAudit,
     summaryKeys: Object.keys(audit.summary),
     hasTotalFactors: 'totalFactors' in audit.summary,
-    totalFactors: audit.summary.totalFactors,
+    totalFactors: 'totalFactors' in audit.summary ? audit.summary.totalFactors : 'N/A',
     auditKeys: Object.keys(audit)
   });
   
@@ -94,7 +94,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
       technicalSEOItems: (audit as any)?.technicalSEO?.items?.length || 0,
       localSEOItems: (audit as any)?.localSEO?.items?.length || 0,
       uxPerformanceItems: (audit as any)?.uxPerformance?.items?.length || 0,
-      totalFactors: audit?.summary?.totalFactors || audit?.summary?.total || 0
+      totalFactors: ('totalFactors' in (audit?.summary || {}) ? (audit.summary as any).totalFactors : audit?.summary?.total) || 0
     });
     
     // Check if audit has dedicated enhanced categories with actual items
@@ -457,10 +457,10 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
 
   // Generate critical issues list with null safety
   const criticalIssues = isEnhancedAudit && enhancedCategories ? [
-    ...enhancedCategories.contentQuality.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Content Quality' })),
-    ...enhancedCategories.technicalSEO.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Technical SEO' })),
-    ...enhancedCategories.localSEO.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Local SEO & E-E-A-T' })),
-    ...enhancedCategories.uxPerformance.filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'UX & Performance' })),
+    ...enhancedCategories.contentQuality.filter((item: any) => item.status === "Priority OFI").map((item: any) => ({ ...item, categoryLabel: 'Content Quality' })),
+    ...enhancedCategories.technicalSEO.filter((item: any) => item.status === "Priority OFI").map((item: any) => ({ ...item, categoryLabel: 'Technical SEO' })),
+    ...enhancedCategories.localSEO.filter((item: any) => item.status === "Priority OFI").map((item: any) => ({ ...item, categoryLabel: 'Local SEO & E-E-A-T' })),
+    ...enhancedCategories.uxPerformance.filter((item: any) => item.status === "Priority OFI").map((item: any) => ({ ...item, categoryLabel: 'UX & Performance' })),
   ] : [
     ...(audit?.onPage?.items || []).filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'On-Page' })),
     ...(audit?.structureNavigation?.items || []).filter(item => item.status === "Priority OFI").map(item => ({ ...item, categoryLabel: 'Structure' })),
@@ -530,7 +530,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     totalRelevantItems,
     totalCompletedItems,
     totalProgress: Math.round(totalProgress),
-    summaryTotal: audit.summary.totalFactors || audit.summary.total || 0
+    summaryTotal: ('totalFactors' in audit.summary ? (audit.summary as any).totalFactors : audit.summary.total) || 0
   });
 
   // Get total factors for display - use calculated grand total for consistency
@@ -539,31 +539,31 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
     (updatedSummary?.total || ('total' in audit.summary ? audit.summary.total : 0));
 
   // Check if audit has priority breakdown data (new weighted OFI feature)
-  const hasPriorityBreakdown = isEnhancedAudit && 'priorityBreakdown' in audit.summary && audit.summary.priorityBreakdown;
+  const hasPriorityBreakdown = isEnhancedAudit && 'priorityBreakdown' in audit.summary && (audit.summary as any).priorityBreakdown;
   
   // Prepare priority breakdown data for visualization
   const priorityBreakdownData = hasPriorityBreakdown ? [
     {
       name: 'High Priority (Tier 1)',
-      pages: audit.summary.priorityBreakdown!.tier1.pages,
-      weight: audit.summary.priorityBreakdown!.tier1.weight,
-      ofi: audit.summary.priorityBreakdown!.tier1.ofi,
+      pages: (audit.summary as any).priorityBreakdown!.tier1.pages,
+      weight: (audit.summary as any).priorityBreakdown!.tier1.weight,
+      ofi: (audit.summary as any).priorityBreakdown!.tier1.ofi,
       color: '#ef4444',
       multiplier: '3x'
     },
     {
       name: 'Medium Priority (Tier 2)', 
-      pages: audit.summary.priorityBreakdown!.tier2.pages,
-      weight: audit.summary.priorityBreakdown!.tier2.weight,
-      ofi: audit.summary.priorityBreakdown!.tier2.ofi,
+      pages: (audit.summary as any).priorityBreakdown!.tier2.pages,
+      weight: (audit.summary as any).priorityBreakdown!.tier2.weight,
+      ofi: (audit.summary as any).priorityBreakdown!.tier2.ofi,
       color: '#f59e0b',
       multiplier: '2x'
     },
     {
       name: 'Low Priority (Tier 3)',
-      pages: audit.summary.priorityBreakdown!.tier3.pages,
-      weight: audit.summary.priorityBreakdown!.tier3.weight,
-      ofi: audit.summary.priorityBreakdown!.tier3.ofi,
+      pages: (audit.summary as any).priorityBreakdown!.tier3.pages,
+      weight: (audit.summary as any).priorityBreakdown!.tier3.weight,
+      ofi: (audit.summary as any).priorityBreakdown!.tier3.ofi,
       color: '#10b981',
       multiplier: '1x'
     }
@@ -713,9 +713,9 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
             </CardTitle>
             <CardDescription>
               Pages are weighted by business importance: High Priority (3x), Medium Priority (2x), Low Priority (1x)
-              {audit.summary.priorityBreakdown!.confidence && (
+              {(audit.summary as any).priorityBreakdown!.confidence && (
                 <span className="block mt-1 text-sm">
-                  Analysis confidence: {Math.round(audit.summary.priorityBreakdown!.confidence * 100)}%
+                  Analysis confidence: {Math.round((audit.summary as any).priorityBreakdown!.confidence * 100)}%
                 </span>
               )}
             </CardDescription>
@@ -762,22 +762,22 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                   <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
                     <div className="text-sm font-medium text-blue-900 dark:text-blue-100">Raw Weighted OFI</div>
                     <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {Math.round(audit.summary.priorityBreakdown!.totalWeightedOFI * 100) / 100}
+                      {Math.round((audit.summary as any).priorityBreakdown!.totalWeightedOFI * 100) / 100}
                     </div>
                   </div>
                   
                   <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                     <div className="text-sm font-medium text-green-900 dark:text-green-100">Normalized OFI</div>
                     <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                      {Math.round(audit.summary.priorityBreakdown!.normalizedOFI * 100) / 100}
+                      {Math.round((audit.summary as any).priorityBreakdown!.normalizedOFI * 100) / 100}
                     </div>
                   </div>
 
-                  {audit.summary.priorityBreakdown!.sizeAdjustedOFI && (
+                  {(audit.summary as any).priorityBreakdown!.sizeAdjustedOFI && (
                     <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
                       <div className="text-sm font-medium text-purple-900 dark:text-purple-100">Size-Adjusted OFI</div>
                       <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                        {Math.round(audit.summary.priorityBreakdown!.sizeAdjustedOFI * 100) / 100}
+                        {Math.round((audit.summary as any).priorityBreakdown!.sizeAdjustedOFI * 100) / 100}
                       </div>
                       <div className="text-xs text-purple-700 dark:text-purple-300 mt-1">
                         Accounts for site size and distribution
@@ -787,7 +787,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                 </div>
 
                 {/* Normalization factors display */}
-                {audit.summary.priorityBreakdown!.normalizationFactors && (
+                {(audit.summary as any).priorityBreakdown!.normalizationFactors && (
                   <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
                     <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Normalization Factors:
@@ -796,19 +796,19 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
                       <div className="text-center">
                         <div className="font-medium">Size</div>
                         <div className="text-gray-600 dark:text-gray-400">
-                          {audit.summary.priorityBreakdown!.normalizationFactors.sizeNormalization}
+                          {(audit.summary as any).priorityBreakdown!.normalizationFactors.sizeNormalization}
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="font-medium">Balance</div>
                         <div className="text-gray-600 dark:text-gray-400">
-                          {Math.round(audit.summary.priorityBreakdown!.normalizationFactors.distributionBalance * 100) / 100}
+                          {Math.round((audit.summary as any).priorityBreakdown!.normalizationFactors.distributionBalance * 100) / 100}
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="font-medium">Representation</div>
                         <div className="text-gray-600 dark:text-gray-400">
-                          {audit.summary.priorityBreakdown!.normalizationFactors.tierRepresentation}
+                          {(audit.summary as any).priorityBreakdown!.normalizationFactors.tierRepresentation}
                         </div>
                       </div>
                     </div>

@@ -34,8 +34,8 @@ export interface CrawlResult<T = any> {
 }
 
 export class BaseCrawlerService {
-  private options: Required<CrawlOptions>;
-  private browser: Browser | null = null;
+  protected options: Required<CrawlOptions>;
+  protected browser: Browser | null = null;
   private activePages = 0;
   private robotsCache = new Map<string, any>();
 
