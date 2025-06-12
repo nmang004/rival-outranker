@@ -4,12 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ExternalLink, Globe, Search, Tag } from "lucide-react";
-import KeywordTab from "./KeywordTab";
 import MetaTagsTab from "./MetaTagsTab";
 import ContentTab from "./ContentTab";
 import TechnicalTab from "./TechnicalTab";
 import UXTab from "./UXTab";
-import CompetitorAnalysis from "./CompetitorAnalysis";
 import DeepContentAnalysis from "./DeepContentAnalysis";
 import { SeoAnalysisResult } from "@shared/schema";
 
@@ -80,10 +78,10 @@ export default function AssessmentTabs({ data, initialTab = "keyword" }: Assessm
         </div>
         
         <TabsContent value="keyword" className="p-0 mt-0">
-          <KeywordTab 
-            data={data.keywordAnalysis}
-            url={data.url} 
-          />
+          <div className="p-4 sm:p-6">
+            <h3 className="text-lg font-semibold mb-4">Keyword Analysis</h3>
+            <p className="text-muted-foreground">Keyword analysis features have been removed in the simplified version.</p>
+          </div>
         </TabsContent>
         
         <TabsContent value="meta" className="p-0 mt-0">
@@ -256,12 +254,9 @@ export default function AssessmentTabs({ data, initialTab = "keyword" }: Assessm
                 )}
               </div>
             ) : (
-              <CompetitorAnalysis 
-                url={data.url} 
-                keyword={data.keywordAnalysis.primaryKeyword}
-                isRequested={false} 
-                city="United States" // Set default city to ensure form works properly
-              />
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Competitor analysis features have been removed in the simplified version.</p>
+              </div>
             )}
           </div>
         </TabsContent>

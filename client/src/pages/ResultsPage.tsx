@@ -11,7 +11,6 @@ import SummarySection from "@/components/features/analysis/SummarySection";
 import AssessmentTabs from "@/components/features/analysis/AssessmentTabs";
 import ActionPlan from "@/components/features/analysis/ActionPlan";
 import NextSteps from "@/components/features/analysis/NextSteps";
-import { ExportPdfButton } from "@/components/features/analysis/ExportPdfButton";
 import { SeoAnalysisResult } from "@shared/schema";
 import { formatDate, formatUrl } from "@/lib/formatters";
 import {
@@ -363,7 +362,7 @@ export default function ResultsPage() {
     };
   }
 
-  // The export functionality is now handled by the ExportPdfButton component
+  // PDF export functionality has been removed in the simplified version
 
   const handleShare = () => {
     // Copy current URL to clipboard
@@ -425,11 +424,6 @@ export default function ResultsPage() {
             </div>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3">
-            <ExportPdfButton 
-              analysisResult={data as SeoAnalysisResult}
-              variant="outline"
-              className="bg-primary-50 text-primary-700 border-primary-100 hover:bg-primary-100"
-            />
             <Button 
               variant="outline"
               onClick={handleShare}

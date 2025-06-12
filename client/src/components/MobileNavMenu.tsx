@@ -2,16 +2,9 @@ import { Link, useLocation } from "wouter";
 import { 
   BarChart2, 
   FileText, 
-  Users, 
   History, 
   X,
-  ClipboardCheck,
-  BarChart,
-  Search,
-  FileUp,
-  Link as LinkIcon,
-  BookOpen,
-  Trophy
+  ClipboardCheck
 } from "lucide-react";
 
 interface MobileNavMenuProps {
@@ -68,14 +61,6 @@ export function MobileNavMenu({ isOpen, onClose }: MobileNavMenuProps) {
             </div>
           </Link>
           
-          <Link href="/competitor-analysis" onClick={onClose}>
-            <div className={mobileLinkClass("/competitor-analysis")}>
-              <div className="flex items-center">
-                <Users className="h-5 w-5 mr-3 text-primary/80" /> 
-                <span>Competitor Analysis</span>
-              </div>
-            </div>
-          </Link>
           
           <Link href="/rival-audit" onClick={onClose}>
             <div className={mobileLinkClass("/rival-audit")}>
@@ -86,62 +71,8 @@ export function MobileNavMenu({ isOpen, onClose }: MobileNavMenuProps) {
             </div>
           </Link>
           
-          {/* Indented submenu items */}
-          <div className="border-l-2 border-gray-200 ml-4 pl-3 py-1">
-            <Link href="/basic-rank-tracker" onClick={onClose}>
-              <div className={mobileLinkClass("/basic-rank-tracker").replace('px-3', 'px-2')}>
-                <div className="flex items-center">
-                  <BarChart className="h-4 w-4 mr-3 text-primary/80" /> 
-                  <span>Basic Rank Tracker</span>
-                </div>
-              </div>
-            </Link>
-            
-            <Link href="/keyword-research" onClick={onClose}>
-              <div className={mobileLinkClass("/keyword-research").replace('px-3', 'px-2')}>
-                <div className="flex items-center">
-                  <Search className="h-4 w-4 mr-3 text-primary/80" /> 
-                  <span>Keyword Research</span>
-                </div>
-              </div>
-            </Link>
-            
-            <Link href="/pdf-analyzer" onClick={onClose}>
-              <div className={mobileLinkClass("/pdf-analyzer").replace('px-3', 'px-2')}>
-                <div className="flex items-center">
-                  <FileUp className="h-4 w-4 mr-3 text-primary/80" /> 
-                  <span>PDF Analyzer</span>
-                </div>
-              </div>
-            </Link>
-          </div>
           
-          <Link href="/backlinks" onClick={onClose}>
-            <div className={mobileLinkClass("/backlinks")}>
-              <div className="flex items-center">
-                <LinkIcon className="h-5 w-5 mr-3 text-primary/80" /> 
-                <span>Backlink Tracker</span>
-              </div>
-            </div>
-          </Link>
           
-          <Link href="/learning" onClick={onClose}>
-            <div className={mobileLinkClass("/learning")}>
-              <div className="flex items-center">
-                <BookOpen className="h-5 w-5 mr-3 text-primary/80" /> 
-                <span>SEO Learning Paths</span>
-              </div>
-            </div>
-          </Link>
-          
-          <Link href="/achievement-demo" onClick={onClose}>
-            <div className={mobileLinkClass("/achievement-demo")}>
-              <div className="flex items-center">
-                <Trophy className="h-5 w-5 mr-3 text-primary/80" /> 
-                <span>Achievement Demo</span>
-              </div>
-            </div>
-          </Link>
           
           <Link href="/history" onClick={onClose}>
             <div className={mobileLinkClass("/history")}>

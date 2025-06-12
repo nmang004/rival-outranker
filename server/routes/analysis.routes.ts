@@ -4,7 +4,6 @@ import { z, ZodError } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 import { crawler } from '../services/audit/crawler.service';
 import { analyzer } from '../services/analysis/analyzer.service';
-import { competitorAnalyzer } from '../services/analysis/competitor-analyzer.service';
 import { deepContentAnalyzer } from '../services/analysis/content-analyzer.service';
 import { searchService } from '../services/external/search.service';
 import { storage } from '../storage';
@@ -151,7 +150,7 @@ router.post("/analyze", async (req: Request, res: Response) => {
             console.error("Error using Google Search API:", searchError);
           }
           
-          // Fall back to the competitorAnalyzer service if Search API failed or returned no results
+          // Use Search API results if available, otherwise set to null
           competitorResults = searchResults.length > 0
             ? { 
                 competitors: searchResults.map(result => ({
@@ -164,10 +163,10 @@ router.post("/analyze", async (req: Request, res: Response) => {
                 timestamp: new Date(),
                 queryCount: searchService.getQueryCount()
               }
-            : await competitorAnalyzer.analyzeCompetitors(url, primaryKeyword, location) as any;
+            : null;
           
           // Transform the competitor analysis results into the expected format for the frontend
-          competitors = competitorResults.competitors.map((competitor: any, index: number) => {
+          competitors = competitorResults?.competitors?.map((competitor: any, index: number) => {
             return {
               name: competitor.title || `Competitor ${index + 1}`,
               url: competitor.url,
@@ -178,7 +177,7 @@ router.post("/analyze", async (req: Request, res: Response) => {
               strengths: competitor.strengths.slice(0, 3),
               weaknesses: competitor.weaknesses.slice(0, 3)
             };
-          });
+          }) || [];
           
           // Generate keyword gap data based on competitors
           const keywordGap = [

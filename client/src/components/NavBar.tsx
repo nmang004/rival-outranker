@@ -4,18 +4,11 @@ import { Button } from "@/components/ui/button";
 import { 
   BarChart2, 
   FileText, 
-  Users, 
   History, 
   Menu, 
   X,
   ClipboardCheck,
-  ChevronDown,
-  BarChart,
-  Search,
-  FileUp,
-  Link as LinkIcon,
-  BookOpen,
-  Trophy
+  ChevronDown
 } from "lucide-react";
 import { UserAccountButton } from "@/components/features/auth";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -80,12 +73,6 @@ export default function NavBar() {
                         <span>Deep Content Analysis</span>
                       </div>
                     </Link>
-                    <Link href="/competitor-analysis">
-                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                        <Users className="h-4 w-4 mr-2.5 text-primary" />
-                        <span>Competitor Analysis</span>
-                      </div>
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -106,39 +93,10 @@ export default function NavBar() {
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Audit Tools
                     </div>
-                    <Link href="/basic-rank-tracker">
-                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                        <BarChart className="h-4 w-4 mr-2.5 text-primary" />
-                        <span>Basic Rank Tracker</span>
-                      </div>
-                    </Link>
-                    <Link href="/keyword-research">
-                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                        <Search className="h-4 w-4 mr-2.5 text-primary" />
-                        <span>Keyword Research</span>
-                      </div>
-                    </Link>
-                    <Link href="/pdf-analyzer">
-                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                        <FileUp className="h-4 w-4 mr-2.5 text-primary" />
-                        <span>PDF Analyzer</span>
-                      </div>
-                    </Link>
-                    <Link href="/backlinks">
-                      <div className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors duration-150">
-                        <LinkIcon className="h-4 w-4 mr-2.5 text-primary" />
-                        <span>Backlink Analyzer</span>
-                      </div>
-                    </Link>
                   </div>
                 </div>
               </div>
               
-              <Link href="/keyword-research">
-                <div className={linkClass("/keyword-research")}>
-                  <Search className="h-4 w-4 mr-2" /> Keyword Research
-                </div>
-              </Link>
 
             </div>
           </div>
@@ -182,37 +140,11 @@ export default function NavBar() {
             </div>
           </Link>
           
-          <Link href="/competitor-analysis" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <Users className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">Competitor Analysis</span>
-            </div>
-          </Link>
           
           {/* Rival Audit Section */}
           <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">
             Rival Audit
           </div>
-          <Link href="/basic-rank-tracker" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <BarChart className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">Basic Rank Tracker</span>
-            </div>
-          </Link>
-          
-          <Link href="/keyword-research" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <Search className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">Keyword Research</span>
-            </div>
-          </Link>
-          
-          <Link href="/pdf-analyzer" onClick={() => setMobileMenuOpen(false)}>
-            <div className="flex items-center px-6 py-2 hover:bg-gray-50">
-              <FileUp className="h-4 w-4 mr-3 text-primary/80" /> 
-              <span className="text-gray-700">PDF Analyzer</span>
-            </div>
-          </Link>
         </div>
         
         <div className="px-4 py-4 border-t border-gray-200">

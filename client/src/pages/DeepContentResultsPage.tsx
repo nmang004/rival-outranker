@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Download, Share2, Printer, RefreshCw, FileText, ChevronLeft } from 'lucide-react';
-import { exportDeepContentToPDF } from '@/lib/deepContentPdfExport';
 import { useToast } from '@/hooks/ui/use-toast';
 import {
   Breadcrumb,
@@ -61,13 +60,11 @@ export default function DeepContentResultsPage() {
         throw new Error('No analysis data available for export');
       }
       
-      // Export the PDF using the deep content PDF export functionality
-      await exportDeepContentToPDF(contentAnalysis, url, keywords);
-      
-      // Show success toast
+      // PDF export functionality has been removed in the simplified version
       toast({
-        title: "PDF Exported Successfully",
-        description: "Your deep content analysis has been exported as a PDF.",
+        title: "Export Not Available",
+        description: "PDF export functionality has been removed in the simplified version.",
+        variant: "destructive",
       });
     } catch (error) {
       console.error('Error exporting PDF:', error);
