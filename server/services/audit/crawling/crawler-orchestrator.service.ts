@@ -15,9 +15,7 @@ import { ContentSimilarityService } from './content-similarity.service';
 import { URLManagementService } from './url-management.service';
 import { SitemapDiscoveryService } from './sitemap-discovery.service';
 import { PuppeteerHandlerService } from './puppeteer-handler.service';
-
-// TODO: Define CrawlerOutput type properly
-type CrawlerOutput = any;
+import { CrawlerOutput, PageCrawlResult } from '../../../types/crawler';
 
 // DNS lookup with promise support
 const dnsLookup = promisify(dns.lookup);
@@ -101,7 +99,7 @@ export class CrawlerOrchestratorService {
 
       // Step 2: Detect CMS and fingerprint site
       const siteFingerprint = this.cmsDetectionService.detectCMSAndFingerprint(
-        homepage.content?.html || '', 
+        homepage.html || '', 
         homepage.headers || {}, 
         initialUrl
       );
@@ -116,7 +114,7 @@ export class CrawlerOrchestratorService {
       }
 
       // Step 4: Extract internal links from homepage
-      const internalLinks = this.extractInternalLinks(homepage.content?.html || '', initialUrl);
+      const internalLinks = this.extractInternalLinks(homepage.html || '', initialUrl);
       
       // Step 5: Combine and prioritize all discovered URLs
       const allUrls = [...new Set([...discoveredUrls, ...internalLinks])];
@@ -190,9 +188,9 @@ export class CrawlerOrchestratorService {
       }
 
       // Check for content similarity
-      if (crawlResult.status === 'success' && crawlResult.content?.html) {
+      if (crawlResult.status === 'success' && crawlResult.html) {
         const similarityCheck = this.contentSimilarityService.checkContentSimilarity(
-          crawlResult.content.html, 
+          crawlResult.html, 
           normalizedUrl
         );
         
@@ -252,15 +250,50 @@ export class CrawlerOrchestratorService {
     
     return {
       url,
+      title: $('title').text() || '',
       status: 'success',
       statusCode: response.status,
       headers: response.headers,
       responseTime,
+      timestamp: new Date().toISOString(),
       content: this.extractPageContent($, response.data, url),
       meta: this.extractMetaTags($),
+      headings: this.extractHeadings($),
       links: this.extractLinks($, url),
       images: this.extractImages($),
-      timestamp: new Date().toISOString()
+      schema: this.extractSchemaMarkup($),
+      mobileCompatible: this.checkMobileCompatibility($),
+      performance: {
+        loadTime: responseTime,
+        resourceCount: 0, // Would need deeper analysis
+        resourceSize: response.data.length
+      },
+      security: {
+        hasHttps: url.startsWith('https://'),
+        hasMixedContent: false, // Would need deeper analysis
+        hasSecurityHeaders: Object.keys(response.headers).some(h => 
+          h.toLowerCase().includes('security') || 
+          h.toLowerCase().includes('strict-transport-security') ||
+          h.toLowerCase().includes('content-security-policy')
+        )
+      },
+      accessibility: {
+        hasAccessibleElements: $('[alt], [aria-label], [aria-describedby]').length > 0,
+        missingAltText: $('img:not([alt])').length,
+        hasAriaAttributes: $('[aria-*]').length > 0,
+        hasProperHeadingStructure: $('h1').length === 1
+      },
+      seoIssues: {
+        noindex: $('meta[name="robots"]').attr('content')?.includes('noindex') || false,
+        brokenLinks: 0, // Would need link checking
+        missingAltText: $('img:not([alt])').length,
+        duplicateMetaTags: false, // Would need deeper analysis
+        thinContent: ($('body').text().split(/\s+/).length < 300),
+        missingHeadings: $('h1, h2, h3').length === 0,
+        robots: $('meta[name="robots"]').attr('content') || null
+      },
+      html: response.data,
+      rawHtml: response.data
     };
   }
 
@@ -479,8 +512,8 @@ export class CrawlerOrchestratorService {
   /**
    * Extract images from HTML
    */
-  private extractImages($: cheerio.CheerioAPI): any {
-    const images: any[] = [];
+  private extractImages($: cheerio.CheerioAPI): Array<{src: string, alt: string, title?: string}> {
+    const images: Array<{src: string, alt: string, title?: string}> = [];
     
     $('img').each((_, element) => {
       const $img = $(element);
@@ -492,20 +525,62 @@ export class CrawlerOrchestratorService {
         images.push({
           src,
           alt: alt || '',
-          title: title || '',
-          hasAlt: !!alt,
-          width: $img.attr('width'),
-          height: $img.attr('height')
+          title: title || undefined
         });
       }
     });
 
+    return images;
+  }
+
+  /**
+   * Extract heading structure from page
+   */
+  private extractHeadings($: cheerio.CheerioAPI): {
+    h1: string[];
+    h2: string[];
+    h3: string[];
+    h4: string[];
+    h5: string[];
+    h6: string[];
+  } {
     return {
-      total: images.length,
-      withAlt: images.filter(img => img.hasAlt).length,
-      withoutAlt: images.filter(img => !img.hasAlt).length,
-      images: images
+      h1: $('h1').map((_, el) => $(el).text().trim()).get(),
+      h2: $('h2').map((_, el) => $(el).text().trim()).get(),
+      h3: $('h3').map((_, el) => $(el).text().trim()).get(),
+      h4: $('h4').map((_, el) => $(el).text().trim()).get(),
+      h5: $('h5').map((_, el) => $(el).text().trim()).get(),
+      h6: $('h6').map((_, el) => $(el).text().trim()).get()
     };
+  }
+
+  /**
+   * Extract schema markup from page
+   */
+  private extractSchemaMarkup($: cheerio.CheerioAPI): any[] {
+    const schemas: any[] = [];
+    
+    $('script[type="application/ld+json"]').each((_, element) => {
+      try {
+        const content = $(element).html();
+        if (content) {
+          const parsed = JSON.parse(content);
+          schemas.push(parsed);
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    });
+
+    return schemas;
+  }
+
+  /**
+   * Check mobile compatibility
+   */
+  private checkMobileCompatibility($: cheerio.CheerioAPI): boolean {
+    const viewport = $('meta[name="viewport"]').attr('content');
+    return !!viewport && viewport.includes('width=device-width');
   }
 
   /**
@@ -569,15 +644,15 @@ export class CrawlerOrchestratorService {
       cmsDetected: this.cmsDetectionService.getDetectedCMS(),
       siteFingerprint: fingerprint,
       hasJavaScript: successfulPages.some(page => 
-        this.puppeteerHandlerService.detectJavaScriptHeavySite(page.content?.html || '', page.url)
+        this.puppeteerHandlerService.detectJavaScriptHeavySite(page.html || '', page.url)
       ),
       averagePageSize: successfulPages.reduce((sum, page) => 
-        sum + (page.content?.html?.length || 0), 0) / successfulPages.length,
+        sum + (page.html?.length || 0), 0) / successfulPages.length,
       totalWords: successfulPages.reduce((sum, page) => 
         sum + (page.content?.wordCount || 0), 0),
       uniqueImages: new Set(
         successfulPages.flatMap(page => 
-          page.images?.images?.map((img: any) => img.src) || []
+          page.images?.map((img: any) => img.src) || []
         )
       ).size,
       sitemapsFound: this.sitemapDiscoveryService.hasSitemap(),
@@ -591,15 +666,63 @@ export class CrawlerOrchestratorService {
   private createErrorOutput(url: string, errorType: string, statusCode: number, message: string): CrawlerOutput {
     return {
       url,
+      title: '',
       status: 'error',
       statusCode,
-      errorType,
-      errorMessage: message,
+      error: `${errorType}: ${message}`,
       timestamp: new Date().toISOString(),
-      content: null,
-      meta: {},
-      links: { internal: [], external: [], total: 0 },
-      images: { total: 0, withAlt: 0, withoutAlt: 0, images: [] }
+      content: {
+        text: '',
+        wordCount: 0,
+        paragraphs: []
+      },
+      meta: {
+        description: '',
+        ogTags: {},
+        twitterTags: {}
+      },
+      headings: {
+        h1: [],
+        h2: [],
+        h3: [],
+        h4: [],
+        h5: [],
+        h6: []
+      },
+      links: {
+        internal: [],
+        external: []
+      },
+      images: [],
+      schema: [],
+      mobileCompatible: false,
+      performance: {
+        loadTime: 0,
+        resourceCount: 0,
+        resourceSize: 0
+      },
+      security: {
+        hasHttps: false,
+        hasMixedContent: false,
+        hasSecurityHeaders: false
+      },
+      accessibility: {
+        hasAccessibleElements: false,
+        missingAltText: 0,
+        hasAriaAttributes: false,
+        hasProperHeadingStructure: false
+      },
+      seoIssues: {
+        noindex: false,
+        brokenLinks: 0,
+        missingAltText: 0,
+        duplicateMetaTags: false,
+        thinContent: false,
+        missingHeadings: false,
+        robots: null
+      },
+      html: '',
+      rawHtml: ''
     };
   }
 
@@ -651,6 +774,276 @@ export class CrawlerOrchestratorService {
       userAgent: this.USER_AGENT,
       cmsDetected: this.cmsDetectionService.getDetectedCMS(),
       puppeteerEnabled: this.puppeteerHandlerService.isPuppeteerAvailable()
+    };
+  }
+
+  /**
+   * Transform CrawlerOutput to PageCrawlResult format
+   * This method resolves the data format mismatch between Puppeteer output and analyzer expectations
+   */
+  transformCrawlerOutputToPageResult(crawlerOutput: CrawlerOutput): PageCrawlResult {
+    return {
+      url: crawlerOutput.url,
+      title: crawlerOutput.title || '',
+      metaDescription: crawlerOutput.meta?.description || '',
+      bodyText: crawlerOutput.content?.text || '',
+      rawHtml: crawlerOutput.rawHtml || crawlerOutput.html || '',
+      wordCount: crawlerOutput.content?.wordCount || 0,
+      h1s: crawlerOutput.headings?.h1 || [],
+      h2s: crawlerOutput.headings?.h2 || [],
+      h3s: crawlerOutput.headings?.h3 || [],
+      headings: {
+        h1: crawlerOutput.headings?.h1 || [],
+        h2: crawlerOutput.headings?.h2 || [],
+        h3: crawlerOutput.headings?.h3 || []
+      },
+      links: {
+        internal: crawlerOutput.links?.internal || [],
+        external: crawlerOutput.links?.external || [],
+        broken: [] // Will be populated by link checking
+      },
+      hasContactForm: this.detectContactForm(crawlerOutput),
+      hasPhoneNumber: this.detectPhoneNumber(crawlerOutput),
+      hasAddress: this.detectAddress(crawlerOutput),
+      hasNAP: this.detectNAP(crawlerOutput),
+      images: this.transformImageData(crawlerOutput.images),
+      hasSchema: (crawlerOutput.schema?.length || 0) > 0,
+      schemaTypes: crawlerOutput.schema?.map(s => s.type) || [],
+      mobileFriendly: crawlerOutput.mobileCompatible || false,
+      hasSocialTags: this.detectSocialTags(crawlerOutput),
+      hasCanonical: this.detectCanonical(crawlerOutput),
+      hasRobotsMeta: this.detectRobotsMeta(crawlerOutput),
+      hasIcon: this.detectIcon(crawlerOutput),
+      hasHttps: crawlerOutput.security?.hasHttps || false,
+      hasHreflang: this.detectHreflang(crawlerOutput),
+      hasSitemap: false, // Will be determined at site level
+      hasAmpVersion: this.detectAMP(crawlerOutput),
+      pageLoadSpeed: this.transformPerformanceData(crawlerOutput.performance),
+      keywordDensity: this.calculateKeywordDensity(crawlerOutput.content?.text || ''),
+      readabilityScore: this.calculateReadabilityScore(crawlerOutput.content?.text || ''),
+      contentStructure: this.analyzeContentStructure(crawlerOutput)
+    };
+  }
+
+  /**
+   * Helper method: Detect contact form presence
+   */
+  private detectContactForm(crawlerOutput: CrawlerOutput): boolean {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    const contactFormIndicators = [
+      /contact.*form/i,
+      /form.*contact/i,
+      /<form[^>]*>[\s\S]*?<input[^>]*type=['"](email|tel|text)['"]/i,
+      /name=['"](email|phone|message|subject)['"]/i
+    ];
+    return contactFormIndicators.some(pattern => pattern.test(html));
+  }
+
+  /**
+   * Helper method: Detect phone number presence
+   */
+  private detectPhoneNumber(crawlerOutput: CrawlerOutput): boolean {
+    const text = crawlerOutput.content?.text || '';
+    const phonePatterns = [
+      /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/,
+      /\(\d{3}\)\s?\d{3}[-.]?\d{4}/,
+      /\b\d{10}\b/,
+      /tel:/i
+    ];
+    return phonePatterns.some(pattern => pattern.test(text));
+  }
+
+  /**
+   * Helper method: Detect address presence
+   */
+  private detectAddress(crawlerOutput: CrawlerOutput): boolean {
+    const text = crawlerOutput.content?.text || '';
+    const addressPatterns = [
+      /\d+\s+[A-Za-z\s]+\s+(Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Lane|Ln)/i,
+      /\b\d{5}(-\d{4})?\b/, // ZIP codes
+      /\b[A-Z]{2}\s+\d{5}\b/ // State + ZIP
+    ];
+    return addressPatterns.some(pattern => pattern.test(text));
+  }
+
+  /**
+   * Helper method: Detect NAP (Name, Address, Phone) presence
+   */
+  private detectNAP(crawlerOutput: CrawlerOutput): boolean {
+    return this.detectPhoneNumber(crawlerOutput) && this.detectAddress(crawlerOutput);
+  }
+
+  /**
+   * Helper method: Transform image data format
+   */
+  private transformImageData(images: Array<{src: string, alt: string, title?: string}> = []): {
+    total: number;
+    withAlt: number;
+    withoutAlt: number;
+    largeImages: number;
+    altTexts: string[];
+  } {
+    const withAlt = images.filter(img => img.alt && img.alt.trim().length > 0);
+    return {
+      total: images.length,
+      withAlt: withAlt.length,
+      withoutAlt: images.length - withAlt.length,
+      largeImages: 0, // Would need image size analysis
+      altTexts: withAlt.map(img => img.alt)
+    };
+  }
+
+  /**
+   * Helper method: Detect social media tags
+   */
+  private detectSocialTags(crawlerOutput: CrawlerOutput): boolean {
+    return Object.keys(crawlerOutput.meta?.ogTags || {}).length > 0 || 
+           Object.keys(crawlerOutput.meta?.twitterTags || {}).length > 0;
+  }
+
+  /**
+   * Helper method: Detect canonical tag
+   */
+  private detectCanonical(crawlerOutput: CrawlerOutput): boolean {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    return /<link[^>]*rel=['"](canonical|prev|next)['"]/i.test(html);
+  }
+
+  /**
+   * Helper method: Detect robots meta tag
+   */
+  private detectRobotsMeta(crawlerOutput: CrawlerOutput): boolean {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    return /<meta[^>]*name=['"](robots|googlebot)['"]/i.test(html);
+  }
+
+  /**
+   * Helper method: Detect favicon
+   */
+  private detectIcon(crawlerOutput: CrawlerOutput): boolean {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    return /<link[^>]*rel=['"](icon|shortcut icon|apple-touch-icon)['"]/i.test(html);
+  }
+
+  /**
+   * Helper method: Detect hreflang tags
+   */
+  private detectHreflang(crawlerOutput: CrawlerOutput): boolean {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    return /<link[^>]*hreflang=/i.test(html);
+  }
+
+  /**
+   * Helper method: Detect AMP version
+   */
+  private detectAMP(crawlerOutput: CrawlerOutput): boolean {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    return /<link[^>]*rel=['"](amphtml|amp)['"]/i.test(html) || 
+           /⚡/i.test(html) || 
+           /amp-/i.test(html);
+  }
+
+  /**
+   * Helper method: Transform performance data
+   */
+  private transformPerformanceData(performance: any): {
+    score: number;
+    firstContentfulPaint: number;
+    totalBlockingTime: number;
+    largestContentfulPaint: number;
+  } {
+    return {
+      score: 85, // Default score, would need PageSpeed analysis
+      firstContentfulPaint: performance?.loadTime || 0,
+      totalBlockingTime: 0,
+      largestContentfulPaint: performance?.loadTime || 0
+    };
+  }
+
+  /**
+   * Helper method: Calculate keyword density
+   */
+  private calculateKeywordDensity(text: string): Record<string, number> {
+    if (!text) return {};
+    
+    const words = text.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3);
+    
+    const wordCount = words.length;
+    const frequency: Record<string, number> = {};
+    
+    words.forEach(word => {
+      frequency[word] = (frequency[word] || 0) + 1;
+    });
+    
+    // Convert to density (percentage)
+    const density: Record<string, number> = {};
+    for (const [word, count] of Object.entries(frequency)) {
+      if (count > 1) { // Only include words that appear more than once
+        density[word] = (count / wordCount) * 100;
+      }
+    }
+    
+    return density;
+  }
+
+  /**
+   * Helper method: Calculate readability score (simplified Flesch Reading Ease)
+   */
+  private calculateReadabilityScore(text: string): number {
+    if (!text) return 0;
+    
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    const syllables = words.reduce((total, word) => total + this.countSyllables(word), 0);
+    
+    if (sentences.length === 0 || words.length === 0) return 0;
+    
+    const averageWordsPerSentence = words.length / sentences.length;
+    const averageSyllablesPerWord = syllables / words.length;
+    
+    // Simplified Flesch Reading Ease score
+    const score = 206.835 - (1.015 * averageWordsPerSentence) - (84.6 * averageSyllablesPerWord);
+    return Math.max(0, Math.min(100, score));
+  }
+
+  /**
+   * Helper method: Count syllables in a word (simplified)
+   */
+  private countSyllables(word: string): number {
+    if (!word) return 0;
+    word = word.toLowerCase();
+    if (word.length <= 3) return 1;
+    
+    const vowels = word.match(/[aeiouy]+/g);
+    let syllableCount = vowels ? vowels.length : 1;
+    
+    // Adjust for silent 'e'
+    if (word.endsWith('e')) syllableCount--;
+    
+    return Math.max(1, syllableCount);
+  }
+
+  /**
+   * Helper method: Analyze content structure
+   */
+  private analyzeContentStructure(crawlerOutput: CrawlerOutput): {
+    hasFAQs: boolean;
+    hasTable: boolean;
+    hasLists: boolean;
+    hasVideo: boolean;
+    hasEmphasis: boolean;
+  } {
+    const html = crawlerOutput.html || crawlerOutput.rawHtml || '';
+    
+    return {
+      hasFAQs: /faq|frequently.*asked/i.test(html) || /<dt>/i.test(html),
+      hasTable: /<table/i.test(html),
+      hasLists: /<[ou]l/i.test(html),
+      hasVideo: /<video|youtube|vimeo|embed/i.test(html),
+      hasEmphasis: /<(strong|b|em|i)/i.test(html)
     };
   }
 

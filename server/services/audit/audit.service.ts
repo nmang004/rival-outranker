@@ -3,78 +3,11 @@ import { crawler } from './crawler.service';
 import { AuditAnalyzerService } from './analyzer.service';
 import { PageClassificationService } from './page-classification.service';
 import { EnhancedAuditAnalyzer } from './enhanced-analyzer.service';
+import { SiteStructure, PageCrawlResult } from '../../types/crawler';
+import { CrawlerOrchestratorService } from './crawling/crawler-orchestrator.service';
 
-// Interface for site structure
-export interface SiteStructure {
-  homepage: PageCrawlResult;
-  contactPage?: PageCrawlResult;
-  servicePages: PageCrawlResult[];
-  locationPages: PageCrawlResult[];
-  serviceAreaPages: PageCrawlResult[];
-  otherPages: PageCrawlResult[];
-  hasSitemapXml: boolean;
-  reachedMaxPages?: boolean;
-}
-
-// Interface for page crawl results
-export interface PageCrawlResult {
-  url: string;
-  title: string;
-  metaDescription: string;
-  bodyText: string;
-  rawHtml: string;
-  h1s: string[];
-  h2s: string[];
-  h3s: string[];
-  headings: {
-    h1: string[];
-    h2: string[];
-    h3: string[];
-  };
-  links: {
-    internal: string[];
-    external: string[];
-    broken: string[];
-  };
-  hasContactForm: boolean;
-  hasPhoneNumber: boolean;
-  hasAddress: boolean;
-  hasNAP: boolean;
-  images: {
-    total: number;
-    withAlt: number;
-    withoutAlt: number;
-    largeImages: number;
-    altTexts: string[];
-  };
-  hasSchema: boolean;
-  schemaTypes: string[];
-  mobileFriendly: boolean;
-  wordCount: number;
-  hasSocialTags: boolean;
-  hasCanonical: boolean;
-  hasRobotsMeta: boolean;
-  hasIcon: boolean;
-  hasHttps: boolean;
-  hasHreflang: boolean;
-  hasSitemap: boolean;
-  hasAmpVersion: boolean;
-  pageLoadSpeed: {
-    score: number;
-    firstContentfulPaint: number;
-    totalBlockingTime: number;
-    largestContentfulPaint: number;
-  };
-  keywordDensity: Record<string, number>;
-  readabilityScore: number;
-  contentStructure: {
-    hasFAQs: boolean;
-    hasTable: boolean;
-    hasLists: boolean;
-    hasVideo: boolean;
-    hasEmphasis: boolean;
-  };
-}
+// Re-export for backward compatibility
+export type { SiteStructure, PageCrawlResult } from '../../types/crawler';
 
 /**
  * Main Audit Service that orchestrates the rival audit process
@@ -84,12 +17,14 @@ export class AuditService {
   private analyzer: AuditAnalyzerService;
   private enhancedAnalyzer: EnhancedAuditAnalyzer;
   private classifier: PageClassificationService;
+  private orchestrator: CrawlerOrchestratorService;
 
   constructor() {
     this.crawler = crawler;
     this.analyzer = new AuditAnalyzerService();
     this.enhancedAnalyzer = new EnhancedAuditAnalyzer();
     this.classifier = new PageClassificationService();
+    this.orchestrator = new CrawlerOrchestratorService();
   }
 
   /**
@@ -103,10 +38,13 @@ export class AuditService {
       this.crawler.reset();
       
       // Step 1: Crawl the website
-      const siteStructure = await this.crawler.crawlWebsite(url);
+      const crawlResult = await this.crawler.crawlWebsite(url);
       
-      // Step 2: Classify pages by type
-      const classifiedStructure = await this.classifier.classifyPages(siteStructure as any);
+      // Step 2: Transform crawler output to the expected format
+      const siteStructure = this.transformCrawlResultToSiteStructure(crawlResult);
+      
+      // Step 3: Classify pages by type
+      const classifiedStructure = await this.classifier.classifyPages(siteStructure);
       
       // Step 3: Generate audit based on crawled structure
       const audit = this.analyzer.generateAudit(classifiedStructure);
@@ -131,10 +69,13 @@ export class AuditService {
       this.crawler.reset();
       
       // Step 1: Crawl the website
-      const siteStructure = await this.crawler.crawlWebsite(url);
+      const crawlResult = await this.crawler.crawlWebsite(url);
       
-      // Step 2: Classify pages by type
-      const classifiedStructure = await this.classifier.classifyPages(siteStructure as any);
+      // Step 2: Transform crawler output to the expected format
+      const siteStructure = this.transformCrawlResultToSiteStructure(crawlResult);
+      
+      // Step 3: Classify pages by type
+      const classifiedStructure = await this.classifier.classifyPages(siteStructure);
       console.log(`[AuditService] Classified site structure - Homepage: ${!!classifiedStructure.homepage}, Contact: ${!!classifiedStructure.contactPage}, Service pages: ${classifiedStructure.servicePages.length}, Location pages: ${classifiedStructure.locationPages.length}, Service area pages: ${classifiedStructure.serviceAreaPages.length}`);
       
       // Step 3: Generate enhanced audit with 140+ factors
@@ -148,12 +89,12 @@ export class AuditService {
         url,
         timestamp: new Date(),
         ...enhancedAudit,
-        reachedMaxPages: (siteStructure as any).reachedMaxPages || false,
+        reachedMaxPages: siteStructure.reachedMaxPages || false,
         analysisMetadata: {
           analysisVersion: "2.0",
           factorCount: enhancedAudit.summary.totalFactors,
           analysisTime: Date.now(),
-          crawlerStats: (this.crawler as any).getCrawlStats?.() || { pagesCrawled: 0, pagesSkipped: 0, errorsEncountered: 0, crawlTime: 0 }
+          crawlerStats: this.getCrawlerStats()
         }
       };
       
@@ -171,10 +112,13 @@ export class AuditService {
       console.log(`Continuing rival audit for: ${url}`);
       
       // Continue crawling from where we left off
-      const siteStructure = await (this.crawler as any).continueCrawling?.(url) || { homepage: null, additionalPages: [], siteStructure: {}, stats: {} };
+      const crawlResult = await (this.crawler as any).continueCrawling?.(url) || { homepage: null, additionalPages: [], siteStructure: {}, stats: {} };
+      
+      // Transform crawler output to the expected format
+      const siteStructure = this.transformCrawlResultToSiteStructure(crawlResult);
       
       // Classify and analyze the expanded structure
-      const classifiedStructure = await this.classifier.classifyPages(siteStructure as any);
+      const classifiedStructure = await this.classifier.classifyPages(siteStructure);
       const audit = this.analyzer.generateAudit(classifiedStructure);
       
       console.log(`Completed continued rival audit for: ${url}`);
@@ -184,6 +128,41 @@ export class AuditService {
       console.error(`Error during continued rival audit for ${url}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Transform crawler output format to SiteStructure format
+   * This resolves the data format mismatch between crawler output and analyzer expectations
+   */
+  private transformCrawlResultToSiteStructure(crawlResult: {
+    homepage: any;
+    additionalPages: any[];
+    siteStructure: any;
+    stats: any;
+  }): SiteStructure {
+    // Transform homepage if it exists
+    const homepage = crawlResult.homepage 
+      ? this.orchestrator.transformCrawlerOutputToPageResult(crawlResult.homepage)
+      : null;
+
+    if (!homepage) {
+      throw new Error('No homepage found in crawl result');
+    }
+
+    // Transform additional pages
+    const additionalPages = (crawlResult.additionalPages || [])
+      .map(page => this.orchestrator.transformCrawlerOutputToPageResult(page));
+
+    return {
+      homepage,
+      contactPage: undefined, // Will be classified in next step
+      servicePages: [],
+      locationPages: [],
+      serviceAreaPages: [],
+      otherPages: additionalPages,
+      hasSitemapXml: crawlResult.siteStructure?.hasSitemapXml || false,
+      reachedMaxPages: crawlResult.siteStructure?.reachedMaxPages || false
+    };
   }
 
   /**

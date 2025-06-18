@@ -1,71 +1,10 @@
 import { Cluster } from 'puppeteer-cluster';
 import * as cheerio from 'cheerio';
 import { PagePriorityService, PagePriority } from '../page-priority.service';
+import { CrawlerOutput } from '../../../types/crawler';
 
-// CrawlerOutput type definition based on the error output structure
-export interface CrawlerOutput {
-  url: string;
-  title: string;
-  statusCode: number;
-  meta: {
-    description: string;
-    ogTags: Record<string, string>;
-    twitterTags: Record<string, string>;
-  };
-  content: {
-    text: string;
-    wordCount: number;
-    paragraphs: string[];
-  };
-  headings: {
-    h1: string[];
-    h2: string[];
-    h3: string[];
-    h4: string[];
-    h5: string[];
-    h6: string[];
-  };
-  links: {
-    internal: string[];
-    external: string[];
-  };
-  images: Array<{
-    src: string;
-    alt: string;
-    title?: string;
-  }>;
-  schema: any[];
-  mobileCompatible: boolean;
-  performance: {
-    loadTime: number;
-    resourceCount: number;
-    resourceSize: number;
-  };
-  security: {
-    hasHttps: boolean;
-    hasMixedContent: boolean;
-    hasSecurityHeaders: boolean;
-  };
-  accessibility: {
-    hasAccessibleElements: boolean;
-    missingAltText: number;
-    hasAriaAttributes: boolean;
-    hasProperHeadingStructure: boolean;
-  };
-  seoIssues: {
-    noindex: boolean;
-    brokenLinks: number;
-    missingAltText: number;
-    duplicateMetaTags: boolean;
-    thinContent: boolean;
-    missingHeadings: boolean;
-    robots: string | null;
-  };
-  html: string;
-  rawHtml: string;
-  error?: string;
-  puppeteerUsed?: boolean;
-}
+// Re-export the CrawlerOutput interface for backward compatibility
+export type { CrawlerOutput } from '../../../types/crawler';
 
 /**
  * Puppeteer Handler Service for JavaScript-heavy site crawling
