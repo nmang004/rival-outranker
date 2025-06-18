@@ -101,7 +101,14 @@ export class CrawlerOrchestratorService {
       // Step 1: Crawl homepage and detect CMS
       const homepage = await this.crawlPage(initialUrl);
       if (!homepage || homepage.status !== 'success') {
-        throw new Error(`Failed to crawl homepage: ${initialUrl}`);
+        const errorDetail = homepage?.error || 'Unknown crawl failure';
+        console.error('>>> DETAILED HOMEPAGE CRAWL ERROR <<<', {
+          url: initialUrl,
+          status: homepage?.status,
+          error: homepage?.error,
+          statusCode: homepage?.statusCode
+        });
+        throw new Error(`Failed to crawl homepage: ${initialUrl} - Original error: ${errorDetail}`);
       }
 
       // Step 2: Detect CMS and fingerprint site
@@ -152,7 +159,13 @@ export class CrawlerOrchestratorService {
       };
 
     } catch (error) {
+      console.error('>>> DETAILED PUPPETEER ERROR <<<', error);
       console.error('[CrawlerOrchestrator] ❌ Crawl failed:', error);
+      console.error('[CrawlerOrchestrator] Error name:', error instanceof Error ? error.name : 'Unknown');
+      console.error('[CrawlerOrchestrator] Error message:', error instanceof Error ? error.message : String(error));
+      if (error instanceof Error && error.stack) {
+        console.error('[CrawlerOrchestrator] Error stack:', error.stack);
+      }
       this.finalizeCrawlSession();
       throw error;
     }
@@ -240,8 +253,22 @@ export class CrawlerOrchestratorService {
 
     } catch (error) {
       console.error(`[CrawlerOrchestrator] ❌ Error crawling ${url}:`, error);
+      console.error(`[CrawlerOrchestrator] Detailed error info:`, {
+        url,
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorMessage: error instanceof Error ? error.message : String(error),
+        hasStack: error instanceof Error && !!error.stack
+      });
+      if (error instanceof Error && error.stack) {
+        console.error(`[CrawlerOrchestrator] Error stack:`, error.stack);
+      }
       this.stats.errorsEncountered++;
-      return this.createErrorOutput(url, "Crawl Error", -1, error instanceof Error ? error.message : String(error));
+      
+      // Include more detailed error information in the error output
+      const detailedErrorMessage = error instanceof Error 
+        ? `${error.name}: ${error.message}` 
+        : String(error);
+      return this.createErrorOutput(url, "Crawl Error", -1, detailedErrorMessage);
     }
   }
 
