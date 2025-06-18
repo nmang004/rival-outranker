@@ -118,15 +118,15 @@ export class OFIClassificationService {
     // Special cases: Some critical issues should be Priority OFI even with 1 criteria
     const isCriticalSingleIssue = this.checkCriticalSingleCriteriaIssues(name, description, context);
     
-    // Classify as Priority OFI if we have 2+ criteria OR it's a critical single-criteria issue
-    if (priorityCriteriaCount >= 2 || isCriticalSingleIssue) {
+    // Classify as Priority OFI if we have 1+ criteria OR it's a critical single-criteria issue
+    if (priorityCriteriaCount >= 1 || isCriticalSingleIssue) {
       classification = 'Priority OFI';
-      if (isCriticalSingleIssue && priorityCriteriaCount < 2) {
+      if (isCriticalSingleIssue && priorityCriteriaCount < 1) {
         // Override downgrade reason for critical issues
         downgradedReason = '';
       }
     } else {
-      downgradedReason = 'Only meets ' + priorityCriteriaCount + ' priority criteria (requires 2+ for Priority OFI)';
+      downgradedReason = 'Only meets ' + priorityCriteriaCount + ' priority criteria (requires 1+ for Priority OFI)';
     }
     
     // Additional safety checks

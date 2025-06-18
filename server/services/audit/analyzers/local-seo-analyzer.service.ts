@@ -351,7 +351,8 @@ export class LocalSEOAnalyzer {
       { name: "Local Competition Analysis", desc: "Content should differentiate from local competitors" }
     ];
 
-    localSEOFactors.forEach((factor, index) => {
+    for (let index = 0; index < localSEOFactors.length; index++) {
+      const factor = localSEOFactors[index];
       let analysisResult: AnalysisFactor;
       
       // Use real analysis for key factors, placeholder for others temporarily
@@ -365,38 +366,41 @@ export class LocalSEOAnalyzer {
         case "Local Keyword Optimization":
           analysisResult = this.analyzeLocalKeywords(page);
           break;
+        case "Business Hours Display":
+          analysisResult = await this.analyzeBusinessHours($);
+          break;
+        case "Multiple Contact Methods":
+          analysisResult = await this.analyzeContactMethods($);
+          break;
+        case "Service Area Coverage":
+          analysisResult = await this.analyzeServiceAreaPageQuality(page, $);
+          break;
         default:
-          // Temporary placeholder logic for other factors - will be implemented in future phases
-          const rand = Math.random();
-          let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
-          let score: number;
-          
-          if (rand < 0.35) {
-            status = "OK";
-            score = Math.floor(Math.random() * 25) + 75;
-          } else if (rand < 0.80) {
-            status = "OFI";
-            score = Math.floor(Math.random() * 35) + 40;
-          } else if (rand < 0.95) {
-            status = "N/A";
-            score = 0;
+          // Real analysis implementation for most common local SEO factors
+          if (factor.name.toLowerCase().includes('address') || factor.name.toLowerCase().includes('contact')) {
+            analysisResult = await this.analyzeNAPConsistency(page.bodyText, $);
+          } else if (factor.name.toLowerCase().includes('map') || factor.name.toLowerCase().includes('location')) {
+            analysisResult = await this.analyzeLocationSignals(page, pageType);
+          } else if (factor.name.toLowerCase().includes('schema') || factor.name.toLowerCase().includes('structured')) {
+            analysisResult = await this.analyzeLocalBusinessSchema($);
+          } else if (factor.name.toLowerCase().includes('hours') || factor.name.toLowerCase().includes('time')) {
+            analysisResult = await this.analyzeBusinessHours($);
           } else {
-            status = "Priority OFI";
-            score = Math.floor(Math.random() * 35) + 5;
+            // For remaining factors, provide intelligent assessment based on page content
+            const hasLocalContent = this.assessLocalContent(page, $, factor.name);
+            analysisResult = {
+              name: factor.name,
+              description: factor.desc,
+              status: hasLocalContent.status,
+              importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
+              notes: hasLocalContent.notes
+            };
           }
-          
-          analysisResult = {
-            name: factor.name,
-            description: factor.desc,
-            status,
-            importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
-            notes: this.generateLocalSEONotes(status, score, factor.name, pageType)
-          };
           break;
       }
       
       factors.push(analysisResult);
-    });
+    }
 
     return factors;
   }
@@ -571,5 +575,61 @@ export class LocalSEOAnalyzer {
       importance: "Medium",
       notes: `What: Your content has strong local keyword targeting (${totalLocalSignals} location signals found).\n\nWhy: Good local keyword usage helps customers find you for location-based searches.\n\nHow: Continue using natural location references and consider adding seasonal or event-based local content.`
     };
+  }
+
+  private assessLocalContent(page: PageCrawlResult, $: cheerio.CheerioAPI, factorName: string): { status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A', notes: string } {
+    const content = page.bodyText.toLowerCase();
+    const title = page.title.toLowerCase();
+    const factorLower = factorName.toLowerCase();
+    
+    // Assessment based on factor type and page content
+    if (factorLower.includes('partnership') || factorLower.includes('community')) {
+      const hasPartnershipContent = /partner|community|local|sponsor|association|member/.test(content);
+      return {
+        status: hasPartnershipContent ? "OK" : "OFI",
+        notes: hasPartnershipContent ? 
+          `What: Your content mentions community partnerships and local involvement.\n\nWhy: Local partnerships build credibility and strengthen community ties.\n\nHow: Continue highlighting local partnerships and consider expanding community involvement.` :
+          `What: Your content lacks mentions of local partnerships or community involvement.\n\nWhy: Community partnerships build trust and improve local search visibility.\n\nHow: Add content about local partnerships, sponsorships, or community involvement to strengthen local presence.`
+      };
+    } else if (factorLower.includes('event') || factorLower.includes('participation')) {
+      const hasEventContent = /event|participate|sponsor|festival|fair|meeting/.test(content);
+      return {
+        status: hasEventContent ? "OK" : "OFI",
+        notes: hasEventContent ?
+          `What: Your content references local events and community participation.\n\nWhy: Event participation demonstrates local engagement and builds community connections.\n\nHow: Continue participating in local events and highlighting these activities on your website.` :
+          `What: Your content lacks mentions of local events or community participation.\n\nWhy: Event participation builds local credibility and provides content opportunities.\n\nHow: Participate in local events and add content about community involvement to strengthen local presence.`
+      };
+    } else if (factorLower.includes('certification') || factorLower.includes('award')) {
+      const hasCertificationContent = /certified|license|award|recognition|accredited|qualified/.test(content);
+      return {
+        status: hasCertificationContent ? "OK" : "OFI",
+        notes: hasCertificationContent ?
+          `What: Your content displays professional certifications and awards.\n\nWhy: Certifications build trust and demonstrate expertise to potential customers.\n\nHow: Continue showcasing credentials and add new certifications as you earn them.` :
+          `What: Your content lacks professional certifications or awards.\n\nWhy: Certifications build credibility and help customers trust your expertise.\n\nHow: Add any professional certifications, licenses, or awards to build authority and trustworthiness.`
+      };
+    } else if (factorLower.includes('experience') || factorLower.includes('years')) {
+      const hasExperienceContent = /years|experience|since|established|decade|serving/.test(content);
+      return {
+        status: hasExperienceContent ? "OK" : "OFI",
+        notes: hasExperienceContent ?
+          `What: Your content highlights your business experience and history.\n\nWhy: Experience builds trust and shows potential customers your track record.\n\nHow: Continue emphasizing your experience and consider adding specific examples or milestones.` :
+          `What: Your content doesn't highlight your business experience or years of service.\n\nWhy: Experience information builds trust and differentiates you from newer competitors.\n\nHow: Add information about how long you've been in business and your experience serving the local area.`
+      };
+    } else {
+      // General local content assessment
+      const hasLocalSignals = /local|area|city|town|community|neighborhood|region/.test(content);
+      const hasBusinessInfo = /service|business|company|team|staff/.test(content);
+      
+      const overallScore = (hasLocalSignals ? 1 : 0) + (hasBusinessInfo ? 1 : 0);
+      
+      return {
+        status: overallScore >= 2 ? "OK" : overallScore >= 1 ? "OFI" : "N/A",
+        notes: overallScore >= 2 ?
+          `What: Your content includes relevant local business information.\n\nWhy: Local business content helps search engines understand your service area and expertise.\n\nHow: Continue providing location-specific and business-focused content.` :
+          overallScore >= 1 ?
+          `What: Your content has some local business information but could be enhanced.\n\nWhy: Stronger local content helps with search visibility and customer trust.\n\nHow: Add more location-specific details and business information to strengthen local relevance.` :
+          `What: This local SEO element cannot be assessed from the current page content.\n\nWhy: Some local SEO factors require specific content or manual verification.\n\nHow: Consider adding relevant content for this local SEO factor if applicable to your business.`
+      };
+    }
   }
 }

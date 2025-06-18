@@ -278,17 +278,31 @@ class EnhancedAuditAnalyzer {
    * Convert analysis factors to audit items with page information
    */
   private convertToAuditItems(factors: AnalysisFactor[], category: string, pageInfo?: { url: string; title: string; type: string }): AuditItem[] {
-    return factors.map(factor => ({
-      name: factor.name,
-      description: factor.description,
-      status: factor.status,
-      importance: factor.importance,
-      notes: factor.notes,
-      category, // Ensure category is always set for proper categorization
-      pageUrl: pageInfo?.url,
-      pageTitle: pageInfo?.title,
-      pageType: pageInfo?.type
-    }));
+    return factors.map(factor => {
+      const auditItem = {
+        name: factor.name,
+        description: factor.description,
+        status: factor.status,
+        importance: factor.importance,
+        notes: factor.notes,
+        category, // Ensure category is always set for proper categorization
+        pageUrl: pageInfo?.url,
+        pageTitle: pageInfo?.title,
+        pageType: pageInfo?.type
+      };
+
+      // Enhanced debugging logs for audit item creation
+      console.log(`[EnhancedAnalyzer] AUDIT ITEM CREATED:`, {
+        name: auditItem.name,
+        status: auditItem.status,
+        importance: auditItem.importance,
+        category: auditItem.category,
+        pageType: auditItem.pageType,
+        url: pageInfo?.url
+      });
+
+      return auditItem;
+    });
   }
 
   /**

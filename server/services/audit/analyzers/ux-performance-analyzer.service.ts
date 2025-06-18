@@ -413,7 +413,8 @@ export class UXPerformanceAnalyzer {
       { name: "Content Zoom Accessibility", desc: "Content should remain usable when zoomed" }
     ];
 
-    uxFactors.forEach((factor, index) => {
+    for (let index = 0; index < uxFactors.length; index++) {
+      const factor = uxFactors[index];
       let analysisResult: AnalysisFactor;
       
       // Use real analysis for key factors, placeholder for others temporarily
@@ -427,38 +428,46 @@ export class UXPerformanceAnalyzer {
         case "Navigation Usability":
           analysisResult = this.analyzeNavigationUsability(page, $);
           break;
+        case "Mobile Viewport Meta Tag":
+          analysisResult = this.analyzeMobileViewport(page, $);
+          break;
+        case "Form Field Optimization":
+          analysisResult = await this.analyzeFormUsability($);
+          break;
+        case "Interactive Element Feedback":
+          analysisResult = this.analyzeInteractiveElements($);
+          break;
+        case "Intrusive Pop-up Detection":
+          analysisResult = await this.analyzePopupElements($);
+          break;
         default:
-          // Temporary placeholder logic for other factors - will be implemented in future phases
-          const rand = Math.random();
-          let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
-          let score: number;
-          
-          if (rand < 0.60) {
-            status = "OK";
-            score = Math.floor(Math.random() * 30) + 70;
-          } else if (rand < 0.85) {
-            status = "OFI";
-            score = Math.floor(Math.random() * 40) + 30;
-          } else if (rand < 0.98) {
-            status = "N/A";
-            score = 0;
+          // Real analysis implementation for common UX factors
+          if (factor.name.toLowerCase().includes('mobile') || factor.name.toLowerCase().includes('viewport')) {
+            analysisResult = this.analyzeMobileViewport(page, $);
+          } else if (factor.name.toLowerCase().includes('form') || factor.name.toLowerCase().includes('input')) {
+            analysisResult = await this.analyzeFormUsability($);
+          } else if (factor.name.toLowerCase().includes('navigation') || factor.name.toLowerCase().includes('menu')) {
+            analysisResult = this.analyzeNavigationUsability(page, $);
+          } else if (factor.name.toLowerCase().includes('contrast') || factor.name.toLowerCase().includes('accessibility')) {
+            analysisResult = this.analyzeContrastRatio(page, $);
+          } else if (factor.name.toLowerCase().includes('touch') || factor.name.toLowerCase().includes('target')) {
+            analysisResult = this.analyzeTouchTargets(page, $);
           } else {
-            status = "Priority OFI";
-            score = Math.floor(Math.random() * 25) + 5;
+            // For remaining factors, provide intelligent UX assessment
+            const uxAssessment = this.assessUXContent(page, $, factor.name);
+            analysisResult = {
+              name: factor.name,
+              description: factor.desc,
+              status: uxAssessment.status,
+              importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
+              notes: uxAssessment.notes
+            };
           }
-          
-          analysisResult = {
-            name: factor.name,
-            description: factor.desc,
-            status,
-            importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
-            notes: this.generateUXNotes(status, score, factor.name, factor.desc)
-          };
           break;
       }
       
       factors.push(analysisResult);
-    });
+    }
 
     return factors;
   }
@@ -612,5 +621,145 @@ export class UXPerformanceAnalyzer {
       importance: "High",
       notes: `What: Your page has good navigation structure (${navigationItemCount} menu items).\n\nWhy: Clear navigation helps users find information and improves overall experience.\n\nHow: Continue maintaining clear navigation and ensure all important pages are easily accessible.`
     };
+  }
+
+  private analyzeMobileViewport(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    // Check for viewport meta tag
+    const viewportMeta = $('meta[name="viewport"]').attr('content') || '';
+    const hasViewportMeta = viewportMeta.length > 0;
+    const hasProperViewport = /width=device-width/i.test(viewportMeta) && /initial-scale=1/i.test(viewportMeta);
+    
+    if (!hasViewportMeta) {
+      return {
+        name: "Missing Mobile Viewport",
+        description: "Page lacks mobile viewport meta tag, causing mobile display issues.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page is missing the mobile viewport meta tag.\n\nWhy: Without a viewport meta tag, your site won't display properly on mobile devices.\n\nHow: Add <meta name="viewport" content="width=device-width, initial-scale=1"> to your page head.`
+      };
+    } else if (!hasProperViewport) {
+      return {
+        name: "Viewport Configuration Issues",
+        description: "Mobile viewport meta tag exists but may not be properly configured.",
+        status: "OFI",
+        importance: "High",
+        notes: `What: Your viewport meta tag is present but may need optimization (current: "${viewportMeta}").\n\nWhy: Improper viewport configuration can cause mobile display problems.\n\nHow: Ensure your viewport meta tag includes "width=device-width, initial-scale=1" for optimal mobile display.`
+      };
+    }
+    
+    return {
+      name: "Mobile Viewport Optimization",
+      description: "Page has proper mobile viewport meta tag configuration.",
+      status: "OK",
+      importance: "High",
+      notes: `What: Your page has a properly configured mobile viewport meta tag.\n\nWhy: Proper viewport configuration ensures your site displays correctly on all mobile devices.\n\nHow: Continue maintaining proper viewport configuration and test on various mobile devices.`
+    };
+  }
+
+  private analyzeInteractiveElements($: cheerio.CheerioAPI): AnalysisFactor {
+    const buttons = $('button, [role="button"], input[type="submit"], input[type="button"]');
+    const links = $('a[href]');
+    const forms = $('form');
+    const interactiveElements = buttons.length + links.length + forms.length;
+    
+    // Check for hover states or feedback indicators
+    const hasHoverStates = $('[class*="hover"], [class*="focus"], [class*="active"]').length > 0;
+    const hasFormFeedback = $('[class*="error"], [class*="success"], [class*="valid"]').length > 0;
+    
+    const feedbackScore = (hasHoverStates ? 1 : 0) + (hasFormFeedback ? 1 : 0) + (interactiveElements > 0 ? 1 : 0);
+    
+    if (interactiveElements === 0) {
+      return {
+        name: "Missing Interactive Elements",
+        description: "Page lacks interactive elements for user engagement.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page has no interactive elements (buttons, links, forms).\n\nWhy: Interactive elements are essential for user engagement and conversions.\n\nHow: Add buttons, links, contact forms, and other interactive elements to engage visitors.`
+      };
+    } else if (feedbackScore < 2) {
+      return {
+        name: "Interactive Element Feedback",
+        description: "Interactive elements could provide better user feedback.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your interactive elements (${interactiveElements} found) could provide better visual feedback.\n\nWhy: Clear feedback helps users understand when they interact with elements.\n\nHow: Add hover effects, focus states, and form validation feedback to improve user experience.`
+      };
+    }
+    
+    return {
+      name: "Interactive Element Feedback",
+      description: "Interactive elements provide good user feedback and engagement.",
+      status: "OK",
+      importance: "Medium",
+      notes: `What: Your page has good interactive elements (${interactiveElements} found) with proper feedback.\n\nWhy: Interactive feedback enhances user experience and encourages engagement.\n\nHow: Continue maintaining interactive elements and consider adding more engagement features.`
+    };
+  }
+
+  private assessUXContent(page: PageCrawlResult, $: cheerio.CheerioAPI, factorName: string): { status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A', notes: string } {
+    const content = page.bodyText.toLowerCase();
+    const factorLower = factorName.toLowerCase();
+    
+    // Assessment based on factor type and page content
+    if (factorLower.includes('browser') || factorLower.includes('compatibility')) {
+      // Basic browser compatibility assessment
+      const hasModernHTML = page.rawHtml.includes('<!DOCTYPE html>');
+      const hasModernCSS = page.rawHtml.includes('css') || page.rawHtml.includes('style');
+      return {
+        status: hasModernHTML && hasModernCSS ? "OK" : "OFI",
+        notes: hasModernHTML && hasModernCSS ?
+          `What: Your page appears to use modern web standards for browser compatibility.\n\nWhy: Modern web standards ensure your site works across different browsers.\n\nHow: Continue using standard HTML/CSS practices and test in major browsers.` :
+          `What: Your page may have browser compatibility issues.\n\nWhy: Compatibility problems prevent some users from accessing your site properly.\n\nHow: Use standard HTML5 and CSS3 practices and test across major browsers.`
+      };
+    } else if (factorLower.includes('progressive') || factorLower.includes('enhancement')) {
+      // Check for JavaScript dependency
+      const heavyJSUsage = (page.rawHtml.match(/script/g) || []).length > 10;
+      return {
+        status: !heavyJSUsage ? "OK" : "OFI",
+        notes: !heavyJSUsage ?
+          `What: Your page appears to work without heavy JavaScript dependencies.\n\nWhy: Progressive enhancement ensures your site works for all users.\n\nHow: Continue building with a solid HTML/CSS foundation and JavaScript as enhancement.` :
+          `What: Your page may rely heavily on JavaScript, potentially affecting accessibility.\n\nWhy: Heavy JavaScript reliance can break the experience for some users.\n\nHow: Ensure core functionality works without JavaScript and use JS for enhancement only.`
+      };
+    } else if (factorLower.includes('keyboard') || factorLower.includes('focus')) {
+      // Check for keyboard navigation elements
+      const hasTabIndex = page.rawHtml.includes('tabindex');
+      const hasKeyboardElements = $('a, button, input, select, textarea').length > 0;
+      return {
+        status: hasKeyboardElements ? "OK" : "OFI",
+        notes: hasKeyboardElements ?
+          `What: Your page has elements that support keyboard navigation.\n\nWhy: Keyboard navigation is essential for accessibility and some users.\n\nHow: Continue ensuring all interactive elements are keyboard accessible.` :
+          `What: Your page may lack proper keyboard navigation support.\n\nWhy: Keyboard navigation is required for accessibility compliance.\n\nHow: Ensure all interactive elements can be reached and activated via keyboard.`
+      };
+    } else if (factorLower.includes('search') || factorLower.includes('functionality')) {
+      // Check for search functionality
+      const hasSearch = /search/i.test(content) || $('input[type="search"], [class*="search"]').length > 0;
+      return {
+        status: hasSearch ? "OK" : "N/A",
+        notes: hasSearch ?
+          `What: Your page includes search functionality.\n\nWhy: Search helps users find information quickly on larger sites.\n\nHow: Ensure search is prominently placed and returns relevant results.` :
+          `What: Your page doesn't include search functionality.\n\nWhy: Search functionality may not be necessary for all sites.\n\nHow: Consider adding search if you have substantial content that users need to find.`
+      };
+    } else if (factorLower.includes('error') || factorLower.includes('404')) {
+      // This would need to be assessed differently, mark as N/A
+      return {
+        status: "N/A",
+        notes: `What: Error page handling cannot be assessed from the current page.\n\nWhy: Error pages are separate from regular content pages.\n\nHow: Ensure you have custom 404 and error pages that help users navigate back to useful content.`
+      };
+    } else {
+      // General UX assessment
+      const hasGoodStructure = $('h1, h2, h3').length > 0;
+      const hasInteractiveElements = $('button, a, input').length > 0;
+      const hasVisualElements = $('img, video').length > 0;
+      
+      const uxScore = (hasGoodStructure ? 1 : 0) + (hasInteractiveElements ? 1 : 0) + (hasVisualElements ? 1 : 0);
+      
+      return {
+        status: uxScore >= 2 ? "OK" : uxScore >= 1 ? "OFI" : "N/A",
+        notes: uxScore >= 2 ?
+          `What: Your page has good user experience elements including structure and interactivity.\n\nWhy: Good UX elements help users navigate and engage with your content effectively.\n\nHow: Continue maintaining good UX practices and consider user testing for improvements.` :
+          uxScore >= 1 ?
+          `What: Your page has some UX elements but could be enhanced for better user experience.\n\nWhy: Better UX elements improve user satisfaction and conversion rates.\n\nHow: Add more interactive elements, improve visual hierarchy, and enhance overall page structure.` :
+          `What: This UX element cannot be assessed from the current page content.\n\nWhy: Some UX factors require specific functionality or manual testing.\n\nHow: Consider implementing this UX element if it's relevant to your site's goals.`
+      };
+    }
   }
 }
