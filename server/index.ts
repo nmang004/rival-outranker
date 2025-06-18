@@ -3,6 +3,71 @@ import cors from "cors";
 import { registerRoutes } from "./routes/index";
 import { initializeDatabase, closeDatabase, getDatabaseHealth, getDatabaseInfo } from "./lib/database";
 
+// Service registry for graceful shutdown
+// This allows services (like PuppeteerHandlerService) to register cleanup functions
+// that will be called during graceful shutdown to prevent zombie processes
+interface ServiceWithCleanup {
+  name: string;
+  cleanup: () => Promise<void>;
+}
+
+const serviceRegistry: ServiceWithCleanup[] = [];
+
+/**
+ * Register a service for graceful shutdown cleanup
+ */
+export const registerServiceForCleanup = (name: string, cleanup: () => Promise<void>) => {
+  serviceRegistry.push({ name, cleanup });
+  console.log(`📋 Registered service for cleanup: ${name}`);
+};
+
+/**
+ * Cleanup all active Puppeteer clusters across services
+ */
+const cleanupPuppeteerClusters = async (): Promise<void> => {
+  try {
+    console.log('🧹 Starting Puppeteer cluster cleanup...');
+    
+    // Import and check for active Puppeteer services
+    const { PuppeteerHandlerService } = await import('./services/audit/crawling/puppeteer-handler.service');
+    
+    // Get any global or singleton instances that might exist
+    // Since PuppeteerHandlerService is instantiated within other services,
+    // we need to handle cleanup through the service registry pattern
+    console.log('🔍 Checking for active Puppeteer clusters in service registry...');
+    
+    // Filter services that contain 'puppeteer' in their name
+    const puppeteerServices = serviceRegistry.filter(service => 
+      service.name.toLowerCase().includes('puppeteer')
+    );
+    
+    if (puppeteerServices.length > 0) {
+      console.log(`🎯 Found ${puppeteerServices.length} Puppeteer service(s) to cleanup`);
+      
+      for (const service of puppeteerServices) {
+        try {
+          console.log(`🧽 Cleaning up ${service.name}...`);
+          await Promise.race([
+            service.cleanup(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Cleanup timeout')), 5000)
+            )
+          ]);
+          console.log(`✅ ${service.name} cleanup completed`);
+        } catch (error) {
+          console.error(`❌ Error cleaning up ${service.name}:`, error);
+        }
+      }
+    } else {
+      console.log('ℹ️  No active Puppeteer clusters found in registry');
+    }
+    
+    console.log('✅ Puppeteer cluster cleanup completed');
+  } catch (error) {
+    console.error('❌ Error during Puppeteer cleanup:', error);
+  }
+};
+
 // Railway-specific configuration
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = parseInt(process.env.PORT || '5000', 10);
@@ -245,6 +310,31 @@ app.use((req, res, next) => {
         }
       }
       
+      // Cleanup all Puppeteer clusters
+      await cleanupPuppeteerClusters();
+      
+      // Cleanup all registered services
+      if (serviceRegistry.length > 0) {
+        console.log(`🧹 Cleaning up ${serviceRegistry.length} registered service(s)...`);
+        
+        for (const service of serviceRegistry) {
+          try {
+            console.log(`🧽 Cleaning up ${service.name}...`);
+            await Promise.race([
+              service.cleanup(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Service cleanup timeout')), 3000)
+              )
+            ]);
+            console.log(`✅ ${service.name} cleanup completed`);
+          } catch (error) {
+            console.error(`❌ Error cleaning up ${service.name}:`, error);
+          }
+        }
+        
+        console.log('✅ All registered services cleaned up');
+      }
+      
       try {
         await closeDatabase();
         console.log('Database connections closed');
@@ -256,11 +346,11 @@ app.use((req, res, next) => {
       process.exit(0);
     });
     
-    // Force close after 10 seconds
+    // Force close after 15 seconds (increased to accommodate Puppeteer cleanup)
     setTimeout(() => {
       console.error('Could not close connections in time, forcefully shutting down');
       process.exit(1);
-    }, 10000);
+    }, 15000);
   };
   
   // Listen for termination signals

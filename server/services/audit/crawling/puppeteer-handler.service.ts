@@ -15,6 +15,8 @@ export class PuppeteerHandlerService {
   private PUPPETEER_CLUSTER_SIZE = 2; // Number of browser instances in cluster
   private USE_TIER_BASED_PUPPETEER = process.env.USE_TIER_BASED_PUPPETEER !== 'false'; // Enable tier-based Puppeteer usage for performance (default: true)
   private USER_AGENT = 'SEO-Best-Practices-Assessment-Tool/1.0';
+  private instanceId = `puppeteer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private isRegisteredForCleanup = false;
   
   // Services
   private pagePriorityService = new PagePriorityService();
@@ -90,6 +92,23 @@ export class PuppeteerHandlerService {
     
     try {
       console.log(`[PuppeteerHandler] Initializing Puppeteer cluster with ${this.PUPPETEER_CLUSTER_SIZE} instances`);
+      
+      // Register this instance for cleanup if not already registered
+      if (!this.isRegisteredForCleanup) {
+        try {
+          const { registerServiceForCleanup } = await import('../../../index');
+          registerServiceForCleanup(
+            `PuppeteerHandler-${this.instanceId}`,
+            async () => {
+              await this.closePuppeteerCluster();
+            }
+          );
+          this.isRegisteredForCleanup = true;
+          console.log(`[PuppeteerHandler] Registered instance ${this.instanceId} for graceful shutdown`);
+        } catch (error) {
+          console.warn(`[PuppeteerHandler] Could not register for cleanup (this is normal in test environments):`, error);
+        }
+      }
       
       this.puppeteerCluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
@@ -270,13 +289,43 @@ export class PuppeteerHandlerService {
   async closePuppeteerCluster(): Promise<void> {
     if (this.puppeteerCluster) {
       try {
-        console.log(`[PuppeteerHandler] Closing Puppeteer cluster`);
-        await this.puppeteerCluster.idle();
-        await this.puppeteerCluster.close();
+        console.log(`[PuppeteerHandler-${this.instanceId}] Closing Puppeteer cluster gracefully...`);
+        
+        // Wait for all tasks to complete, but with a timeout
+        await Promise.race([
+          this.puppeteerCluster.idle(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Cluster idle timeout')), 3000)
+          )
+        ]);
+        
+        // Close the cluster
+        await Promise.race([
+          this.puppeteerCluster.close(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Cluster close timeout')), 2000)
+          )
+        ]);
+        
         this.puppeteerCluster = null;
+        console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer cluster closed successfully`);
       } catch (error) {
-        console.error(`[PuppeteerHandler] Error closing Puppeteer cluster:`, error);
+        console.error(`[PuppeteerHandler-${this.instanceId}] Error closing Puppeteer cluster:`, error);
+        
+        // Force close if graceful shutdown fails
+        try {
+          if (this.puppeteerCluster) {
+            await this.puppeteerCluster.close();
+            this.puppeteerCluster = null;
+            console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer cluster force-closed`);
+          }
+        } catch (forceError) {
+          console.error(`[PuppeteerHandler-${this.instanceId}] Failed to force-close cluster:`, forceError);
+          this.puppeteerCluster = null; // Mark as null to prevent further attempts
+        }
       }
+    } else {
+      console.log(`[PuppeteerHandler-${this.instanceId}] No active Puppeteer cluster to close`);
     }
   }
   
@@ -584,5 +633,41 @@ export class PuppeteerHandlerService {
     } else {
       throw new Error('Cluster size must be between 1 and 10');
     }
+  }
+
+  /**
+   * Manually register this instance for cleanup (useful for testing or special cases)
+   */
+  async registerForCleanup(): Promise<void> {
+    if (!this.isRegisteredForCleanup) {
+      try {
+        const { registerServiceForCleanup } = await import('../../../index');
+        registerServiceForCleanup(
+          `PuppeteerHandler-${this.instanceId}`,
+          async () => {
+            await this.closePuppeteerCluster();
+          }
+        );
+        this.isRegisteredForCleanup = true;
+        console.log(`[PuppeteerHandler] Manually registered instance ${this.instanceId} for graceful shutdown`);
+      } catch (error) {
+        console.warn(`[PuppeteerHandler] Could not register for cleanup:`, error);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Get the instance ID for this Puppeteer handler
+   */
+  getInstanceId(): string {
+    return this.instanceId;
+  }
+
+  /**
+   * Check if this instance is registered for cleanup
+   */
+  isRegisteredForGracefulShutdown(): boolean {
+    return this.isRegisteredForCleanup;
   }
 }
