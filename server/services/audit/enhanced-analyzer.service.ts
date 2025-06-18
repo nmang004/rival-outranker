@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { PageCrawlResult, SiteStructure } from './audit.service';
 import { PageIssueSummary } from '../../../shared/schema';
-import { PagePriorityService, PagePriority, PageClassificationOverride } from './page-priority.service';
+import { PagePriorityService, PagePriority } from './page-priority.service';
 import { OFIClassificationService } from './ofi-classification.service';
 import {
   ContentQualityAnalyzer,
@@ -43,7 +43,7 @@ class EnhancedAuditAnalyzer {
   /**
    * Perform comprehensive 200+ factor analysis on a website with priority weighting
    */
-  async analyzeWebsite(siteStructure: SiteStructure, overrides?: PageClassificationOverride[]): Promise<EnhancedAuditResult> {
+  async analyzeWebsite(siteStructure: SiteStructure): Promise<EnhancedAuditResult> {
     console.log('[EnhancedAnalyzer] Starting comprehensive 200+ factor analysis');
     
     const results: EnhancedAuditResult = {
@@ -155,10 +155,10 @@ class EnhancedAuditAnalyzer {
     this.calculateSummary(results);
 
     // Generate page issue summaries with priority weighting
-    results.pageIssues = this.generatePageIssueSummaries(results, siteStructure, overrides);
+    results.pageIssues = this.generatePageIssueSummaries(results, siteStructure);
 
     // Calculate weighted OFI scores and priority breakdown
-    this.calculateWeightedSummary(results, siteStructure, overrides);
+    this.calculateWeightedSummary(results, siteStructure);
 
     console.log(`[EnhancedAnalyzer] Completed analysis: ${results.summary.totalFactors} factors evaluated`);
     console.log(`[EnhancedAnalyzer] Enhanced categories: Content Quality (${results.contentQuality?.items.length || 0}), Technical SEO (${results.technicalSEO?.items.length || 0}), Local SEO (${results.localSEO?.items.length || 0}), UX Performance (${results.uxPerformance?.items.length || 0})`);
@@ -562,7 +562,7 @@ class EnhancedAuditAnalyzer {
   /**
    * Calculate weighted OFI summary with priority breakdown
    */
-  private calculateWeightedSummary(results: EnhancedAuditResult, siteStructure: SiteStructure, overrides?: PageClassificationOverride[]): void {
+  private calculateWeightedSummary(results: EnhancedAuditResult, siteStructure: SiteStructure): void {
     if (!results.pageIssues || results.pageIssues.length === 0) {
       return;
     }
@@ -613,7 +613,7 @@ class EnhancedAuditAnalyzer {
   /**
    * Generate page-specific issue summaries for the dropdown with priority weighting
    */
-  private generatePageIssueSummaries(results: EnhancedAuditResult, siteStructure: SiteStructure, overrides?: PageClassificationOverride[]): PageIssueSummary[] {
+  private generatePageIssueSummaries(results: EnhancedAuditResult, siteStructure: SiteStructure): PageIssueSummary[] {
     const allItems = [
       ...results.onPage.items,
       ...results.structureNavigation.items,
@@ -680,7 +680,7 @@ class EnhancedAuditAnalyzer {
         // Determine page priority
         const pageData = this.findPageInStructure(pageUrl, siteStructure);
         const pageType = firstItem.pageType || 'unknown';
-        const priority = pageData ? this.priorityService.getPagePriority(pageData, pageType, overrides) : PagePriority.TIER_3;
+        const priority = pageData ? this.priorityService.getPagePriority(pageData, pageType) : PagePriority.TIER_3;
         const priorityWeight = this.priorityService.getPriorityWeight(priority);
         
         // Calculate basic page score (percentage of OK items)

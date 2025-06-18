@@ -20,14 +20,6 @@ export const PAGE_PRIORITY_WEIGHTS = {
   [PagePriority.TIER_3]: 1.0  // 1x weight (base)
 } as const;
 
-/**
- * Configuration for manual page classification overrides
- */
-export interface PageClassificationOverride {
-  url: string;
-  priority: PagePriority;
-  reason?: string;
-}
 
 /**
  * Enhanced service for smart priority calculation with template-aware scoring
@@ -42,12 +34,7 @@ export class PagePriorityService {
   /**
    * Determine the priority tier of a page based on its type and characteristics
    */
-  getPagePriority(page: PageCrawlResult, pageType: string, overrides?: PageClassificationOverride[]): PagePriority {
-    // Check for manual overrides first
-    const override = overrides?.find(o => o.url === page.url);
-    if (override) {
-      return override.priority;
-    }
+  getPagePriority(page: PageCrawlResult, pageType: string): PagePriority {
 
     // Auto-classify based on page type and URL patterns
     return this.classifyPagePriority(page, pageType);

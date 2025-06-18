@@ -257,23 +257,6 @@ export const rivalAudits = pgTable("rival_audits", {
   ];
 });
 
-// Page priority overrides - allows manual classification of page priorities
-export const pageClassificationOverrides = pgTable("page_classification_overrides", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").references(() => users.id),
-  auditId: integer("audit_id").references(() => rivalAudits.id),
-  pageUrl: text("page_url").notNull(),
-  priority: integer("priority").notNull(), // 1=Tier 1, 2=Tier 2, 3=Tier 3
-  reason: text("reason"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => {
-  return [
-    unique().on(table.auditId, table.pageUrl), // One override per page per audit
-    index("idx_page_overrides_user").on(table.userId),
-    index("idx_page_overrides_audit").on(table.auditId)
-  ];
-});
 
 // Insert schemas for rival audit features
 export const insertRivalAuditSchema = createInsertSchema(rivalAudits).omit({
@@ -283,11 +266,6 @@ export const insertRivalAuditSchema = createInsertSchema(rivalAudits).omit({
   startedAt: true,
 });
 
-export const insertPageClassificationOverrideSchema = createInsertSchema(pageClassificationOverrides).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 // Rival Audit Types
 export type AuditStatus = z.infer<typeof auditStatusSchema>;
@@ -312,5 +290,3 @@ export type EnhancedLocationPagesAudit = z.infer<typeof enhancedLocationPagesAud
 export type EnhancedServiceAreaPagesAudit = z.infer<typeof enhancedServiceAreaPagesAuditSchema>;
 export type RivalAuditRecord = typeof rivalAudits.$inferSelect;
 export type InsertRivalAuditRecord = z.infer<typeof insertRivalAuditSchema>;
-export type PageClassificationOverride = typeof pageClassificationOverrides.$inferSelect;
-export type InsertPageClassificationOverride = z.infer<typeof insertPageClassificationOverrideSchema>;
