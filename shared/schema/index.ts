@@ -25,6 +25,9 @@ export * from './learning';
 // Web crawling system
 export * from './crawling';
 
+// System monitoring and metrics
+export * from './monitoring';
+
 // Re-export commonly used types for convenience
 export type { SeoScoreCategory } from './seo-analysis';
 export type { AuditStatus, SeoImportance } from './rival-audit';

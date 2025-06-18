@@ -16,6 +16,8 @@ import { adminAuditRoutes } from "./admin-audit.routes";
 import { contentRoutes } from "./content.routes";
 import { openaiRoutes } from "./openai.routes";
 import monitoringRoutes from "./monitoring.routes";
+import businessIntelligenceRoutes from "./business-intelligence.routes";
+import performanceTestingRoutes from "./performance-testing.routes";
 import ofiReportRoutes from "./ofi-report.routes";
 
 // Import middleware
@@ -53,6 +55,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Monitoring and health check routes
   app.use('/api', monitoringRoutes);
+  
+  // Business intelligence and analytics routes
+  app.use('/api/business-intelligence', businessIntelligenceRoutes);
+  
+  // Performance testing routes
+  app.use('/api/performance-testing', performanceTestingRoutes);
   
   // OFI reporting and classification routes
   app.use('/api/ofi-reports', trackApiUsage('internal'), ofiReportRoutes);
