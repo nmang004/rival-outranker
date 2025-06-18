@@ -180,15 +180,31 @@ export class CrawlerOrchestratorService {
         return errorOutput;
       }
 
+      // Perform lightweight JS detection first
+      let isJsHeavy = false;
+      try {
+        // Quick HTTP request to analyze content for JS patterns
+        const response = await axios.get(normalizedUrl, {
+          headers: { "User-Agent": this.USER_AGENT },
+          timeout: 10000,
+          maxContentLength: 1024 * 1024, // 1MB for detection only
+          httpsAgent: new https.Agent({ rejectUnauthorized: false })
+        });
+        isJsHeavy = this.puppeteerHandlerService.detectJavaScriptHeavySite(response.data, normalizedUrl);
+      } catch (error) {
+        // If detection fails, assume not JS-heavy and continue with standard crawl
+        console.log(`[CrawlerOrchestrator] JS detection failed for ${normalizedUrl}, using standard crawl`);
+      }
+
       // Determine if we should use Puppeteer for this page
-      const shouldUsePuppeteer = this.puppeteerHandlerService.shouldUsePuppeteerForPage(normalizedUrl, false);
+      const shouldUsePuppeteer = this.puppeteerHandlerService.shouldUsePuppeteerForPage(normalizedUrl, isJsHeavy);
       
       let crawlResult: CrawlerOutput;
       if (shouldUsePuppeteer) {
-        console.log(`[CrawlerOrchestrator] 🤖 Using Puppeteer for JS-heavy page: ${normalizedUrl}`);
+        console.log(`[CrawlerOrchestrator] 🤖 Using Puppeteer for Tier 1 JS-heavy page: ${normalizedUrl}`);
         crawlResult = await this.puppeteerHandlerService.crawlPageWithPuppeteer(normalizedUrl);
       } else {
-        console.log(`[CrawlerOrchestrator] 🌐 Using standard HTTP crawl: ${normalizedUrl}`);
+        console.log(`[CrawlerOrchestrator] 🌐 Using standard HTTP crawl: ${normalizedUrl} (JS-heavy: ${isJsHeavy})`);
         crawlResult = await this.standardCrawlPage(normalizedUrl);
       }
 
