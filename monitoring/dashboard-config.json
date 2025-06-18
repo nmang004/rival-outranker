@@ -1,0 +1,368 @@
+{
+  "name": "Priority System v2.0 Dashboard",
+  "version": "2.0.0",
+  "description": "Monitoring dashboard configuration for the enhanced priority system",
+  "dashboard": {
+    "title": "Rival Outranker - Priority System Monitoring",
+    "layout": {
+      "columns": 12,
+      "rowHeight": 100
+    },
+    "panels": [
+      {
+        "id": "priority-accuracy",
+        "title": "Priority Classification Accuracy",
+        "type": "gauge",
+        "position": { "x": 0, "y": 0, "w": 4, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.accuracy.percentage",
+            "aggregation": "avg",
+            "timeRange": "1h"
+          }
+        ],
+        "thresholds": [
+          { "value": 90, "color": "green" },
+          { "value": 80, "color": "yellow" },
+          { "value": 0, "color": "red" }
+        ],
+        "unit": "percent",
+        "min": 0,
+        "max": 100
+      },
+      {
+        "id": "processing-time",
+        "title": "Audit Processing Time",
+        "type": "timeseries",
+        "position": { "x": 4, "y": 0, "w": 8, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.processing_time.milliseconds",
+            "aggregation": "avg",
+            "timeRange": "24h",
+            "legend": "Average Processing Time"
+          },
+          {
+            "metric": "priority_system.processing_time.milliseconds",
+            "aggregation": "p95",
+            "timeRange": "24h",
+            "legend": "95th Percentile"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "ms",
+            "min": 0,
+            "thresholds": [
+              { "value": 60000, "color": "red", "label": "Threshold" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "memory-usage",
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "position": { "x": 0, "y": 3, "w": 6, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.memory.heap_used",
+            "aggregation": "avg",
+            "timeRange": "24h",
+            "legend": "Heap Used"
+          },
+          {
+            "metric": "priority_system.memory.heap_total",
+            "aggregation": "avg",
+            "timeRange": "24h",
+            "legend": "Heap Total"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "bytes",
+            "min": 0,
+            "thresholds": [
+              { "value": 209715200, "color": "red", "label": "200MB Threshold" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "template-detection",
+        "title": "Template Issue Detection Rate",
+        "type": "gauge",
+        "position": { "x": 6, "y": 3, "w": 3, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.template_detection.rate",
+            "aggregation": "avg",
+            "timeRange": "1h"
+          }
+        ],
+        "thresholds": [
+          { "value": 80, "color": "green" },
+          { "value": 60, "color": "yellow" },
+          { "value": 0, "color": "red" }
+        ],
+        "unit": "percent",
+        "min": 0,
+        "max": 100
+      },
+      {
+        "id": "priority-ofi-ratio",
+        "title": "Priority OFI Ratio",
+        "type": "gauge",
+        "position": { "x": 9, "y": 3, "w": 3, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.priority_ofi.ratio",
+            "aggregation": "avg",
+            "timeRange": "1h"
+          }
+        ],
+        "thresholds": [
+          { "value": 40, "color": "red" },
+          { "value": 30, "color": "yellow" },
+          { "value": 20, "color": "green" },
+          { "value": 10, "color": "yellow" },
+          { "value": 5, "color": "red" }
+        ],
+        "unit": "percent",
+        "min": 0,
+        "max": 50
+      },
+      {
+        "id": "audit-volume",
+        "title": "Audit Volume",
+        "type": "timeseries",
+        "position": { "x": 0, "y": 6, "w": 6, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.audits.count",
+            "aggregation": "sum",
+            "timeRange": "24h",
+            "legend": "Total Audits"
+          },
+          {
+            "metric": "priority_system.audits.failed",
+            "aggregation": "sum",
+            "timeRange": "24h",
+            "legend": "Failed Audits"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "system-health",
+        "title": "System Health Checks",
+        "type": "stat",
+        "position": { "x": 6, "y": 6, "w": 6, "h": 3 },
+        "targets": [
+          {
+            "metric": "priority_system.health.check_success_rate",
+            "aggregation": "avg",
+            "timeRange": "1h"
+          }
+        ],
+        "colorMode": "background",
+        "thresholds": [
+          { "value": 95, "color": "green" },
+          { "value": 90, "color": "yellow" },
+          { "value": 0, "color": "red" }
+        ],
+        "unit": "percent"
+      },
+      {
+        "id": "issue-breakdown",
+        "title": "Issue Type Breakdown",
+        "type": "piechart",
+        "position": { "x": 0, "y": 9, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "metric": "priority_system.issues.by_category",
+            "aggregation": "sum",
+            "timeRange": "24h"
+          }
+        ],
+        "legend": {
+          "position": "right",
+          "values": ["percent", "count"]
+        }
+      },
+      {
+        "id": "template-vs-individual",
+        "title": "Template vs Individual Issues",
+        "type": "timeseries",
+        "position": { "x": 4, "y": 9, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "metric": "priority_system.issues.template_count",
+            "aggregation": "sum",
+            "timeRange": "24h",
+            "legend": "Template Issues"
+          },
+          {
+            "metric": "priority_system.issues.individual_count",
+            "aggregation": "sum",
+            "timeRange": "24h",
+            "legend": "Individual Issues"
+          }
+        ],
+        "yAxes": [
+          {
+            "unit": "short",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": "effort-savings",
+        "title": "Estimated Effort Savings",
+        "type": "stat",
+        "position": { "x": 8, "y": 9, "w": 4, "h": 4 },
+        "targets": [
+          {
+            "metric": "priority_system.effort.savings_percentage",
+            "aggregation": "avg",
+            "timeRange": "24h"
+          }
+        ],
+        "colorMode": "value",
+        "thresholds": [
+          { "value": 60, "color": "green" },
+          { "value": 40, "color": "yellow" },
+          { "value": 0, "color": "red" }
+        ],
+        "unit": "percent",
+        "prefix": "Effort Reduced by"
+      },
+      {
+        "id": "alerts-summary",
+        "title": "Recent Alerts",
+        "type": "table",
+        "position": { "x": 0, "y": 13, "w": 12, "h": 4 },
+        "targets": [
+          {
+            "metric": "priority_system.alerts",
+            "aggregation": "latest",
+            "timeRange": "24h"
+          }
+        ],
+        "columns": [
+          { "field": "timestamp", "title": "Time", "type": "datetime" },
+          { "field": "type", "title": "Type", "type": "string" },
+          { "field": "severity", "title": "Severity", "type": "string" },
+          { "field": "message", "title": "Message", "type": "string" },
+          { "field": "status", "title": "Status", "type": "string" }
+        ]
+      }
+    ]
+  },
+  "alerts": [
+    {
+      "name": "Priority Accuracy Below Threshold",
+      "condition": "priority_system.accuracy.percentage < 90",
+      "for": "5m",
+      "severity": "warning",
+      "message": "Priority classification accuracy has dropped below 90%",
+      "actions": ["email", "webhook"]
+    },
+    {
+      "name": "Processing Time Exceeded",
+      "condition": "priority_system.processing_time.p95 > 60000",
+      "for": "2m",
+      "severity": "warning",
+      "message": "95th percentile processing time exceeds 60 seconds",
+      "actions": ["email"]
+    },
+    {
+      "name": "Memory Usage High",
+      "condition": "priority_system.memory.heap_used > 200000000",
+      "for": "5m",
+      "severity": "critical",
+      "message": "Memory usage exceeds 200MB threshold",
+      "actions": ["email", "webhook", "pager"]
+    },
+    {
+      "name": "Template Detection Rate Low",
+      "condition": "priority_system.template_detection.rate < 80",
+      "for": "10m",
+      "severity": "warning",
+      "message": "Template issue detection rate below 80%",
+      "actions": ["email"]
+    },
+    {
+      "name": "Priority OFI Ratio Abnormal",
+      "condition": "priority_system.priority_ofi.ratio < 5 OR priority_system.priority_ofi.ratio > 40",
+      "for": "5m",
+      "severity": "warning",
+      "message": "Priority OFI ratio outside normal range (5%-40%)",
+      "actions": ["email"]
+    },
+    {
+      "name": "System Health Check Failed",
+      "condition": "priority_system.health.check_success_rate < 95",
+      "for": "2m",
+      "severity": "critical",
+      "message": "System health check success rate below 95%",
+      "actions": ["email", "webhook", "pager"]
+    }
+  ],
+  "metrics": {
+    "collection_interval": "30s",
+    "retention": "7d",
+    "endpoints": [
+      {
+        "path": "/metrics/priority-system",
+        "format": "prometheus",
+        "labels": {
+          "service": "rival-outranker",
+          "component": "priority-system",
+          "version": "2.0.0"
+        }
+      }
+    ]
+  },
+  "variables": [
+    {
+      "name": "environment",
+      "type": "custom",
+      "options": ["production", "staging", "development"],
+      "default": "production"
+    },
+    {
+      "name": "time_range",
+      "type": "interval",
+      "options": ["5m", "15m", "1h", "6h", "24h", "7d"],
+      "default": "1h"
+    }
+  ],
+  "annotations": [
+    {
+      "name": "Deployments",
+      "datasource": "deployment-logs",
+      "query": "tags:deployment AND service:rival-outranker",
+      "iconColor": "blue",
+      "lineColor": "blue"
+    },
+    {
+      "name": "Priority System Changes",
+      "datasource": "git-logs",
+      "query": "path:server/services/audit/*priority* OR path:server/services/audit/issue-grouping*",
+      "iconColor": "green",
+      "lineColor": "green"
+    }
+  ],
+  "templating": {
+    "enable_time_picker": true,
+    "enable_refresh": true,
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"],
+    "default_refresh": "30s"
+  }
+}
