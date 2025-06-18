@@ -112,28 +112,19 @@ function UserAnalysesList() {
     );
   }
 
-  const mockAnalyses = [
-    {
-      id: '1',
-      url: 'example.com',
-      score: 85,
-      created_at: new Date().toISOString(),
-      status: 'completed'
-    },
-    {
-      id: '2', 
-      url: 'demo-site.com',
-      score: 72,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      status: 'completed'
-    }
-  ];
+  const hasAnalyses = analyses && analyses.length > 0;
 
-  const analysesToShow = analyses && analyses.length > 0 ? analyses : mockAnalyses;
+  if (!hasAnalyses) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No analyses found. Start by analyzing a website!</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {analysesToShow.map((analysis: Analysis) => (
+      {analyses.map((analysis: Analysis) => (
         <Card key={analysis.id}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">

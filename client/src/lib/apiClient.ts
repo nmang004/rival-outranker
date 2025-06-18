@@ -54,7 +54,7 @@ export class ApiClient {
   private errorInterceptors: Array<(error: ApiError) => ApiError | Promise<ApiError>> = [];
 
   constructor(config: ApiClientConfig = {}) {
-    this.baseURL = config.baseURL || process.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    this.baseURL = config.baseURL || import.meta.env.VITE_API_BASE_URL || '';
     this.timeout = config.timeout || 30000;
     this.retryAttempts = config.retryAttempts || 3;
     this.retryDelay = config.retryDelay || 1000;

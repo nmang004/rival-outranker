@@ -25,12 +25,21 @@ export function ChangePasswordForm() {
   const { toast } = useToast();
   const [generalError, setGeneralError] = useState<string | null>(null);
   
-  // Mock implementation of changePassword function
   const changePassword = async (data: { currentPassword: string; newPassword: string }) => {
-    // In a real implementation, this would call an API endpoint
-    // For now, just simulate success
-    console.log("Change password requested:", { currentPassword: data.currentPassword, newPassword: "***" });
-    return Promise.resolve();
+    const response = await fetch('/api/user/change-password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to change password');
+    }
+    
+    return response.json();
   };
 
   const form = useForm<PasswordChangeFormValues>({

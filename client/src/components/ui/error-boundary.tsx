@@ -211,7 +211,7 @@ export function ApiErrorBoundary({ children, onRetry, fallback }: ApiErrorBounda
       await onRetry?.();
       setError(null);
     } catch (err) {
-      console.error('Retry failed:', err);
+      // Retry failed - error will be handled by error boundary
     } finally {
       setIsRetrying(false);
     }

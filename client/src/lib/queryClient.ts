@@ -27,10 +27,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Error:", error.message);
-    if (error.response) {
-      console.error(`Status: ${error.response.status}, Data:`, error.response.data);
-    }
+    // API error occurred - will be handled by query client
     return Promise.reject(error);
   }
 );
@@ -79,7 +76,6 @@ export const getQueryFn = <T>(options: {
       }
       
       const endpoint = queryKey[0];
-      console.log("Fetching data from:", endpoint);
       
       try {
         const response = await axiosInstance.get<T>(endpoint);
@@ -88,20 +84,17 @@ export const getQueryFn = <T>(options: {
         if (axios.isAxiosError(error)) {
           if (error.response) {
             if (error.response.status === 401) {
-              console.log("401 Unauthorized response received");
               if (unauthorizedBehavior === "returnNull") {
                 return null;
               }
               throw new Error("Unauthorized");
             }
             
-            console.error(`HTTP error: ${error.response.status}`);
             if (unauthorizedBehavior === "returnNull") {
               return null;
             }
             throw new Error(`HTTP error: ${error.response.status}`);
           } else if (error.request) {
-            console.error("Network error: No response received");
             if (unauthorizedBehavior === "returnNull") {
               return null;
             }
@@ -109,7 +102,6 @@ export const getQueryFn = <T>(options: {
           }
         }
         
-        console.error("Request error:", error);
         if (unauthorizedBehavior === "returnNull") {
           return null;
         }
@@ -128,8 +120,6 @@ export const getQueryFn = <T>(options: {
 const queryCache = new QueryCache({
   onError: (error, query) => {
     // Global error handling for queries
-    console.error('Query error:', error, 'Query:', query.queryKey);
-    
     // Emit custom event for global error handling
     if (error instanceof Error) {
       const apiError = error as ApiError;
@@ -137,28 +127,20 @@ const queryCache = new QueryCache({
     }
   },
   onSuccess: (data, query) => {
-    // Optional: Log successful queries for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Query success:', query.queryKey);
-    }
+    // Query completed successfully
   },
 });
 
 const mutationCache = new MutationCache({
   onError: (error, variables, context, mutation) => {
     // Global error handling for mutations
-    console.error('Mutation error:', error, 'Variables:', variables);
-    
     if (error instanceof Error) {
       const apiError = error as ApiError;
       window.dispatchEvent(new CustomEvent('api-error', { detail: apiError }));
     }
   },
   onSuccess: (data, variables, context, mutation) => {
-    // Optional: Log successful mutations
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Mutation success:', mutation.options.mutationKey);
-    }
+    // Mutation completed successfully
   },
 });
 

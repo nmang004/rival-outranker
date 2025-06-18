@@ -84,8 +84,6 @@ export default function Home() {
   });
 
   const pollForResults = async (url: string, isDeepContentAnalysis: boolean = false) => {
-    console.log("Starting analysis and showing loading screen for PageSpeed data");
-    
     // Start analysis progress animation
     setAnalysisProgress(10);
     
@@ -112,7 +110,7 @@ export default function Home() {
       setAnalysisProgress(100);
         
       // Redirect to loading screen that will properly wait for PageSpeed data
-      console.log('Redirecting to results page with loading indicator');
+      // Redirecting to results page
       setLocation(`/results?url=${encodeURIComponent(url)}${keywordParam}`);
     }, 3000); // Wait 3 seconds before redirecting to results page
   };

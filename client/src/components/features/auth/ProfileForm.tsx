@@ -38,11 +38,21 @@ export function ProfileForm() {
   const { user } = useAuth();
   const [generalError, setGeneralError] = useState<string | null>(null);
   
-  // Mock implementation of updateProfile function
-  const updateProfile = async (data: any) => {
-    // In a real implementation, this would call an API endpoint
-    console.log("Update profile requested:", data);
-    return Promise.resolve();
+  const updateProfile = async (data: ProfileFormValues) => {
+    const response = await fetch('/api/user/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update profile');
+    }
+    
+    return response.json();
   };
 
   const { data: profile, isLoading: isLoadingProfile } = useQuery<ProfileData>({

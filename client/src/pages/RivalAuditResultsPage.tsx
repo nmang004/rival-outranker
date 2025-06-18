@@ -362,17 +362,6 @@ export default function RivalAuditResultsPage() {
     if (!isEnhanced && !('totalFactors' in (audit?.summary || {}))) return null;
     if (!audit) return null; // Guard against undefined audit
     
-    console.log('[ResultsPage] Enhanced audit data structure:', {
-      hasContentQuality: audit && 'contentQuality' in audit,
-      hasTechnicalSEO: audit && 'technicalSEO' in audit,
-      hasLocalSEO: audit && 'localSEO' in audit,
-      hasUxPerformance: audit && 'uxPerformance' in audit,
-      contentQualityItems: (audit as any)?.contentQuality?.items?.length || 0,
-      technicalSEOItems: (audit as any)?.technicalSEO?.items?.length || 0,
-      localSEOItems: (audit as any)?.localSEO?.items?.length || 0,
-      uxPerformanceItems: (audit as any)?.uxPerformance?.items?.length || 0,
-      totalFactors: (audit?.summary && 'totalFactors' in audit.summary ? (audit.summary as any).totalFactors : (audit?.summary && 'total' in audit.summary ? (audit.summary as any).total : 0)) || 0
-    });
     
     // Check if audit has dedicated enhanced categories with actual items
     const hasEnhancedCategories = audit && 'contentQuality' in audit && 'technicalSEO' in audit && 'localSEO' in audit && 'uxPerformance' in audit;
@@ -384,7 +373,6 @@ export default function RivalAuditResultsPage() {
     );
     
     if (hasEnhancedCategories && hasEnhancedItems) {
-      console.log('[ResultsPage] Using dedicated enhanced categories from API');
       return {
         contentQuality: (audit as any).contentQuality?.items || [],
         technicalSEO: (audit as any).technicalSEO?.items || [],
@@ -395,7 +383,6 @@ export default function RivalAuditResultsPage() {
     }
     
     // Enhanced audit without dedicated categories - need to categorize all legacy items by category field
-    console.log('[ResultsPage] Enhanced audit without dedicated categories - categorizing legacy items');
     const allItems = [
       ...(audit?.onPage?.items || []),
       ...(audit?.structureNavigation?.items || []),
@@ -404,9 +391,6 @@ export default function RivalAuditResultsPage() {
       ...(audit?.locationPages?.items || []),
       ...(audit?.serviceAreaPages?.items || [])
     ];
-    
-    console.log('[ResultsPage] Total legacy items to categorize:', allItems.length);
-    console.log('[ResultsPage] Sample item categories:', allItems.slice(0, 5).map(item => ('category' in item ? item.category : 'no category')));
     
     const contentQuality = allItems.filter(item => 
       'category' in item && item.category && (
