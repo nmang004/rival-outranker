@@ -774,8 +774,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Structure Consistency",
       description: "Navigation should be consistent across all pages",
-      // BALANCED THRESHOLD: More lenient for OK status (was 80, now 50)
-      status: navigationConsistency >= 50 ? "OK" : "OFI",
+      status: navigationConsistency >= 80 ? "OK" : "OFI",
       importance: "High",
       notes: `Navigation consistency score: ${navigationConsistency}%. All pages should have similar navigation structure.`
     });
@@ -785,8 +784,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Navigation Depth Optimization", 
       description: "Important pages should be accessible within 3 clicks",
-      // BALANCED THRESHOLD: More lenient for OK status (was <=3, now <=5)
-      status: maxDepth <= 5 ? "OK" : "OFI",
+      status: maxDepth <= 3 ? "OK" : "OFI",
       importance: "Medium",
       notes: `Maximum navigation depth: ${maxDepth} clicks. Recommended: 3 or fewer.`
     });
@@ -810,8 +808,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Internal Linking Quality",
       description: "Pages should be well-connected with descriptive anchor text",
-      // BALANCED THRESHOLD: More lenient for OK status (was 70, now 40)
-      status: linkingQuality >= 40 ? "OK" : linkingQuality >= 15 ? "OFI" : "OFI",
+      status: linkingQuality >= 70 ? "OK" : linkingQuality >= 40 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Internal linking quality score: ${linkingQuality}%. Good internal linking helps with SEO and user navigation.`
     });
@@ -821,8 +818,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Orphaned Pages Detection",
       description: "All pages should be linked from other pages",
-      // BALANCED THRESHOLD: More lenient for OK status (was 0, now <=3)
-      status: orphanedPages <= 3 ? "OK" : orphanedPages <= 8 ? "OFI" : "OFI",
+      status: orphanedPages === 0 ? "OK" : orphanedPages <= 2 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Found ${orphanedPages} potentially orphaned pages. All important pages should be linked from other pages.`
     });
@@ -846,8 +842,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Content Length Consistency",
       description: "Similar page types should have consistent content depth",
-      // BALANCED THRESHOLD: More lenient for OK status (was 70, now 40)
-      status: contentConsistency >= 40 ? "OK" : contentConsistency >= 20 ? "OFI" : "OFI",
+      status: contentConsistency >= 70 ? "OK" : contentConsistency >= 50 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Content consistency score: ${contentConsistency}%. Service and location pages should have similar depth.`
     });
@@ -857,8 +852,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Brand Consistency Across Pages",
       description: "Business name and branding should be consistent",
-      // BALANCED THRESHOLD: More lenient for OK status (was 80, now 50)
-      status: brandingConsistency >= 50 ? "OK" : brandingConsistency >= 25 ? "OFI" : "OFI",
+      status: brandingConsistency >= 80 ? "OK" : brandingConsistency >= 60 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Branding consistency score: ${brandingConsistency}%. Business name and contact info should be consistent.`
     });
@@ -882,8 +876,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Duplicate Content Detection",
       description: "Each page should have unique, valuable content",
-      // BALANCED THRESHOLD: More lenient for OK status (was <10, now <25)
-      status: duplicateContent.percentage < 25 ? "OK" : duplicateContent.percentage < 60 ? "OFI" : "OFI",
+      status: duplicateContent.percentage < 10 ? "OK" : duplicateContent.percentage < 30 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `${duplicateContent.percentage}% duplicate content detected. ${duplicateContent.pages} pages have similar content.`
     });
@@ -893,8 +886,7 @@ class EnhancedAuditAnalyzer {
     factors.push({
       name: "Thin Content Detection",
       description: "Pages should have substantial, valuable content",
-      // BALANCED THRESHOLD: More lenient for OK status (was 0, now <=3)
-      status: thinContent.count <= 3 ? "OK" : thinContent.count <= 8 ? "OFI" : "OFI",
+      status: thinContent.count === 0 ? "OK" : thinContent.count <= 2 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Found ${thinContent.count} pages with thin content (< 300 words). Average word count: ${thinContent.averageWords}.`
     });
