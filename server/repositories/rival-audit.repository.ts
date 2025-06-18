@@ -7,7 +7,7 @@ import {
   CrawledContent,
   InsertCrawledContent
 } from '../../shared/schema';
-import { eq, and, lt, desc, asc, gte, lte } from 'drizzle-orm';
+import { eq, and, lt, desc, asc, gte, lte, count } from 'drizzle-orm';
 
 export class RivalAuditRepository {
   private getDatabase() {
@@ -364,7 +364,7 @@ export class RivalAuditRepository {
     const stats = await database
       .select({
         status: rivalAudits.status,
-        count: database.raw('count(*)')
+        count: count()
       })
       .from(rivalAudits)
       .groupBy(rivalAudits.status);
