@@ -115,9 +115,16 @@ export class OFIClassificationService {
     let classification: 'Standard OFI' | 'Priority OFI' = 'Standard OFI';
     let downgradedReason = '';
     
-    // Classify as Priority OFI if we have 2+ criteria (original design)
-    if (priorityCriteriaCount >= 2) {
+    // Special cases: Some critical issues should be Priority OFI even with 1 criteria
+    const isCriticalSingleIssue = this.checkCriticalSingleCriteriaIssues(name, description, context);
+    
+    // Classify as Priority OFI if we have 2+ criteria OR it's a critical single-criteria issue
+    if (priorityCriteriaCount >= 2 || isCriticalSingleIssue) {
       classification = 'Priority OFI';
+      if (isCriticalSingleIssue && priorityCriteriaCount < 2) {
+        // Override downgrade reason for critical issues
+        downgradedReason = '';
+      }
     } else {
       downgradedReason = 'Only meets ' + priorityCriteriaCount + ' priority criteria (requires 2+ for Priority OFI)';
     }
@@ -172,7 +179,7 @@ export class OFIClassificationService {
   ): OFIClassificationCriteria {
     
     return {
-      seoVisibilityImpact: this.evaluateSeoVisibilityImpact(metrics, name, description),
+      seoVisibilityImpact: this.evaluateSeoVisibilityImpact(metrics, name, description, context),
       userExperienceImpact: this.evaluateUserExperienceImpact(metrics, name, description),
       businessImpact: this.evaluateBusinessImpact(metrics, name, description),
       complianceRisk: this.evaluateComplianceRisk(metrics, name, description, context)
@@ -193,7 +200,7 @@ export class OFIClassificationService {
     const factors: string[] = [];
     
     // Base SEO impact assessment
-    const baseImpact = this.evaluateSeoVisibilityImpact(metrics, name, description);
+    const baseImpact = this.evaluateSeoVisibilityImpact(metrics, name, description, context);
     if (baseImpact) {
       score += 3;
       factors.push('Base SEO visibility impact detected');
@@ -232,11 +239,12 @@ export class OFIClassificationService {
   private evaluateSeoVisibilityImpact(
     metrics: OFIAnalysisMetrics,
     name: string,
-    description: string
+    description: string,
+    context?: any
   ): boolean {
     
     // Enhanced critical SEO issue detection with context
-    const hasCriticalMetaIssues = this.hasCriticalMetaIssues(name, description);
+    const hasCriticalMetaIssues = this.hasCriticalMetaIssues(name, description, context);
 
     // Core Web Vitals issues
     const coreWebVitalsKeywords = ['core web vitals', 'lcp', 'cls', 'fid', 'page speed', 'loading', 'performance'];
@@ -262,22 +270,62 @@ export class OFIClassificationService {
   /**
    * Enhanced critical meta issues detection
    */
-  private hasCriticalMetaIssues(name: string, description: string): boolean {
-    const text = `${name} ${description}`.toLowerCase();
+  private hasCriticalMetaIssues(name: string, description: string, context?: any): boolean {
+    // Include context notes in the search text
+    const notes = context?.notes || '';
+    const text = `${name} ${description} ${notes}`.toLowerCase();
     
-    // More specific pattern matching instead of broad keywords
+    // Enhanced pattern matching to catch all variations
     const patterns = [
-      /missing.*meta.*title/,
+      /missing.*title/,  // Simplified to catch "Missing title tag"
       /no.*title.*tag/,
       /empty.*title/,
       /duplicate.*title.*tags?/,
       /missing.*meta.*description/,
       /no.*meta.*description/,
       /empty.*meta.*description/,
-      /duplicate.*meta.*description/
+      /duplicate.*meta.*description/,
+      /missing.*h1/,     // Added to catch "Missing H1 tag"
+      /no.*h1.*tag/,
+      /missing.*alt.*text/  // Added to catch critical accessibility issues
     ];
     
     return patterns.some(pattern => pattern.test(text));
+  }
+
+  /**
+   * Check for critical issues that should be Priority OFI even with single criteria
+   */
+  private checkCriticalSingleCriteriaIssues(name: string, description: string, context?: any): boolean {
+    const notes = context?.notes || '';
+    const text = `${name} ${description} ${notes}`.toLowerCase();
+    const pageType = context?.currentStatus || '';
+    
+    // Critical homepage issues - these have massive SEO impact
+    const isHomepage = text.includes('homepage') || pageType === 'homepage';
+    if (isHomepage) {
+      const homepageCriticalPatterns = [
+        /missing.*title/,
+        /missing.*h1/,
+        /missing.*meta.*description/
+      ];
+      if (homepageCriticalPatterns.some(pattern => pattern.test(text))) {
+        return true;
+      }
+    }
+    
+    // Always critical issues regardless of page type
+    const alwaysCriticalPatterns = [
+      /blocked.*by.*robots/,
+      /noindex.*tag/,
+      /site.*not.*crawlable/,
+      /ssl.*certificate.*missing/,
+      /https.*not.*configured/,
+      /duplicate.*title.*tags/,
+      /canonical.*loop/
+    ];
+    
+    return alwaysCriticalPatterns.some(pattern => pattern.test(text));
   }
 
   /**

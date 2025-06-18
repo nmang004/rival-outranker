@@ -205,14 +205,6 @@ export function OFIClassificationDisplay({ item, showFullDetails = false }: OFIC
           </>
         )}
 
-        {!hasClassificationNotes && (
-          <div className="bg-gray-100 p-3 rounded-lg">
-            <p className="text-sm text-gray-600 flex items-center gap-2">
-              <HelpCircle className="h-4 w-4" />
-              Classification applied using legacy logic. Run new classification system for detailed analysis.
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
