@@ -417,8 +417,15 @@ export class PuppeteerHandlerService {
    * Crawl page using Puppeteer for JavaScript-heavy sites
    */
   async crawlPageWithPuppeteer(url: string): Promise<CrawlerOutput> {
+    // Auto-initialize cluster if not already initialized
     if (!this.puppeteerCluster) {
-      throw new Error('Puppeteer cluster not initialized');
+      console.log(`[PuppeteerHandler] Auto-initializing Puppeteer cluster for: ${url}`);
+      await this.initializePuppeteerCluster();
+      
+      // Double-check initialization succeeded
+      if (!this.puppeteerCluster) {
+        throw new Error('Failed to initialize Puppeteer cluster');
+      }
     }
     
     try {
@@ -479,6 +486,14 @@ export class PuppeteerHandlerService {
       
     } catch (error) {
       console.error(`[PuppeteerHandler] Puppeteer crawl failed for ${url}:`, error);
+      
+      // If Puppeteer fails, disable it for the session to prevent repeated failures
+      if (error instanceof Error && error.message.includes('cluster')) {
+        console.log(`[PuppeteerHandler] Disabling Puppeteer due to cluster error`);
+        this.USE_PUPPETEER_FOR_JS_SITES = false;
+        await this.closePuppeteerCluster();
+      }
+      
       throw error;
     }
   }

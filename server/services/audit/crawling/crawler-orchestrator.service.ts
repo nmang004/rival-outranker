@@ -90,6 +90,13 @@ export class CrawlerOrchestratorService {
     // Initialize crawl session
     this.initializeCrawlSession(initialUrl, options);
     
+    // Pre-initialize Puppeteer cluster for potential use
+    try {
+      await this.puppeteerHandlerService.initializePuppeteerCluster();
+    } catch (error) {
+      console.log(`[CrawlerOrchestrator] ⚠️ Puppeteer initialization failed, will use standard crawling only:`, error);
+    }
+    
     try {
       // Step 1: Crawl homepage and detect CMS
       const homepage = await this.crawlPage(initialUrl);
