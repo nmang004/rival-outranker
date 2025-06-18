@@ -456,7 +456,7 @@ export class PerformanceTestingService {
       totalRequests,
       successfulRequests,
       failedRequests,
-      avgResponseTime: responseTimes.length > 0 ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length : 0,
+      avgResponseTime: responseTimes.length > 0 ? responseTimes.reduce((a: number, b: number) => a + b, 0) / responseTimes.length : 0,
       maxResponseTime: responseTimes.length > 0 ? Math.max(...responseTimes) : 0,
       minResponseTime: responseTimes.length > 0 ? Math.min(...responseTimes) : 0,
       p95ResponseTime: responseTimes.length > 0 ? responseTimes[p95Index] : 0,
@@ -466,7 +466,8 @@ export class PerformanceTestingService {
     };
 
     // Calculate endpoint metrics
-    const endpoints = Array.from(testMetrics.endpointMetrics.entries()).map(([endpoint, data]: [string, any]) => {
+    const endpoints = Array.from(testMetrics.endpointMetrics.entries()).map((entry) => {
+      const [endpoint, data] = entry as [string, any];
       const [method, url] = endpoint.split(' ', 2);
       const total = data.successes + data.failures;
       return {
@@ -480,12 +481,15 @@ export class PerformanceTestingService {
     });
 
     // Calculate errors
-    const errors = Array.from(testMetrics.errors.entries()).map(([type, count]: [string, number]) => ({
-      type,
-      message: this.getErrorMessage(type),
-      count,
-      percentage: totalRequests > 0 ? (count / totalRequests) * 100 : 0
-    }));
+    const errors = Array.from(testMetrics.errors.entries()).map((entry) => {
+      const [type, count] = entry as [string, number];
+      return {
+        type,
+        message: this.getErrorMessage(type),
+        count,
+        percentage: totalRequests > 0 ? (count / totalRequests) * 100 : 0
+      };
+    });
 
     // Check threshold violations
     const thresholdViolations = this.checkThresholds(test.config.thresholds, metrics);

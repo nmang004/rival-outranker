@@ -44,7 +44,7 @@ export class MonitoringRepository {
   }
 
   async getLatestSystemMetrics(): Promise<SystemMetrics | null> {
-    const [result] = await db
+    const [result] = await db()
       .select()
       .from(systemMetrics)
       .orderBy(desc(systemMetrics.timestamp))
@@ -72,7 +72,7 @@ export class MonitoringRepository {
       ? sql`date_trunc('hour', ${systemMetrics.timestamp})` 
       : sql`date_trunc('day', ${systemMetrics.timestamp})`;
 
-    return await db
+    return await db()
       .select({
         timestamp: intervalExpression,
         avgResponseTime: sql<number>`AVG(${systemMetrics.avgResponseTime})`,
@@ -98,14 +98,14 @@ export class MonitoringRepository {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
     
-    await db
+    await db()
       .delete(systemMetrics)
       .where(lte(systemMetrics.timestamp, cutoffDate));
   }
 
   // Business Metrics Methods
   async insertBusinessMetrics(metrics: InsertBusinessMetrics): Promise<BusinessMetrics> {
-    const [result] = await db.insert(businessMetrics).values(metrics).returning();
+    const [result] = await db().insert(businessMetrics).values(metrics).returning();
     return result;
   }
 
@@ -113,21 +113,21 @@ export class MonitoringRepository {
     dateKey: string,
     metrics: Omit<InsertBusinessMetrics, 'dateKey'>
   ): Promise<BusinessMetrics> {
-    const [existing] = await db
+    const [existing] = await db()
       .select()
       .from(businessMetrics)
       .where(eq(businessMetrics.dateKey, dateKey))
       .limit(1);
 
     if (existing) {
-      const [result] = await db
+      const [result] = await db()
         .update(businessMetrics)
         .set(metrics)
         .where(eq(businessMetrics.dateKey, dateKey))
         .returning();
       return result;
     } else {
-      const [result] = await db
+      const [result] = await db()
         .insert(businessMetrics)
         .values({ ...metrics, dateKey })
         .returning();
@@ -139,7 +139,7 @@ export class MonitoringRepository {
     startDate: Date,
     endDate: Date
   ): Promise<BusinessMetrics[]> {
-    return await db
+    return await db()
       .select()
       .from(businessMetrics)
       .where(and(
@@ -153,7 +153,7 @@ export class MonitoringRepository {
     startDate: string,
     endDate: string
   ): Promise<BusinessMetrics[]> {
-    return await db
+    return await db()
       .select()
       .from(businessMetrics)
       .where(and(
@@ -164,7 +164,7 @@ export class MonitoringRepository {
   }
 
   async getLatestBusinessMetrics(): Promise<BusinessMetrics | null> {
-    const [result] = await db
+    const [result] = await db()
       .select()
       .from(businessMetrics)
       .orderBy(desc(businessMetrics.timestamp))
@@ -174,12 +174,12 @@ export class MonitoringRepository {
 
   // Alert History Methods
   async insertAlertHistory(alert: InsertAlertHistory): Promise<AlertHistory> {
-    const [result] = await db.insert(alertHistory).values(alert).returning();
+    const [result] = await db().insert(alertHistory).values(alert).returning();
     return result;
   }
 
   async getActiveAlerts(): Promise<AlertHistory[]> {
-    return await db
+    return await db()
       .select()
       .from(alertHistory)
       .where(sql`${alertHistory.resolvedAt} IS NULL`)
@@ -204,7 +204,7 @@ export class MonitoringRepository {
       conditions.push(eq(alertHistory.category, category));
     }
 
-    return await db
+    return await db()
       .select()
       .from(alertHistory)
       .where(and(...conditions))
@@ -212,7 +212,7 @@ export class MonitoringRepository {
   }
 
   async acknowledgeAlert(alertId: string, acknowledgedBy: string): Promise<void> {
-    await db
+    await db()
       .update(alertHistory)
       .set({
         acknowledgedAt: new Date(),
@@ -226,7 +226,7 @@ export class MonitoringRepository {
     resolvedBy: string,
     resolutionActions?: any
   ): Promise<void> {
-    await db
+    await db()
       .update(alertHistory)
       .set({
         resolvedAt: new Date(),
@@ -245,7 +245,7 @@ export class MonitoringRepository {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const [stats] = await db
+    const [stats] = await db()
       .select({
         totalAlerts: sql<number>`COUNT(*)`,
         criticalAlerts: sql<number>`COUNT(*) FILTER (WHERE severity = 'critical')`,
@@ -268,7 +268,7 @@ export class MonitoringRepository {
 
   // Performance Thresholds Methods
   async getPerformanceThresholds(): Promise<PerformanceThreshold[]> {
-    return await db
+    return await db()
       .select()
       .from(performanceThresholds)
       .where(eq(performanceThresholds.isEnabled, true))
@@ -279,21 +279,21 @@ export class MonitoringRepository {
     metricName: string,
     threshold: Omit<InsertPerformanceThreshold, 'metricName'>
   ): Promise<PerformanceThreshold> {
-    const [existing] = await db
+    const [existing] = await db()
       .select()
       .from(performanceThresholds)
       .where(eq(performanceThresholds.metricName, metricName))
       .limit(1);
 
     if (existing) {
-      const [result] = await db
+      const [result] = await db()
         .update(performanceThresholds)
         .set({ ...threshold, updatedAt: new Date() })
         .where(eq(performanceThresholds.metricName, metricName))
         .returning();
       return result;
     } else {
-      const [result] = await db
+      const [result] = await db()
         .insert(performanceThresholds)
         .values({ ...threshold, metricName })
         .returning();
@@ -302,7 +302,7 @@ export class MonitoringRepository {
   }
 
   async getPerformanceThreshold(metricName: string): Promise<PerformanceThreshold | null> {
-    const [result] = await db
+    const [result] = await db()
       .select()
       .from(performanceThresholds)
       .where(eq(performanceThresholds.metricName, metricName))
@@ -312,14 +312,14 @@ export class MonitoringRepository {
 
   // Monitoring Configuration Methods
   async getMonitoringConfig(): Promise<MonitoringConfig[]> {
-    return await db
+    return await db()
       .select()
       .from(monitoringConfig)
       .orderBy(asc(monitoringConfig.category));
   }
 
   async getConfigValue(key: string): Promise<string | null> {
-    const [result] = await db
+    const [result] = await db()
       .select()
       .from(monitoringConfig)
       .where(eq(monitoringConfig.key, key))
@@ -334,21 +334,21 @@ export class MonitoringRepository {
     category: string = 'general',
     description?: string
   ): Promise<MonitoringConfig> {
-    const [existing] = await db
+    const [existing] = await db()
       .select()
       .from(monitoringConfig)
       .where(eq(monitoringConfig.key, key))
       .limit(1);
 
     if (existing) {
-      const [result] = await db
+      const [result] = await db()
         .update(monitoringConfig)
         .set({ value, type, category, description, updatedAt: new Date() })
         .where(eq(monitoringConfig.key, key))
         .returning();
       return result;
     } else {
-      const [result] = await db
+      const [result] = await db()
         .insert(monitoringConfig)
         .values({ key, value, type, category, description })
         .returning();
@@ -368,7 +368,7 @@ export class MonitoringRepository {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays.systemMetrics);
       promises.push(
-        db.delete(systemMetrics).where(lte(systemMetrics.timestamp, cutoffDate))
+        db().delete(systemMetrics).where(lte(systemMetrics.timestamp, cutoffDate))
       );
     }
 
@@ -376,7 +376,7 @@ export class MonitoringRepository {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays.businessMetrics);
       promises.push(
-        db.delete(businessMetrics).where(lte(businessMetrics.timestamp, cutoffDate))
+        db().delete(businessMetrics).where(lte(businessMetrics.timestamp, cutoffDate))
       );
     }
 
@@ -384,7 +384,7 @@ export class MonitoringRepository {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays.alertHistory);
       promises.push(
-        db.delete(alertHistory).where(lte(alertHistory.createdAt, cutoffDate))
+        db().delete(alertHistory).where(lte(alertHistory.createdAt, cutoffDate))
       );
     }
 
@@ -394,7 +394,7 @@ export class MonitoringRepository {
   // Health check for the monitoring repository
   async healthCheck(): Promise<boolean> {
     try {
-      await db.select().from(systemMetrics).limit(1);
+      await db().select().from(systemMetrics).limit(1);
       return true;
     } catch (error) {
       console.error('Monitoring repository health check failed:', error);

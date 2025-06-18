@@ -122,28 +122,28 @@ export class BusinessIntelligenceService {
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Get user counts
-    const [totalUsers] = await db
+    const [totalUsers] = await db()
       .select({ count: count() })
       .from(users);
 
-    const [newUsersToday] = await db
+    const [newUsersToday] = await db()
       .select({ count: count() })
       .from(users)
       .where(gte(users.createdAt, today));
 
-    const [newUsersThisWeek] = await db
+    const [newUsersThisWeek] = await db()
       .select({ count: count() })
       .from(users)
       .where(gte(users.createdAt, weekAgo));
 
-    const [newUsersThisMonth] = await db
+    const [newUsersThisMonth] = await db()
       .select({ count: count() })
       .from(users)
       .where(gte(users.createdAt, monthAgo));
 
     // Calculate growth rate (month over month)
     const previousMonth = new Date(monthAgo.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const [previousMonthUsers] = await db
+    const [previousMonthUsers] = await db()
       .select({ count: count() })
       .from(users)
       .where(and(
@@ -156,7 +156,7 @@ export class BusinessIntelligenceService {
       : 0;
 
     // Calculate retention rate (users who returned in the last 30 days)
-    const activeUsers = await db
+    const activeUsers = await db()
       .select({ count: count() })
       .from(users)
       .where(gte(users.lastLoginAt, monthAgo));
@@ -183,27 +183,27 @@ export class BusinessIntelligenceService {
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Get audit counts
-    const [totalAudits] = await db
+    const [totalAudits] = await db()
       .select({ count: count() })
       .from(rivalAudits);
 
-    const [auditsToday] = await db
+    const [auditsToday] = await db()
       .select({ count: count() })
       .from(rivalAudits)
       .where(gte(rivalAudits.createdAt, today));
 
-    const [auditsThisWeek] = await db
+    const [auditsThisWeek] = await db()
       .select({ count: count() })
       .from(rivalAudits)
       .where(gte(rivalAudits.createdAt, weekAgo));
 
-    const [auditsThisMonth] = await db
+    const [auditsThisMonth] = await db()
       .select({ count: count() })
       .from(rivalAudits)
       .where(gte(rivalAudits.createdAt, monthAgo));
 
     // Calculate average audit time and success rate
-    const auditStats = await db
+    const auditStats = await db()
       .select({
         avgTime: avg(sql`EXTRACT(epoch FROM (updated_at - created_at))`),
         successCount: sum(sql`CASE WHEN status = 'completed' THEN 1 ELSE 0 END`),
@@ -238,7 +238,7 @@ export class BusinessIntelligenceService {
   // Revenue and cost analysis
   private async getRevenueMetrics(timeRange: { start: Date; end: Date }) {
     // Get API costs from usage tracking
-    const apiCostData = await db
+    const apiCostData = await db()
       .select({
         totalCost: sum(apiUsage.estimatedCost)
       })
@@ -249,7 +249,7 @@ export class BusinessIntelligenceService {
 
     // Estimated revenue (this would come from your billing system)
     // For now, we'll calculate based on usage and estimated pricing
-    const [userCount] = await db.select({ count: count() }).from(users);
+    const [userCount] = await db().select({ count: count() }).from(users);
     const estimatedRevenue = userCount.count * 29.99; // Example: $29.99 per user
 
     const profitMargin = estimatedRevenue > 0 
@@ -260,7 +260,7 @@ export class BusinessIntelligenceService {
       ? estimatedRevenue / userCount.count
       : 0;
 
-    const [auditCount] = await db.select({ count: count() }).from(rivalAudits);
+    const [auditCount] = await db().select({ count: count() }).from(rivalAudits);
     const costPerAudit = auditCount.count > 0 
       ? apiCosts / auditCount.count
       : 0;
@@ -429,7 +429,7 @@ export class BusinessIntelligenceService {
       case 'active_users':
         return businessMetrics[businessMetrics.length - 1].activeUsers;
       case 'user_satisfaction':
-        return businessMetrics[businessMetrics.length - 1].userSatisfaction;
+        return businessMetrics[businessMetrics.length - 1].userSatisfaction || 0;
       default:
         return 0;
     }
