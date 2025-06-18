@@ -472,6 +472,7 @@ class EnhancedAuditAnalyzer {
 
   /**
    * Generate actionable, specific improvement recommendations for audit items
+   * Following the 'What, Why, and How' template for user-centric advice
    */
   private generateActionableNotes(item: any, status: string): string {
     const name = item.name.toLowerCase();
@@ -482,78 +483,79 @@ class EnhancedAuditAnalyzer {
     
     // Content Quality recommendations
     if (name.includes('content length') || name.includes('sufficient content')) {
-      recommendation = 'Add more detailed information about your services, benefits, and local expertise. Target 300-500 words minimum for service pages.';
+      recommendation = 'What: Your page content is too brief to effectively communicate with visitors and search engines.\n\nWhy: Detailed content establishes expertise, helps visitors understand your services, and gives search engines more context to rank your pages.\n\nHow: Expand your content to 300-500 words minimum by adding service benefits, process explanations, and local expertise details.';
     } else if (name.includes('keyword density')) {
-      recommendation = 'Naturally integrate your target keywords 2-3 times throughout the content. Focus on semantic variations and related terms.';
+      recommendation = 'What: Your target keywords are either missing or used unnaturally throughout the content.\n\nWhy: Proper keyword usage helps search engines understand your page topic while maintaining readability for visitors.\n\nHow: Naturally integrate your main keywords 2-3 times throughout the content, using semantic variations and related terms.';
     } else if (name.includes('call-to-action') || name.includes('cta')) {
-      recommendation = 'Add prominent buttons like "Get Free Quote", "Call Now", or "Schedule Service" in multiple locations. Use action-oriented language.';
+      recommendation = 'What: The page lacks strong, action-oriented call-to-action (CTA) buttons.\n\nWhy: Prominent CTAs like "Get Free Quote" or "Call Now" guide users toward conversion and are critical for turning visitors into customers.\n\nHow: Add clear, clickable buttons in key locations (header, near service descriptions, bottom of page) with action-oriented language.';
     } else if (name.includes('brand consistency')) {
-      recommendation = 'Ensure your business name, logo, and contact information appear consistently across all pages. Use the same phone number format.';
+      recommendation = 'What: Your business information appears inconsistently across different pages.\n\nWhy: Consistent branding builds trust with visitors and helps search engines understand your business identity.\n\nHow: Ensure your business name, logo, and contact information appear identically on every page, using the same phone number format.';
     } else if (name.includes('reviews') || name.includes('testimonials')) {
-      recommendation = 'Display customer testimonials prominently on your homepage and service pages. Include names, photos, and specific project details.';
+      recommendation = 'What: Customer testimonials and reviews are not prominently displayed on your website.\n\nWhy: Social proof from satisfied customers builds trust and credibility, significantly influencing visitor decisions.\n\nHow: Add customer testimonials to your homepage and service pages, including names, photos, and specific project details.';
     } else if (name.includes('heading') || name.includes('h1') || name.includes('h2')) {
-      recommendation = 'Use clear, descriptive headings that include your target keywords. Structure content with H1 for main title, H2 for sections.';
+      recommendation = 'What: Page headings are missing, unclear, or not properly structured with target keywords.\n\nWhy: Clear headings help visitors scan content quickly and tell search engines what each section covers.\n\nHow: Use descriptive headings that include target keywords, with H1 for the main title and H2 for major sections.';
     } else if (name.includes('image') || name.includes('alt')) {
-      recommendation = 'Add descriptive alt text to all images explaining what they show. Include location and service keywords where relevant.';
+      recommendation = 'What: Images on your website lack descriptive alt text or have generic descriptions.\n\nWhy: Alt text helps visually impaired users understand images and gives search engines context about your visual content.\n\nHow: Add specific alt text to all images describing what they show, including location and service keywords where relevant.';
     }
     
     // Technical SEO recommendations
     else if (name.includes('url structure')) {
-      recommendation = 'Create clean, descriptive URLs like "/plumbing-services" instead of "/page123". Include relevant keywords in the URL path.';
+      recommendation = 'What: Your website URLs are not user-friendly or descriptive (e.g., "/page123" instead of clear names).\n\nWhy: Clean URLs are easier for users to remember and share, and help search engines understand page content.\n\nHow: Create descriptive URLs like "/plumbing-services" or "/emergency-repair" that include relevant keywords in the path.';
     } else if (name.includes('schema') || name.includes('structured data')) {
-      recommendation = 'Add local business schema markup including your NAP, hours, services, and service areas to help search engines understand your business.';
+      recommendation = 'What: Your website lacks structured data markup that helps search engines understand your business.\n\nWhy: Schema markup enables rich search results and helps search engines display your business information more prominently.\n\nHow: Add local business schema markup including your NAP (name, address, phone), hours, services, and service areas.';
     } else if (name.includes('meta') || name.includes('title tag')) {
-      recommendation = 'Write compelling meta titles and descriptions that include your main keywords and location. Keep titles under 60 characters.';
+      recommendation = 'What: Page titles and meta descriptions are missing, generic, or too long for search results.\n\nWhy: These elements appear in search results and significantly impact click-through rates from Google.\n\nHow: Write compelling meta titles (under 60 characters) and descriptions that include your main keywords and location.';
     } else if (name.includes('mobile') || name.includes('responsive')) {
-      recommendation = 'Ensure your website displays properly on all device sizes. Test buttons, forms, and navigation on mobile devices.';
+      recommendation = 'What: Your website does not display properly on mobile devices or tablets.\n\nWhy: Over 60% of searches happen on mobile devices, and Google prioritizes mobile-friendly websites in rankings.\n\nHow: Test your website on various device sizes and ensure buttons, forms, and navigation work smoothly on mobile.';
     } else if (name.includes('page speed') || name.includes('performance')) {
-      recommendation = 'Optimize images, enable compression, and minimize code to improve loading speed. Target under 3 seconds load time.';
+      recommendation = 'What: Your website loads slowly, taking more than 3 seconds to fully display.\n\nWhy: Slow loading speeds frustrate visitors (causing them to leave) and negatively impact search rankings.\n\nHow: Optimize images, enable compression, and minimize unnecessary code to achieve under 3-second load times.';
     } else if (name.includes('ssl') || name.includes('https')) {
-      recommendation = 'Install an SSL certificate to secure your website. This builds trust and is required for good search rankings.';
+      recommendation = 'What: Your website is not secured with an SSL certificate (not using HTTPS).\n\nWhy: SSL certificates protect visitor data and are required by Google for good search rankings and user trust.\n\nHow: Install an SSL certificate through your web host to secure your website and enable HTTPS.';
     }
     
     // Local SEO recommendations  
     else if (name.includes('nap consistency') || name.includes('business information')) {
-      recommendation = 'Display your complete business name, address, and phone number consistently on every page. Match your Google Business Profile exactly.';
+      recommendation = 'What: Your business name, address, and phone number (NAP) are displayed inconsistently across pages.\n\nWhy: Consistent NAP information builds trust with search engines and customers, improving local search rankings.\n\nHow: Display your complete business information identically on every page, matching your Google Business Profile exactly.';
     } else if (name.includes('location') || name.includes('service area')) {
-      recommendation = 'Create dedicated pages for each city/area you serve. Include local landmarks, zip codes, and area-specific content.';
+      recommendation = 'What: Your website lacks dedicated pages for the specific cities or areas you serve.\n\nWhy: Location-specific pages help you rank for local searches and show potential customers you serve their area.\n\nHow: Create individual pages for each city/area you serve, including local landmarks, zip codes, and area-specific content.';
     } else if (name.includes('google business') || name.includes('gmb')) {
-      recommendation = 'Optimize your Google Business Profile with complete information, regular posts, photos, and encourage customer reviews.';
+      recommendation = 'What: Your Google Business Profile is incomplete or not optimized for local search.\n\nWhy: A complete Google Business Profile significantly improves local search visibility and customer trust.\n\nHow: Fill out all profile sections, add regular posts and photos, respond to reviews, and encourage satisfied customers to leave reviews.';
     } else if (name.includes('local link') || name.includes('citations')) {
-      recommendation = 'Get listed in local directories like Yelp, Angie\'s List, and industry-specific directories. Ensure consistent NAP information.';
+      recommendation = 'What: Your business is not listed in relevant local directories and citation sources.\n\nWhy: Local directory listings (citations) improve search engine trust and help customers find your business.\n\nHow: Get listed in directories like Yelp, Angie\'s List, and industry-specific directories, ensuring consistent NAP information.';
     } else if (name.includes('expertise') || name.includes('authority')) {
-      recommendation = 'Showcase your certifications, years of experience, and completed projects. Include team bios and professional credentials.';
+      recommendation = 'What: Your website does not adequately showcase your professional credentials and expertise.\n\nWhy: Demonstrating expertise builds customer confidence and helps search engines recognize you as an authoritative source.\n\nHow: Add sections highlighting certifications, years of experience, completed projects, team bios, and professional credentials.';
     } else if (name.includes('community') || name.includes('local involvement')) {
-      recommendation = 'Highlight your local community involvement, sponsorships, and partnerships. Feature local customer success stories.';
+      recommendation = 'What: Your website does not highlight your local community involvement or connections.\n\nWhy: Local community ties build trust with potential customers and strengthen your local search relevance.\n\nHow: Feature your community involvement, local sponsorships, partnerships, and customer success stories from your area.';
     }
     
     // UX & Performance recommendations
     else if (name.includes('navigation') || name.includes('menu')) {
-      recommendation = 'Simplify your main navigation to include key pages: Services, About, Contact. Add a clear "Get Quote" button in the header.';
+      recommendation = 'What: Your website navigation is confusing or cluttered, making it hard for visitors to find what they need.\n\nWhy: Clear navigation keeps visitors on your site longer and guides them toward taking action.\n\nHow: Simplify your main menu to key pages (Services, About, Contact) and add a prominent "Get Quote" button in the header.';
     } else if (name.includes('form') || name.includes('contact form')) {
-      recommendation = 'Streamline contact forms to essential fields only. Add clear labels and make sure forms work on mobile devices.';
+      recommendation = 'What: Your contact forms are too long, confusing, or not working properly on mobile devices.\n\nWhy: Simple, working forms are essential for capturing leads and converting visitors into customers.\n\nHow: Streamline forms to essential fields only, add clear labels, and test functionality on mobile devices.';
     } else if (name.includes('accessibility') || name.includes('contrast')) {
-      recommendation = 'Ensure sufficient color contrast and keyboard navigation. Use descriptive link text instead of "click here".';
+      recommendation = 'What: Your website has accessibility issues like poor color contrast or unclear navigation.\n\nWhy: Accessible websites serve all users better and are favored by search engines for providing good user experiences.\n\nHow: Ensure sufficient color contrast, enable keyboard navigation, and use descriptive link text instead of "click here".';
     } else if (name.includes('search') || name.includes('site search')) {
-      recommendation = 'Add a prominent search box to help visitors quickly find specific services or information on your website.';
+      recommendation = 'What: Your website lacks a search function to help visitors find specific information quickly.\n\nWhy: Site search helps visitors find what they need faster, reducing bounce rates and improving user experience.\n\nHow: Add a prominent search box to your header or main navigation to help visitors quickly locate specific services or information.';
     } else if (name.includes('breadcrumb')) {
-      recommendation = 'Add breadcrumb navigation to help users understand their location on your site and improve SEO structure.';
+      recommendation = 'What: Your website is missing breadcrumb navigation showing users their current location.\n\nWhy: Breadcrumbs help users understand site structure and provide search engines with additional context about page relationships.\n\nHow: Add breadcrumb navigation (Home > Services > Plumbing) to help users navigate and improve SEO structure.';
     }
     
     // Generic fallback recommendations
     else {
       if (name.includes('optimization')) {
-        recommendation = 'Review and improve this element following SEO best practices. Focus on user experience and search engine visibility.';
+        recommendation = 'What: This SEO element requires attention to meet current best practices.\n\nWhy: Proper optimization of all SEO elements is necessary for good search rankings and user experience.\n\nHow: Review and improve this element following current SEO guidelines, focusing on both user experience and search engine visibility.';
       } else if (description.includes('should')) {
-        recommendation = description.replace('should', 'Consider updating this to').replace('Page should', 'Update your page to').replace('Site should', 'Improve your website to');
+        const cleanDescription = description.replace('should', 'needs to').replace('page should', 'your page needs to').replace('site should', 'your website needs to');
+        recommendation = `What: ${cleanDescription}.\n\nWhy: This improvement is necessary for better search engine visibility and user experience.\n\nHow: Address this issue by implementing the recommended changes to meet SEO best practices.`;
       } else {
-        recommendation = 'This element needs attention to improve your website\'s SEO performance and user experience.';
+        recommendation = 'What: This element needs attention to improve your website\'s performance.\n\nWhy: All website elements should be optimized to provide the best experience for visitors and search engines.\n\nHow: Review this item and implement improvements based on current SEO and user experience best practices.';
       }
     }
     
     // Add priority context for high priority items only
     if (status === 'Priority OFI') {
-      recommendation = '🚨 HIGH PRIORITY: ' + recommendation + ' This significantly impacts your search rankings and should be addressed immediately.';
+      recommendation = '🚨 HIGH PRIORITY: ' + recommendation + '\n\nIMPORTANT: This issue significantly impacts your search rankings and should be addressed immediately for maximum benefit.';
     }
     
     return recommendation;

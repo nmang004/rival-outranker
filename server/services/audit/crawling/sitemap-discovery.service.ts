@@ -71,7 +71,7 @@ export class SitemapDiscoveryService {
           }
           
         } catch (error) {
-          console.log(`[SitemapDiscovery] Error processing sitemap ${sitemapPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.log(`[SitemapDiscovery] WARN: Error processing sitemap ${sitemapPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           continue;
         }
       }
@@ -114,25 +114,37 @@ export class SitemapDiscoveryService {
    * Process a single sitemap URL and extract all URLs from it
    */
   private async processSitemapUrl(sitemapUrl: string, baseUrl: string): Promise<string[]> {
-    const response = await axios.get(sitemapUrl, {
-      timeout: this.SITEMAP_TIMEOUT,
-      headers: { 'User-Agent': this.USER_AGENT },
-      validateStatus: (status) => status === 200,
-      maxContentLength: 50 * 1024 * 1024 // 50MB limit for large sitemaps
-    });
-    
-    // Validate that response is XML content
-    const contentType = response.headers['content-type'] || '';
-    if (!this.isValidSitemapContentType(contentType)) {
-      console.log(`[SitemapDiscovery] Skipping non-XML sitemap: ${sitemapUrl} (${contentType})`);
+    try {
+      const response = await axios.get(sitemapUrl, {
+        timeout: this.SITEMAP_TIMEOUT,
+        headers: { 'User-Agent': this.USER_AGENT },
+        validateStatus: (status) => status < 500, // Accept any status below 500
+        maxContentLength: 50 * 1024 * 1024 // 50MB limit for large sitemaps
+      });
+      
+      // Check if we got a successful response
+      if (response.status !== 200) {
+        console.log(`[SitemapDiscovery] WARN: Could not fetch sitemap ${sitemapUrl}, status code: ${response.status}`);
+        return [];
+      }
+      
+      // Validate that response is XML content
+      const contentType = response.headers['content-type'] || '';
+      if (!this.isValidSitemapContentType(contentType)) {
+        console.log(`[SitemapDiscovery] Skipping non-XML sitemap: ${sitemapUrl} (${contentType})`);
+        return [];
+      }
+      
+      if (response.data && typeof response.data === 'string') {
+        return await this.parseSitemap(response.data, baseUrl);
+      }
+      
+      return [];
+    } catch (error) {
+      // Log as warning, not error, and continue processing
+      console.log(`[SitemapDiscovery] WARN: Could not fetch sitemap ${sitemapUrl}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return [];
     }
-    
-    if (response.data && typeof response.data === 'string') {
-      return await this.parseSitemap(response.data, baseUrl);
-    }
-    
-    return [];
   }
 
   /**
@@ -263,15 +275,22 @@ export class SitemapDiscoveryService {
           const childResponse = await axios.get(sitemap.loc, {
             timeout: this.SITEMAP_TIMEOUT,
             headers: { 'User-Agent': this.USER_AGENT },
+            validateStatus: (status) => status < 500, // Accept any status below 500
             maxContentLength: 50 * 1024 * 1024 // 50MB limit
           });
+          
+          // Check if we got a successful response
+          if (childResponse.status !== 200) {
+            console.log(`[SitemapDiscovery] WARN: Could not fetch child sitemap ${sitemap.loc}, status code: ${childResponse.status}`);
+            continue;
+          }
           
           const childUrls = await this.parseSitemap(childResponse.data, baseUrl);
           urls.push(...childUrls);
           this.discoveredSitemaps.add(sitemap.loc);
           
         } catch (error) {
-          console.log(`[SitemapDiscovery] Error fetching child sitemap ${sitemap.loc}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          console.log(`[SitemapDiscovery] WARN: Error fetching child sitemap ${sitemap.loc}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           continue;
         }
       }

@@ -314,6 +314,24 @@ export class OFIClassificationService {
       }
     }
     
+    // Critical H1 issues on ANY page - H1 is fundamental for SEO structure
+    const h1CriticalPatterns = [
+      /missing.*h1/,
+      /no.*h1.*tag/,
+      /h1.*count.*0/,
+      /h1.*0/,
+      /multiple.*h1/,
+      /duplicate.*h1/,
+      /heading.*structure.*hierarchy/  // Catch "Heading Structure Hierarchy" when it has H1:0
+    ];
+    
+    // Special check for Heading Structure Hierarchy with H1:0 in notes
+    const isHeadingStructureWithNoH1 = text.includes('heading structure') && text.includes('h1: 0');
+    
+    if (h1CriticalPatterns.some(pattern => pattern.test(text)) || isHeadingStructureWithNoH1) {
+      return true;
+    }
+    
     // Always critical issues regardless of page type
     const alwaysCriticalPatterns = [
       /blocked.*by.*robots/,

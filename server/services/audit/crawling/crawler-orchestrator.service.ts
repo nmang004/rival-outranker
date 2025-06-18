@@ -107,10 +107,15 @@ export class CrawlerOrchestratorService {
       // Step 3: Discover URLs through sitemaps if enabled
       let discoveredUrls: string[] = [];
       if (options.followSitemaps !== false) {
-        discoveredUrls = await this.sitemapDiscoveryService.discoverUrlsFromSitemap(
-          initialUrl,
-          this.adaptiveTimeout.toString()
-        );
+        try {
+          discoveredUrls = await this.sitemapDiscoveryService.discoverUrlsFromSitemap(
+            initialUrl,
+            this.currentSite
+          );
+        } catch (error) {
+          console.log(`[CrawlerOrchestrator] WARN: Sitemap discovery failed, continuing with crawl: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          discoveredUrls = [];
+        }
       }
 
       // Step 4: Extract internal links from homepage
