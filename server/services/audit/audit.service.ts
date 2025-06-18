@@ -30,25 +30,31 @@ export class AuditService {
   /**
    * Crawl a website and perform a rival audit
    */
-  async crawlAndAudit(url: string): Promise<RivalAudit> {
+  async crawlAndAudit(url: string, progressCallback?: (stage: string, progress: number) => void): Promise<RivalAudit> {
     try {
       console.log(`Starting rival audit for: ${url}`);
+      progressCallback?.('Initializing crawl', 0);
       
       // Reset state for new audit
       this.crawler.reset();
       
       // Step 1: Crawl the website
+      progressCallback?.('Crawling website', 20);
       const crawlResult = await this.crawler.crawlWebsite(url);
       
       // Step 2: Transform crawler output to the expected format
+      progressCallback?.('Processing crawl data', 50);
       const siteStructure = this.transformCrawlResultToSiteStructure(crawlResult);
       
       // Step 3: Classify pages by type
+      progressCallback?.('Classifying pages', 70);
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
       
       // Step 3: Generate audit based on crawled structure
+      progressCallback?.('Analyzing SEO factors', 85);
       const audit = this.analyzer.generateAudit(classifiedStructure);
       
+      progressCallback?.('Completed', 100);
       console.log(`Completed rival audit for: ${url}`);
       return audit;
       
@@ -61,29 +67,36 @@ export class AuditService {
   /**
    * Crawl a website and perform enhanced 140+ factor audit
    */
-  async crawlAndAuditEnhanced(url: string): Promise<EnhancedRivalAudit> {
+  async crawlAndAuditEnhanced(url: string, progressCallback?: (stage: string, progress: number) => void): Promise<EnhancedRivalAudit> {
     try {
       console.log(`Starting enhanced rival audit (140+ factors) for: ${url}`);
+      progressCallback?.('Initializing crawl', 0);
       
       // Reset state for new audit
       this.crawler.reset();
       
       // Step 1: Crawl the website
+      progressCallback?.('Crawling website', 10);
       const crawlResult = await this.crawler.crawlWebsite(url);
       
       // Step 2: Transform crawler output to the expected format
+      progressCallback?.('Processing crawl data', 30);
       const siteStructure = this.transformCrawlResultToSiteStructure(crawlResult);
       
       // Step 3: Classify pages by type
+      progressCallback?.('Classifying pages', 40);
       const classifiedStructure = await this.classifier.classifyPages(siteStructure);
       console.log(`[AuditService] Classified site structure - Homepage: ${!!classifiedStructure.homepage}, Contact: ${!!classifiedStructure.contactPage}, Service pages: ${classifiedStructure.servicePages.length}, Location pages: ${classifiedStructure.locationPages.length}, Service area pages: ${classifiedStructure.serviceAreaPages.length}`);
       
       // Step 3: Generate enhanced audit with 140+ factors
+      progressCallback?.('Analyzing SEO factors', 50);
       console.log(`[AuditService] Starting enhanced analysis with classified structure`);
       const enhancedAudit = await this.enhancedAnalyzer.analyzeWebsite(classifiedStructure);
+      progressCallback?.('Finalizing results', 90);
       console.log(`[AuditService] Enhanced analysis completed - Total factors: ${enhancedAudit.summary.totalFactors}`);
       console.log(`[AuditService] Enhanced categories populated: Content Quality (${enhancedAudit.contentQuality?.items.length || 0}), Technical SEO (${enhancedAudit.technicalSEO?.items.length || 0}), Local SEO (${enhancedAudit.localSEO?.items.length || 0}), UX Performance (${enhancedAudit.uxPerformance?.items.length || 0})`);
       
+      progressCallback?.('Completed', 100);
       console.log(`Completed enhanced rival audit for: ${url} - analyzed ${enhancedAudit.summary.totalFactors} factors`);
       return {
         url,

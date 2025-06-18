@@ -11,13 +11,14 @@ class RivalAuditCrawler {
    * Crawl a website and perform a rival audit
    * 
    * @param url Target website URL
+   * @param progressCallback Optional progress callback
    * @returns RivalAudit data
    */
-  async crawlAndAudit(url: string): Promise<RivalAudit> {
+  async crawlAndAudit(url: string, progressCallback?: (stage: string, progress: number) => void): Promise<RivalAudit> {
     console.log(`[RivalAuditCrawler] Starting audit for: ${url}`);
     
     try {
-      const result = await auditService.crawlAndAudit(url);
+      const result = await auditService.crawlAndAudit(url, progressCallback);
       console.log(`[RivalAuditCrawler] Completed audit for: ${url}`);
       return result;
     } catch (error) {

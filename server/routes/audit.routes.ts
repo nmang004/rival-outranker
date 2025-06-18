@@ -79,7 +79,7 @@ router.post("/enhanced", async (req: Request, res: Response) => {
     // Create audit record in database
     const auditRecord = await rivalAuditRepository.createAudit({
       url,
-      status: 'processing',
+      status: 'pending',
       userId: req.user?.id || null,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       metadata: { auditType: 'enhanced' }
@@ -115,8 +115,32 @@ router.post("/enhanced", async (req: Request, res: Response) => {
     setTimeout(async () => {
       try {
         console.log(`Starting enhanced rival audit for ${url} with ID ${auditRecord.id}`);
-        // Use the enhanced audit service
-        const auditResults = await auditService.crawlAndAuditEnhanced(url);
+        
+        // Update status to 'processing' to indicate crawl has actually started
+        await rivalAuditRepository.updateAudit(auditRecord.id, { 
+          status: 'processing',
+          updatedAt: new Date()
+        });
+        console.log(`Updated audit ${auditRecord.id} status to 'processing'`);
+        
+        // Use the enhanced audit service with progress tracking
+        const auditResults = await auditService.crawlAndAuditEnhanced(url, async (stage: string, progress: number) => {
+          console.log(`Audit ${auditRecord.id} progress: ${stage} (${progress}%)`);
+          // Update database with progress
+          try {
+            await rivalAuditRepository.updateAudit(auditRecord.id, { 
+              metadata: { 
+                ...(auditRecord.metadata as object || {}),
+                auditType: 'enhanced',
+                currentStage: stage,
+                progress: progress
+              },
+              updatedAt: new Date()
+            });
+          } catch (progressError) {
+            console.warn(`Failed to update progress for audit ${auditRecord.id}:`, progressError);
+          }
+        });
         
         // Store the results in database - ensure enhanced categories are preserved
         const resultsToStore = {
@@ -154,7 +178,11 @@ router.post("/enhanced", async (req: Request, res: Response) => {
         console.error("Error performing enhanced rival audit:", error);
         
         try {
-          // Store mock data as fallback
+          // First update status to failed
+          await rivalAuditRepository.failAudit(auditRecord.id, error instanceof Error ? error.message : 'Unknown error');
+          console.log(`Updated audit ${auditRecord.id} status to 'failed'`);
+          
+          // Store mock data as fallback for graceful degradation
           const mockAudit = generateMockRivalAudit(url);
           await rivalAuditRepository.completeAudit(
             auditRecord.id,
@@ -175,8 +203,13 @@ router.post("/enhanced", async (req: Request, res: Response) => {
           );
           console.log(`Stored mock enhanced data for failed audit ${auditRecord.id}`);
         } catch (dbError) {
-          console.error(`Failed to store fallback data for audit ${auditRecord.id}:`, dbError);
-          await rivalAuditRepository.failAudit(auditRecord.id, error instanceof Error ? error.message : 'Unknown error');
+          console.error(`Failed to handle audit failure for ${auditRecord.id}:`, dbError);
+          // Try one more time to mark as failed
+          try {
+            await rivalAuditRepository.failAudit(auditRecord.id, `Primary error: ${error instanceof Error ? error.message : 'Unknown error'}. DB error: ${dbError instanceof Error ? dbError.message : 'Unknown DB error'}`);
+          } catch (finalError) {
+            console.error(`CRITICAL: Could not update audit status for ${auditRecord.id}:`, finalError);
+          }
         }
       }
     }, 0);
@@ -206,7 +239,7 @@ router.post("/", async (req: Request, res: Response) => {
     // Create audit record in database
     const auditRecord = await rivalAuditRepository.createAudit({
       url,
-      status: 'processing',
+      status: 'pending',
       userId: req.user?.id || null,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       metadata: { auditType: 'standard' }
@@ -240,6 +273,13 @@ router.post("/", async (req: Request, res: Response) => {
     // Perform the actual audit asynchronously
     setTimeout(async () => {
       try {
+        // Update status to 'processing' to indicate crawl has actually started
+        await rivalAuditRepository.updateAudit(auditRecord.id, { 
+          status: 'processing',
+          updatedAt: new Date()
+        });
+        console.log(`Updated audit ${auditRecord.id} status to 'processing'`);
+        
         let auditResults;
         
         if (continueCrawl) {
@@ -249,8 +289,24 @@ router.post("/", async (req: Request, res: Response) => {
           console.log(`Completed continued rival audit for ${url} with ID ${auditRecord.id}`);
         } else {
           console.log(`Starting new rival audit for ${url} with ID ${auditRecord.id}`);
-          // Crawl and analyze the website using our new crawler
-          auditResults = await rivalAuditCrawler.crawlAndAudit(url);
+          // Crawl and analyze the website using our new crawler with progress tracking
+          auditResults = await rivalAuditCrawler.crawlAndAudit(url, async (stage: string, progress: number) => {
+            console.log(`Audit ${auditRecord.id} progress: ${stage} (${progress}%)`);
+            // Update database with progress
+            try {
+              await rivalAuditRepository.updateAudit(auditRecord.id, { 
+                metadata: { 
+                  ...(auditRecord.metadata as object || {}),
+                  auditType: 'standard',
+                  currentStage: stage,
+                  progress: progress
+                },
+                updatedAt: new Date()
+              });
+            } catch (progressError) {
+              console.warn(`Failed to update progress for audit ${auditRecord.id}:`, progressError);
+            }
+          });
           console.log(`Completed rival audit for ${url} with ID ${auditRecord.id}`);
         }
         
@@ -270,7 +326,11 @@ router.post("/", async (req: Request, res: Response) => {
         console.error("Error performing rival audit:", error);
         
         try {
-          // Store mock data as fallback
+          // First update status to failed
+          await rivalAuditRepository.failAudit(auditRecord.id, error instanceof Error ? error.message : 'Unknown error');
+          console.log(`Updated audit ${auditRecord.id} status to 'failed'`);
+          
+          // Store mock data as fallback for graceful degradation
           const mockAudit = generateMockRivalAudit(url);
           await rivalAuditRepository.completeAudit(
             auditRecord.id,
@@ -281,8 +341,13 @@ router.post("/", async (req: Request, res: Response) => {
           );
           console.log(`Stored mock data for failed audit ${auditRecord.id}`);
         } catch (dbError) {
-          console.error(`Failed to store fallback data for audit ${auditRecord.id}:`, dbError);
-          await rivalAuditRepository.failAudit(auditRecord.id, error instanceof Error ? error.message : 'Unknown error');
+          console.error(`Failed to handle audit failure for ${auditRecord.id}:`, dbError);
+          // Try one more time to mark as failed
+          try {
+            await rivalAuditRepository.failAudit(auditRecord.id, `Primary error: ${error instanceof Error ? error.message : 'Unknown error'}. DB error: ${dbError instanceof Error ? dbError.message : 'Unknown DB error'}`);
+          } catch (finalError) {
+            console.error(`CRITICAL: Could not update audit status for ${auditRecord.id}:`, finalError);
+          }
         }
       }
     }, 0);
@@ -642,13 +707,19 @@ router.get("/:id", async (req: Request, res: Response) => {
     
     console.log(`✅ Found audit: ${auditId}, status: ${auditRecord.status}`);
     
-    // If still processing, return 202 with status info
-    if (auditRecord.status === 'processing') {
+    // If still pending or processing, return 202 with status info
+    if (auditRecord.status === 'pending' || auditRecord.status === 'processing') {
       const timeElapsed = Date.now() - auditRecord.createdAt.getTime();
+      const metadata = auditRecord.metadata as any;
+      
       return res.status(202).json({ 
-        status: 'processing',
-        message: 'Audit is still being processed',
-        timeElapsed: Math.floor(timeElapsed / 1000) // seconds
+        status: auditRecord.status,
+        message: auditRecord.status === 'pending' ? 'Audit is queued and starting soon' : 'Audit is currently being processed',
+        timeElapsed: Math.floor(timeElapsed / 1000), // seconds
+        progress: {
+          stage: metadata?.currentStage || 'Preparing',
+          percentage: metadata?.progress || 0
+        }
       });
     }
     
