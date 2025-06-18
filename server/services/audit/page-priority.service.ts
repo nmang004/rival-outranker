@@ -1,4 +1,6 @@
 import { PageCrawlResult } from './audit.service';
+import { IssueGroupingService, IssueGroup } from './issue-grouping.service';
+import { AuditItem } from '../../../shared/schema';
 
 /**
  * Page Priority Tiers for OFI Scoring
@@ -28,9 +30,14 @@ export interface PageClassificationOverride {
 }
 
 /**
- * Service for determining page priority and calculating weighted OFI scores
+ * Enhanced service for smart priority calculation with template-aware scoring
  */
 export class PagePriorityService {
+  private issueGroupingService: IssueGroupingService;
+
+  constructor() {
+    this.issueGroupingService = new IssueGroupingService();
+  }
   
   /**
    * Determine the priority tier of a page based on its type and characteristics
@@ -234,7 +241,57 @@ export class PagePriorityService {
   }
 
   /**
-   * Calculate weighted OFI score based on page priorities with advanced normalization
+   * Calculate smart weighted OFI score with template-aware prioritization
+   */
+  calculateSmartWeightedOFI(auditItems: AuditItem[]): {
+    weightedOFI: number;
+    templateAdjustedOFI: number;
+    issueGroups: IssueGroup[];
+    priorityBreakdown: {
+      templateIssues: number;
+      individualIssues: number;
+      highPriorityGroups: number;
+    };
+    efficiencyGains: {
+      templateFixesAvailable: number;
+      estimatedEffortReduction: string;
+    };
+  } {
+    // Group similar issues and detect template problems
+    const issueGroups = this.issueGroupingService.groupSimilarIssues(auditItems);
+    
+    // Calculate smart priority scores for each group
+    let totalScore = 0;
+    let templateAdjustedScore = 0;
+    
+    issueGroups.forEach(group => {
+      const baseScore = this.calculateGroupBaseScore(group);
+      const templateMultiplier = this.calculateTemplateMultiplier(group);
+      
+      totalScore += baseScore * group.pages.length; // Old linear approach
+      templateAdjustedScore += baseScore * templateMultiplier; // New smart approach
+    });
+    
+    const report = this.issueGroupingService.generateGroupingReport(issueGroups);
+    
+    return {
+      weightedOFI: totalScore,
+      templateAdjustedOFI: templateAdjustedScore,
+      issueGroups,
+      priorityBreakdown: {
+        templateIssues: report.templateIssues,
+        individualIssues: report.individualIssues,
+        highPriorityGroups: report.highPriorityGroups
+      },
+      efficiencyGains: {
+        templateFixesAvailable: report.efficiencyGains.templateFixesAvailable,
+        estimatedEffortReduction: report.efficiencyGains.estimatedEffortReduction
+      }
+    };
+  }
+
+  /**
+   * Legacy method maintained for backward compatibility
    */
   calculateWeightedOFI(pageResults: Array<{
     priority: PagePriority;
@@ -473,5 +530,248 @@ export class PagePriorityService {
    */
   getPriorityWeight(priority: PagePriority): number {
     return PAGE_PRIORITY_WEIGHTS[priority];
+  }
+
+  /**
+   * Calculate base score for an issue group
+   */
+  private calculateGroupBaseScore(group: IssueGroup): number {
+    const severityScore = group.severity === 'high' ? 10 : group.severity === 'medium' ? 6 : 3;
+    const businessScore = group.businessImpact === 'high' ? 3 : group.businessImpact === 'medium' ? 2 : 1;
+    const effortMultiplier = group.effort === 'low' ? 1.5 : group.effort === 'medium' ? 1.0 : 0.7;
+    
+    return severityScore * businessScore * effortMultiplier;
+  }
+
+  /**
+   * Calculate template-aware multiplier for issue groups
+   */
+  private calculateTemplateMultiplier(group: IssueGroup): number {
+    if (group.isTemplateIssue) {
+      // Logarithmic scaling for template issues - diminishing returns after first few pages
+      return Math.log(group.pages.length + 1) * 2;
+    } else {
+      // Linear scaling for individual issues, but capped to prevent huge penalties
+      return Math.min(group.pages.length, 5);
+    }
+  }
+
+  /**
+   * Calculate context-aware priority score for audit items
+   */
+  calculateContextAwarePriority(
+    auditItems: AuditItem[],
+    siteContext: {
+      totalPages: number;
+      siteType: 'small' | 'medium' | 'large' | 'enterprise';
+      businessType: 'local' | 'ecommerce' | 'corporate' | 'nonprofit';
+    }
+  ): {
+    prioritizedItems: Array<AuditItem & { calculatedPriority: number; reasoning: string }>;
+    insights: {
+      templateIssuesIdentified: number;
+      quickWinsAvailable: number;
+      highImpactLowEffortTasks: number;
+      recommendedFirstSteps: string[];
+    };
+  } {
+    const issueGroups = this.issueGroupingService.groupSimilarIssues(auditItems);
+    
+    const prioritizedItems = auditItems.map(item => {
+      const relevantGroup = issueGroups.find(group => 
+        group.pages.includes(this.extractPageUrl(item))
+      );
+      
+      const basePriority = this.calculateItemBasePriority(item);
+      const contextMultiplier = this.calculateContextMultiplier(item, siteContext);
+      const groupMultiplier = relevantGroup ? this.calculateGroupMultiplier(relevantGroup) : 1;
+      
+      const calculatedPriority = basePriority * contextMultiplier * groupMultiplier;
+      const reasoning = this.generatePriorityReasoning(item, relevantGroup, siteContext);
+      
+      return {
+        ...item,
+        calculatedPriority,
+        reasoning
+      };
+    });
+    
+    // Sort by calculated priority
+    prioritizedItems.sort((a, b) => b.calculatedPriority - a.calculatedPriority);
+    
+    const insights = this.generateInsights(issueGroups, prioritizedItems, siteContext);
+    
+    return {
+      prioritizedItems,
+      insights
+    };
+  }
+
+  /**
+   * Calculate base priority score for individual items
+   */
+  private calculateItemBasePriority(item: AuditItem): number {
+    let score = 0;
+    
+    // Status-based scoring
+    if (item.status === 'Priority OFI') score += 10;
+    else if (item.status === 'OFI') score += 5;
+    else if (item.status === 'OK') score += 1;
+    else score += 0; // N/A
+    
+    // Importance-based scoring
+    if (item.importance === 'High') score += 5;
+    else if (item.importance === 'Medium') score += 3;
+    else score += 1;
+    
+    return score;
+  }
+
+  /**
+   * Calculate context multiplier based on site characteristics
+   */
+  private calculateContextMultiplier(
+    item: AuditItem,
+    context: { totalPages: number; siteType: string; businessType: string }
+  ): number {
+    let multiplier = 1.0;
+    
+    // Site size adjustments
+    if (context.siteType === 'enterprise' && this.isTemplateFixableIssue(item)) {
+      multiplier *= 1.3; // Template fixes have higher impact on large sites
+    } else if (context.siteType === 'small' && this.isContentSpecificIssue(item)) {
+      multiplier *= 1.2; // Content issues more critical for small sites
+    }
+    
+    // Business type adjustments
+    if (context.businessType === 'local' && this.isLocalSEOIssue(item)) {
+      multiplier *= 1.4;
+    } else if (context.businessType === 'ecommerce' && this.isConversionIssue(item)) {
+      multiplier *= 1.3;
+    }
+    
+    return multiplier;
+  }
+
+  /**
+   * Calculate group-based multiplier
+   */
+  private calculateGroupMultiplier(group: IssueGroup): number {
+    let multiplier = 1.0;
+    
+    if (group.isTemplateIssue && group.effort === 'low') {
+      multiplier *= 1.2; // Quick template fixes get priority boost
+    }
+    
+    if (group.pages.length >= 10) {
+      multiplier *= 1.1; // Widespread issues get slight boost
+    }
+    
+    return multiplier;
+  }
+
+  /**
+   * Generate human-readable reasoning for priority calculation
+   */
+  private generatePriorityReasoning(
+    item: AuditItem,
+    group: IssueGroup | undefined,
+    context: { siteType: string; businessType: string }
+  ): string {
+    const reasons = [];
+    
+    if (item.status === 'Priority OFI') {
+      reasons.push('Classified as Priority OFI');
+    }
+    
+    if (group?.isTemplateIssue) {
+      reasons.push(`Template issue affecting ${group.pages.length} pages`);
+    }
+    
+    if (group?.effort === 'low' && group?.businessImpact === 'high') {
+      reasons.push('High impact, low effort (quick win)');
+    }
+    
+    if (context.businessType === 'local' && this.isLocalSEOIssue(item)) {
+      reasons.push('Critical for local business visibility');
+    }
+    
+    if (reasons.length === 0) {
+      reasons.push('Standard priority based on importance and status');
+    }
+    
+    return reasons.join('; ');
+  }
+
+  /**
+   * Generate actionable insights from priority analysis
+   */
+  private generateInsights(
+    groups: IssueGroup[],
+    items: Array<AuditItem & { calculatedPriority: number }>,
+    context: { siteType: string; businessType: string }
+  ): {
+    templateIssuesIdentified: number;
+    quickWinsAvailable: number;
+    highImpactLowEffortTasks: number;
+    recommendedFirstSteps: string[];
+  } {
+    const templateIssues = groups.filter(g => g.isTemplateIssue).length;
+    const quickWins = groups.filter(g => g.effort === 'low' && g.businessImpact === 'high').length;
+    const highImpactLowEffort = groups.filter(g => 
+      g.businessImpact === 'high' && (g.effort === 'low' || g.effort === 'medium')
+    ).length;
+    
+    const topItems = items.slice(0, 5);
+    const recommendedFirstSteps = topItems.map((item, index) => 
+      `${index + 1}. ${item.name} (Priority: ${Math.round(item.calculatedPriority)})`
+    );
+    
+    return {
+      templateIssuesIdentified: templateIssues,
+      quickWinsAvailable: quickWins,
+      highImpactLowEffortTasks: highImpactLowEffort,
+      recommendedFirstSteps
+    };
+  }
+
+  /**
+   * Helper methods for issue classification
+   */
+  private isTemplateFixableIssue(item: AuditItem): boolean {
+    const text = `${item.name} ${item.description || ''}`.toLowerCase();
+    return text.includes('meta') || text.includes('title') || text.includes('h1') || text.includes('schema');
+  }
+
+  private isContentSpecificIssue(item: AuditItem): boolean {
+    const text = `${item.name} ${item.description || ''}`.toLowerCase();
+    return text.includes('content') || text.includes('alt text') || text.includes('description');
+  }
+
+  private isLocalSEOIssue(item: AuditItem): boolean {
+    const text = `${item.name} ${item.description || ''}`.toLowerCase();
+    return text.includes('contact') || text.includes('address') || text.includes('phone') || text.includes('location');
+  }
+
+  private isConversionIssue(item: AuditItem): boolean {
+    const text = `${item.name} ${item.description || ''}`.toLowerCase();
+    return text.includes('cta') || text.includes('form') || text.includes('checkout') || text.includes('cart');
+  }
+
+  /**
+   * Extract page URL from audit item (duplicated from IssueGroupingService for independence)
+   */
+  private extractPageUrl(item: AuditItem): string {
+    if ('pageUrl' in item && typeof item.pageUrl === 'string') {
+      return item.pageUrl;
+    }
+    
+    const text = `${item.description || ''} ${item.notes || ''}`;
+    const urlMatch = text.match(/https?:\/\/[^\s]+/);
+    if (urlMatch) {
+      return urlMatch[0];
+    }
+    
+    return 'unknown';
   }
 }

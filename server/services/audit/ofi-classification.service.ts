@@ -1,4 +1,25 @@
 import { AuditItem } from '../../../shared/schema';
+import { PagePriority } from './page-priority.service';
+
+/**
+ * Page context information for enhanced OFI classification
+ */
+export interface PageContext {
+  pageType: 'homepage' | 'service' | 'contact' | 'location' | 'other';
+  pagePriority: PagePriority;
+  siteSize: 'small' | 'medium' | 'large' | 'enterprise';
+  businessType: 'local' | 'ecommerce' | 'corporate' | 'nonprofit';
+  competitiveContext?: {
+    industryCompetitiveness: 'low' | 'medium' | 'high';
+    currentRankingPosition?: number;
+    targetKeywords?: string[];
+  };
+  trafficImportance?: {
+    monthlyTraffic?: number;
+    conversionValue?: number;
+    businessCriticality: 'low' | 'medium' | 'high';
+  };
+}
 
 export interface OFIClassificationCriteria {
   seoVisibilityImpact: boolean;
@@ -29,6 +50,52 @@ export interface OFIClassificationResult {
 }
 
 export class OFIClassificationService {
+  
+  /**
+   * Enhanced classification with page context awareness
+   */
+  classifyOFIWithContext(
+    name: string,
+    description: string,
+    pageContext: PageContext,
+    metrics: OFIAnalysisMetrics = {}
+  ): OFIClassificationResult {
+    
+    const contextAwareCriteria = this.evaluateContextAwareCriteria(
+      metrics, name, description, pageContext
+    );
+    
+    const decisionTree = this.buildEnhancedDecisionTree(contextAwareCriteria, metrics, pageContext);
+    const priorityScore = this.calculateContextAwarePriorityScore(contextAwareCriteria, pageContext);
+    
+    // Dynamic threshold based on page importance and site characteristics
+    const threshold = this.calculateDynamicThreshold(pageContext);
+    
+    const classification: 'Standard OFI' | 'Priority OFI' = priorityScore >= threshold ? 'Priority OFI' : 'Standard OFI';
+    
+    const justification = this.buildContextAwareJustification(
+      classification,
+      contextAwareCriteria,
+      priorityScore,
+      threshold,
+      pageContext,
+      metrics
+    );
+
+    return {
+      classification,
+      criteriaMet: {
+        seoVisibilityImpact: contextAwareCriteria.seoVisibilityImpact.score > 3,
+        userExperienceImpact: contextAwareCriteria.userExperienceImpact.score > 3,
+        businessImpact: contextAwareCriteria.businessImpact.score > 3,
+        complianceRisk: contextAwareCriteria.complianceRisk.score > 3
+      },
+      justification,
+      metrics,
+      decisionTree,
+      requiresValidation: classification === 'Priority OFI'
+    };
+  }
   
   /**
    * Classify an OFI item based on the strict priority matrix criteria
@@ -113,11 +180,54 @@ export class OFIClassificationService {
   }
 
   /**
-   * SEO Visibility Impact Criteria:
-   * - Missing or poor meta titles/descriptions
-   * - Core Web Vitals failures (LCP >2.5s, CLS >0.1, FID >100ms)
-   * - Critical indexing issues (noindex, blocked in robots.txt)
-   * - Severe mobile usability problems
+   * Context-aware SEO Visibility Impact evaluation
+   * Considers page importance, business type, and competitive context
+   */
+  private evaluateContextAwareSeoImpact(
+    metrics: OFIAnalysisMetrics,
+    name: string,
+    description: string,
+    context: PageContext
+  ): { score: number; factors: string[] } {
+    let score = 0;
+    const factors: string[] = [];
+    
+    // Base SEO impact assessment
+    const baseImpact = this.evaluateSeoVisibilityImpact(metrics, name, description);
+    if (baseImpact) {
+      score += 3;
+      factors.push('Base SEO visibility impact detected');
+    }
+    
+    // Page type multipliers
+    if (context.pageType === 'homepage') {
+      score *= 1.5;
+      factors.push('Homepage - critical for site visibility');
+    } else if (context.pageType === 'service' && context.businessType === 'local') {
+      score *= 1.3;
+      factors.push('Service page for local business - high search visibility impact');
+    } else if (context.pageType === 'contact' && context.businessType === 'local') {
+      score *= 1.2;
+      factors.push('Contact page for local business - important for local SEO');
+    }
+    
+    // Competitive context adjustments
+    if (context.competitiveContext?.industryCompetitiveness === 'high') {
+      score *= 1.2;
+      factors.push('Highly competitive industry - SEO issues more critical');
+    }
+    
+    // Traffic importance adjustments
+    if (context.trafficImportance?.businessCriticality === 'high') {
+      score *= 1.3;
+      factors.push('High business-critical page - SEO impact magnified');
+    }
+    
+    return { score: Math.min(score, 10), factors };
+  }
+
+  /**
+   * Legacy SEO Visibility Impact Criteria - maintained for backward compatibility
    */
   private evaluateSeoVisibilityImpact(
     metrics: OFIAnalysisMetrics,
@@ -125,11 +235,8 @@ export class OFIClassificationService {
     description: string
   ): boolean {
     
-    // Critical SEO blocking issues
-    const criticalSeoKeywords = ['meta title', 'meta description', 'missing title', 'no title', 'duplicate title'];
-    const hasCriticalMetaIssues = criticalSeoKeywords.some(keyword => 
-      name.toLowerCase().includes(keyword) || description.toLowerCase().includes(keyword)
-    );
+    // Enhanced critical SEO issue detection with context
+    const hasCriticalMetaIssues = this.hasCriticalMetaIssues(name, description);
 
     // Core Web Vitals issues
     const coreWebVitalsKeywords = ['core web vitals', 'lcp', 'cls', 'fid', 'page speed', 'loading', 'performance'];
@@ -150,6 +257,27 @@ export class OFIClassificationService {
     ) && (description.toLowerCase().includes('not') || description.toLowerCase().includes('missing') || description.toLowerCase().includes('poor'));
 
     return hasCriticalMetaIssues || hasCoreWebVitalsIssues || hasIndexingIssues || hasMobileIssues;
+  }
+
+  /**
+   * Enhanced critical meta issues detection
+   */
+  private hasCriticalMetaIssues(name: string, description: string): boolean {
+    const text = `${name} ${description}`.toLowerCase();
+    
+    // More specific pattern matching instead of broad keywords
+    const patterns = [
+      /missing.*meta.*title/,
+      /no.*title.*tag/,
+      /empty.*title/,
+      /duplicate.*title.*tags?/,
+      /missing.*meta.*description/,
+      /no.*meta.*description/,
+      /empty.*meta.*description/,
+      /duplicate.*meta.*description/
+    ];
+    
+    return patterns.some(pattern => pattern.test(text));
   }
 
   /**
@@ -520,6 +648,303 @@ export class OFIClassificationService {
   }
 
   /**
+   * Calculate context-aware priority score
+   */
+  private calculateContextAwarePriorityScore(
+    criteria: {
+      seoVisibilityImpact: { score: number; factors: string[] };
+      userExperienceImpact: { score: number; factors: string[] };
+      businessImpact: { score: number; factors: string[] };
+      complianceRisk: { score: number; factors: string[] };
+    },
+    context: PageContext
+  ): number {
+    let totalScore = 0;
+    
+    totalScore += criteria.seoVisibilityImpact.score * 0.3; // 30% weight
+    totalScore += criteria.userExperienceImpact.score * 0.25; // 25% weight
+    totalScore += criteria.businessImpact.score * 0.3; // 30% weight
+    totalScore += criteria.complianceRisk.score * 0.15; // 15% weight
+    
+    // Site size adjustments
+    if (context.siteSize === 'enterprise') {
+      totalScore *= 0.9; // Slightly lower threshold for large sites
+    } else if (context.siteSize === 'small') {
+      totalScore *= 1.1; // Slightly higher urgency for small sites
+    }
+    
+    return Math.round(totalScore * 100) / 100;
+  }
+
+  /**
+   * Calculate dynamic threshold based on page context
+   */
+  private calculateDynamicThreshold(context: PageContext): number {
+    let baseThreshold = 6.0; // Base threshold for Priority OFI
+    
+    // Page type adjustments
+    if (context.pageType === 'homepage') {
+      baseThreshold -= 1.0; // Lower threshold (easier to qualify) for homepage
+    } else if (context.pageType === 'service') {
+      baseThreshold -= 0.5; // Slightly lower for service pages
+    } else if (context.pageType === 'other') {
+      baseThreshold += 0.5; // Higher threshold for less critical pages
+    }
+    
+    // Business type adjustments
+    if (context.businessType === 'local') {
+      baseThreshold -= 0.3; // Local businesses benefit more from SEO fixes
+    } else if (context.businessType === 'ecommerce') {
+      baseThreshold -= 0.2; // E-commerce sites need strong SEO
+    }
+    
+    // Competitive context adjustments
+    if (context.competitiveContext?.industryCompetitiveness === 'high') {
+      baseThreshold -= 0.4; // More urgent in competitive industries
+    } else if (context.competitiveContext?.industryCompetitiveness === 'low') {
+      baseThreshold += 0.2; // Less urgent in low-competition industries
+    }
+    
+    return Math.max(4.0, Math.min(8.0, baseThreshold)); // Clamp between 4.0 and 8.0
+  }
+
+  /**
+   * Build context-aware justification
+   */
+  private buildContextAwareJustification(
+    classification: 'Standard OFI' | 'Priority OFI',
+    criteria: {
+      seoVisibilityImpact: { score: number; factors: string[] };
+      userExperienceImpact: { score: number; factors: string[] };
+      businessImpact: { score: number; factors: string[] };
+      complianceRisk: { score: number; factors: string[] };
+    },
+    priorityScore: number,
+    threshold: number,
+    context: PageContext,
+    metrics: OFIAnalysisMetrics
+  ): string {
+    let justification = `Context-Aware Classification: ${classification}\n`;
+    justification += `Priority Score: ${priorityScore.toFixed(2)} (Threshold: ${threshold.toFixed(2)})\n\n`;
+    
+    justification += `Page Context:\n`;
+    justification += `- Type: ${context.pageType}\n`;
+    justification += `- Business: ${context.businessType}\n`;
+    justification += `- Site Size: ${context.siteSize}\n\n`;
+    
+    justification += `Scoring Breakdown:\n`;
+    
+    if (criteria.seoVisibilityImpact.score > 0) {
+      justification += `✓ SEO Impact: ${criteria.seoVisibilityImpact.score.toFixed(1)}/10\n`;
+      criteria.seoVisibilityImpact.factors.forEach(factor => {
+        justification += `  - ${factor}\n`;
+      });
+    } else {
+      justification += `✗ SEO Impact: No significant SEO visibility issues\n`;
+    }
+    
+    if (criteria.userExperienceImpact.score > 0) {
+      justification += `✓ UX Impact: ${criteria.userExperienceImpact.score.toFixed(1)}/10\n`;
+      criteria.userExperienceImpact.factors.forEach(factor => {
+        justification += `  - ${factor}\n`;
+      });
+    } else {
+      justification += `✗ UX Impact: No critical user experience issues\n`;
+    }
+    
+    if (criteria.businessImpact.score > 0) {
+      justification += `✓ Business Impact: ${criteria.businessImpact.score.toFixed(1)}/10\n`;
+      criteria.businessImpact.factors.forEach(factor => {
+        justification += `  - ${factor}\n`;
+      });
+    } else {
+      justification += `✗ Business Impact: No significant business impact\n`;
+    }
+    
+    if (criteria.complianceRisk.score > 0) {
+      justification += `✓ Compliance Risk: ${criteria.complianceRisk.score.toFixed(1)}/10\n`;
+      criteria.complianceRisk.factors.forEach(factor => {
+        justification += `  - ${factor}\n`;
+      });
+    } else {
+      justification += `✗ Compliance Risk: No critical compliance issues\n`;
+    }
+    
+    if (classification === 'Priority OFI') {
+      justification += `\n✅ PRIORITY OFI: Score ${priorityScore.toFixed(2)} exceeds threshold ${threshold.toFixed(2)}`;
+      justification += `\n⚠️  Requires immediate attention based on page context and business impact`;
+    } else {
+      justification += `\n📋 STANDARD OFI: Score ${priorityScore.toFixed(2)} below threshold ${threshold.toFixed(2)}`;
+      justification += `\n✅ Classify as standard improvement opportunity`;
+    }
+    
+    return justification;
+  }
+
+  /**
+   * Evaluate context-aware criteria (enhanced version of evaluateCriteria)
+   */
+  private evaluateContextAwareCriteria(
+    metrics: OFIAnalysisMetrics,
+    name: string,
+    description: string,
+    context: PageContext
+  ): {
+    seoVisibilityImpact: { score: number; factors: string[] };
+    userExperienceImpact: { score: number; factors: string[] };
+    businessImpact: { score: number; factors: string[] };
+    complianceRisk: { score: number; factors: string[] };
+  } {
+    return {
+      seoVisibilityImpact: this.evaluateContextAwareSeoImpact(metrics, name, description, context),
+      userExperienceImpact: this.evaluateContextAwareUXImpact(metrics, name, description, context),
+      businessImpact: this.evaluateContextAwareBusinessImpact(metrics, name, description, context),
+      complianceRisk: this.evaluateContextAwareComplianceRisk(metrics, name, description, context)
+    };
+  }
+
+  /**
+   * Context-aware UX impact evaluation
+   */
+  private evaluateContextAwareUXImpact(
+    metrics: OFIAnalysisMetrics,
+    name: string,
+    description: string,
+    context: PageContext
+  ): { score: number; factors: string[] } {
+    let score = 0;
+    const factors: string[] = [];
+    
+    const baseImpact = this.evaluateUserExperienceImpact(metrics, name, description);
+    if (baseImpact) {
+      score += 3;
+      factors.push('Base UX impact detected');
+    }
+    
+    // E-commerce sites have higher UX impact multipliers
+    if (context.businessType === 'ecommerce') {
+      score *= 1.4;
+      factors.push('E-commerce site - UX issues directly impact conversions');
+    }
+    
+    // High-traffic pages have higher UX impact
+    if (context.trafficImportance?.monthlyTraffic && context.trafficImportance.monthlyTraffic > 10000) {
+      score *= 1.2;
+      factors.push('High-traffic page - UX issues affect many users');
+    }
+    
+    return { score: Math.min(score, 10), factors };
+  }
+
+  /**
+   * Context-aware business impact evaluation
+   */
+  private evaluateContextAwareBusinessImpact(
+    metrics: OFIAnalysisMetrics,
+    name: string,
+    description: string,
+    context: PageContext
+  ): { score: number; factors: string[] } {
+    let score = 0;
+    const factors: string[] = [];
+    
+    const baseImpact = this.evaluateBusinessImpact(metrics, name, description);
+    if (baseImpact) {
+      score += 3;
+      factors.push('Base business impact detected');
+    }
+    
+    // Page priority multipliers
+    if (context.pagePriority === 1) { // Tier 1
+      score *= 1.5;
+      factors.push('Tier 1 page - high business priority');
+    } else if (context.pagePriority === 2) { // Tier 2
+      score *= 1.2;
+      factors.push('Tier 2 page - medium business priority');
+    }
+    
+    // Conversion value consideration
+    if (context.trafficImportance?.conversionValue && context.trafficImportance.conversionValue > 1000) {
+      score *= 1.3;
+      factors.push('High-value conversion page - significant revenue impact');
+    }
+    
+    return { score: Math.min(score, 10), factors };
+  }
+
+  /**
+   * Context-aware compliance risk evaluation
+   */
+  private evaluateContextAwareComplianceRisk(
+    metrics: OFIAnalysisMetrics,
+    name: string,
+    description: string,
+    context: PageContext
+  ): { score: number; factors: string[] } {
+    let score = 0;
+    const factors: string[] = [];
+    
+    const baseRisk = this.evaluateComplianceRisk(metrics, name, description, context);
+    if (baseRisk) {
+      score += 3;
+      factors.push('Base compliance risk detected');
+    }
+    
+    // Enterprise sites have higher compliance requirements
+    if (context.siteSize === 'enterprise') {
+      score *= 1.3;
+      factors.push('Enterprise site - higher compliance standards required');
+    }
+    
+    // Corporate and nonprofit organizations have higher compliance needs
+    if (context.businessType === 'corporate' || context.businessType === 'nonprofit') {
+      score *= 1.2;
+      factors.push('Corporate/nonprofit - increased compliance obligations');
+    }
+    
+    return { score: Math.min(score, 10), factors };
+  }
+
+  /**
+   * Build enhanced decision tree with context awareness
+   */
+  private buildEnhancedDecisionTree(
+    criteria: {
+      seoVisibilityImpact: { score: number; factors: string[] };
+      userExperienceImpact: { score: number; factors: string[] };
+      businessImpact: { score: number; factors: string[] };
+      complianceRisk: { score: number; factors: string[] };
+    },
+    metrics: OFIAnalysisMetrics,
+    context: PageContext
+  ): string[] {
+    const tree: string[] = [];
+    
+    tree.push("START: Context-aware OFI classification");
+    tree.push(`Page Context: ${context.pageType} (${context.businessType}, ${context.siteSize})`);
+    
+    const threshold = this.calculateDynamicThreshold(context);
+    tree.push(`Dynamic threshold calculated: ${threshold.toFixed(2)}`);
+    
+    // Evaluate each criterion with context
+    tree.push(`SEO Impact Score: ${criteria.seoVisibilityImpact.score.toFixed(1)}/10`);
+    tree.push(`UX Impact Score: ${criteria.userExperienceImpact.score.toFixed(1)}/10`);
+    tree.push(`Business Impact Score: ${criteria.businessImpact.score.toFixed(1)}/10`);
+    tree.push(`Compliance Risk Score: ${criteria.complianceRisk.score.toFixed(1)}/10`);
+    
+    const totalScore = this.calculateContextAwarePriorityScore(criteria, context);
+    tree.push(`Weighted Total Score: ${totalScore.toFixed(2)}`);
+    
+    if (totalScore >= threshold) {
+      tree.push(`RESULT: Score ${totalScore.toFixed(2)} ≥ Threshold ${threshold.toFixed(2)} → PRIORITY OFI`);
+    } else {
+      tree.push(`RESULT: Score ${totalScore.toFixed(2)} < Threshold ${threshold.toFixed(2)} → STANDARD OFI`);
+    }
+    
+    return tree;
+  }
+
+  /**
    * Generate weekly audit classification report
    */
   generateWeeklyReport(classifications: OFIClassificationResult[]): {
@@ -530,6 +955,12 @@ export class OFIClassificationService {
     downgradedCount: number;
     flaggedForReview: number;
     recommendations: string[];
+    contextAwareMetrics?: {
+      averageThreshold: number;
+      thresholdRange: { min: number; max: number };
+      pageTypeBreakdown: Record<string, number>;
+      businessTypeBreakdown: Record<string, number>;
+    };
   } {
     
     const totalClassified = classifications.length;
@@ -564,6 +995,91 @@ export class OFIClassificationService {
       downgradedCount,
       flaggedForReview,
       recommendations
+    };
+  }
+
+  /**
+   * Batch classify multiple audit items with page context
+   */
+  batchClassifyWithContext(
+    items: Array<{ item: AuditItem; context: PageContext }>
+  ): Array<{ item: AuditItem; classification: OFIClassificationResult; context: PageContext }> {
+    return items.map(({ item, context }) => {
+      const classification = this.classifyOFIWithContext(
+        item.name,
+        item.description || '',
+        context,
+        this.extractMetricsFromAuditItem(item)
+      );
+      
+      return { item, classification, context };
+    });
+  }
+
+  /**
+   * Get recommended priority threshold for a specific page context
+   */
+  getRecommendedThreshold(context: PageContext): {
+    threshold: number;
+    reasoning: string[];
+    adjustments: Array<{ factor: string; adjustment: number; reason: string }>;
+  } {
+    const baseThreshold = 6.0;
+    const adjustments: Array<{ factor: string; adjustment: number; reason: string }> = [];
+    
+    let finalThreshold = baseThreshold;
+    
+    // Track all adjustments
+    if (context.pageType === 'homepage') {
+      const adjustment = -1.0;
+      finalThreshold += adjustment;
+      adjustments.push({ 
+        factor: 'Homepage', 
+        adjustment, 
+        reason: 'Homepage issues have higher business impact' 
+      });
+    } else if (context.pageType === 'service') {
+      const adjustment = -0.5;
+      finalThreshold += adjustment;
+      adjustments.push({ 
+        factor: 'Service Page', 
+        adjustment, 
+        reason: 'Service pages critical for conversions' 
+      });
+    }
+    
+    if (context.businessType === 'local') {
+      const adjustment = -0.3;
+      finalThreshold += adjustment;
+      adjustments.push({ 
+        factor: 'Local Business', 
+        adjustment, 
+        reason: 'Local businesses benefit more from SEO improvements' 
+      });
+    }
+    
+    if (context.competitiveContext?.industryCompetitiveness === 'high') {
+      const adjustment = -0.4;
+      finalThreshold += adjustment;
+      adjustments.push({ 
+        factor: 'High Competition', 
+        adjustment, 
+        reason: 'Competitive industries require more urgent SEO attention' 
+      });
+    }
+    
+    finalThreshold = Math.max(4.0, Math.min(8.0, finalThreshold));
+    
+    const reasoning = [
+      `Base threshold: ${baseThreshold}`,
+      ...adjustments.map(adj => `${adj.factor}: ${adj.adjustment >= 0 ? '+' : ''}${adj.adjustment} (${adj.reason})`),
+      `Final threshold: ${finalThreshold.toFixed(2)} (clamped between 4.0-8.0)`
+    ];
+    
+    return {
+      threshold: finalThreshold,
+      reasoning,
+      adjustments
     };
   }
 }
