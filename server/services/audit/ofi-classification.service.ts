@@ -287,6 +287,7 @@ export class OFIClassificationService {
       /duplicate.*meta.*description/,
       /missing.*h1/,     // Added to catch "Missing H1 tag"
       /no.*h1.*tag/,
+      /heading.*structure.*hierarchy/,  // Added to catch "Heading Structure Hierarchy" items
       /missing.*alt.*text/  // Added to catch critical accessibility issues
     ];
     
@@ -307,7 +308,8 @@ export class OFIClassificationService {
       const homepageCriticalPatterns = [
         /missing.*title/,
         /missing.*h1/,
-        /missing.*meta.*description/
+        /missing.*meta.*description/,
+        /heading.*structure.*hierarchy/  // Added to catch "Heading Structure Hierarchy" items
       ];
       if (homepageCriticalPatterns.some(pattern => pattern.test(text))) {
         return true;
@@ -320,18 +322,31 @@ export class OFIClassificationService {
       /no.*h1.*tag/,
       /h1.*count.*0/,
       /multiple.*h1/,
-      /duplicate.*h1/
+      /duplicate.*h1/,
+      /heading.*structure.*hierarchy/  // Added to catch "Heading Structure Hierarchy" items
     ];
+    
+    const h1PatternMatch = h1CriticalPatterns.some(pattern => pattern.test(text));
     
     // Special checks for H1 issues
     const isHeadingStructureWithNoH1 = text.includes('heading structure') && text.includes('h1: 0');
     const isHeadingStructureWithMultipleH1 = text.includes('heading structure') && /h1:\s*(?:[2-9]|\d{2,})/.test(text); // H1: 2-9 or 10+
     const hasH1ZeroPattern = /h1[\s:]*0(?!\d)/.test(text); // Match "H1: 0" but not "H1: 10"
     
-    if (h1CriticalPatterns.some(pattern => pattern.test(text)) || 
+    // Enhanced heading structure detection
+    const isHeadingStructureItem = /heading.*structure.*hierarchy/.test(text);
+    const hasH1Problem = isHeadingStructureItem && (
+      text.includes('add one h1 tag') || 
+      text.includes('exactly one h1 tag') ||
+      text.includes('lacks proper heading structure') ||
+      text.includes('without clear headings')
+    );
+    
+    if (h1PatternMatch || 
         isHeadingStructureWithNoH1 || 
         isHeadingStructureWithMultipleH1 ||
-        hasH1ZeroPattern) {
+        hasH1ZeroPattern ||
+        hasH1Problem) {
       return true;
     }
     
