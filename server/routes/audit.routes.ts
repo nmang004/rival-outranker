@@ -164,6 +164,16 @@ router.post("/enhanced", async (req: Request, res: Response) => {
           uxPerformance: resultsToStore.uxPerformance?.items?.length || 0
         });
         
+        // TEMPORARY DEBUG: Log Priority OFI counts before storage
+        const allStorageItems = [
+          ...(resultsToStore.contentQuality?.items || []),
+          ...(resultsToStore.technicalSEO?.items || []),
+          ...(resultsToStore.localSEO?.items || []),
+          ...(resultsToStore.uxPerformance?.items || [])
+        ];
+        const priorityOfiCountInStorage = allStorageItems.filter(item => item.status === 'Priority OFI').length;
+        console.log(`[STORAGE DEBUG] About to store ${priorityOfiCountInStorage} Priority OFI items. Summary shows: ${resultsToStore.summary.priorityOfiCount}`);
+        
         await rivalAuditRepository.completeAudit(
           auditRecord.id,
           resultsToStore,
@@ -877,19 +887,21 @@ function updateAuditSummary(audit: CachedRivalAudit) {
   audit.summary.naCount = 0;
   audit.summary.total = 0;
   
-  // Count items in each section - handle both enhanced and legacy structures
+  // Count items in each section - FIXED: Always prioritize enhanced categories to prevent stale data
   const sections = [];
   
-  // Check for enhanced categories first
+  // PRIORITY: Use enhanced categories if they exist (they have the most up-to-date Priority OFI classifications)
   if ((audit as any).contentQuality || (audit as any).technicalSEO || (audit as any).localSEO || (audit as any).uxPerformance) {
+    // Enhanced categories - use these for accurate Priority OFI counts
     sections.push(
       (audit as any).contentQuality,
       (audit as any).technicalSEO,
       (audit as any).localSEO,
       (audit as any).uxPerformance
     );
+    console.log(`[SUMMARY DEBUG] Using enhanced categories for summary calculation`);
   } else {
-    // Fallback to legacy categories
+    // Fallback to legacy categories ONLY if enhanced categories don't exist
     sections.push(
       audit.onPage,
       audit.structureNavigation,
@@ -898,6 +910,7 @@ function updateAuditSummary(audit: CachedRivalAudit) {
       audit.locationPages,
       audit.serviceAreaPages
     );
+    console.log(`[SUMMARY DEBUG] Falling back to legacy categories for summary calculation`);
   }
   
   sections.forEach(section => {
@@ -921,6 +934,9 @@ function updateAuditSummary(audit: CachedRivalAudit) {
       });
     }
   });
+  
+  // TEMPORARY DEBUG: Log final summary counts
+  console.log(`[SUMMARY DEBUG] Final summary counts: Priority OFI: ${audit.summary.priorityOfiCount}, OFI: ${audit.summary.ofiCount}, OK: ${audit.summary.okCount}, N/A: ${audit.summary.naCount}, Total: ${audit.summary.total}`);
 }
 
 export { router as auditRoutes };

@@ -319,16 +319,19 @@ export class OFIClassificationService {
       /missing.*h1/,
       /no.*h1.*tag/,
       /h1.*count.*0/,
-      /h1.*0/,
       /multiple.*h1/,
-      /duplicate.*h1/,
-      /heading.*structure.*hierarchy/  // Catch "Heading Structure Hierarchy" when it has H1:0
+      /duplicate.*h1/
     ];
     
-    // Special check for Heading Structure Hierarchy with H1:0 in notes
+    // Special checks for H1 issues
     const isHeadingStructureWithNoH1 = text.includes('heading structure') && text.includes('h1: 0');
+    const isHeadingStructureWithMultipleH1 = text.includes('heading structure') && /h1:\s*(?:[2-9]|\d{2,})/.test(text); // H1: 2-9 or 10+
+    const hasH1ZeroPattern = /h1[\s:]*0(?!\d)/.test(text); // Match "H1: 0" but not "H1: 10"
     
-    if (h1CriticalPatterns.some(pattern => pattern.test(text)) || isHeadingStructureWithNoH1) {
+    if (h1CriticalPatterns.some(pattern => pattern.test(text)) || 
+        isHeadingStructureWithNoH1 || 
+        isHeadingStructureWithMultipleH1 ||
+        hasH1ZeroPattern) {
       return true;
     }
     

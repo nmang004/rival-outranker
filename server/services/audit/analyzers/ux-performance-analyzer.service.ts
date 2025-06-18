@@ -42,7 +42,11 @@ export class UXPerformanceAnalyzer {
       description: "Page should be fully optimized for mobile devices",
       status: mobileScore >= 50 ? "OK" : mobileScore >= 30 ? "OFI" : "N/A",
       importance: "High",
-      notes: `Mobile optimization score: ${mobileScore}/100`
+      notes: mobileScore >= 50 ?
+        `What: Your page is well-optimized for mobile devices (${mobileScore}/100).\n\nWhy: Mobile optimization is crucial since most visitors browse on phones and Google prioritizes mobile-friendly sites.\n\nHow: Continue testing on various devices and ensure new content remains mobile-responsive.` :
+        mobileScore >= 30 ?
+        `What: Your page needs mobile optimization improvements (${mobileScore}/100).\n\nWhy: Poor mobile experience drives away most potential customers who browse on phones.\n\nHow: Improve mobile responsiveness, ensure buttons are touch-friendly, and test all features on mobile devices.` :
+        `What: Your page has significant mobile compatibility issues (${mobileScore}/100).\n\nWhy: Mobile problems prevent most visitors from using your website effectively.\n\nHow: Redesign for mobile-first approach, fix responsive design issues, and ensure all content works on phones.`
     };
   }
 
@@ -53,7 +57,11 @@ export class UXPerformanceAnalyzer {
       description: "Page should load quickly for better user experience",
       status: speedScore >= 50 ? "OK" : speedScore >= 30 ? "OFI" : "N/A",
       importance: "High",
-      notes: `Page speed score: ${speedScore}/100`
+      notes: speedScore >= 50 ?
+        `What: Your page loads at acceptable speeds for good user experience (${speedScore}/100).\n\nWhy: Fast loading keeps visitors engaged and improves search rankings significantly.\n\nHow: Continue monitoring speed and optimize images or scripts if performance decreases.` :
+        speedScore >= 30 ?
+        `What: Your page loading speed needs improvement for better user experience (${speedScore}/100).\n\nWhy: Slow loading frustrates visitors and negatively impacts search rankings.\n\nHow: Optimize images, enable compression, and minimize unnecessary scripts to achieve faster load times.` :
+        `What: Your page has serious speed issues that are driving visitors away (${speedScore}/100).\n\nWhy: Very slow loading creates terrible user experience and severely hurts search rankings.\n\nHow: Immediately optimize images, enable compression, and remove unnecessary elements to achieve under 3-second load times.`
     };
   }
 
@@ -64,7 +72,11 @@ export class UXPerformanceAnalyzer {
       description: "Page should be accessible to users with disabilities",
       status: accessibilityScore >= 50 ? "OK" : accessibilityScore >= 30 ? "OFI" : "N/A",
       importance: "Medium",
-      notes: `Accessibility score: ${accessibilityScore}/100`
+      notes: accessibilityScore >= 50 ?
+        `What: Your page meets basic accessibility standards for users with disabilities (${accessibilityScore}/100).\n\nWhy: Accessible websites serve all users better and are favored by search engines.\n\nHow: Continue maintaining accessibility features and consider adding more ARIA labels and keyboard navigation support.` :
+        accessibilityScore >= 30 ?
+        `What: Your page needs accessibility improvements to serve all users effectively (${accessibilityScore}/100).\n\nWhy: Poor accessibility excludes potential customers and can create legal compliance issues.\n\nHow: Add alt text to images, improve color contrast, and ensure all interactive elements are keyboard accessible.` :
+        `What: Your page has significant accessibility barriers that prevent many users from accessing content (${accessibilityScore}/100).\n\nWhy: Serious accessibility issues exclude customers with disabilities and may violate accessibility laws.\n\nHow: Immediately add alt text, improve heading structure, ensure proper color contrast, and enable keyboard navigation.`
     };
   }
 
@@ -75,7 +87,11 @@ export class UXPerformanceAnalyzer {
       description: "Page should have good visual hierarchy and usability",
       status: uxScore >= 50 ? "OK" : uxScore >= 30 ? "OFI" : "N/A",
       importance: "Medium",
-      notes: `UX score: ${uxScore}/100`
+      notes: uxScore >= 50 ?
+        `What: Your page provides a good user experience with clear navigation and organization (${uxScore}/100).\n\nWhy: Good UX keeps visitors engaged and guides them toward taking action.\n\nHow: Continue maintaining clear visual hierarchy and consider adding more interactive elements to improve engagement.` :
+        uxScore >= 30 ?
+        `What: Your page user experience needs improvement for better visitor engagement (${uxScore}/100).\n\nWhy: Poor UX confuses visitors and reduces the likelihood they'll contact your business.\n\nHow: Improve navigation clarity, add visual hierarchy with headings, and ensure interactive elements are easy to find.` :
+        `What: Your page has significant user experience issues that frustrate visitors (${uxScore}/100).\n\nWhy: Poor UX causes visitors to leave quickly without taking any action.\n\nHow: Redesign with clear navigation, logical content organization, and prominent call-to-action elements.`
     };
   }
 
@@ -86,7 +102,9 @@ export class UXPerformanceAnalyzer {
       description: "Page should not have disruptive pop-ups that harm user experience",
       status: !hasIntrusivePopups ? "OK" : "OFI",
       importance: "High",
-      notes: hasIntrusivePopups ? "Intrusive pop-ups detected that may harm user experience" : "No intrusive pop-ups detected"
+      notes: !hasIntrusivePopups ?
+        "What: Your page doesn't have intrusive pop-ups that disrupt the user experience.\n\nWhy: Pop-up-free browsing creates better user experience and prevents Google penalties for intrusive interstitials.\n\nHow: Continue avoiding disruptive pop-ups and use subtle, non-intrusive methods for lead capture if needed." :
+        "What: Your page has intrusive pop-ups that may frustrate visitors and hurt search rankings.\n\nWhy: Intrusive pop-ups create poor user experience and Google may penalize sites with disruptive interstitials.\n\nHow: Remove or redesign pop-ups to be less intrusive, use exit-intent triggers, or replace with inline forms."
     };
   }
 
@@ -97,7 +115,11 @@ export class UXPerformanceAnalyzer {
       description: "Forms should be user-friendly and mobile-optimized",
       status: formScore >= 80 ? "OK" : formScore >= 60 ? "OFI" : "OFI",
       importance: "Medium",
-      notes: `Form usability score: ${formScore}/100. Check field types, labels, and mobile optimization.`
+      notes: formScore >= 80 ?
+        `What: Your forms are well-designed and user-friendly (${formScore}/100).\n\nWhy: Easy-to-use forms improve conversion rates and capture more leads from website visitors.\n\nHow: Continue maintaining form usability and test occasionally to ensure they work well on all devices.` :
+        formScore >= 60 ?
+        `What: Your forms need some usability improvements to capture more leads (${formScore}/100).\n\nWhy: Difficult forms frustrate users and result in fewer contact submissions and lost potential customers.\n\nHow: Improve field labels, reduce required fields, and ensure forms work smoothly on mobile devices.` :
+        `What: Your forms have significant usability issues that are preventing lead capture (${formScore}/100).\n\nWhy: Poor form design causes visitors to abandon contact attempts and you lose potential customers.\n\nHow: Redesign forms with clear labels, appropriate field types, and mobile-friendly layout for better conversion.`
     };
   }
 
@@ -416,11 +438,54 @@ export class UXPerformanceAnalyzer {
         description: factor.desc,
         status,
         importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
-        notes: status === 'N/A' ? 'Feature not applicable or not detectable via automated analysis' :
-               `UX analysis score: ${score}/100. ${factor.desc} - evaluated for user experience optimization.`
+        notes: this.generateUXNotes(status, score, factor.name, factor.desc)
       });
     });
 
     return factors;
+  }
+
+  private generateUXNotes(status: string, score: number, factorName: string, factorDesc: string): string {
+    if (status === 'N/A') {
+      return 'What: This UX feature is not applicable to your current page type or cannot be automatically detected.\n\nWhy: Some user experience elements are context-specific or require manual evaluation.\n\nHow: No action needed for this item, but consider manual testing for this UX element.';
+    }
+
+    const factorLower = factorName.toLowerCase();
+    
+    if (status === 'OK') {
+      if (factorLower.includes('mobile') || factorLower.includes('touch')) {
+        return `What: Your mobile user experience is well-optimized (${score}/100).\\n\\nWhy: Good mobile UX ensures visitors can easily interact with your site on phones and tablets.\\n\\nHow: Continue testing on various mobile devices and ensure new features remain touch-friendly.`;
+      } else if (factorLower.includes('navigation') || factorLower.includes('menu')) {
+        return `What: Your navigation is clear and user-friendly (${score}/100).\\n\\nWhy: Intuitive navigation helps visitors find information quickly and reduces bounce rates.\\n\\nHow: Continue maintaining logical navigation structure and consider user testing for further improvements.`;
+      } else if (factorLower.includes('accessibility') || factorLower.includes('contrast') || factorLower.includes('keyboard')) {
+        return `What: Your page meets important accessibility standards (${score}/100).\\n\\nWhy: Accessible design serves all users and is increasingly important for legal compliance and SEO.\\n\\nHow: Continue following accessibility best practices and consider periodic accessibility audits.`;
+      } else if (factorLower.includes('form') || factorLower.includes('interactive')) {
+        return `What: Your interactive elements provide good user experience (${score}/100).\\n\\nWhy: Well-designed interactive elements encourage user engagement and improve conversion rates.\\n\\nHow: Continue optimizing interactive elements and test functionality across different devices regularly.`;
+      } else {
+        return `What: This user experience element is properly optimized (${score}/100).\\n\\nWhy: Good UX elements contribute to overall site usability and visitor satisfaction.\\n\\nHow: Continue maintaining this optimization and monitor user feedback for potential improvements.`;
+      }
+    } else if (status === 'OFI') {
+      if (factorLower.includes('mobile') || factorLower.includes('touch')) {
+        return `What: Your mobile user experience needs improvement (${score}/100).\\n\\nWhy: Poor mobile UX frustrates the majority of your visitors who browse on phones and tablets.\\n\\nHow: Increase touch target sizes, improve mobile navigation, and ensure all features work smoothly on small screens.`;
+      } else if (factorLower.includes('navigation') || factorLower.includes('menu')) {
+        return `What: Your navigation could be more intuitive and user-friendly (${score}/100).\\n\\nWhy: Confusing navigation causes visitors to leave before finding what they need.\\n\\nHow: Simplify menu structure, use clear labels, and ensure important pages are easily accessible from the main navigation.`;
+      } else if (factorLower.includes('accessibility') || factorLower.includes('contrast') || factorLower.includes('keyboard')) {
+        return `What: Your page needs accessibility improvements to serve all users (${score}/100).\\n\\nWhy: Accessibility barriers exclude potential customers and may create legal compliance issues.\\n\\nHow: Improve color contrast, add keyboard navigation support, and ensure all content is accessible to screen readers.`;
+      } else if (factorLower.includes('form') || factorLower.includes('interactive')) {
+        return `What: Your interactive elements need optimization for better user experience (${score}/100).\\n\\nWhy: Poorly designed interactive elements frustrate users and reduce conversion rates.\\n\\nHow: Improve form design, add clear feedback for user actions, and ensure all interactive elements work across devices.`;
+      } else {
+        return `What: This user experience element needs improvement (${score}/100).\\n\\nWhy: UX issues can frustrate visitors and prevent them from taking desired actions on your site.\\n\\nHow: Optimize this element following UX best practices and consider user testing to identify specific issues.`;
+      }
+    } else { // Priority OFI
+      if (factorLower.includes('mobile') || factorLower.includes('touch')) {
+        return `What: Your mobile experience has critical issues that are driving visitors away (${score}/100).\\n\\nWhy: Severe mobile problems prevent most potential customers from using your website effectively.\\n\\nHow: Immediately fix mobile compatibility issues, ensure touch elements work properly, and test thoroughly on phones and tablets.`;
+      } else if (factorLower.includes('navigation') || factorLower.includes('menu')) {
+        return `What: Your navigation has serious usability problems that confuse visitors (${score}/100).\\n\\nWhy: Poor navigation causes high bounce rates and prevents visitors from finding your services or contact information.\\n\\nHow: Urgently redesign navigation to be clear and intuitive, with logical organization and prominent contact options.`;
+      } else if (factorLower.includes('accessibility') || factorLower.includes('contrast') || factorLower.includes('keyboard')) {
+        return `What: Your page has critical accessibility barriers that exclude many users (${score}/100).\\n\\nWhy: Serious accessibility issues prevent customers with disabilities from using your site and may violate laws.\\n\\nHow: Immediately address accessibility issues including contrast, keyboard navigation, and screen reader compatibility.`;
+      } else {
+        return `What: This user experience element has critical issues requiring immediate attention (${score}/100).\\n\\nWhy: Serious UX problems significantly impact visitor satisfaction and conversion rates.\\n\\nHow: Prioritize fixing this UX issue immediately as it's likely causing visitors to leave without taking action.`;
+      }
+    }
   }
 }

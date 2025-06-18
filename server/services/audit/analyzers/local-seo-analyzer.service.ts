@@ -42,7 +42,11 @@ export class LocalSEOAnalyzer {
       description: "Business NAP should be consistent and properly formatted",
       status: napFound.complete ? "OK" : napFound.partial ? "OFI" : "N/A",
       importance: "High",
-      notes: `NAP elements found: ${napFound.elements.join(', ') || 'None'}`
+      notes: napFound.complete ?
+        "What: Your business name, address, and phone number are consistently displayed on this page.\n\nWhy: Consistent NAP information builds trust with search engines and customers, improving local search rankings.\n\nHow: Continue maintaining this consistency across all pages and ensure your NAP matches your Google Business Profile exactly." :
+        napFound.partial ?
+        `What: Your business information is partially present but needs completion (Found: ${napFound.elements.join(', ')}).\n\nWhy: Incomplete NAP information makes it harder for customers to contact you and reduces local search effectiveness.\n\nHow: Add all missing NAP elements (name, address, phone) to this page and ensure they match your Google Business Profile.` :
+        "What: Your page lacks essential business contact information (name, address, phone).\n\nWhy: Without NAP information, customers can't easily contact you and search engines can't understand your business location.\n\nHow: Add your complete business name, address, and phone number prominently on this page, matching your Google Business Profile."
     };
   }
 
@@ -55,7 +59,13 @@ export class LocalSEOAnalyzer {
       description: "Content should include relevant location signals",
       status: locationSignals >= 2 ? "OK" : locationSignals >= 1 ? "OFI" : isLocationPage ? "OFI" : "N/A",
       importance: isLocationPage ? "High" : "Medium",
-      notes: `Location signals found: ${locationSignals}. Recommended: 3+ for local pages.`
+      notes: locationSignals >= 2 ?
+        `What: Your page includes good location signals that help with local search visibility.\n\nWhy: Location signals help search engines understand your service area and connect you with local customers.\n\nHow: Continue mentioning your service locations and consider adding more specific area references or landmarks.` :
+        locationSignals >= 1 ?
+        `What: Your page has some location signals but could benefit from more specific geographic references.\n\nWhy: Limited location signals make it harder for search engines to connect you with local customers searching for services.\n\nHow: Add more location-specific content including city names, zip codes, and phrases like 'serving [city name]' or 'located in [area]'.` :
+        isLocationPage ?
+        `What: This location page lacks the geographic signals needed for effective local SEO.\n\nWhy: Location pages without specific area references miss opportunities to rank for local searches.\n\nHow: Add specific location references, service area descriptions, and local landmarks to strengthen geographic relevance.` :
+        "What: This page has minimal location context, which is acceptable for non-location pages.\n\nWhy: General pages don't require extensive location signals, but some geographic context can still be helpful.\n\nHow: Consider adding your main service area or headquarters location to provide basic geographic context."
     };
   }
 
@@ -66,7 +76,9 @@ export class LocalSEOAnalyzer {
       description: "Page should include LocalBusiness or Service schema markup",
       status: hasLocalSchema ? "OK" : "OFI",
       importance: "High",
-      notes: hasLocalSchema ? "LocalBusiness schema found" : "No LocalBusiness schema detected"
+      notes: hasLocalSchema ?
+        "What: Your page includes LocalBusiness schema markup that helps search engines understand your business.\n\nWhy: Local business schema enables rich search results and helps Google display your business information prominently.\n\nHow: Continue maintaining schema markup and consider adding more specific details like hours, services, and customer reviews." :
+        "What: Your page lacks LocalBusiness schema markup that could improve search visibility.\n\nWhy: Without schema markup, you miss opportunities for enhanced search results and better local search rankings.\n\nHow: Add LocalBusiness schema including your NAP, hours, services, and service areas to help search engines understand your business."
     };
   }
 
@@ -77,7 +89,11 @@ export class LocalSEOAnalyzer {
       description: "Page should demonstrate Experience, Expertise, Authoritativeness, Trustworthiness",
       status: eeatScore >= 50 ? "OK" : eeatScore >= 25 ? "OFI" : "N/A",
       importance: "Medium",
-      notes: `E-E-A-T score: ${eeatScore}/100. Look for certifications, awards, staff bios, reviews.`
+      notes: eeatScore >= 50 ?
+        `What: Your page demonstrates good expertise, authority, and trustworthiness signals (${eeatScore}/100).\n\nWhy: Strong E-E-A-T signals build customer confidence and help search engines recognize you as a credible business.\n\nHow: Continue showcasing credentials, experience, and customer feedback to maintain your authoritative positioning.` :
+        eeatScore >= 25 ?
+        `What: Your page shows some credibility signals but could strengthen expertise and authority (${eeatScore}/100).\n\nWhy: Limited credibility indicators make it harder for customers to trust your business over competitors.\n\nHow: Add more certifications, years of experience, customer testimonials, awards, or team member credentials.` :
+        `What: Your page lacks credibility signals that demonstrate your expertise and trustworthiness (${eeatScore}/100).\n\nWhy: Without authority signals, customers have no evidence of your qualifications and may choose competitors instead.\n\nHow: Add certifications, licenses, years in business, awards, customer reviews, and specific credentials to build trust.`
     };
   }
 
@@ -88,7 +104,11 @@ export class LocalSEOAnalyzer {
       description: "Service area pages should have unique, location-specific content",
       status: serviceAreaScore >= 70 ? "OK" : serviceAreaScore >= 50 ? "OFI" : "OFI",
       importance: "High",
-      notes: `Service area quality score: ${serviceAreaScore}/100. Pages should have unique content for each location.`
+      notes: serviceAreaScore >= 70 ?
+        `What: Your service area page provides comprehensive, location-specific content (${serviceAreaScore}/100).\n\nWhy: High-quality location pages help you rank for local searches and provide valuable information to potential customers.\n\nHow: Continue maintaining detailed, location-specific content and consider adding customer success stories from this area.` :
+        serviceAreaScore >= 50 ?
+        `What: Your service area page needs more unique, location-specific content (${serviceAreaScore}/100).\n\nWhy: Generic location pages don't rank well in local search and fail to demonstrate your area expertise.\n\nHow: Add more specific information about this location, including local landmarks, service examples, and area-specific details.` :
+        `What: Your service area page lacks the depth and specificity needed for effective local SEO (${serviceAreaScore}/100).\n\nWhy: Thin location pages hurt local search rankings and don't give customers confidence in your area coverage.\n\nHow: Completely rewrite this page with detailed location information, specific services, local references, and unique content.`
     };
   }
 
@@ -99,7 +119,9 @@ export class LocalSEOAnalyzer {
       description: "Contact information should include business hours",
       status: hasBusinessHours ? "OK" : "OFI",
       importance: "Low",
-      notes: hasBusinessHours ? "Business hours found" : "No business hours detected"
+      notes: hasBusinessHours ?
+        "What: Your page clearly displays business hours for customer convenience.\n\nWhy: Visible business hours help customers know when to contact you and improve your local search presence.\n\nHow: Ensure your hours are accurate and match your Google Business Profile to maintain consistency." :
+        "What: Your page doesn't display business hours, which customers often need to see.\n\nWhy: Missing hours can frustrate potential customers and they may assume you're not available when they need service.\n\nHow: Add your business hours prominently on your contact page and consider adding them to your main pages."
     };
   }
 
@@ -110,7 +132,11 @@ export class LocalSEOAnalyzer {
       description: "Should provide multiple ways for customers to contact business",
       status: contactMethods >= 3 ? "OK" : contactMethods >= 2 ? "OFI" : "OFI",
       importance: "Medium",
-      notes: `Found ${contactMethods} contact methods. Recommended: phone, email, and form.`
+      notes: contactMethods >= 3 ?
+        `What: Your page offers multiple convenient ways for customers to contact your business.\n\nWhy: Multiple contact options accommodate different customer preferences and increase your chances of capturing leads.\n\nHow: Continue maintaining various contact methods and ensure all are working properly and monitored regularly.` :
+        contactMethods >= 2 ?
+        `What: Your page provides some contact options but could offer more convenience for customers.\n\nWhy: Limited contact methods may miss opportunities to capture leads from customers who prefer different communication styles.\n\nHow: Add more contact options such as a contact form, clickable phone number, or chat feature to accommodate all customer preferences.` :
+        `What: Your page lacks sufficient contact methods, making it difficult for customers to reach you.\n\nWhy: Without easy contact options, potential customers may leave your site without getting in touch.\n\nHow: Add multiple contact methods including phone, email, contact form, and physical address to make it easy for customers to reach you.`
     };
   }
 
@@ -350,11 +376,58 @@ export class LocalSEOAnalyzer {
         description: factor.desc,
         status,
         importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
-        notes: status === 'N/A' ? 'Not applicable for this page type or business model' :
-               `Local SEO analysis score: ${score}/100. ${pageType} page evaluation for ${factor.name.toLowerCase()}.`
+        notes: this.generateLocalSEONotes(status, score, factor.name, pageType)
       });
     });
 
     return factors;
+  }
+
+  private generateLocalSEONotes(status: string, score: number, factorName: string, pageType: string): string {
+    if (status === 'N/A') {
+      return 'What: This local SEO feature is not applicable to your current page type or business model.\n\nWhy: Some local SEO strategies are only relevant for specific types of businesses or pages.\n\nHow: No action needed for this item, but consider it when optimizing location-specific pages.';
+    }
+
+    const factorLower = factorName.toLowerCase();
+    
+    if (status === 'OK') {
+      if (factorLower.includes('google business') || factorLower.includes('gbp')) {
+        return `What: Your Google Business Profile appears to be well-optimized (${score}/100).\\n\\nWhy: A complete Google Business Profile significantly improves local search visibility and customer trust.\\n\\nHow: Continue maintaining your profile with regular posts, photos, and responding to reviews to maximize local search impact.`;
+      } else if (factorLower.includes('citation') || factorLower.includes('directory')) {
+        return `What: Your business citations appear consistent across directories (${score}/100).\\n\\nWhy: Consistent citations improve local search rankings and help customers find accurate business information.\\n\\nHow: Continue monitoring citations for accuracy and claim new relevant directory listings as they become available.`;
+      } else if (factorLower.includes('service area') || factorLower.includes('geographic')) {
+        return `What: Your content effectively targets your service area (${score}/100).\\n\\nWhy: Good geographic targeting helps you rank for local searches and attracts customers in your service area.\\n\\nHow: Continue mentioning specific locations you serve and consider creating dedicated pages for major service areas.`;
+      } else if (factorLower.includes('keyword') || factorLower.includes('local keyword')) {
+        return `What: Your content includes good local keyword optimization (${score}/100).\\n\\nWhy: Location-specific keywords help customers find you when searching for services in your area.\\n\\nHow: Continue using location-based keywords naturally and monitor for new local search terms customers might use.`;
+      } else if (factorLower.includes('expertise') || factorLower.includes('authority') || factorLower.includes('certification')) {
+        return `What: Your page effectively demonstrates professional expertise and authority (${score}/100).\\n\\nWhy: Strong authority signals build customer trust and help search engines recognize you as a credible business.\\n\\nHow: Continue showcasing credentials, experience, and achievements while adding new certifications or awards as you earn them.`;
+      } else {
+        return `What: This local SEO element is properly optimized (${score}/100).\\n\\nWhy: Well-optimized local SEO elements improve your visibility in local search results and attract more customers.\\n\\nHow: Continue maintaining this optimization and monitor for any changes needed as local search algorithms evolve.`;
+      }
+    } else if (status === 'OFI') {
+      if (factorLower.includes('google business') || factorLower.includes('gbp')) {
+        return `What: Your Google Business Profile needs optimization to improve local search performance (${score}/100).\\n\\nWhy: An incomplete or poorly optimized profile significantly reduces your local search visibility.\\n\\nHow: Complete all profile sections, add photos, post regularly, respond to reviews, and ensure all information matches your website.`;
+      } else if (factorLower.includes('citation') || factorLower.includes('directory')) {
+        return `What: Your business citations need consistency improvements across directories (${score}/100).\\n\\nWhy: Inconsistent citations confuse search engines and customers, reducing your local search rankings.\\n\\nHow: Audit your citations across major directories, update inconsistent information, and claim unclaimed listings with accurate NAP details.`;
+      } else if (factorLower.includes('service area') || factorLower.includes('geographic')) {
+        return `What: Your content needs better geographic targeting for your service area (${score}/100).\\n\\nWhy: Weak geographic targeting makes it harder to rank for local searches and attract area customers.\\n\\nHow: Add more location-specific content, mention cities you serve, and create dedicated pages for major service areas.`;
+      } else if (factorLower.includes('keyword') || factorLower.includes('local keyword')) {
+        return `What: Your local keyword optimization could be strengthened (${score}/100).\\n\\nWhy: Without proper local keywords, potential customers in your area may not find your business in search results.\\n\\nHow: Research and naturally integrate location-based keywords like '[service] in [city]' throughout your content.`;
+      } else if (factorLower.includes('expertise') || factorLower.includes('authority') || factorLower.includes('certification')) {
+        return `What: Your page needs to better demonstrate professional expertise and authority (${score}/100).\\n\\nWhy: Limited authority signals make it harder for customers to trust your business over competitors.\\n\\nHow: Add certifications, licenses, years of experience, awards, team credentials, and customer testimonials to build credibility.`;
+      } else {
+        return `What: This local SEO element needs improvement to enhance your local search performance (${score}/100).\\n\\nWhy: Local SEO optimization is crucial for attracting customers in your service area.\\n\\nHow: Review and optimize this element following current local SEO best practices and guidelines.`;
+      }
+    } else { // Priority OFI
+      if (factorLower.includes('google business') || factorLower.includes('gbp')) {
+        return `What: Your Google Business Profile has critical issues that are severely limiting local search visibility (${score}/100).\\n\\nWhy: A poorly managed profile prevents potential customers from finding your business in local searches.\\n\\nHow: Immediately complete all profile sections, verify your listing, add photos, and ensure all information is accurate and consistent.`;
+      } else if (factorLower.includes('citation') || factorLower.includes('directory')) {
+        return `What: Your business has major citation inconsistencies that are hurting local search rankings (${score}/100).\\n\\nWhy: Inconsistent business information across the web confuses search engines and significantly reduces local visibility.\\n\\nHow: Urgently audit and correct all business listings, ensuring consistent NAP information across all directories and platforms.`;
+      } else if (factorLower.includes('service area') || factorLower.includes('geographic')) {
+        return `What: Your content lacks essential geographic targeting for effective local SEO (${score}/100).\\n\\nWhy: Without clear service area targeting, you're missing most local search opportunities in your market.\\n\\nHow: Immediately add location-specific content, create service area pages, and clearly communicate where you provide services.`;
+      } else {
+        return `What: This local SEO element has critical issues requiring immediate attention (${score}/100).\\n\\nWhy: Serious local SEO problems significantly limit your ability to attract customers in your service area.\\n\\nHow: Prioritize fixing this issue immediately as it's likely costing you local customers and search visibility.`;
+      }
+    }
   }
 }

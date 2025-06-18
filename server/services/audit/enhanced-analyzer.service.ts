@@ -401,7 +401,16 @@ class EnhancedAuditAnalyzer {
       ...results.uxPerformance.items
     ];
     
-    // Also populate legacy categories for backward compatibility
+    // CRITICAL: Apply new OFI classification system to ALL items FIRST
+    const ofiClassificationService = new OFIClassificationService();
+    
+    // Apply classification to all enhanced categories BEFORE populating legacy categories
+    this.applyNewClassificationToItems(results.contentQuality.items, ofiClassificationService);
+    this.applyNewClassificationToItems(results.technicalSEO.items, ofiClassificationService);
+    this.applyNewClassificationToItems(results.localSEO.items, ofiClassificationService);
+    this.applyNewClassificationToItems(results.uxPerformance.items, ofiClassificationService);
+
+    // FIXED: Populate legacy categories AFTER classification to ensure they get updated Priority OFI statuses
     // This ensures the audit works with both enhanced and legacy UI components
     results.onPage.items = [...results.contentQuality.items, ...results.technicalSEO.items];
     results.structureNavigation.items = [...results.technicalSEO.items].filter(item => 
@@ -416,15 +425,6 @@ class EnhancedAuditAnalyzer {
     results.servicePages.items = [...allItems].filter(item => item.pageType === 'service');
     results.locationPages.items = [...allItems].filter(item => item.pageType === 'location');
     results.serviceAreaPages.items = [...allItems].filter(item => item.pageType === 'serviceArea');
-
-    // CRITICAL: Apply new OFI classification system to ALL items before calculating summary
-    const ofiClassificationService = new OFIClassificationService();
-    
-    // Apply classification to all categories
-    this.applyNewClassificationToItems(results.contentQuality.items, ofiClassificationService);
-    this.applyNewClassificationToItems(results.technicalSEO.items, ofiClassificationService);
-    this.applyNewClassificationToItems(results.localSEO.items, ofiClassificationService);
-    this.applyNewClassificationToItems(results.uxPerformance.items, ofiClassificationService);
     
     // Recalculate all items after classification
     const allClassifiedItems = [
@@ -433,6 +433,24 @@ class EnhancedAuditAnalyzer {
       ...results.localSEO.items,
       ...results.uxPerformance.items
     ];
+
+    // TEMPORARY DEBUG: Log Priority OFI items post-classification
+    const priorityOfiItems = allClassifiedItems.filter(item => item.status === 'Priority OFI');
+    console.log(`[PRIORITY OFI DEBUG] Post-classification: Found ${priorityOfiItems.length} Priority OFI items`);
+    priorityOfiItems.forEach((item, index) => {
+      console.log(`[PRIORITY OFI DEBUG] ${index + 1}. ${item.name} (${item.category || 'No category'}) - ${item.pageType || 'No page type'}`);
+    });
+
+    // Also log legacy category Priority OFI counts
+    const legacyPriorityOfiCounts = {
+      onPage: results.onPage.items.filter(item => item.status === 'Priority OFI').length,
+      structureNavigation: results.structureNavigation.items.filter(item => item.status === 'Priority OFI').length,
+      contactPage: results.contactPage.items.filter(item => item.status === 'Priority OFI').length,
+      servicePages: results.servicePages.items.filter(item => item.status === 'Priority OFI').length,
+      locationPages: results.locationPages.items.filter(item => item.status === 'Priority OFI').length,
+      serviceAreaPages: results.serviceAreaPages.items.filter(item => item.status === 'Priority OFI').length
+    };
+    console.log(`[PRIORITY OFI DEBUG] Legacy category counts:`, legacyPriorityOfiCounts);
 
     results.summary.totalFactors = allClassifiedItems.length;
     results.summary.priorityOfiCount = allClassifiedItems.filter(item => item.status === 'Priority OFI').length;
