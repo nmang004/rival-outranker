@@ -280,7 +280,13 @@ export class CrawlerOrchestratorService {
       accessibility: {
         hasAccessibleElements: $('[alt], [aria-label], [aria-describedby]').length > 0,
         missingAltText: $('img:not([alt])').length,
-        hasAriaAttributes: $('[aria-*]').length > 0,
+        hasAriaAttributes: $('*').filter((_, el) => {
+          if (el.type === 'tag' && el.attribs) {
+            const attributes = Object.keys(el.attribs);
+            return attributes.some(attr => attr.startsWith('aria-'));
+          }
+          return false;
+        }).length > 0,
         hasProperHeadingStructure: $('h1').length === 1
       },
       seoIssues: {
