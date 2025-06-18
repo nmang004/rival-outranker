@@ -453,6 +453,7 @@ export class PuppeteerHandlerService {
       // Extract all the same data as regular crawling
       const crawlResult: CrawlerOutput = {
         url: result.url,
+        status: 'success', // Mark successful Puppeteer crawl
         statusCode: 200, // Puppeteer successful navigation
         title: result.title || $('title').text().trim(),
         meta: this.extractMetaTags ? this.extractMetaTags($) : { description: '', ogTags: {}, twitterTags: {} },
