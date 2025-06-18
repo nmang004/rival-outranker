@@ -15,8 +15,6 @@ export interface AnalysisFactor {
  */
 export class ContentQualityAnalyzer {
   async analyze(page: PageCrawlResult, $: cheerio.CheerioAPI): Promise<AnalysisFactor[]> {
-    console.log(`[ContentQualityAnalyzer] Starting analysis for page: ${page.url}`);
-    console.log(`[ContentQualityAnalyzer] USING ULTRA-BALANCED THRESHOLDS v2 - Major Factor Threshold Adjustment for 25-40% OK rate`);
     const factors: AnalysisFactor[] = [];
     
     // Phase 1: Content Quality Analysis (20+ factors)
@@ -57,15 +55,12 @@ export class ContentQualityAnalyzer {
     factors.push(await this.analyzeContentFlow($));
     factors.push(await this.analyzeContentAccuracy(page.bodyText));
 
-    console.log(`[ContentQualityAnalyzer] Completed analysis for ${page.url} - Generated ${factors.length} content quality factors`);
     return factors;
   }
 
   private async analyzeReadability(text: string): Promise<AnalysisFactor> {
     const score = this.calculateFleschReadingEase(text);
-    // BALANCED THRESHOLD: Much more lenient for OK status (was 40, now 25)
-    const status = score >= 25 ? "OK" : score >= 10 ? "OFI" : "N/A";
-    console.log(`[ContentQualityAnalyzer] Readability: score=${score}, status=${status} (NEW BALANCED THRESHOLD: 25+ for OK)`);
+    const status = score >= 60 ? "OK" : score >= 30 ? "OFI" : "Priority OFI";
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
@@ -77,11 +72,10 @@ export class ContentQualityAnalyzer {
 
   private async analyzeContentLength(wordCount: number, pageType: string): Promise<AnalysisFactor> {
     const minWords = this.getMinWordCount(pageType);
-    // BALANCED THRESHOLD: Much more lenient for OK status (was 0.6, now 0.3)
     return {
       name: "Sufficient Content Length",
       description: `${pageType} pages should have adequate content depth`,
-      status: wordCount >= minWords * 0.3 ? "OK" : wordCount >= minWords * 0.1 ? "OFI" : "N/A",
+      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.7 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Word count: ${wordCount}. Recommended minimum: ${minWords} words for ${pageType} pages.`
     };
@@ -89,11 +83,10 @@ export class ContentQualityAnalyzer {
 
   private async analyzeKeywordDensity(text: string): Promise<AnalysisFactor> {
     const density = this.calculateKeywordDensity(text);
-    // BALANCED THRESHOLD: Much more lenient for OK status (was 0.5-5, now 0.1-10)
     return {
       name: "Keyword Density Optimization",
       description: "Keywords should appear naturally without stuffing (1-3% density)",
-      status: density >= 0.1 && density <= 10 ? "OK" : density >= 0.05 && density <= 15 ? "OFI" : "N/A",
+      status: density >= 1 && density <= 3 ? "OK" : density >= 0.5 && density <= 5 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `Primary keyword density: ${density.toFixed(1)}%. Target: 1-3%.`
     };
@@ -104,11 +97,10 @@ export class ContentQualityAnalyzer {
     const ctaQuality = this.assessCTAQuality($);
     const combinedScore = (ctaElements >= 2 ? 50 : ctaElements >= 1 ? 30 : 0) + (ctaQuality >= 60 ? 50 : ctaQuality >= 30 ? 30 : 0);
     
-    // BALANCED THRESHOLD: Much more lenient for OK status (was 50, now 20)
     return {
       name: "Call-to-Action Optimization",
       description: "Page should have prominent, clear, and compelling calls-to-action",
-      status: combinedScore >= 20 ? "OK" : combinedScore >= 10 ? "OFI" : "N/A",
+      status: combinedScore >= 70 ? "OK" : combinedScore >= 40 ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `Found ${ctaElements} CTA elements with ${ctaQuality.toFixed(1)}% quality score. Optimize quantity and compelling language.`
     };
@@ -154,13 +146,13 @@ export class ContentQualityAnalyzer {
     const h2Count = $('h2').length;
     const h3Count = $('h3').length;
     
-    // BALANCED THRESHOLD: More lenient structure requirements
-    const hasDecentStructure = h1Count >= 1 && (h2Count >= 1 || h3Count >= 1);
+    const hasProperStructure = h1Count === 1 && h2Count >= 2;
+    const hasBasicStructure = h1Count === 1 && (h2Count >= 1 || h3Count >= 1);
     
     return {
       name: "Heading Structure Hierarchy",
       description: "Proper H1-H6 heading structure improves readability and SEO",
-      status: h1Count === 0 ? "OFI" : hasDecentStructure ? "OK" : "OFI",
+      status: hasProperStructure ? "OK" : hasBasicStructure ? "OFI" : "Priority OFI",
       importance: "High",
       notes: `H1: ${h1Count}, H2: ${h2Count}, H3: ${h3Count}. Should have exactly 1 H1 and multiple H2/H3 tags.`
     };
@@ -174,8 +166,7 @@ export class ContentQualityAnalyzer {
     return {
       name: "Image Content Optimization",
       description: "Images should have descriptive alt text and be relevant to content",
-      // BALANCED THRESHOLD: More lenient for OK status (was 90, now 50)
-      status: altTextQuality >= 50 ? "OK" : altTextQuality >= 20 ? "OFI" : "OFI",
+      status: altTextQuality >= 90 ? "OK" : altTextQuality >= 70 ? "OFI" : "Priority OFI",
       importance: "Medium",
       notes: `${imagesWithAlt.length}/${images.length} images have alt text (${altTextQuality.toFixed(1)}%).`
     };
