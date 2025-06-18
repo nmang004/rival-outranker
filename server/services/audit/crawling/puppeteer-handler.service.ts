@@ -223,25 +223,36 @@ export class PuppeteerHandlerService {
           req.continue();
         });
         
-        // Navigate to page with optimized wait conditions
-        await page.goto(url, { 
-          waitUntil: 'domcontentloaded', // Faster than networkidle2
-          timeout: 15000 // Reduced timeout for faster failures
-        });
-        
-        // Minimal wait for critical dynamic content only
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Extract page data
-        const data = await page.evaluate(() => {
-          return {
-            title: document.title,
-            html: document.documentElement.outerHTML,
-            url: window.location.href
-          };
-        });
-        
-        return data;
+        try {
+          // Navigate to page with optimized wait conditions
+          console.log(`[PuppeteerHandler] Navigating to: ${url}`);
+          await page.goto(url, { 
+            waitUntil: 'domcontentloaded', // Faster than networkidle2
+            timeout: 60000 // Extended timeout for slower-loading sites (60 seconds)
+          });
+          console.log(`[PuppeteerHandler] Navigation completed for: ${url}`);
+          
+          // Minimal wait for critical dynamic content only
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Extract page data
+          console.log(`[PuppeteerHandler] Extracting page data for: ${url}`);
+          const data = await page.evaluate(() => {
+            return {
+              title: document.title,
+              html: document.documentElement.outerHTML,
+              url: window.location.href
+            };
+          });
+          console.log(`[PuppeteerHandler] Data extraction completed for: ${url}`);
+          
+          return data;
+        } catch (taskError) {
+          console.error(`[PuppeteerHandler] Task execution failed for ${url}:`, taskError);
+          console.error(`[PuppeteerHandler] Task error name:`, taskError instanceof Error ? taskError.name : 'Unknown');
+          console.error(`[PuppeteerHandler] Task error message:`, taskError instanceof Error ? taskError.message : String(taskError));
+          throw taskError;
+        }
       });
       
       console.log(`[PuppeteerHandler] Puppeteer cluster initialized successfully`);
@@ -485,7 +496,12 @@ export class PuppeteerHandlerService {
       return crawlResult;
       
     } catch (error) {
-      console.error(`[PuppeteerHandler] Puppeteer crawl failed for ${url}:`, error);
+      console.error(`[PuppeteerHandler] Detailed Crawl Error for ${url}:`, error);
+      console.error(`[PuppeteerHandler] Error name:`, error instanceof Error ? error.name : 'Unknown');
+      console.error(`[PuppeteerHandler] Error message:`, error instanceof Error ? error.message : String(error));
+      if (error instanceof Error && error.stack) {
+        console.error(`[PuppeteerHandler] Error stack:`, error.stack);
+      }
       
       // If Puppeteer fails, disable it for the session to prevent repeated failures
       if (error instanceof Error && error.message.includes('cluster')) {
