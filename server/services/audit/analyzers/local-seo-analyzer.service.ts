@@ -352,32 +352,50 @@ export class LocalSEOAnalyzer {
     ];
 
     localSEOFactors.forEach((factor, index) => {
-      // Balanced distribution for Local SEO factors
-      const rand = Math.random();
-      let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
-      let score: number;
+      let analysisResult: AnalysisFactor;
       
-      if (rand < 0.35) { // 35% OK (local SEO often incomplete)
-        status = "OK";
-        score = Math.floor(Math.random() * 25) + 75; // Score 75-100
-      } else if (rand < 0.80) { // 45% OFI  
-        status = "OFI";
-        score = Math.floor(Math.random() * 35) + 40; // Score 40-75
-      } else if (rand < 0.95) { // 15% N/A
-        status = "N/A";
-        score = 0; // N/A items don't get scores
-      } else { // 5% potential Priority OFI (local SEO can be more critical)
-        status = "Priority OFI";
-        score = Math.floor(Math.random() * 35) + 5; // Score 5-40
+      // Use real analysis for key factors, placeholder for others temporarily
+      switch (factor.name) {
+        case "Google Business Profile Optimization":
+          analysisResult = this.analyzeGoogleBusinessProfile(page);
+          break;
+        case "Local Citations Consistency":
+          analysisResult = this.analyzeLocalCitations(page);
+          break;
+        case "Local Keyword Optimization":
+          analysisResult = this.analyzeLocalKeywords(page);
+          break;
+        default:
+          // Temporary placeholder logic for other factors - will be implemented in future phases
+          const rand = Math.random();
+          let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
+          let score: number;
+          
+          if (rand < 0.35) {
+            status = "OK";
+            score = Math.floor(Math.random() * 25) + 75;
+          } else if (rand < 0.80) {
+            status = "OFI";
+            score = Math.floor(Math.random() * 35) + 40;
+          } else if (rand < 0.95) {
+            status = "N/A";
+            score = 0;
+          } else {
+            status = "Priority OFI";
+            score = Math.floor(Math.random() * 35) + 5;
+          }
+          
+          analysisResult = {
+            name: factor.name,
+            description: factor.desc,
+            status,
+            importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
+            notes: this.generateLocalSEONotes(status, score, factor.name, pageType)
+          };
+          break;
       }
       
-      factors.push({
-        name: factor.name,
-        description: factor.desc,
-        status,
-        importance: index < 12 ? "High" : index < 24 ? "Medium" : "Low",
-        notes: this.generateLocalSEONotes(status, score, factor.name, pageType)
-      });
+      factors.push(analysisResult);
     });
 
     return factors;
@@ -429,5 +447,129 @@ export class LocalSEOAnalyzer {
         return `What: This local SEO element has critical issues requiring immediate attention (${score}/100).\\n\\nWhy: Serious local SEO problems significantly limit your ability to attract customers in your service area.\\n\\nHow: Prioritize fixing this issue immediately as it's likely costing you local customers and search visibility.`;
       }
     }
+  }
+
+  private analyzeGoogleBusinessProfile(page: PageCrawlResult): AnalysisFactor {
+    // Check for Google Business Profile indicators in the content
+    const content = page.bodyText.toLowerCase();
+    const hasBusinessHours = /hours|open|closed|monday|tuesday|wednesday|thursday|friday|saturday|sunday/i.test(content);
+    const hasAddress = page.hasAddress;
+    const hasPhoneNumber = page.hasPhoneNumber;
+    const hasGoogleMaps = page.rawHtml.includes('maps.google.com') || page.rawHtml.includes('google.com/maps');
+    
+    const completenessScore = [hasBusinessHours, hasAddress, hasPhoneNumber, hasGoogleMaps].filter(Boolean).length;
+    
+    if (completenessScore === 0) {
+      return {
+        name: "Google Business Profile Setup Needed",
+        description: "No Google Business Profile integration or local business information found on the website.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your website lacks Google Business Profile integration and basic business information.\n\nWhy: Google Business Profile is essential for local search visibility and customer discovery.\n\nHow: Set up Google Business Profile, add complete business information, and integrate maps/hours on your website.`
+      };
+    } else if (completenessScore < 3) {
+      return {
+        name: "Google Business Profile Incomplete",
+        description: "Google Business Profile integration is incomplete - missing key business information.",
+        status: "OFI",
+        importance: "High",
+        notes: `What: Your business information is incomplete (${completenessScore}/4 elements found: ${hasAddress ? 'Address' : ''} ${hasPhoneNumber ? 'Phone' : ''} ${hasBusinessHours ? 'Hours' : ''} ${hasGoogleMaps ? 'Maps' : ''}).\n\nWhy: Incomplete business information hurts local search rankings and customer trust.\n\nHow: Add missing elements: business hours, address, phone number, and Google Maps integration.`
+      };
+    }
+    
+    return {
+      name: "Google Business Profile Integration",
+      description: "Google Business Profile appears well-integrated with complete business information.",
+      status: "OK",
+      importance: "High",
+      notes: `What: Your website has good local business information integration (${completenessScore}/4 elements present).\n\nWhy: Complete business information helps local search rankings and customer conversions.\n\nHow: Continue maintaining accurate information and consider adding customer reviews display.`
+    };
+  }
+
+  private analyzeLocalCitations(page: PageCrawlResult): AnalysisFactor {
+    const hasNAP = page.hasNAP;
+    const hasAddress = page.hasAddress;
+    const hasPhoneNumber = page.hasPhoneNumber;
+    
+    // Check for consistent NAP formatting
+    const napElements = [hasAddress, hasPhoneNumber].filter(Boolean).length;
+    
+    if (!hasNAP && napElements < 2) {
+      return {
+        name: "Missing Local Citations",
+        description: "Website lacks consistent NAP (Name, Address, Phone) information critical for local SEO.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your website is missing consistent Name, Address, Phone (NAP) information.\n\nWhy: NAP consistency is crucial for local search rankings and helps customers find and contact you.\n\nHow: Add complete, consistent business contact information to every page, especially footer and contact page.`
+      };
+    } else if (!hasNAP) {
+      return {
+        name: "Local Citations Inconsistent",
+        description: "Business contact information may be incomplete or inconsistently formatted across the site.",
+        status: "OFI",
+        importance: "High",
+        notes: `What: Your business contact information is present but may lack consistency or completeness.\n\nWhy: Inconsistent NAP information confuses search engines and customers.\n\nHow: Ensure your business name, address, and phone number are identical across all pages and match your Google Business Profile.`
+      };
+    }
+    
+    return {
+      name: "Local Citations Consistency",
+      description: "Business NAP information appears consistent and complete across the website.",
+      status: "OK",
+      importance: "High",
+      notes: `What: Your website has consistent NAP (Name, Address, Phone) information.\n\nWhy: Consistent local citations help search engines verify your business and improve local rankings.\n\nHow: Continue maintaining consistency and ensure this matches your listings on Google Business Profile and other directories.`
+    };
+  }
+
+  private analyzeLocalKeywords(page: PageCrawlResult): AnalysisFactor {
+    const content = page.bodyText.toLowerCase();
+    const title = page.title.toLowerCase();
+    
+    // Common location indicators
+    const locationKeywords = [
+      'near me', 'local', 'area', 'city', 'town', 'county', 'state',
+      'serving', 'located', 'based', 'region', 'community', 'neighborhood'
+    ];
+    
+    const serviceAreaKeywords = [
+      'service area', 'we serve', 'coverage area', 'available in',
+      'cities served', 'locations', 'service region'
+    ];
+    
+    const locationCount = locationKeywords.filter(keyword => 
+      content.includes(keyword) || title.includes(keyword)
+    ).length;
+    
+    const serviceAreaCount = serviceAreaKeywords.filter(keyword =>
+      content.includes(keyword)
+    ).length;
+    
+    const totalLocalSignals = locationCount + serviceAreaCount;
+    
+    if (totalLocalSignals === 0) {
+      return {
+        name: "Missing Local Keywords",
+        description: "Content lacks location-specific keywords and geographic targeting signals.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your content lacks location-specific keywords and geographic targeting.\n\nWhy: Local keywords help search engines understand your service areas and connect you with local customers.\n\nHow: Add your city/region names, "near me" variations, and service area descriptions throughout your content naturally.`
+      };
+    } else if (totalLocalSignals < 3) {
+      return {
+        name: "Local Keyword Optimization Needed",
+        description: "Content has limited location-specific targeting and could benefit from more local keywords.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your content has some local keywords (${totalLocalSignals} signals found) but could be enhanced.\n\nWhy: Stronger local keyword optimization improves visibility for location-based searches.\n\nHow: Add more city names, service area descriptions, and location-specific terms throughout your content.`
+      };
+    }
+    
+    return {
+      name: "Local Keyword Optimization",
+      description: "Content includes good location-specific keywords and geographic targeting.",
+      status: "OK",
+      importance: "Medium",
+      notes: `What: Your content has strong local keyword targeting (${totalLocalSignals} location signals found).\n\nWhy: Good local keyword usage helps customers find you for location-based searches.\n\nHow: Continue using natural location references and consider adding seasonal or event-based local content.`
+    };
   }
 }

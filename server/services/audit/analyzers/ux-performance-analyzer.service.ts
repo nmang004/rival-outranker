@@ -414,32 +414,50 @@ export class UXPerformanceAnalyzer {
     ];
 
     uxFactors.forEach((factor, index) => {
-      // Balanced distribution for UX factors
-      const rand = Math.random();
-      let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
-      let score: number;
+      let analysisResult: AnalysisFactor;
       
-      if (rand < 0.60) { // 60% OK (UX often has good baseline)
-        status = "OK";
-        score = Math.floor(Math.random() * 30) + 70; // Score 70-100
-      } else if (rand < 0.85) { // 25% OFI  
-        status = "OFI";
-        score = Math.floor(Math.random() * 40) + 30; // Score 30-70
-      } else if (rand < 0.98) { // 13% N/A
-        status = "N/A";
-        score = 0; // N/A items don't get scores
-      } else { // 2% potential Priority OFI (UX rarely has critical issues)
-        status = "Priority OFI";
-        score = Math.floor(Math.random() * 25) + 5; // Score 5-30
+      // Use real analysis for key factors, placeholder for others temporarily
+      switch (factor.name) {
+        case "Mobile Touch Target Size":
+          analysisResult = this.analyzeTouchTargets(page, $);
+          break;
+        case "Contrast Ratio Compliance":
+          analysisResult = this.analyzeContrastRatio(page, $);
+          break;
+        case "Navigation Usability":
+          analysisResult = this.analyzeNavigationUsability(page, $);
+          break;
+        default:
+          // Temporary placeholder logic for other factors - will be implemented in future phases
+          const rand = Math.random();
+          let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
+          let score: number;
+          
+          if (rand < 0.60) {
+            status = "OK";
+            score = Math.floor(Math.random() * 30) + 70;
+          } else if (rand < 0.85) {
+            status = "OFI";
+            score = Math.floor(Math.random() * 40) + 30;
+          } else if (rand < 0.98) {
+            status = "N/A";
+            score = 0;
+          } else {
+            status = "Priority OFI";
+            score = Math.floor(Math.random() * 25) + 5;
+          }
+          
+          analysisResult = {
+            name: factor.name,
+            description: factor.desc,
+            status,
+            importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
+            notes: this.generateUXNotes(status, score, factor.name, factor.desc)
+          };
+          break;
       }
       
-      factors.push({
-        name: factor.name,
-        description: factor.desc,
-        status,
-        importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
-        notes: this.generateUXNotes(status, score, factor.name, factor.desc)
-      });
+      factors.push(analysisResult);
     });
 
     return factors;
@@ -487,5 +505,112 @@ export class UXPerformanceAnalyzer {
         return `What: This user experience element has critical issues requiring immediate attention (${score}/100).\\n\\nWhy: Serious UX problems significantly impact visitor satisfaction and conversion rates.\\n\\nHow: Prioritize fixing this UX issue immediately as it's likely causing visitors to leave without taking action.`;
       }
     }
+  }
+
+  private analyzeTouchTargets(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    // Analyze touch target elements
+    const buttons = $('button, [role="button"], input[type="submit"], input[type="button"]');
+    const links = $('a');
+    const totalInteractive = buttons.length + links.length;
+    
+    // Simple heuristic: check if there are reasonable amounts of interactive elements
+    const hasManySmallTargets = totalInteractive > 20; // Likely small targets if too many
+    const hasReasonableTargets = totalInteractive >= 3 && totalInteractive <= 15;
+    
+    if (totalInteractive === 0) {
+      return {
+        name: "Missing Interactive Elements",
+        description: "Page lacks interactive elements like buttons and links for user engagement.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page has no detectable interactive elements (buttons, links).\n\nWhy: Pages without interactive elements provide poor user experience and limit conversions.\n\nHow: Add clear call-to-action buttons, navigation links, and contact methods.`
+      };
+    } else if (hasManySmallTargets) {
+      return {
+        name: "Touch Target Size Issues",
+        description: "Page may have too many small interactive elements that are difficult to tap on mobile.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your page has many interactive elements (${totalInteractive}) which may be too small for mobile users.\n\nWhy: Small touch targets frustrate mobile users and reduce conversion rates.\n\nHow: Ensure buttons and links are at least 44px in size and have adequate spacing.`
+      };
+    }
+    
+    return {
+      name: "Touch Target Optimization",
+      description: "Page has appropriate number of interactive elements optimized for touch devices.",
+      status: "OK",
+      importance: "Medium",
+      notes: `What: Your page has a good balance of interactive elements (${totalInteractive} found).\n\nWhy: Well-sized touch targets improve mobile user experience and conversions.\n\nHow: Continue ensuring touch targets meet the 44px minimum size standard.`
+    };
+  }
+
+  private analyzeContrastRatio(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    // Simple analysis based on color keywords and style attributes
+    const bodyText = page.bodyText;
+    const hasColorStyling = page.rawHtml.includes('color:') || page.rawHtml.includes('background');
+    const hasLightText = page.rawHtml.includes('color:#fff') || page.rawHtml.includes('color:white');
+    const hasDarkBackground = page.rawHtml.includes('background:#000') || page.rawHtml.includes('background:black');
+    
+    // Check for potential contrast issues
+    const hasGreyText = page.rawHtml.includes('color:#999') || page.rawHtml.includes('color:#ccc');
+    const hasLightBackground = page.rawHtml.includes('background:#fff') || page.rawHtml.includes('background:white');
+    
+    const potentialContrastIssue = (hasGreyText && hasLightBackground) || 
+                                  (!hasColorStyling && bodyText.length < 500);
+    
+    if (potentialContrastIssue) {
+      return {
+        name: "Contrast Ratio Issues",
+        description: "Text may have insufficient contrast against background colors, affecting readability.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your text may have contrast issues that affect readability.\n\nWhy: Poor contrast makes content difficult to read and fails accessibility standards.\n\nHow: Ensure text has at least 4.5:1 contrast ratio against backgrounds. Test with color contrast tools.`
+      };
+    }
+    
+    return {
+      name: "Contrast Ratio Compliance",
+      description: "Text appears to have adequate contrast for good readability.",
+      status: "OK",
+      importance: "Medium",
+      notes: `What: Your text appears to have good contrast for readability.\n\nWhy: Good contrast ensures all users can read your content comfortably.\n\nHow: Continue testing with contrast ratio tools and maintain WCAG AA standards (4.5:1 minimum).`
+    };
+  }
+
+  private analyzeNavigationUsability(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    // Analyze navigation elements
+    const navElements = $('nav, [role="navigation"], .navigation, .menu, .navbar');
+    const headerLinks = $('header a');
+    const menuItems = $('ul li a, .menu a, nav a');
+    
+    const hasNavigation = navElements.length > 0;
+    const hasHeaderNavigation = headerLinks.length > 0;
+    const navigationItemCount = menuItems.length;
+    
+    if (!hasNavigation && !hasHeaderNavigation) {
+      return {
+        name: "Missing Navigation",
+        description: "Page lacks clear navigation structure, making it difficult for users to explore the site.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page is missing clear navigation elements.\n\nWhy: Navigation is essential for user experience and helps visitors find information easily.\n\nHow: Add a clear navigation menu with links to important pages like services, about, and contact.`
+      };
+    } else if (navigationItemCount < 3) {
+      return {
+        name: "Limited Navigation Options",
+        description: "Navigation has very few options, which may limit user exploration.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your navigation has limited options (${navigationItemCount} items found).\n\nWhy: Limited navigation can frustrate users trying to find information.\n\nHow: Add links to key pages like services, about, contact, and important content areas.`
+      };
+    }
+    
+    return {
+      name: "Navigation Usability",
+      description: "Page has clear navigation structure with appropriate menu options.",
+      status: "OK",
+      importance: "High",
+      notes: `What: Your page has good navigation structure (${navigationItemCount} menu items).\n\nWhy: Clear navigation helps users find information and improves overall experience.\n\nHow: Continue maintaining clear navigation and ensure all important pages are easily accessible.`
+    };
   }
 }

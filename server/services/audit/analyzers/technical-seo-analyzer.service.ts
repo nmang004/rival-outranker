@@ -267,37 +267,56 @@ export class TechnicalSEOAnalyzer {
     ];
 
     additionalFactors.forEach((factor, index) => {
-      // More realistic score distribution: 55% OK, 30% OFI, 12% N/A, 3% Priority OFI potential
-      const rand = Math.random();
-      let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
-      let score: number;
+      let analysisResult: AnalysisFactor;
       
-      if (rand < 0.55) { // 55% OK (increased for better balance)
-        status = "OK";
-        score = Math.floor(Math.random() * 30) + 70; // Score 70-100
-      } else if (rand < 0.85) { // 30% OFI  
-        status = "OFI";
-        score = Math.floor(Math.random() * 40) + 30; // Score 30-70
-      } else if (rand < 0.97) { // 12% N/A
-        status = "N/A";
-        score = 0; // N/A items don't get scores
-      } else { // 3% potential Priority OFI (will be validated by classification system)
-        status = "Priority OFI";
-        score = Math.floor(Math.random() * 30) + 10; // Score 10-40
+      // Use real analysis for key factors, placeholder for others temporarily
+      switch (factor.name) {
+        case "Page Speed Performance":
+          analysisResult = this.analyzePageSpeed(page);
+          break;
+        case "Mobile Responsiveness":
+          analysisResult = this.analyzeMobileResponsiveness(page, $);
+          break;
+        case "SSL Certificate":
+          analysisResult = this.analyzeSSLCertificate(page);
+          break;
+        case "Meta Description Length":
+          analysisResult = this.analyzeMetaDescription(page, $);
+          break;
+        case "Heading Tag Optimization":
+          analysisResult = this.analyzeH1Tags(page, $);
+          break;
+        default:
+          // Temporary placeholder logic for other factors - will be implemented in future phases
+          const rand = Math.random();
+          let status: 'OK' | 'OFI' | 'Priority OFI' | 'N/A';
+          let score: number;
+          
+          if (rand < 0.55) {
+            status = "OK";
+            score = Math.floor(Math.random() * 30) + 70;
+          } else if (rand < 0.85) {
+            status = "OFI";
+            score = Math.floor(Math.random() * 40) + 30;
+          } else if (rand < 0.97) {
+            status = "N/A";
+            score = 0;
+          } else {
+            status = "Priority OFI";
+            score = Math.floor(Math.random() * 30) + 10;
+          }
+          
+          analysisResult = {
+            name: factor.name,
+            description: factor.desc,
+            status,
+            importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
+            notes: this.generateTechnicalNotes(status, score, factor.name, factor.desc)
+          };
+          break;
       }
       
-      // DEBUG: Log distribution for first few items
-      if (index < 3) {
-        console.log(`[TechnicalSEOAnalyzer] NEW DISTRIBUTION: ${factor.name} -> ${status} (rand=${rand.toFixed(2)}, score=${score})`);
-      }
-      
-      factors.push({
-        name: factor.name,
-        description: factor.desc,
-        status,
-        importance: index < 8 ? "High" : index < 16 ? "Medium" : "Low",
-        notes: this.generateTechnicalNotes(status, score, factor.name, factor.desc)
-      });
+      factors.push(analysisResult);
     });
 
     console.log(`[TechnicalSEOAnalyzer] Completed analysis - Generated ${factors.length} technical SEO factors`);
@@ -346,5 +365,189 @@ export class TechnicalSEOAnalyzer {
         return `What: This technical element has critical issues requiring immediate attention (${score}/100).\\n\\nWhy: Serious technical problems significantly impact search rankings and user experience.\\n\\nHow: Prioritize fixing this issue immediately as it's likely costing you customers and search visibility.`;
       }
     }
+  }
+
+  private analyzeH1Tags(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    const h1Tags = $('h1');
+    const h1Count = h1Tags.length;
+    const h1Text = h1Tags.first().text().trim();
+    
+    if (h1Count === 0) {
+      return {
+        name: "Missing H1 Tag",
+        description: "This page lacks an H1 tag, which is critical for SEO structure and search engine understanding.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page is missing an H1 tag, which is essential for SEO.\n\nWhy: Search engines use H1 tags to understand the main topic of your page. Missing H1 tags can significantly hurt your search rankings.\n\nHow: Add exactly one H1 tag with your primary keyword to the top of your page content.`
+      };
+    } else if (h1Count > 1) {
+      return {
+        name: "Multiple H1 Tags",
+        description: "Multiple H1 tags found on page, which can confuse search engines about the page's primary focus.",
+        status: "OFI",
+        importance: "Medium", 
+        notes: `What: Your page has ${h1Count} H1 tags instead of the recommended single H1.\n\nWhy: Multiple H1 tags can dilute the importance signal sent to search engines and create confusion about your page's main topic.\n\nHow: Keep only one H1 tag (the most important one: "${h1Text}") and convert the others to H2 or H3 tags.`
+      };
+    }
+    
+    return {
+      name: "H1 Tag Structure",
+      description: "Page has proper H1 tag structure with exactly one H1 tag.",
+      status: "OK",
+      importance: "Medium",
+      notes: `What: Your page has proper H1 tag structure with exactly one H1 tag.\n\nWhy: Single H1 tags help search engines understand your page's primary topic and improve rankings.\n\nHow: Continue maintaining this structure. Current H1: "${h1Text.substring(0, 100)}${h1Text.length > 100 ? '...' : ''}"`
+    };
+  }
+
+  private analyzeMetaDescription(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    const metaDesc = $('meta[name="description"]').attr('content') || '';
+    const metaDescLength = metaDesc.length;
+    
+    if (metaDescLength === 0) {
+      return {
+        name: "Missing Meta Description",
+        description: "This page lacks a meta description, which is critical for search engine results and click-through rates.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page is missing a meta description tag.\n\nWhy: Meta descriptions appear in search results and significantly impact click-through rates. Missing meta descriptions hurt your search visibility.\n\nHow: Add a compelling meta description (120-160 characters) that summarizes your page content and includes your target keyword.`
+      };
+    } else if (metaDescLength < 120) {
+      return {
+        name: "Meta Description Too Short",
+        description: "Meta description is shorter than recommended length for optimal search results display.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your meta description is only ${metaDescLength} characters long.\n\nWhy: Short meta descriptions don't fully utilize the available space in search results, potentially reducing click-through rates.\n\nHow: Expand your meta description to 120-160 characters while maintaining clarity and including your target keyword. Current: "${metaDesc.substring(0, 100)}..."`
+      };
+    } else if (metaDescLength > 160) {
+      return {
+        name: "Meta Description Too Long", 
+        description: "Meta description exceeds recommended length and may be truncated in search results.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your meta description is ${metaDescLength} characters long, exceeding the 160-character limit.\n\nWhy: Long meta descriptions get truncated in search results with "..." which can hurt click-through rates.\n\nHow: Shorten your meta description to 120-160 characters while keeping the most important information. Current: "${metaDesc.substring(0, 100)}..."`
+      };
+    }
+    
+    return {
+      name: "Meta Description Optimization",
+      description: "Meta description is properly optimized for length and search results display.",
+      status: "OK", 
+      importance: "High",
+      notes: `What: Your meta description is well-optimized at ${metaDescLength} characters.\n\nWhy: Properly sized meta descriptions improve search result appearance and click-through rates.\n\nHow: Continue monitoring and ensure it remains compelling and keyword-focused. Current: "${metaDesc.substring(0, 100)}${metaDesc.length > 100 ? '...' : ''}"`
+    };
+  }
+
+  private analyzeSSLCertificate(page: PageCrawlResult): AnalysisFactor {
+    const url = page.url;
+    const isHttps = url.startsWith('https://');
+    const hasValidCert = page.hasHttps;
+    
+    if (!isHttps) {
+      return {
+        name: "No SSL Certificate",
+        description: "This page is not served over HTTPS, which is critical for security and SEO rankings.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your website is not using HTTPS encryption (currently using HTTP).\n\nWhy: Non-HTTPS sites are marked as "Not Secure" by browsers and penalized by search engines. This damages trust and rankings.\n\nHow: Install an SSL certificate immediately and configure your server to redirect all HTTP traffic to HTTPS.`
+      };
+    } else if (!hasValidCert) {
+      return {
+        name: "SSL Certificate Issues",
+        description: "SSL certificate may be expired, invalid, or improperly configured.",
+        status: "Priority OFI", 
+        importance: "High",
+        notes: `What: Your SSL certificate has validation issues despite using HTTPS.\n\nWhy: Invalid SSL certificates trigger browser warnings and hurt user trust and search rankings.\n\nHow: Check your SSL certificate expiration date and configuration. Renew or reinstall the certificate if needed.`
+      };
+    }
+    
+    return {
+      name: "SSL Certificate",
+      description: "Website properly secured with valid SSL certificate and HTTPS encryption.", 
+      status: "OK",
+      importance: "High",
+      notes: `What: Your website is properly secured with HTTPS and a valid SSL certificate.\n\nWhy: SSL encryption protects user data and is required by search engines for good rankings.\n\nHow: Continue monitoring certificate expiration dates and ensure automatic renewal is configured.`
+    };
+  }
+
+  private analyzePageSpeed(page: PageCrawlResult): AnalysisFactor {
+    const { score, firstContentfulPaint, largestContentfulPaint, totalBlockingTime } = page.pageLoadSpeed;
+    const fcpSeconds = firstContentfulPaint / 1000;
+    const lcpSeconds = largestContentfulPaint / 1000;
+    
+    // Critical thresholds based on Core Web Vitals
+    const isCriticalSpeed = score < 50 || lcpSeconds > 4.0 || fcpSeconds > 3.0;
+    const isSlowSpeed = score < 70 || lcpSeconds > 2.5 || fcpSeconds > 1.8;
+    
+    if (isCriticalSpeed) {
+      return {
+        name: "Critical Page Speed Issues",
+        description: "Page loading speed is critically slow, severely impacting user experience and SEO rankings.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your page has critical speed issues (Speed Score: ${score}/100, LCP: ${lcpSeconds.toFixed(1)}s, FCP: ${fcpSeconds.toFixed(1)}s).\n\nWhy: Very slow loading drives away visitors and severely hurts search rankings. Google prioritizes fast-loading sites.\n\nHow: Immediately optimize images, enable compression, minimize JavaScript, and consider a CDN. Target: LCP <2.5s, FCP <1.8s.`
+      };
+    } else if (isSlowSpeed) {
+      return {
+        name: "Page Speed Optimization Needed",
+        description: "Page loading speed could be improved for better user experience and SEO performance.",
+        status: "OFI",
+        importance: "High",
+        notes: `What: Your page speed needs improvement (Speed Score: ${score}/100, LCP: ${lcpSeconds.toFixed(1)}s, FCP: ${fcpSeconds.toFixed(1)}s).\n\nWhy: Slow loading reduces user engagement and can hurt search rankings.\n\nHow: Optimize images, enable compression, and minimize unnecessary scripts. Target: Speed Score >70, LCP <2.5s, FCP <1.8s.`
+      };
+    }
+    
+    return {
+      name: "Page Speed Performance",
+      description: "Page loading speed meets performance standards for good user experience.",
+      status: "OK",
+      importance: "High", 
+      notes: `What: Your page loads at good speed (Speed Score: ${score}/100, LCP: ${lcpSeconds.toFixed(1)}s, FCP: ${fcpSeconds.toFixed(1)}s).\n\nWhy: Fast loading keeps visitors engaged and helps search rankings.\n\nHow: Continue monitoring performance and maintain current optimization. Consider further improvements to reach 90+ speed score.`
+    };
+  }
+
+  private analyzeMobileResponsiveness(page: PageCrawlResult, $: cheerio.CheerioAPI): AnalysisFactor {
+    const isMobileFriendly = page.mobileFriendly;
+    const hasViewportMeta = $('meta[name="viewport"]').length > 0;
+    const viewportContent = $('meta[name="viewport"]').attr('content') || '';
+    
+    // Check for responsive design indicators
+    const hasResponsiveCSS = page.rawHtml.includes('@media') || 
+                            page.rawHtml.includes('max-width') || 
+                            page.rawHtml.includes('min-width');
+    
+    if (!isMobileFriendly && !hasViewportMeta) {
+      return {
+        name: "Not Mobile Responsive",
+        description: "Website is not mobile-friendly and lacks proper viewport configuration, which is critical for mobile SEO.",
+        status: "Priority OFI",
+        importance: "High", 
+        notes: `What: Your website is not mobile-responsive and missing viewport meta tag.\n\nWhy: Most users browse on mobile devices, and Google prioritizes mobile-friendly sites in search results. This severely hurts your rankings.\n\nHow: Immediately implement responsive design and add viewport meta tag: <meta name="viewport" content="width=device-width, initial-scale=1.0">`
+      };
+    } else if (!isMobileFriendly) {
+      return {
+        name: "Mobile Compatibility Issues", 
+        description: "Website has mobile compatibility issues that need to be addressed for better user experience.",
+        status: "Priority OFI",
+        importance: "High",
+        notes: `What: Your website has mobile compatibility issues despite having viewport configuration.\n\nWhy: Poor mobile experience drives away mobile users and hurts search rankings.\n\nHow: Test your site on mobile devices, fix touch target sizes, ensure text is readable, and verify all functionality works on mobile.`
+      };
+    } else if (!hasViewportMeta) {
+      return {
+        name: "Missing Viewport Meta Tag",
+        description: "Website lacks viewport meta tag which can affect mobile display and user experience.",
+        status: "OFI",
+        importance: "Medium",
+        notes: `What: Your site is mobile-friendly but missing the viewport meta tag.\n\nWhy: Viewport meta tag helps browsers display your site correctly on different devices.\n\nHow: Add viewport meta tag to your HTML head: <meta name="viewport" content="width=device-width, initial-scale=1.0">`
+      };
+    }
+    
+    return {
+      name: "Mobile Responsiveness",
+      description: "Website is properly optimized for mobile devices with responsive design.",
+      status: "OK",
+      importance: "High",
+      notes: `What: Your website is mobile-friendly with proper viewport configuration.\n\nWhy: Mobile optimization ensures good user experience and helps search rankings since Google uses mobile-first indexing.\n\nHow: Continue testing on various devices and maintain responsive design principles. Current viewport: "${viewportContent}"`
+    };
   }
 }
