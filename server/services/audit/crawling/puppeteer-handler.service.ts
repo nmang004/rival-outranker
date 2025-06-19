@@ -23,6 +23,7 @@ export class PuppeteerHandlerService {
   private static initializationPromise: Promise<void> | null = null;
   private static instanceCount = 0;
   private static isShuttingDown = false;
+  private static isClusterInitialized = false;
   
   // Services
   private pagePriorityService = new PagePriorityService();
@@ -95,8 +96,22 @@ export class PuppeteerHandlerService {
 
   /**
    * Initialize Puppeteer cluster for JavaScript-heavy sites (singleton pattern)
+   * @deprecated Use getCluster() method instead for safer initialization
    */
   async initializePuppeteerCluster(): Promise<void> {
+    try {
+      await this.initializeCluster();
+      await this.registerForCleanup();
+    } catch (error) {
+      console.error(`[PuppeteerHandler-${this.instanceId}] Failed to initialize cluster:`, error);
+      // Don't re-throw to maintain backward compatibility
+    }
+  }
+  
+  /**
+   * Private method to initialize the Puppeteer cluster (thread-safe)
+   */
+  private async initializeCluster(): Promise<void> {
     if (!this.USE_PUPPETEER_FOR_JS_SITES) {
       console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer disabled, skipping initialization`);
       return;
@@ -107,10 +122,9 @@ export class PuppeteerHandlerService {
       return;
     }
     
-    // If cluster already exists, just register for cleanup and return
-    if (PuppeteerHandlerService.globalCluster) {
-      console.log(`[PuppeteerHandler-${this.instanceId}] Using existing singleton cluster`);
-      await this.registerForCleanup();
+    // If cluster already exists and is initialized, return
+    if (PuppeteerHandlerService.globalCluster && PuppeteerHandlerService.isClusterInitialized) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Using existing initialized cluster`);
       return;
     }
     
@@ -118,16 +132,14 @@ export class PuppeteerHandlerService {
     if (PuppeteerHandlerService.initializationPromise) {
       console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization in progress, waiting...`);
       await PuppeteerHandlerService.initializationPromise;
-      await this.registerForCleanup();
       return;
     }
     
     // Start new initialization
     PuppeteerHandlerService.initializationPromise = this.doInitializeCluster();
     await PuppeteerHandlerService.initializationPromise;
-    await this.registerForCleanup();
   }
-  
+
   /**
    * Perform the actual cluster initialization (private method)
    */
@@ -300,11 +312,14 @@ export class PuppeteerHandlerService {
       });
       
       console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster initialized successfully`);
+      PuppeteerHandlerService.isClusterInitialized = true;
     } catch (error) {
       console.error(`[PuppeteerHandler-${this.instanceId}] Failed to initialize Puppeteer cluster:`, error);
       console.log(`[PuppeteerHandler-${this.instanceId}] Disabling Puppeteer for this session - will use regular crawling for all pages`);
       PuppeteerHandlerService.globalCluster = null;
+      PuppeteerHandlerService.isClusterInitialized = false;
       this.USE_PUPPETEER_FOR_JS_SITES = false; // Disable for this session
+      throw error; // Re-throw to let getCluster handle the error
     } finally {
       // Clear the initialization promise
       PuppeteerHandlerService.initializationPromise = null;
@@ -312,11 +327,32 @@ export class PuppeteerHandlerService {
   }
   
   /**
+   * Public method to safely get the Puppeteer cluster (initializes if needed)
+   */
+  async getCluster(): Promise<Cluster> {
+    // Check if cluster is already initialized and ready
+    if (PuppeteerHandlerService.globalCluster && PuppeteerHandlerService.isClusterInitialized) {
+      return PuppeteerHandlerService.globalCluster;
+    }
+    
+    // Initialize cluster if not ready
+    await this.initializeCluster();
+    
+    // Verify initialization succeeded
+    if (!PuppeteerHandlerService.globalCluster || !PuppeteerHandlerService.isClusterInitialized) {
+      throw new Error('Failed to initialize Puppeteer cluster');
+    }
+    
+    return PuppeteerHandlerService.globalCluster;
+  }
+
+  /**
    * Clean up Puppeteer cluster
    */
   async closePuppeteerCluster(): Promise<void> {
     // Mark system as shutting down to prevent new initializations
     PuppeteerHandlerService.isShuttingDown = true;
+    PuppeteerHandlerService.isClusterInitialized = false;
     
     if (PuppeteerHandlerService.globalCluster) {
       try {
@@ -339,6 +375,7 @@ export class PuppeteerHandlerService {
         ]);
         
         PuppeteerHandlerService.globalCluster = null;
+        PuppeteerHandlerService.isClusterInitialized = false;
         console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster closed successfully`);
       } catch (error) {
         console.error(`[PuppeteerHandler-${this.instanceId}] Error closing Puppeteer cluster:`, error);
@@ -353,6 +390,7 @@ export class PuppeteerHandlerService {
         } catch (forceError) {
           console.error(`[PuppeteerHandler-${this.instanceId}] Failed to force-close cluster:`, forceError);
           PuppeteerHandlerService.globalCluster = null; // Mark as null to prevent further attempts
+          PuppeteerHandlerService.isClusterInitialized = false;
         }
       }
     } else {
@@ -610,22 +648,14 @@ export class PuppeteerHandlerService {
    * Crawl page using Puppeteer for JavaScript-heavy sites
    */
   async crawlPageWithPuppeteer(url: string): Promise<CrawlerOutput> {
-    // Auto-initialize cluster if not already initialized
-    if (!PuppeteerHandlerService.globalCluster) {
-      console.log(`[PuppeteerHandler-${this.instanceId}] Auto-initializing Puppeteer cluster for: ${url}`);
-      await this.initializePuppeteerCluster();
-      
-      // Double-check initialization succeeded
-      if (!PuppeteerHandlerService.globalCluster) {
-        throw new Error('Failed to initialize Puppeteer cluster');
-      }
-    }
-    
     try {
       const startTime = Date.now();
       
+      // Get the cluster safely (initializes if needed)
+      const cluster = await this.getCluster();
+      
       // Execute crawling task in cluster
-      const result = await PuppeteerHandlerService.globalCluster!.execute(url);
+      const result = await cluster.execute(url);
       
       const loadTime = Date.now() - startTime;
       
@@ -701,7 +731,7 @@ export class PuppeteerHandlerService {
    * Check if Puppeteer is available and initialized
    */
   isPuppeteerAvailable(): boolean {
-    return this.USE_PUPPETEER_FOR_JS_SITES && PuppeteerHandlerService.globalCluster !== null;
+    return this.USE_PUPPETEER_FOR_JS_SITES && PuppeteerHandlerService.isClusterInitialized;
   }
 
   /**
@@ -735,7 +765,7 @@ export class PuppeteerHandlerService {
       isPuppeteerEnabled: this.USE_PUPPETEER_FOR_JS_SITES,
       isTierBasedEnabled: this.USE_TIER_BASED_PUPPETEER,
       clusterSize: this.PUPPETEER_CLUSTER_SIZE,
-      isClusterInitialized: PuppeteerHandlerService.globalCluster !== null,
+      isClusterInitialized: PuppeteerHandlerService.isClusterInitialized,
       jsDetectionPatterns: [...this.jsDetectionPatterns],
       instanceId: this.instanceId,
       registeredForCleanup: this.isRegisteredForCleanup,
@@ -989,7 +1019,7 @@ export class PuppeteerHandlerService {
     initializationInProgress: boolean;
   } {
     return {
-      isInitialized: PuppeteerHandlerService.globalCluster !== null,
+      isInitialized: PuppeteerHandlerService.isClusterInitialized,
       instanceCount: PuppeteerHandlerService.instanceCount,
       isShuttingDown: PuppeteerHandlerService.isShuttingDown,
       initializationInProgress: PuppeteerHandlerService.initializationPromise !== null
