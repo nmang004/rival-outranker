@@ -18,11 +18,19 @@ export class PuppeteerHandlerService {
   private instanceId = `puppeteer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   private isRegisteredForCleanup = false;
   
+  // Static singleton cluster management
+  private static globalCluster: Cluster | null = null;
+  private static initializationPromise: Promise<void> | null = null;
+  private static instanceCount = 0;
+  private static isShuttingDown = false;
+  
   // Services
   private pagePriorityService = new PagePriorityService();
   
-  // Puppeteer cluster for JS-heavy sites
-  private puppeteerCluster: Cluster | null = null;
+  // Puppeteer cluster for JS-heavy sites (reference to singleton)
+  private get puppeteerCluster(): Cluster | null {
+    return PuppeteerHandlerService.globalCluster;
+  }
   
   // JavaScript detection patterns
   private jsDetectionPatterns = [
@@ -64,6 +72,9 @@ export class PuppeteerHandlerService {
     checkThinContent?: ($: cheerio.CheerioAPI) => boolean;
     checkMissingHeadings?: ($: cheerio.CheerioAPI) => boolean;
   }) {
+    // Increment static instance counter
+    PuppeteerHandlerService.instanceCount++;
+    console.log(`[PuppeteerHandler] Created instance ${this.instanceId} (total: ${PuppeteerHandlerService.instanceCount})`);
     if (extractionMethods) {
       this.extractMetaTags = extractionMethods.extractMetaTags || null;
       this.extractContent = extractionMethods.extractContent || null;
@@ -83,34 +94,48 @@ export class PuppeteerHandlerService {
   }
 
   /**
-   * Initialize Puppeteer cluster for JavaScript-heavy sites
+   * Initialize Puppeteer cluster for JavaScript-heavy sites (singleton pattern)
    */
   async initializePuppeteerCluster(): Promise<void> {
-    if (!this.USE_PUPPETEER_FOR_JS_SITES || this.puppeteerCluster) {
+    if (!this.USE_PUPPETEER_FOR_JS_SITES) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer disabled, skipping initialization`);
       return;
     }
     
+    if (PuppeteerHandlerService.isShuttingDown) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] System is shutting down, skipping cluster initialization`);
+      return;
+    }
+    
+    // If cluster already exists, just register for cleanup and return
+    if (PuppeteerHandlerService.globalCluster) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Using existing singleton cluster`);
+      await this.registerForCleanup();
+      return;
+    }
+    
+    // If initialization is already in progress, wait for it
+    if (PuppeteerHandlerService.initializationPromise) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization in progress, waiting...`);
+      await PuppeteerHandlerService.initializationPromise;
+      await this.registerForCleanup();
+      return;
+    }
+    
+    // Start new initialization
+    PuppeteerHandlerService.initializationPromise = this.doInitializeCluster();
+    await PuppeteerHandlerService.initializationPromise;
+    await this.registerForCleanup();
+  }
+  
+  /**
+   * Perform the actual cluster initialization (private method)
+   */
+  private async doInitializeCluster(): Promise<void> {
     try {
-      console.log(`[PuppeteerHandler] Initializing Puppeteer cluster with ${this.PUPPETEER_CLUSTER_SIZE} instances`);
+      console.log(`[PuppeteerHandler-${this.instanceId}] Initializing singleton Puppeteer cluster with ${this.PUPPETEER_CLUSTER_SIZE} instances`);
       
-      // Register this instance for cleanup if not already registered
-      if (!this.isRegisteredForCleanup) {
-        try {
-          const { registerServiceForCleanup } = await import('../../../index');
-          registerServiceForCleanup(
-            `PuppeteerHandler-${this.instanceId}`,
-            async () => {
-              await this.closePuppeteerCluster();
-            }
-          );
-          this.isRegisteredForCleanup = true;
-          console.log(`[PuppeteerHandler] Registered instance ${this.instanceId} for graceful shutdown`);
-        } catch (error) {
-          console.warn(`[PuppeteerHandler] Could not register for cleanup (this is normal in test environments):`, error);
-        }
-      }
-      
-      this.puppeteerCluster = await Cluster.launch({
+      PuppeteerHandlerService.globalCluster = await Cluster.launch({
         concurrency: Cluster.CONCURRENCY_CONTEXT,
         maxConcurrency: this.PUPPETEER_CLUSTER_SIZE,
         puppeteerOptions: {
@@ -136,7 +161,7 @@ export class PuppeteerHandlerService {
       });
       
       // Set up task handler for crawling
-      await this.puppeteerCluster.task(async ({ page, data: url }) => {
+      await PuppeteerHandlerService.globalCluster!.task(async ({ page, data: url }) => {
         console.log(`[PuppeteerHandler] Puppeteer crawling: ${url}`);
         
         // Set viewport and user agent
@@ -274,12 +299,15 @@ export class PuppeteerHandlerService {
         }
       });
       
-      console.log(`[PuppeteerHandler] Puppeteer cluster initialized successfully`);
+      console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster initialized successfully`);
     } catch (error) {
-      console.error(`[PuppeteerHandler] Failed to initialize Puppeteer cluster:`, error);
-      console.log(`[PuppeteerHandler] Disabling Puppeteer for this session - will use regular crawling for all pages`);
-      this.puppeteerCluster = null;
+      console.error(`[PuppeteerHandler-${this.instanceId}] Failed to initialize Puppeteer cluster:`, error);
+      console.log(`[PuppeteerHandler-${this.instanceId}] Disabling Puppeteer for this session - will use regular crawling for all pages`);
+      PuppeteerHandlerService.globalCluster = null;
       this.USE_PUPPETEER_FOR_JS_SITES = false; // Disable for this session
+    } finally {
+      // Clear the initialization promise
+      PuppeteerHandlerService.initializationPromise = null;
     }
   }
   
@@ -287,13 +315,16 @@ export class PuppeteerHandlerService {
    * Clean up Puppeteer cluster
    */
   async closePuppeteerCluster(): Promise<void> {
-    if (this.puppeteerCluster) {
+    // Mark system as shutting down to prevent new initializations
+    PuppeteerHandlerService.isShuttingDown = true;
+    
+    if (PuppeteerHandlerService.globalCluster) {
       try {
         console.log(`[PuppeteerHandler-${this.instanceId}] Closing Puppeteer cluster gracefully...`);
         
         // Wait for all tasks to complete, but with a timeout
         await Promise.race([
-          this.puppeteerCluster.idle(),
+          PuppeteerHandlerService.globalCluster.idle(),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Cluster idle timeout')), 3000)
           )
@@ -301,27 +332,27 @@ export class PuppeteerHandlerService {
         
         // Close the cluster
         await Promise.race([
-          this.puppeteerCluster.close(),
+          PuppeteerHandlerService.globalCluster.close(),
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Cluster close timeout')), 2000)
           )
         ]);
         
-        this.puppeteerCluster = null;
-        console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer cluster closed successfully`);
+        PuppeteerHandlerService.globalCluster = null;
+        console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster closed successfully`);
       } catch (error) {
         console.error(`[PuppeteerHandler-${this.instanceId}] Error closing Puppeteer cluster:`, error);
         
         // Force close if graceful shutdown fails
         try {
-          if (this.puppeteerCluster) {
-            await this.puppeteerCluster.close();
-            this.puppeteerCluster = null;
+          if (PuppeteerHandlerService.globalCluster) {
+            await PuppeteerHandlerService.globalCluster.close();
+            PuppeteerHandlerService.globalCluster = null;
             console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer cluster force-closed`);
           }
         } catch (forceError) {
           console.error(`[PuppeteerHandler-${this.instanceId}] Failed to force-close cluster:`, forceError);
-          this.puppeteerCluster = null; // Mark as null to prevent further attempts
+          PuppeteerHandlerService.globalCluster = null; // Mark as null to prevent further attempts
         }
       }
     } else {
@@ -440,7 +471,7 @@ export class PuppeteerHandlerService {
   }
 
   /**
-   * Detect if a site is JavaScript-heavy
+   * Detect if a site is JavaScript-heavy using enhanced framework detection
    */
   detectJavaScriptHeavySite(html: string, url: string): boolean {
     if (!this.USE_PUPPETEER_FOR_JS_SITES) {
@@ -448,26 +479,124 @@ export class PuppeteerHandlerService {
     }
     
     const htmlLower = html.toLowerCase();
-    const urlLower = url.toLowerCase();
     
-    // Check for JS framework patterns in HTML
-    const jsPatternCount = this.jsDetectionPatterns.filter(pattern => 
+    // Enhanced framework footprint detection with weighted scoring
+    let jsScore = 0;
+    const detectionResults = {
+      frameworkFootprints: 0,
+      scriptCount: 0,
+      minimalContent: false,
+      ajaxPatterns: 0,
+      dynamicContent: 0,
+      spaIndicators: 0
+    };
+    
+    // 1. Framework-specific footprint detection (High weight: 3 points each)
+    const frameworkFootprints = [
+      { pattern: /id=["'](root|app)["']/i, name: 'React root div' },
+      { pattern: /data-v-|v-if|v-for|v-model/i, name: 'Vue.js directives' },
+      { pattern: /ng-app|ng-controller|\[ng-/i, name: 'Angular directives' },
+      { pattern: /data-ember|ember-application/i, name: 'Ember.js' },
+      { pattern: /data-backbone|backbone\.js/i, name: 'Backbone.js' },
+      { pattern: /__INITIAL_STATE__|window\.__/i, name: 'SSR hydration patterns' },
+      { pattern: /next\.js|nuxt|gatsby/i, name: 'Modern framework indicators' }
+    ];
+    
+    frameworkFootprints.forEach(({ pattern, name }) => {
+      if (pattern.test(html)) {
+        jsScore += 3;
+        detectionResults.frameworkFootprints++;
+        console.log(`[PuppeteerHandler] Detected ${name} in ${url}`);
+      }
+    });
+    
+    // 2. Script tag analysis (Medium weight: 2 points for heavy usage)
+    const scriptTags = (html.match(/<script[^>]*>/gi) || []).length;
+    detectionResults.scriptCount = scriptTags;
+    if (scriptTags > 5) {
+      jsScore += 2;
+      console.log(`[PuppeteerHandler] Heavy script usage detected: ${scriptTags} script tags in ${url}`);
+    } else if (scriptTags > 10) {
+      jsScore += 3; // Very heavy script usage
+    }
+    
+    // 3. Minimal content analysis (Medium weight: 2 points)
+    const textContent = html.replace(/<[^>]*>/g, '').trim();
+    const contentLength = textContent.length;
+    detectionResults.minimalContent = contentLength < 500;
+    if (detectionResults.minimalContent) {
+      jsScore += 2;
+      console.log(`[PuppeteerHandler] Minimal content detected (${contentLength} chars) in ${url}`);
+    }
+    
+    // 4. AJAX/Dynamic loading patterns (Medium weight: 2 points)
+    const ajaxPatterns = [
+      /ajax|xhr|fetch\(/i,
+      /axios\.|\.get|\.post/i,
+      /async.*await/i,
+      /json.*parse|json.*stringify/i
+    ];
+    
+    ajaxPatterns.forEach(pattern => {
+      if (pattern.test(html)) {
+        jsScore += 1;
+        detectionResults.ajaxPatterns++;
+      }
+    });
+    
+    // 5. Dynamic content indicators (Low weight: 1 point each)
+    const dynamicContentPatterns = [
+      /loading\.\.\.|spinner|skeleton/i,
+      /data-lazy|lazy-load/i,
+      /infinite.*scroll/i,
+      /dynamic.*import/i
+    ];
+    
+    dynamicContentPatterns.forEach(pattern => {
+      if (pattern.test(html)) {
+        jsScore += 1;
+        detectionResults.dynamicContent++;
+      }
+    });
+    
+    // 6. SPA routing indicators (High weight: 3 points)
+    const spaPatterns = [
+      /history\.push|router\.push/i,
+      /route.*path|path.*route/i,
+      /single.*page.*app|spa/i,
+      /#\/|#!/i // Hash routing
+    ];
+    
+    spaPatterns.forEach(pattern => {
+      if (pattern.test(html)) {
+        jsScore += 2;
+        detectionResults.spaIndicators++;
+      }
+    });
+    
+    // 7. Legacy pattern matching (for backward compatibility)
+    const legacyPatternCount = this.jsDetectionPatterns.filter(pattern => 
       htmlLower.includes(pattern)
     ).length;
     
-    // Check for minimal HTML content (indicates SPA)
-    const textContent = html.replace(/<[^>]*>/g, '').trim();
-    const hasMinimalContent = textContent.length < 500;
+    if (legacyPatternCount >= 2) {
+      jsScore += 1; // Lower weight for legacy detection
+    }
     
-    // Check for heavy script usage
-    const scriptTags = (html.match(/<script[^>]*>/gi) || []).length;
-    const hasHeavyScripts = scriptTags > 5;
-    
-    // Determine if it's JS-heavy
-    const isJsHeavy = jsPatternCount >= 2 || hasMinimalContent || hasHeavyScripts;
+    // Decision threshold: 4+ points indicates JS-heavy site
+    const isJsHeavy = jsScore >= 4;
     
     if (isJsHeavy) {
-      console.log(`[PuppeteerHandler] Detected JS-heavy site: ${url} (patterns: ${jsPatternCount}, minimal content: ${hasMinimalContent}, scripts: ${scriptTags})`);
+      console.log(`[PuppeteerHandler] 🎯 JS-heavy site detected: ${url}`);
+      console.log(`[PuppeteerHandler]   Score: ${jsScore}/20`);
+      console.log(`[PuppeteerHandler]   Framework footprints: ${detectionResults.frameworkFootprints}`);
+      console.log(`[PuppeteerHandler]   Script tags: ${detectionResults.scriptCount}`);
+      console.log(`[PuppeteerHandler]   Minimal content: ${detectionResults.minimalContent}`);
+      console.log(`[PuppeteerHandler]   AJAX patterns: ${detectionResults.ajaxPatterns}`);
+      console.log(`[PuppeteerHandler]   Dynamic content: ${detectionResults.dynamicContent}`);
+      console.log(`[PuppeteerHandler]   SPA indicators: ${detectionResults.spaIndicators}`);
+    } else {
+      console.log(`[PuppeteerHandler] ✋ Standard site detected: ${url} (score: ${jsScore}/20)`);
     }
     
     return isJsHeavy;
@@ -478,12 +607,12 @@ export class PuppeteerHandlerService {
    */
   async crawlPageWithPuppeteer(url: string): Promise<CrawlerOutput> {
     // Auto-initialize cluster if not already initialized
-    if (!this.puppeteerCluster) {
-      console.log(`[PuppeteerHandler] Auto-initializing Puppeteer cluster for: ${url}`);
+    if (!PuppeteerHandlerService.globalCluster) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Auto-initializing Puppeteer cluster for: ${url}`);
       await this.initializePuppeteerCluster();
       
       // Double-check initialization succeeded
-      if (!this.puppeteerCluster) {
+      if (!PuppeteerHandlerService.globalCluster) {
         throw new Error('Failed to initialize Puppeteer cluster');
       }
     }
@@ -492,7 +621,7 @@ export class PuppeteerHandlerService {
       const startTime = Date.now();
       
       // Execute crawling task in cluster
-      const result = await this.puppeteerCluster.execute(url);
+      const result = await PuppeteerHandlerService.globalCluster!.execute(url);
       
       const loadTime = Date.now() - startTime;
       
@@ -568,7 +697,7 @@ export class PuppeteerHandlerService {
    * Check if Puppeteer is available and initialized
    */
   isPuppeteerAvailable(): boolean {
-    return this.USE_PUPPETEER_FOR_JS_SITES && this.puppeteerCluster !== null;
+    return this.USE_PUPPETEER_FOR_JS_SITES && PuppeteerHandlerService.globalCluster !== null;
   }
 
   /**
@@ -594,13 +723,19 @@ export class PuppeteerHandlerService {
     clusterSize: number;
     isClusterInitialized: boolean;
     jsDetectionPatterns: string[];
+    instanceId: string;
+    registeredForCleanup: boolean;
+    totalInstances: number;
   } {
     return {
       isPuppeteerEnabled: this.USE_PUPPETEER_FOR_JS_SITES,
       isTierBasedEnabled: this.USE_TIER_BASED_PUPPETEER,
       clusterSize: this.PUPPETEER_CLUSTER_SIZE,
-      isClusterInitialized: this.puppeteerCluster !== null,
-      jsDetectionPatterns: [...this.jsDetectionPatterns]
+      isClusterInitialized: PuppeteerHandlerService.globalCluster !== null,
+      jsDetectionPatterns: [...this.jsDetectionPatterns],
+      instanceId: this.instanceId,
+      registeredForCleanup: this.isRegisteredForCleanup,
+      totalInstances: PuppeteerHandlerService.instanceCount
     };
   }
 
@@ -619,8 +754,177 @@ export class PuppeteerHandlerService {
       'react', 'angular', 'vue', 'backbone', 'ember',
       'spa', 'ajax', 'xhr', 'fetch',
       'document.ready', 'window.onload',
-      'ng-app', 'data-ng', 'v-if', 'v-for'
+      'ng-app', 'data-ng', 'v-if', 'v-for',
+      // Additional modern patterns
+      'next.js', 'nuxt', 'gatsby', 'svelte',
+      'webpack', 'vite', 'parcel',
+      'typescript', 'babel'
     ];
+  }
+  
+  /**
+   * Get detailed JavaScript detection analysis for debugging
+   */
+  getJSDetectionAnalysis(html: string, url: string): {
+    isJsHeavy: boolean;
+    score: number;
+    maxScore: number;
+    breakdown: {
+      frameworkFootprints: number;
+      scriptCount: number;
+      minimalContent: boolean;
+      ajaxPatterns: number;
+      dynamicContent: number;
+      spaIndicators: number;
+      legacyPatterns: number;
+    };
+    recommendations: string[];
+  } {
+    if (!this.USE_PUPPETEER_FOR_JS_SITES) {
+      return {
+        isJsHeavy: false,
+        score: 0,
+        maxScore: 20,
+        breakdown: {
+          frameworkFootprints: 0,
+          scriptCount: 0,
+          minimalContent: false,
+          ajaxPatterns: 0,
+          dynamicContent: 0,
+          spaIndicators: 0,
+          legacyPatterns: 0
+        },
+        recommendations: ['Puppeteer is disabled for this service instance']
+      };
+    }
+    
+    // Perform the same analysis as detectJavaScriptHeavySite but return detailed results
+    let jsScore = 0;
+    const breakdown = {
+      frameworkFootprints: 0,
+      scriptCount: 0,
+      minimalContent: false,
+      ajaxPatterns: 0,
+      dynamicContent: 0,
+      spaIndicators: 0,
+      legacyPatterns: 0
+    };
+    const recommendations: string[] = [];
+    
+    // Run the same detection logic
+    const htmlLower = html.toLowerCase();
+    
+    // Framework footprints
+    const frameworkFootprints = [
+      { pattern: /id=["'](root|app)["']/i, name: 'React root div' },
+      { pattern: /data-v-|v-if|v-for|v-model/i, name: 'Vue.js directives' },
+      { pattern: /ng-app|ng-controller|\[ng-/i, name: 'Angular directives' },
+      { pattern: /data-ember|ember-application/i, name: 'Ember.js' },
+      { pattern: /data-backbone|backbone\.js/i, name: 'Backbone.js' },
+      { pattern: /__INITIAL_STATE__|window\.__/i, name: 'SSR hydration patterns' },
+      { pattern: /next\.js|nuxt|gatsby/i, name: 'Modern framework indicators' }
+    ];
+    
+    frameworkFootprints.forEach(({ pattern }) => {
+      if (pattern.test(html)) {
+        jsScore += 3;
+        breakdown.frameworkFootprints++;
+      }
+    });
+    
+    // Script count
+    const scriptTags = (html.match(/<script[^>]*>/gi) || []).length;
+    breakdown.scriptCount = scriptTags;
+    if (scriptTags > 5) jsScore += 2;
+    if (scriptTags > 10) jsScore += 1; // Additional point for very heavy usage
+    
+    // Minimal content
+    const textContent = html.replace(/<[^>]*>/g, '').trim();
+    breakdown.minimalContent = textContent.length < 500;
+    if (breakdown.minimalContent) jsScore += 2;
+    
+    // AJAX patterns
+    const ajaxPatterns = [
+      /ajax|xhr|fetch\(/i,
+      /axios\.|\.get|\.post/i,
+      /async.*await/i,
+      /json.*parse|json.*stringify/i
+    ];
+    
+    ajaxPatterns.forEach(pattern => {
+      if (pattern.test(html)) {
+        jsScore += 1;
+        breakdown.ajaxPatterns++;
+      }
+    });
+    
+    // Dynamic content
+    const dynamicContentPatterns = [
+      /loading\.\.\.|spinner|skeleton/i,
+      /data-lazy|lazy-load/i,
+      /infinite.*scroll/i,
+      /dynamic.*import/i
+    ];
+    
+    dynamicContentPatterns.forEach(pattern => {
+      if (pattern.test(html)) {
+        jsScore += 1;
+        breakdown.dynamicContent++;
+      }
+    });
+    
+    // SPA indicators
+    const spaPatterns = [
+      /history\.push|router\.push/i,
+      /route.*path|path.*route/i,
+      /single.*page.*app|spa/i,
+      /#\/|#!/i
+    ];
+    
+    spaPatterns.forEach(pattern => {
+      if (pattern.test(html)) {
+        jsScore += 2;
+        breakdown.spaIndicators++;
+      }
+    });
+    
+    // Legacy patterns
+    breakdown.legacyPatterns = this.jsDetectionPatterns.filter(pattern => 
+      htmlLower.includes(pattern)
+    ).length;
+    
+    if (breakdown.legacyPatterns >= 2) {
+      jsScore += 1;
+    }
+    
+    // Generate recommendations
+    const isJsHeavy = jsScore >= 4;
+    
+    if (isJsHeavy) {
+      recommendations.push('Site requires Puppeteer for accurate crawling');
+      if (breakdown.frameworkFootprints > 0) {
+        recommendations.push('Modern JavaScript framework detected - content likely rendered client-side');
+      }
+      if (breakdown.minimalContent) {
+        recommendations.push('Minimal server-rendered content - likely Single Page Application');
+      }
+      if (breakdown.spaIndicators > 0) {
+        recommendations.push('SPA routing detected - navigation may not trigger page reloads');
+      }
+    } else {
+      recommendations.push('Standard HTTP crawling should be sufficient');
+      if (jsScore > 0) {
+        recommendations.push('Some JavaScript detected but not heavy enough to require browser rendering');
+      }
+    }
+    
+    return {
+      isJsHeavy,
+      score: jsScore,
+      maxScore: 20,
+      breakdown,
+      recommendations
+    };
   }
 
   /**
@@ -669,5 +973,22 @@ export class PuppeteerHandlerService {
    */
   isRegisteredForGracefulShutdown(): boolean {
     return this.isRegisteredForCleanup;
+  }
+  
+  /**
+   * Get static information about the singleton cluster
+   */
+  static getClusterInfo(): {
+    isInitialized: boolean;
+    instanceCount: number;
+    isShuttingDown: boolean;
+    initializationInProgress: boolean;
+  } {
+    return {
+      isInitialized: PuppeteerHandlerService.globalCluster !== null,
+      instanceCount: PuppeteerHandlerService.instanceCount,
+      isShuttingDown: PuppeteerHandlerService.isShuttingDown,
+      initializationInProgress: PuppeteerHandlerService.initializationPromise !== null
+    };
   }
 }

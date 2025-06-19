@@ -68,7 +68,12 @@ export class CrawlerOrchestratorService {
     pagesSkipped: 0,
     errorsEncountered: 0,
     startTime: 0,
-    endTime: 0
+    endTime: 0,
+    // Enhanced performance metrics
+    puppeteerPagesCrawled: 0,
+    standardPagesCrawled: 0,
+    puppeteerTotalTime: 0,
+    standardTotalTime: 0
   };
 
   /**
@@ -220,12 +225,26 @@ export class CrawlerOrchestratorService {
       const shouldUsePuppeteer = this.puppeteerHandlerService.shouldUsePuppeteerForPage(normalizedUrl, isJsHeavy);
       
       let crawlResult: CrawlerOutput;
+      const pageStartTime = Date.now();
+      
       if (shouldUsePuppeteer) {
         console.log(`[CrawlerOrchestrator] 🤖 Using Puppeteer for Tier 1 JS-heavy page: ${normalizedUrl}`);
         crawlResult = await this.puppeteerHandlerService.crawlPageWithPuppeteer(normalizedUrl);
+        
+        // Track Puppeteer performance metrics
+        const pageProcessingTime = Date.now() - pageStartTime;
+        this.stats.puppeteerPagesCrawled++;
+        this.stats.puppeteerTotalTime += pageProcessingTime;
+        console.log(`[CrawlerOrchestrator] 📊 Puppeteer page processed in ${pageProcessingTime}ms`);
       } else {
         console.log(`[CrawlerOrchestrator] 🌐 Using standard HTTP crawl: ${normalizedUrl} (JS-heavy: ${isJsHeavy})`);
         crawlResult = await this.standardCrawlPage(normalizedUrl);
+        
+        // Track standard HTTP performance metrics
+        const pageProcessingTime = Date.now() - pageStartTime;
+        this.stats.standardPagesCrawled++;
+        this.stats.standardTotalTime += pageProcessingTime;
+        console.log(`[CrawlerOrchestrator] 📊 Standard HTTP page processed in ${pageProcessingTime}ms`);
       }
 
       // Check for content similarity
@@ -368,7 +387,12 @@ export class CrawlerOrchestratorService {
       pagesSkipped: 0,
       errorsEncountered: 0,
       startTime: Date.now(),
-      endTime: 0
+      endTime: 0,
+      // Enhanced performance metrics
+      puppeteerPagesCrawled: 0,
+      standardPagesCrawled: 0,
+      puppeteerTotalTime: 0,
+      standardTotalTime: 0
     };
 
     // Reset service states
@@ -792,8 +816,24 @@ export class CrawlerOrchestratorService {
    */
   private finalizeCrawlSession(): void {
     this.stats.endTime = Date.now();
+    const crawlStats = this.getCrawlStats();
+    
     console.log(`[CrawlerOrchestrator] 🏁 Crawl session completed for ${this.currentSite}`);
-    console.log(`[CrawlerOrchestrator] 📊 Stats:`, this.getCrawlStats());
+    console.log(`[CrawlerOrchestrator] 📊 Enhanced Performance Stats:`);
+    console.log(`[CrawlerOrchestrator]   Total Pages: ${crawlStats.pagesCrawled}`);
+    console.log(`[CrawlerOrchestrator]   Puppeteer Pages: ${crawlStats.performanceBreakdown.puppeteerPages} (${crawlStats.performanceBreakdown.puppeteerPercentage}%)`);
+    console.log(`[CrawlerOrchestrator]   Standard Pages: ${crawlStats.performanceBreakdown.standardPages} (${crawlStats.performanceBreakdown.standardPercentage}%)`);
+    console.log(`[CrawlerOrchestrator]   Avg Puppeteer Time: ${crawlStats.performanceBreakdown.averagePuppeteerTime}ms`);
+    console.log(`[CrawlerOrchestrator]   Avg Standard Time: ${crawlStats.performanceBreakdown.averageStandardTime}ms`);
+    console.log(`[CrawlerOrchestrator]   Crawl Efficiency: ${crawlStats.performanceBreakdown.crawlEfficiency}x`);
+    
+    // Log performance insights
+    if (crawlStats.performanceInsights.length > 0) {
+      console.log(`[CrawlerOrchestrator] 💡 Performance Insights:`);
+      crawlStats.performanceInsights.forEach((insight: string) => {
+        console.log(`[CrawlerOrchestrator]   • ${insight}`);
+      });
+    }
     
     // Cleanup services
     this.puppeteerHandlerService.closePuppeteerCluster();
@@ -806,14 +846,108 @@ export class CrawlerOrchestratorService {
   private getCrawlStats(): any {
     const duration = this.stats.endTime > 0 ? this.stats.endTime - this.stats.startTime : Date.now() - this.stats.startTime;
     
+    // Calculate performance metrics
+    const averagePuppeteerTime = this.stats.puppeteerPagesCrawled > 0 
+      ? this.stats.puppeteerTotalTime / this.stats.puppeteerPagesCrawled 
+      : 0;
+    const averageStandardTime = this.stats.standardPagesCrawled > 0 
+      ? this.stats.standardTotalTime / this.stats.standardPagesCrawled 
+      : 0;
+    
+    // Calculate crawl efficiency (standard time vs Puppeteer time ratio)
+    const crawlEfficiency = averagePuppeteerTime > 0 
+      ? Math.round((averageStandardTime / averagePuppeteerTime) * 100) / 100
+      : 1.0;
+    
+    // Calculate method distribution
+    const puppeteerPercentage = this.stats.pagesCrawled > 0 
+      ? Math.round((this.stats.puppeteerPagesCrawled / this.stats.pagesCrawled) * 100)
+      : 0;
+    const standardPercentage = this.stats.pagesCrawled > 0 
+      ? Math.round((this.stats.standardPagesCrawled / this.stats.pagesCrawled) * 100)
+      : 0;
+    
     return {
       ...this.stats,
       duration,
       averagePageTime: this.stats.pagesCrawled > 0 ? duration / this.stats.pagesCrawled : 0,
       successRate: this.stats.pagesCrawled / (this.stats.pagesCrawled + this.stats.errorsEncountered),
+      
+      // Enhanced performance metrics
+      performanceBreakdown: {
+        puppeteerPages: this.stats.puppeteerPagesCrawled,
+        standardPages: this.stats.standardPagesCrawled,
+        averagePuppeteerTime: Math.round(averagePuppeteerTime),
+        averageStandardTime: Math.round(averageStandardTime),
+        crawlEfficiency,
+        puppeteerPercentage,
+        standardPercentage,
+        totalPuppeteerTime: this.stats.puppeteerTotalTime,
+        totalStandardTime: this.stats.standardTotalTime
+      },
+      
+      // Performance insights
+      performanceInsights: this.generatePerformanceInsights({
+        puppeteerPages: this.stats.puppeteerPagesCrawled,
+        standardPages: this.stats.standardPagesCrawled,
+        averagePuppeteerTime,
+        averageStandardTime,
+        crawlEfficiency
+      }),
+      
       contentSimilarityStats: this.contentSimilarityService.getDebugStats(),
       sitemapStats: this.sitemapDiscoveryService.getStats()
     };
+  }
+
+  /**
+   * Generate performance insights based on crawl metrics
+   */
+  private generatePerformanceInsights(metrics: {
+    puppeteerPages: number;
+    standardPages: number;
+    averagePuppeteerTime: number;
+    averageStandardTime: number;
+    crawlEfficiency: number;
+  }): string[] {
+    const insights: string[] = [];
+    
+    // Method distribution insights
+    if (metrics.puppeteerPages > 0 && metrics.standardPages > 0) {
+      const ratio = metrics.puppeteerPages / metrics.standardPages;
+      if (ratio > 0.5) {
+        insights.push('High Puppeteer usage detected - site may be heavily JavaScript-dependent');
+      } else if (ratio < 0.1) {
+        insights.push('Low Puppeteer usage - site appears to be mostly static content');
+      }
+    }
+    
+    // Performance insights
+    if (metrics.averagePuppeteerTime > 5000) {
+      insights.push('Puppeteer pages taking >5s on average - consider optimizing resource blocking');
+    }
+    
+    if (metrics.averageStandardTime > 3000) {
+      insights.push('Standard HTTP pages taking >3s on average - network or server performance issues');
+    }
+    
+    // Efficiency insights
+    if (metrics.crawlEfficiency < 0.3) {
+      insights.push('Puppeteer is significantly slower than standard crawling - validate JS detection accuracy');
+    } else if (metrics.crawlEfficiency > 0.8) {
+      insights.push('Efficient crawl performance - good balance between methods');
+    }
+    
+    // Method-specific insights
+    if (metrics.puppeteerPages === 0) {
+      insights.push('No Puppeteer usage - site may not require JavaScript rendering');
+    }
+    
+    if (metrics.standardPages === 0) {
+      insights.push('No standard HTTP crawling - all pages required JavaScript rendering');
+    }
+    
+    return insights;
   }
 
   /**
