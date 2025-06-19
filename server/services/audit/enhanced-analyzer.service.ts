@@ -291,15 +291,31 @@ class EnhancedAuditAnalyzer {
         pageType: pageInfo?.type
       };
 
-      // Enhanced debugging logs for audit item creation
+      // Enhanced debugging logs for audit item creation and Priority OFI classification
       console.log(`[EnhancedAnalyzer] AUDIT ITEM CREATED:`, {
         name: auditItem.name,
         status: auditItem.status,
         importance: auditItem.importance,
         category: auditItem.category,
         pageType: auditItem.pageType,
-        url: pageInfo?.url
+        url: pageInfo?.url,
+        description: auditItem.description,
+        notes: auditItem.notes
       });
+
+      // Special logging for Priority OFI items to debug classification
+      if (auditItem.status === 'Priority OFI') {
+        console.log(`[EnhancedAnalyzer] 🔴 PRIORITY OFI DETECTED:`, {
+          name: auditItem.name,
+          status: auditItem.status,
+          importance: auditItem.importance,
+          pageType: auditItem.pageType,
+          url: pageInfo?.url,
+          category: auditItem.category,
+          description: auditItem.description,
+          notes: auditItem.notes
+        });
+      }
 
       return auditItem;
     });
@@ -332,14 +348,48 @@ class EnhancedAuditAnalyzer {
         
         // Use the worst status (Priority OFI > OFI > OK > N/A)
         const statusPriority = { 'Priority OFI': 0, 'OFI': 1, 'OK': 2, 'N/A': 3 };
+        const originalStatus = existingItem.status;
         if (statusPriority[newItem.status] < statusPriority[existingItem.status]) {
           existingItem.status = newItem.status;
+          
+          // Log status changes, especially Priority OFI promotions
+          console.log(`[EnhancedAnalyzer] STATUS CHANGE for "${existingItem.name}": ${originalStatus} -> ${newItem.status}`, {
+            name: existingItem.name,
+            oldStatus: originalStatus,
+            newStatus: newItem.status,
+            importance: existingItem.importance,
+            pageType: newItem.pageType,
+            url: newItem.pageUrl
+          });
+          
+          // Special logging for Priority OFI status changes
+          if (newItem.status === 'Priority OFI') {
+            console.log(`[EnhancedAnalyzer] 🔴 PRIORITY OFI PROMOTION for "${existingItem.name}": ${originalStatus} -> ${newItem.status}`, {
+              name: existingItem.name,
+              status: newItem.status,
+              importance: existingItem.importance,
+              pageType: newItem.pageType,
+              url: newItem.pageUrl,
+              category: existingItem.category
+            });
+          }
         }
         
         // Use the highest importance
         const importancePriority = { 'High': 0, 'Medium': 1, 'Low': 2 };
+        const originalImportance = existingItem.importance;
         if (importancePriority[newItem.importance] < importancePriority[existingItem.importance]) {
           existingItem.importance = newItem.importance;
+          
+          // Log importance changes
+          console.log(`[EnhancedAnalyzer] IMPORTANCE CHANGE for "${existingItem.name}": ${originalImportance} -> ${newItem.importance}`, {
+            name: existingItem.name,
+            oldImportance: originalImportance,
+            newImportance: newItem.importance,
+            status: existingItem.status,
+            pageType: newItem.pageType,
+            url: newItem.pageUrl
+          });
         }
       }
     }

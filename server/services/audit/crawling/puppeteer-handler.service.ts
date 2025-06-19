@@ -372,19 +372,23 @@ export class PuppeteerHandlerService {
     // Get page priority based on URL analysis
     const pagePriority = this.determinePagePriority(url);
     
-    // Only use Puppeteer for Tier 1 pages that are JS-heavy
-    if (pagePriority === PagePriority.TIER_1 && isJsHeavy) {
-      console.log(`[PuppeteerHandler] Using Puppeteer for Tier 1 JS-heavy page: ${url}`);
+    // Use Puppeteer for ALL Tier 1 pages (not just JS-heavy ones)
+    if (pagePriority === PagePriority.TIER_1) {
+      console.log(`[PuppeteerHandler] Using Puppeteer for Tier 1 page: ${url}`);
       return true;
     }
     
-    // For Tier 2 and Tier 3 pages, skip Puppeteer even if JS-heavy
-    if (pagePriority !== PagePriority.TIER_1 && isJsHeavy) {
-      console.log(`[PuppeteerHandler] Skipping Puppeteer for Tier ${pagePriority} JS-heavy page (performance optimization): ${url}`);
-      return false;
+    // Use Puppeteer for JS-heavy Tier 2 pages  
+    if (pagePriority === PagePriority.TIER_2 && isJsHeavy) {
+      console.log(`[PuppeteerHandler] Using Puppeteer for Tier 2 JS-heavy page: ${url}`);
+      return true;
     }
     
-    // Not JS-heavy, use regular crawling
+    // Skip Puppeteer for Tier 3 pages even if JS-heavy
+    if (pagePriority === PagePriority.TIER_3 && isJsHeavy) {
+      console.log(`[PuppeteerHandler] Skipping Puppeteer for Tier 3 JS-heavy page (performance optimization): ${url}`);
+    }
+    
     return false;
   }
 

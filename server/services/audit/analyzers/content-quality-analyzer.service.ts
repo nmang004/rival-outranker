@@ -61,6 +61,18 @@ export class ContentQualityAnalyzer {
   private async analyzeReadability(text: string): Promise<AnalysisFactor> {
     const score = this.calculateFleschReadingEase(text);
     const status = score >= 60 ? "OK" : score >= 30 ? "OFI" : "Priority OFI";
+    
+    // Log Priority OFI assignment for debugging
+    if (status === "Priority OFI") {
+      console.log(`[ContentQualityAnalyzer] 🔴 PRIORITY OFI assigned for Content Readability Score`, {
+        factorName: "Content Readability Score",
+        status,
+        score,
+        threshold: "< 30",
+        importance: "High"
+      });
+    }
+    
     return {
       name: "Content Readability Score",
       description: "Content should be easily readable (Flesch Reading Ease 60+)",
@@ -76,10 +88,25 @@ export class ContentQualityAnalyzer {
 
   private async analyzeContentLength(wordCount: number, pageType: string): Promise<AnalysisFactor> {
     const minWords = this.getMinWordCount(pageType);
+    const status = wordCount >= minWords ? "OK" : wordCount >= minWords * 0.7 ? "OFI" : "Priority OFI";
+    
+    // Log Priority OFI assignment for debugging
+    if (status === "Priority OFI") {
+      console.log(`[ContentQualityAnalyzer] 🔴 PRIORITY OFI assigned for Sufficient Content Length`, {
+        factorName: "Sufficient Content Length",
+        status,
+        wordCount,
+        minWords,
+        threshold: `< ${minWords * 0.7}`,
+        pageType,
+        importance: "High"
+      });
+    }
+    
     return {
       name: "Sufficient Content Length",
       description: `${pageType} pages should have adequate content depth`,
-      status: wordCount >= minWords ? "OK" : wordCount >= minWords * 0.7 ? "OFI" : "Priority OFI",
+      status,
       importance: "High",
       notes: wordCount >= minWords ?
         `What: Your ${pageType} page has sufficient content depth with ${wordCount} words.\n\nWhy: Comprehensive content helps visitors understand your services and improves search engine rankings.\n\nHow: Continue providing detailed, valuable information that addresses visitor questions and concerns.` :
@@ -89,10 +116,23 @@ export class ContentQualityAnalyzer {
 
   private async analyzeKeywordDensity(text: string): Promise<AnalysisFactor> {
     const density = this.calculateKeywordDensity(text);
+    const status = density >= 1 && density <= 3 ? "OK" : density >= 0.5 && density <= 5 ? "OFI" : "Priority OFI";
+    
+    // Log Priority OFI assignment for debugging
+    if (status === "Priority OFI") {
+      console.log(`[ContentQualityAnalyzer] 🔴 PRIORITY OFI assigned for Keyword Density Optimization`, {
+        factorName: "Keyword Density Optimization",
+        status,
+        density: density.toFixed(2),
+        threshold: "< 0.5% or > 5%",
+        importance: "Medium"
+      });
+    }
+    
     return {
       name: "Keyword Density Optimization",
       description: "Keywords should appear naturally without stuffing (1-3% density)",
-      status: density >= 1 && density <= 3 ? "OK" : density >= 0.5 && density <= 5 ? "OFI" : "Priority OFI",
+      status,
       importance: "Medium",
       notes: density >= 1 && density <= 3 ?
         `What: Your keywords appear naturally throughout the content at ${density.toFixed(1)}% density.\n\nWhy: Proper keyword usage helps search engines understand your page topic while maintaining readability.\n\nHow: Continue using keywords naturally and consider adding related terms to expand your content's reach.` :

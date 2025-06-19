@@ -107,9 +107,25 @@ export class OFIClassificationService {
     context?: any
   ): OFIClassificationResult {
     
+    // Log the start of OFI classification for debugging
+    console.log(`[OFIClassification] Starting classification for: "${name}"`, {
+      name,
+      description: description.substring(0, 100) + '...',
+      hasMetrics: Object.keys(metrics).length > 0,
+      hasContext: !!context
+    });
+    
     const criteriaMet = this.evaluateCriteria(metrics, name, description, context);
     const decisionTree = this.buildDecisionTree(criteriaMet, metrics);
     let priorityCriteriaCount = this.countPriorityCriteria(criteriaMet);
+    
+    console.log(`[OFIClassification] Criteria evaluation for "${name}":`, {
+      seoVisibilityImpact: criteriaMet.seoVisibilityImpact,
+      userExperienceImpact: criteriaMet.userExperienceImpact,
+      businessImpact: criteriaMet.businessImpact,
+      complianceRisk: criteriaMet.complianceRisk,
+      priorityCriteriaCount
+    });
     
     // BALANCED APPROACH: Use reasonable criteria for Priority OFI classification
     let classification: 'Standard OFI' | 'Priority OFI' = 'Standard OFI';
@@ -118,6 +134,12 @@ export class OFIClassificationService {
     // Special cases: Some critical issues should be Priority OFI even with 1 criteria
     const isCriticalSingleIssue = this.checkCriticalSingleCriteriaIssues(name, description, context);
     
+    console.log(`[OFIClassification] Classification logic for "${name}":`, {
+      priorityCriteriaCount,
+      isCriticalSingleIssue,
+      willBePriorityOFI: priorityCriteriaCount >= 1 || isCriticalSingleIssue
+    });
+    
     // Classify as Priority OFI if we have 1+ criteria OR it's a critical single-criteria issue
     if (priorityCriteriaCount >= 1 || isCriticalSingleIssue) {
       classification = 'Priority OFI';
@@ -125,15 +147,26 @@ export class OFIClassificationService {
         // Override downgrade reason for critical issues
         downgradedReason = '';
       }
+      console.log(`[OFIClassification] 🔴 CLASSIFIED AS PRIORITY OFI: "${name}"`, {
+        reason: isCriticalSingleIssue ? 'Critical single issue' : `${priorityCriteriaCount} priority criteria met`,
+        priorityCriteriaCount,
+        isCriticalSingleIssue
+      });
     } else {
       downgradedReason = 'Only meets ' + priorityCriteriaCount + ' priority criteria (requires 1+ for Priority OFI)';
+      console.log(`[OFIClassification] Classified as Standard OFI: "${name}"`, {
+        reason: downgradedReason,
+        priorityCriteriaCount
+      });
     }
     
     // Additional safety checks
     const hasWorkaround = this.checkForWorkaround(name, description, context);
     if (hasWorkaround) {
+      const originalClassification = classification;
       classification = 'Standard OFI';
       downgradedReason = 'Workaround available';
+      console.log(`[OFIClassification] Downgraded from ${originalClassification} to Standard OFI: "${name}" (${downgradedReason})`);
     }
     
     const justification = this.buildJustification(
@@ -144,7 +177,8 @@ export class OFIClassificationService {
       downgradedReason
     );
 
-    return {
+    // Final classification result logging
+    const result = {
       classification,
       criteriaMet,
       justification,
@@ -152,6 +186,15 @@ export class OFIClassificationService {
       decisionTree,
       requiresValidation: classification === 'Priority OFI'
     };
+
+    console.log(`[OFIClassification] Final classification result for "${name}":`, {
+      classification: result.classification,
+      justification: result.justification,
+      requiresValidation: result.requiresValidation,
+      decisionTree: result.decisionTree
+    });
+
+    return result;
   }
 
   /**
