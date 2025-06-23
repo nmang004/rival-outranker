@@ -2,6 +2,7 @@ import { Cluster } from 'puppeteer-cluster';
 import * as cheerio from 'cheerio';
 import { PagePriorityService, PagePriority } from '../page-priority.service';
 import { CrawlerOutput } from '../../../types/crawler';
+import { CircuitBreaker, CircuitBreakerFactory, CircuitBreakerError } from '../../../utils/circuit-breaker';
 
 // Re-export the CrawlerOutput interface for backward compatibility
 export type { CrawlerOutput } from '../../../types/crawler';
@@ -25,11 +26,8 @@ export class PuppeteerHandlerService {
   private static isShuttingDown = false;
   private static isClusterInitialized = false;
   
-  // Circuit breaker and retry management
-  private static failureCount = 0;
-  private static lastFailureTime = 0;
-  private static circuitBreakerResetTime = 300000; // 5 minutes
-  private static maxFailures = 3;
+  // Circuit breaker for browser operations
+  private static circuitBreaker: CircuitBreaker = CircuitBreakerFactory.createBrowserCircuitBreaker();
   private static retryDelays = [1000, 2000, 5000]; // Exponential backoff: 1s, 2s, 5s
   
   // Health monitoring
@@ -135,8 +133,9 @@ export class PuppeteerHandlerService {
     
     // Check circuit breaker
     if (this.isCircuitBreakerOpen()) {
-      const resetTimeLeft = Math.ceil((PuppeteerHandlerService.circuitBreakerResetTime - (Date.now() - PuppeteerHandlerService.lastFailureTime)) / 1000);
-      throw new Error(`Circuit breaker is open. Too many initialization failures. Retry in ${resetTimeLeft} seconds.`);
+      const healthStatus = PuppeteerHandlerService.circuitBreaker.getHealthStatus();
+      const resetTimeLeft = healthStatus.timeToReset ? Math.ceil(healthStatus.timeToReset / 1000) : 0;
+      throw new Error(`Circuit breaker is ${healthStatus.state}. Too many initialization failures. Retry in ${resetTimeLeft} seconds.`);
     }
     
     // If cluster exists, validate its health before returning
@@ -180,9 +179,7 @@ export class PuppeteerHandlerService {
         
         await this.doInitializeCluster();
         
-        // Success - reset failure count and return
-        PuppeteerHandlerService.failureCount = 0;
-        PuppeteerHandlerService.lastFailureTime = 0;
+        // Success - circuit breaker will automatically track this
         console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization successful on attempt ${attempt + 1}`);
         return;
         
@@ -202,9 +199,7 @@ export class PuppeteerHandlerService {
       }
     }
     
-    // All retries failed - update circuit breaker and throw
-    PuppeteerHandlerService.failureCount++;
-    PuppeteerHandlerService.lastFailureTime = Date.now();
+    // All retries failed - circuit breaker failure will be tracked automatically when error is thrown
     
     const errorMessage = `Failed to initialize Puppeteer cluster after ${maxRetries + 1} attempts. Last error: ${lastError?.message || 'Unknown error'}`;
     console.error(`[PuppeteerHandler-${this.instanceId}] ${errorMessage}`);
@@ -413,22 +408,23 @@ export class PuppeteerHandlerService {
       
     } catch (error) {
       // Enhance error context for debugging
+      const circuitBreakerHealth = PuppeteerHandlerService.circuitBreaker.getHealthStatus();
       const errorDetails = {
         instanceId: this.instanceId,
         clusterExists: !!PuppeteerHandlerService.globalCluster,
         isInitialized: PuppeteerHandlerService.isClusterInitialized,
         isShuttingDown: PuppeteerHandlerService.isShuttingDown,
         initializationInProgress: !!PuppeteerHandlerService.initializationPromise,
-        failureCount: PuppeteerHandlerService.failureCount,
-        circuitBreakerOpen: this.isCircuitBreakerOpen(),
+        circuitBreakerState: circuitBreakerHealth.state,
+        circuitBreakerFailureRate: circuitBreakerHealth.failureRate,
         originalError: error instanceof Error ? error.message : String(error)
       };
       
       console.error(`[PuppeteerHandler-${this.instanceId}] getCluster failed with context:`, errorDetails);
       
-      // If we've hit the circuit breaker threshold, disable Puppeteer for this session
-      if (PuppeteerHandlerService.failureCount >= PuppeteerHandlerService.maxFailures * 2) {
-        console.log(`[PuppeteerHandler-${this.instanceId}] Too many failures, disabling Puppeteer for this session`);
+      // If circuit breaker is open, disable Puppeteer for this session
+      if (!circuitBreakerHealth.isHealthy) {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Circuit breaker unhealthy, disabling Puppeteer for this session`);
         this.USE_PUPPETEER_FOR_JS_SITES = false;
       }
       
@@ -440,15 +436,10 @@ export class PuppeteerHandlerService {
   }
   
   /**
-   * Check if circuit breaker is open (too many recent failures)
+   * Check if circuit breaker allows requests
    */
   private isCircuitBreakerOpen(): boolean {
-    if (PuppeteerHandlerService.failureCount < PuppeteerHandlerService.maxFailures) {
-      return false;
-    }
-    
-    const timeSinceLastFailure = Date.now() - PuppeteerHandlerService.lastFailureTime;
-    return timeSinceLastFailure < PuppeteerHandlerService.circuitBreakerResetTime;
+    return !PuppeteerHandlerService.circuitBreaker.isRequestAllowed();
   }
   
   /**
@@ -547,8 +538,7 @@ export class PuppeteerHandlerService {
         PuppeteerHandlerService.isClusterInitialized = false;
         
         // Reset circuit breaker state on clean shutdown
-        PuppeteerHandlerService.failureCount = 0;
-        PuppeteerHandlerService.lastFailureTime = 0;
+        PuppeteerHandlerService.circuitBreaker.reset();
         PuppeteerHandlerService.lastHealthCheck = 0;
         
         console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster closed successfully`);
@@ -568,8 +558,7 @@ export class PuppeteerHandlerService {
           PuppeteerHandlerService.isClusterInitialized = false;
           
           // Reset circuit breaker state on forced shutdown
-          PuppeteerHandlerService.failureCount = 0;
-          PuppeteerHandlerService.lastFailureTime = 0;
+          PuppeteerHandlerService.circuitBreaker.reset();
           PuppeteerHandlerService.lastHealthCheck = 0;
         }
       }
@@ -829,13 +818,24 @@ export class PuppeteerHandlerService {
    */
   async crawlPageWithPuppeteer(url: string): Promise<CrawlerOutput> {
     try {
+      // Check circuit breaker before attempting operation
+      if (this.isCircuitBreakerOpen()) {
+        const stats = PuppeteerHandlerService.circuitBreaker.getHealthStatus();
+        throw new CircuitBreakerError(
+          `Puppeteer circuit breaker is ${stats.state}. ${stats.timeToReset ? `Retry in ${stats.timeToReset}ms` : 'Service unavailable'}`
+        );
+      }
+
       const startTime = Date.now();
       
-      // Get the cluster safely (initializes if needed)
-      const cluster = await this.getCluster();
-      
-      // Execute crawling task in cluster
-      const result = await cluster.execute(url);
+      // Execute crawling with circuit breaker protection
+      const result = await PuppeteerHandlerService.circuitBreaker.execute(async () => {
+        // Get the cluster safely (initializes if needed)
+        const cluster = await this.getCluster();
+        
+        // Execute crawling task in cluster
+        return await cluster.execute(url);
+      });
       
       const loadTime = Date.now() - startTime;
       
@@ -926,6 +926,28 @@ export class PuppeteerHandlerService {
    */
   setTierBasedPuppeteerEnabled(enabled: boolean): void {
     this.USE_TIER_BASED_PUPPETEER = enabled;
+  }
+
+  /**
+   * Get circuit breaker statistics for monitoring
+   */
+  getCircuitBreakerStats() {
+    return PuppeteerHandlerService.circuitBreaker.getStats();
+  }
+
+  /**
+   * Get circuit breaker health status
+   */
+  getCircuitBreakerHealth() {
+    return PuppeteerHandlerService.circuitBreaker.getHealthStatus();
+  }
+
+  /**
+   * Reset circuit breaker (for manual intervention)
+   */
+  resetCircuitBreaker(): void {
+    PuppeteerHandlerService.circuitBreaker.reset();
+    console.log('[PuppeteerHandler] Circuit breaker manually reset');
   }
 
   /**
@@ -1198,10 +1220,10 @@ export class PuppeteerHandlerService {
     isShuttingDown: boolean;
     initializationInProgress: boolean;
     circuitBreaker: {
-      isOpen: boolean;
-      failureCount: number;
-      lastFailureTime: number;
-      resetTimeLeft: number;
+      state: string;
+      isHealthy: boolean;
+      failureRate: number;
+      timeToReset?: number;
     };
     healthStatus: {
       lastHealthCheck: number;
@@ -1209,11 +1231,7 @@ export class PuppeteerHandlerService {
     };
   } {
     const now = Date.now();
-    const timeSinceLastFailure = now - PuppeteerHandlerService.lastFailureTime;
-    const isCircuitBreakerOpen = PuppeteerHandlerService.failureCount >= PuppeteerHandlerService.maxFailures && 
-                                 timeSinceLastFailure < PuppeteerHandlerService.circuitBreakerResetTime;
-    const resetTimeLeft = isCircuitBreakerOpen ? 
-                         Math.ceil((PuppeteerHandlerService.circuitBreakerResetTime - timeSinceLastFailure) / 1000) : 0;
+    const circuitBreakerHealth = PuppeteerHandlerService.circuitBreaker.getHealthStatus();
     
     return {
       isInitialized: PuppeteerHandlerService.isClusterInitialized,
@@ -1221,10 +1239,10 @@ export class PuppeteerHandlerService {
       isShuttingDown: PuppeteerHandlerService.isShuttingDown,
       initializationInProgress: PuppeteerHandlerService.initializationPromise !== null,
       circuitBreaker: {
-        isOpen: isCircuitBreakerOpen,
-        failureCount: PuppeteerHandlerService.failureCount,
-        lastFailureTime: PuppeteerHandlerService.lastFailureTime,
-        resetTimeLeft
+        state: circuitBreakerHealth.state,
+        isHealthy: circuitBreakerHealth.isHealthy,
+        failureRate: circuitBreakerHealth.failureRate,
+        timeToReset: circuitBreakerHealth.timeToReset
       },
       healthStatus: {
         lastHealthCheck: PuppeteerHandlerService.lastHealthCheck,

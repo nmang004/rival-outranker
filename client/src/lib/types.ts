@@ -14,82 +14,8 @@ export interface SeoActionItem {
   example?: string;
 }
 
-// Crawler output format
-export interface CrawlerOutput {
-  url: string;
-  title?: string;
-  html: string;  // Full HTML content of the page
-  meta: {
-    description?: string;
-    robots?: string;
-    viewport?: string;
-    canonical?: string;
-    ogTags: Record<string, string>;
-    twitterTags: Record<string, string>;
-  };
-  content: {
-    text: string;
-    wordCount: number;
-    paragraphs: string[];
-  };
-  headings: {
-    h1: string[];
-    h2: string[];
-    h3: string[];
-    h4: string[];
-    h5: string[];
-    h6: string[];
-  };
-  links: {
-    internal: {
-      url: string;
-      text: string;
-      broken: boolean;
-    }[];
-    external: {
-      url: string;
-      text: string;
-    }[];
-  };
-  images: {
-    url: string;
-    alt?: string;
-    size?: number;
-  }[];
-  schema: {
-    types: string[];
-    json: string;
-  }[];
-  performance: {
-    loadTime?: number;
-    resourceCount?: number;
-    resourceSize?: number;
-  };
-  security?: {
-    hasHttps: boolean;
-    hasMixedContent: boolean;
-    hasSecurityHeaders: boolean;
-  };
-  accessibility?: {
-    hasAccessibleElements: boolean;
-    missingAltText: number;
-    hasAriaAttributes: boolean;
-    hasProperHeadingStructure: boolean;
-  };
-  seoIssues?: {
-    noindex: boolean;
-    brokenLinks: number;
-    missingAltText: number;
-    duplicateMetaTags: boolean;
-    thinContent: boolean;
-    missingHeadings: boolean;
-    robots: string | null;
-  };
-  mobileCompatible: boolean;
-  statusCode: number;
-  error?: string;
-  rawHtml?: string;
-}
+// Note: CrawlerOutput interface moved to server/types/crawler.ts for consistency
+// Import from server types when needed: import { CrawlerOutput } from '../../../server/types/crawler';
 
 // Page speed metrics with Core Web Vitals
 export interface PageSpeedMetrics {

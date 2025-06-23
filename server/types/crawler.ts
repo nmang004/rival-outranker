@@ -17,6 +17,9 @@ export interface CrawlerOutput {
   similarity?: number;
   meta: {
     description: string;
+    robots?: string;
+    viewport?: string;
+    canonical?: string;
     ogTags: Record<string, string>;
     twitterTags: Record<string, string>;
   };
@@ -43,9 +46,15 @@ export interface CrawlerOutput {
     src: string;
     alt: string;
     title?: string;
+    size?: number;
     total?: number; // Additional property for backward compatibility
   }>;
-  schema: any[];
+  schema: Array<{
+    type?: string;
+    types?: string[];
+    json?: string;
+    [key: string]: any; // For backward compatibility with any[]
+  }>;
   mobileCompatible: boolean;
   performance: {
     loadTime: number;

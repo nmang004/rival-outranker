@@ -16,6 +16,8 @@ import { URLManagementService } from './url-management.service';
 import { SitemapDiscoveryService } from './sitemap-discovery.service';
 import { PuppeteerHandlerService } from './puppeteer-handler.service';
 import { CrawlerOutput, PageCrawlResult } from '../../../types/crawler';
+import { LRUCache, LRUCacheFactory } from '../../../utils/lru-cache';
+import { safeValidateCrawlerOutput, safeValidatePageCrawlResult } from '../../../utils/crawler-validation';
 
 // DNS lookup with promise support
 const dnsLookup = promisify(dns.lookup);
@@ -45,9 +47,9 @@ export class CrawlerOrchestratorService {
   private sitemapDiscoveryService = new SitemapDiscoveryService();
   private puppeteerHandlerService = new PuppeteerHandlerService();
 
-  // Caching and state management
-  private dnsCache = new Map<string, string>();
-  private responseCache = new Map<string, any>();
+  // Caching and state management - Now using LRU caches with TTL
+  private dnsCache: LRUCache<string, string>;
+  private responseCache: LRUCache<string, CrawlerOutput>;
   private brokenLinks = new Set<string>();
   
   // Circuit breaker for problematic domains
@@ -75,6 +77,12 @@ export class CrawlerOrchestratorService {
     puppeteerTotalTime: 0,
     standardTotalTime: 0
   };
+
+  constructor() {
+    // Initialize LRU caches with TTL for memory safety
+    this.dnsCache = LRUCacheFactory.createDNSCache<string, string>();
+    this.responseCache = LRUCacheFactory.createResponseCache<string, CrawlerOutput>();
+  }
 
   /**
    * Main crawling orchestration method
@@ -194,7 +202,10 @@ export class CrawlerOrchestratorService {
       // Check cache first
       if (this.responseCache.has(normalizedUrl)) {
         console.log(`[CrawlerOrchestrator] 💾 Using cached response for: ${normalizedUrl}`);
-        return this.responseCache.get(normalizedUrl);
+        const cachedResult = this.responseCache.get(normalizedUrl);
+        if (cachedResult) {
+          return cachedResult;
+        }
       }
 
       // Check DNS availability
@@ -977,7 +988,14 @@ export class CrawlerOrchestratorService {
    * This method resolves the data format mismatch between Puppeteer output and analyzer expectations
    */
   transformCrawlerOutputToPageResult(crawlerOutput: CrawlerOutput): PageCrawlResult {
-    return {
+    // Validate input data structure
+    const inputValidation = safeValidateCrawlerOutput(crawlerOutput);
+    if (!inputValidation.success) {
+      console.log(`[CrawlerOrchestrator] WARN: Input validation failed for ${crawlerOutput.url}: ${inputValidation.error}`);
+      console.log('[CrawlerOrchestrator] WARN: Proceeding with transformation but data may be incomplete');
+    }
+    
+    const result: PageCrawlResult = {
       url: crawlerOutput.url,
       title: crawlerOutput.title || '',
       metaDescription: crawlerOutput.meta?.description || '',
@@ -1003,7 +1021,7 @@ export class CrawlerOrchestratorService {
       hasNAP: this.detectNAP(crawlerOutput),
       images: this.transformImageData(crawlerOutput.images),
       hasSchema: (crawlerOutput.schema?.length || 0) > 0,
-      schemaTypes: crawlerOutput.schema?.map(s => s.type) || [],
+      schemaTypes: this.extractSchemaTypes(crawlerOutput.schema || []),
       mobileFriendly: crawlerOutput.mobileCompatible || false,
       hasSocialTags: this.detectSocialTags(crawlerOutput),
       hasCanonical: this.detectCanonical(crawlerOutput),
@@ -1018,6 +1036,15 @@ export class CrawlerOrchestratorService {
       readabilityScore: this.calculateReadabilityScore(crawlerOutput.content?.text || ''),
       contentStructure: this.analyzeContentStructure(crawlerOutput)
     };
+
+    // Validate output data structure
+    const outputValidation = safeValidatePageCrawlResult(result);
+    if (!outputValidation.success) {
+      console.log(`[CrawlerOrchestrator] ERROR: Output validation failed for ${crawlerOutput.url}: ${outputValidation.error}`);
+      console.log('[CrawlerOrchestrator] ERROR: Transformation produced invalid PageCrawlResult structure');
+    }
+
+    return result;
   }
 
   /**
@@ -1078,14 +1105,86 @@ export class CrawlerOrchestratorService {
     largeImages: number;
     altTexts: string[];
   } {
-    const withAlt = images.filter(img => img.alt && img.alt.trim().length > 0);
-    return {
-      total: images.length,
-      withAlt: withAlt.length,
-      withoutAlt: images.length - withAlt.length,
-      largeImages: 0, // Would need image size analysis
-      altTexts: withAlt.map(img => img.alt)
-    };
+    try {
+      if (!Array.isArray(images)) {
+        console.log('[CrawlerOrchestrator] WARN: Images data is not an array, defaulting to empty array');
+        images = [];
+      }
+
+      const withAlt = images.filter(img => {
+        if (!img || typeof img !== 'object') {
+          console.log('[CrawlerOrchestrator] WARN: Invalid image object found, skipping');
+          return false;
+        }
+        return img.alt && typeof img.alt === 'string' && img.alt.trim().length > 0;
+      });
+
+      return {
+        total: images.length,
+        withAlt: withAlt.length,
+        withoutAlt: images.length - withAlt.length,
+        largeImages: 0, // Would need image size analysis
+        altTexts: withAlt.map(img => img.alt).filter(alt => alt !== undefined)
+      };
+    } catch (error) {
+      console.log('[CrawlerOrchestrator] ERROR: Failed to transform image data:', error instanceof Error ? error.message : 'Unknown error');
+      return {
+        total: 0,
+        withAlt: 0,
+        withoutAlt: 0,
+        largeImages: 0,
+        altTexts: []
+      };
+    }
+  }
+
+  /**
+   * Helper method: Extract schema types from schema data
+   * Handles both legacy any[] format and new structured format
+   */
+  private extractSchemaTypes(schemaData: Array<{
+    type?: string;
+    types?: string[];
+    json?: string;
+    [key: string]: any;
+  }>): string[] {
+    const types: string[] = [];
+    
+    schemaData.forEach(schema => {
+      try {
+        // Handle new structured format
+        if (schema.type) {
+          types.push(schema.type);
+        }
+        if (schema.types && Array.isArray(schema.types)) {
+          types.push(...schema.types);
+        }
+        
+        // Handle legacy format - try to extract from JSON if available
+        if (schema.json && typeof schema.json === 'string') {
+          try {
+            const parsed = JSON.parse(schema.json);
+            if (parsed['@type']) {
+              const schemaType = Array.isArray(parsed['@type']) ? parsed['@type'] : [parsed['@type']];
+              types.push(...schemaType);
+            }
+          } catch (parseError) {
+            console.log('[CrawlerOrchestrator] WARN: Failed to parse schema JSON for type extraction');
+          }
+        }
+        
+        // Fallback: check for @type property directly
+        if (schema['@type']) {
+          const schemaType = Array.isArray(schema['@type']) ? schema['@type'] : [schema['@type']];
+          types.push(...schemaType);
+        }
+      } catch (error) {
+        console.log('[CrawlerOrchestrator] WARN: Error extracting schema types:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    });
+    
+    // Remove duplicates and return
+    return [...new Set(types)];
   }
 
   /**
@@ -1147,12 +1246,29 @@ export class CrawlerOrchestratorService {
     totalBlockingTime: number;
     largestContentfulPaint: number;
   } {
-    return {
-      score: 85, // Default score, would need PageSpeed analysis
-      firstContentfulPaint: performance?.loadTime || 0,
-      totalBlockingTime: 0,
-      largestContentfulPaint: performance?.loadTime || 0
-    };
+    try {
+      if (!performance || typeof performance !== 'object') {
+        console.log('[CrawlerOrchestrator] WARN: Invalid performance data, using defaults');
+        performance = {};
+      }
+
+      const loadTime = typeof performance.loadTime === 'number' ? performance.loadTime : 0;
+      
+      return {
+        score: 85, // Default score, would need PageSpeed analysis
+        firstContentfulPaint: loadTime,
+        totalBlockingTime: 0,
+        largestContentfulPaint: loadTime
+      };
+    } catch (error) {
+      console.log('[CrawlerOrchestrator] ERROR: Failed to transform performance data:', error instanceof Error ? error.message : 'Unknown error');
+      return {
+        score: 0,
+        firstContentfulPaint: 0,
+        totalBlockingTime: 0,
+        largestContentfulPaint: 0
+      };
+    }
   }
 
   /**
@@ -1260,5 +1376,55 @@ export class CrawlerOrchestratorService {
     this.sitemapDiscoveryService.reset();
     
     console.log('[CrawlerOrchestrator] 🔄 Crawler state reset');
+    console.log(`[CrawlerOrchestrator] 📊 Cache stats before reset:`, {
+      dnsCache: this.dnsCache.getStats(),
+      responseCache: this.responseCache.getStats()
+    });
+  }
+
+  /**
+   * Cleanup method to properly destroy caches and prevent memory leaks
+   */
+  destroy(): void {
+    console.log(`[CrawlerOrchestrator] 🗑️ Destroying crawler with final cache stats:`, {
+      dnsCache: this.dnsCache.getStats(),
+      responseCache: this.responseCache.getStats()
+    });
+    
+    this.dnsCache.destroy();
+    this.responseCache.destroy();
+    this.puppeteerHandlerService.closePuppeteerCluster();
+    
+    console.log('[CrawlerOrchestrator] ✅ Crawler destroyed and cleaned up');
+  }
+
+  /**
+   * Get current cache statistics for monitoring
+   */
+  getCacheStats() {
+    return {
+      dnsCache: this.dnsCache.getStats(),
+      responseCache: this.responseCache.getStats(),
+      totalMemoryEstimate: this.estimateTotalCacheMemory()
+    };
+  }
+
+  /**
+   * Estimate total memory usage of all caches
+   */
+  private estimateTotalCacheMemory(): string {
+    const dnsStats = this.dnsCache.getStats();
+    const responseStats = this.responseCache.getStats();
+    
+    // Rough calculation based on cache sizes
+    const estimatedBytes = (dnsStats.size * 50) + (responseStats.size * 1000); // DNS entries smaller, responses larger
+    
+    if (estimatedBytes < 1024) {
+      return `${estimatedBytes} B`;
+    } else if (estimatedBytes < 1024 * 1024) {
+      return `${Math.round(estimatedBytes / 1024)} KB`;
+    } else {
+      return `${Math.round(estimatedBytes / (1024 * 1024))} MB`;
+    }
   }
 }
