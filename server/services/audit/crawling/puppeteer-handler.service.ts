@@ -25,6 +25,17 @@ export class PuppeteerHandlerService {
   private static isShuttingDown = false;
   private static isClusterInitialized = false;
   
+  // Circuit breaker and retry management
+  private static failureCount = 0;
+  private static lastFailureTime = 0;
+  private static circuitBreakerResetTime = 300000; // 5 minutes
+  private static maxFailures = 3;
+  private static retryDelays = [1000, 2000, 5000]; // Exponential backoff: 1s, 2s, 5s
+  
+  // Health monitoring
+  private static lastHealthCheck = 0;
+  private static healthCheckInterval = 30000; // 30 seconds
+  
   // Services
   private pagePriorityService = new PagePriorityService();
   
@@ -109,7 +120,7 @@ export class PuppeteerHandlerService {
   }
   
   /**
-   * Private method to initialize the Puppeteer cluster (thread-safe)
+   * Private method to initialize the Puppeteer cluster (thread-safe with circuit breaker)
    */
   private async initializeCluster(): Promise<void> {
     if (!this.USE_PUPPETEER_FOR_JS_SITES) {
@@ -122,55 +133,124 @@ export class PuppeteerHandlerService {
       return;
     }
     
-    // If cluster already exists and is initialized, return
+    // Check circuit breaker
+    if (this.isCircuitBreakerOpen()) {
+      const resetTimeLeft = Math.ceil((PuppeteerHandlerService.circuitBreakerResetTime - (Date.now() - PuppeteerHandlerService.lastFailureTime)) / 1000);
+      throw new Error(`Circuit breaker is open. Too many initialization failures. Retry in ${resetTimeLeft} seconds.`);
+    }
+    
+    // If cluster exists, validate its health before returning
     if (PuppeteerHandlerService.globalCluster && PuppeteerHandlerService.isClusterInitialized) {
-      console.log(`[PuppeteerHandler-${this.instanceId}] Using existing initialized cluster`);
-      return;
+      if (await this.isClusterHealthy()) {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Using existing healthy cluster`);
+        return;
+      } else {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Existing cluster is unhealthy, reinitializing...`);
+        await this.forceClusterCleanup();
+      }
     }
     
     // If initialization is already in progress, wait for it
     if (PuppeteerHandlerService.initializationPromise) {
       console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization in progress, waiting...`);
-      await PuppeteerHandlerService.initializationPromise;
-      return;
+      try {
+        await PuppeteerHandlerService.initializationPromise;
+        return;
+      } catch (error) {
+        // If the concurrent initialization failed, we'll try again below
+        console.log(`[PuppeteerHandler-${this.instanceId}] Concurrent initialization failed, will retry`);
+      }
     }
     
-    // Start new initialization
-    PuppeteerHandlerService.initializationPromise = this.doInitializeCluster();
+    // Start new initialization with retry logic
+    PuppeteerHandlerService.initializationPromise = this.doInitializeClusterWithRetry();
     await PuppeteerHandlerService.initializationPromise;
   }
 
   /**
+   * Perform cluster initialization with retry logic and exponential backoff
+   */
+  private async doInitializeClusterWithRetry(): Promise<void> {
+    const maxRetries = PuppeteerHandlerService.retryDelays.length;
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Initializing Puppeteer cluster (attempt ${attempt + 1}/${maxRetries + 1})`);
+        
+        await this.doInitializeCluster();
+        
+        // Success - reset failure count and return
+        PuppeteerHandlerService.failureCount = 0;
+        PuppeteerHandlerService.lastFailureTime = 0;
+        console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization successful on attempt ${attempt + 1}`);
+        return;
+        
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.error(`[PuppeteerHandler-${this.instanceId}] Cluster initialization failed (attempt ${attempt + 1}):`, lastError.message);
+        
+        // If this isn't the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          const delay = PuppeteerHandlerService.retryDelays[attempt];
+          console.log(`[PuppeteerHandler-${this.instanceId}] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Clean up any partial initialization
+          await this.forceClusterCleanup();
+        }
+      }
+    }
+    
+    // All retries failed - update circuit breaker and throw
+    PuppeteerHandlerService.failureCount++;
+    PuppeteerHandlerService.lastFailureTime = Date.now();
+    
+    const errorMessage = `Failed to initialize Puppeteer cluster after ${maxRetries + 1} attempts. Last error: ${lastError?.message || 'Unknown error'}`;
+    console.error(`[PuppeteerHandler-${this.instanceId}] ${errorMessage}`);
+    
+    throw new Error(errorMessage);
+  }
+  
+  /**
    * Perform the actual cluster initialization (private method)
    */
   private async doInitializeCluster(): Promise<void> {
-    try {
-      console.log(`[PuppeteerHandler-${this.instanceId}] Initializing singleton Puppeteer cluster with ${this.PUPPETEER_CLUSTER_SIZE} instances`);
-      
-      PuppeteerHandlerService.globalCluster = await Cluster.launch({
-        concurrency: Cluster.CONCURRENCY_CONTEXT,
-        maxConcurrency: this.PUPPETEER_CLUSTER_SIZE,
-        puppeteerOptions: {
-          headless: true,
-          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_EXECUTABLE_PATH || undefined,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--disable-gpu',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--window-size=1920x1080'
-          ]
-        },
-        timeout: 30000,
-        retryLimit: 1,
-        retryDelay: 1000,
-      });
+    console.log(`[PuppeteerHandler-${this.instanceId}] Launching Puppeteer cluster with ${this.PUPPETEER_CLUSTER_SIZE} instances`);
+    
+    // Enhanced timeout for cold start environments
+    const clusterTimeout = process.env.NODE_ENV === 'production' ? 60000 : 45000;
+    
+    PuppeteerHandlerService.globalCluster = await Cluster.launch({
+      concurrency: Cluster.CONCURRENCY_CONTEXT,
+      maxConcurrency: this.PUPPETEER_CLUSTER_SIZE,
+      puppeteerOptions: {
+        headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_EXECUTABLE_PATH || undefined,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--window-size=1920x1080',
+          // Additional cold start optimizations
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-default-apps',
+          '--no-first-run',
+          '--no-default-browser-check'
+        ]
+      },
+      timeout: clusterTimeout,
+      retryLimit: 0, // We handle retries at a higher level
+      retryDelay: 0,
+    });
       
       // Set up task handler for crawling
       await PuppeteerHandlerService.globalCluster!.task(async ({ page, data: url }) => {
@@ -311,39 +391,128 @@ export class PuppeteerHandlerService {
         }
       });
       
-      console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster initialized successfully`);
-      PuppeteerHandlerService.isClusterInitialized = true;
-    } catch (error) {
-      console.error(`[PuppeteerHandler-${this.instanceId}] Failed to initialize Puppeteer cluster:`, error);
-      console.log(`[PuppeteerHandler-${this.instanceId}] Disabling Puppeteer for this session - will use regular crawling for all pages`);
-      PuppeteerHandlerService.globalCluster = null;
-      PuppeteerHandlerService.isClusterInitialized = false;
-      this.USE_PUPPETEER_FOR_JS_SITES = false; // Disable for this session
-      throw error; // Re-throw to let getCluster handle the error
-    } finally {
-      // Clear the initialization promise
-      PuppeteerHandlerService.initializationPromise = null;
-    }
+    console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer cluster launched successfully`);
+    PuppeteerHandlerService.isClusterInitialized = true;
+    PuppeteerHandlerService.lastHealthCheck = Date.now();
   }
   
   /**
    * Public method to safely get the Puppeteer cluster (initializes if needed)
    */
   async getCluster(): Promise<Cluster> {
-    // Check if cluster is already initialized and ready
-    if (PuppeteerHandlerService.globalCluster && PuppeteerHandlerService.isClusterInitialized) {
+    try {
+      // Initialize cluster if not ready (includes health checks and retry logic)
+      await this.initializeCluster();
+      
+      // Double-check that initialization succeeded
+      if (!PuppeteerHandlerService.globalCluster || !PuppeteerHandlerService.isClusterInitialized) {
+        throw new Error('Cluster initialization completed but cluster is not available');
+      }
+      
       return PuppeteerHandlerService.globalCluster;
+      
+    } catch (error) {
+      // Enhance error context for debugging
+      const errorDetails = {
+        instanceId: this.instanceId,
+        clusterExists: !!PuppeteerHandlerService.globalCluster,
+        isInitialized: PuppeteerHandlerService.isClusterInitialized,
+        isShuttingDown: PuppeteerHandlerService.isShuttingDown,
+        initializationInProgress: !!PuppeteerHandlerService.initializationPromise,
+        failureCount: PuppeteerHandlerService.failureCount,
+        circuitBreakerOpen: this.isCircuitBreakerOpen(),
+        originalError: error instanceof Error ? error.message : String(error)
+      };
+      
+      console.error(`[PuppeteerHandler-${this.instanceId}] getCluster failed with context:`, errorDetails);
+      
+      // If we've hit the circuit breaker threshold, disable Puppeteer for this session
+      if (PuppeteerHandlerService.failureCount >= PuppeteerHandlerService.maxFailures * 2) {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Too many failures, disabling Puppeteer for this session`);
+        this.USE_PUPPETEER_FOR_JS_SITES = false;
+      }
+      
+      throw error;
+    } finally {
+      // Always clear the initialization promise on completion (success or failure)
+      PuppeteerHandlerService.initializationPromise = null;
+    }
+  }
+  
+  /**
+   * Check if circuit breaker is open (too many recent failures)
+   */
+  private isCircuitBreakerOpen(): boolean {
+    if (PuppeteerHandlerService.failureCount < PuppeteerHandlerService.maxFailures) {
+      return false;
     }
     
-    // Initialize cluster if not ready
-    await this.initializeCluster();
-    
-    // Verify initialization succeeded
+    const timeSinceLastFailure = Date.now() - PuppeteerHandlerService.lastFailureTime;
+    return timeSinceLastFailure < PuppeteerHandlerService.circuitBreakerResetTime;
+  }
+  
+  /**
+   * Check if the current cluster is healthy
+   */
+  private async isClusterHealthy(): Promise<boolean> {
     if (!PuppeteerHandlerService.globalCluster || !PuppeteerHandlerService.isClusterInitialized) {
-      throw new Error('Failed to initialize Puppeteer cluster');
+      return false;
     }
     
-    return PuppeteerHandlerService.globalCluster;
+    // Skip frequent health checks for performance
+    const timeSinceLastCheck = Date.now() - PuppeteerHandlerService.lastHealthCheck;
+    if (timeSinceLastCheck < PuppeteerHandlerService.healthCheckInterval) {
+      return true; // Assume healthy if recently checked
+    }
+    
+    try {
+      // Quick health check - ensure cluster can accept tasks
+      const healthCheckPromise = PuppeteerHandlerService.globalCluster.execute(async ({ page }: any) => {
+        // Minimal health check - just verify page is accessible
+        return page ? 'healthy' : 'unhealthy';
+      });
+      
+      // Race against timeout
+      const result = await Promise.race([
+        healthCheckPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Health check timeout')), 5000)
+        )
+      ]);
+      
+      PuppeteerHandlerService.lastHealthCheck = Date.now();
+      return result === 'healthy';
+      
+    } catch (error) {
+      console.warn(`[PuppeteerHandler-${this.instanceId}] Cluster health check failed:`, error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+  
+  /**
+   * Force cleanup of cluster state (for recovery scenarios)
+   */
+  private async forceClusterCleanup(): Promise<void> {
+    try {
+      if (PuppeteerHandlerService.globalCluster) {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Force cleaning up unhealthy cluster...`);
+        
+        // Attempt graceful close with short timeout
+        await Promise.race([
+          PuppeteerHandlerService.globalCluster.close(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Force cleanup timeout')), 3000)
+          )
+        ]);
+      }
+    } catch (error) {
+      console.warn(`[PuppeteerHandler-${this.instanceId}] Force cleanup failed:`, error instanceof Error ? error.message : String(error));
+    } finally {
+      // Always reset state
+      PuppeteerHandlerService.globalCluster = null;
+      PuppeteerHandlerService.isClusterInitialized = false;
+      PuppeteerHandlerService.lastHealthCheck = 0;
+    }
   }
 
   /**
@@ -376,6 +545,12 @@ export class PuppeteerHandlerService {
         
         PuppeteerHandlerService.globalCluster = null;
         PuppeteerHandlerService.isClusterInitialized = false;
+        
+        // Reset circuit breaker state on clean shutdown
+        PuppeteerHandlerService.failureCount = 0;
+        PuppeteerHandlerService.lastFailureTime = 0;
+        PuppeteerHandlerService.lastHealthCheck = 0;
+        
         console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster closed successfully`);
       } catch (error) {
         console.error(`[PuppeteerHandler-${this.instanceId}] Error closing Puppeteer cluster:`, error);
@@ -391,6 +566,11 @@ export class PuppeteerHandlerService {
           console.error(`[PuppeteerHandler-${this.instanceId}] Failed to force-close cluster:`, forceError);
           PuppeteerHandlerService.globalCluster = null; // Mark as null to prevent further attempts
           PuppeteerHandlerService.isClusterInitialized = false;
+          
+          // Reset circuit breaker state on forced shutdown
+          PuppeteerHandlerService.failureCount = 0;
+          PuppeteerHandlerService.lastFailureTime = 0;
+          PuppeteerHandlerService.lastHealthCheck = 0;
         }
       }
     } else {
@@ -1017,12 +1197,39 @@ export class PuppeteerHandlerService {
     instanceCount: number;
     isShuttingDown: boolean;
     initializationInProgress: boolean;
+    circuitBreaker: {
+      isOpen: boolean;
+      failureCount: number;
+      lastFailureTime: number;
+      resetTimeLeft: number;
+    };
+    healthStatus: {
+      lastHealthCheck: number;
+      timeSinceLastCheck: number;
+    };
   } {
+    const now = Date.now();
+    const timeSinceLastFailure = now - PuppeteerHandlerService.lastFailureTime;
+    const isCircuitBreakerOpen = PuppeteerHandlerService.failureCount >= PuppeteerHandlerService.maxFailures && 
+                                 timeSinceLastFailure < PuppeteerHandlerService.circuitBreakerResetTime;
+    const resetTimeLeft = isCircuitBreakerOpen ? 
+                         Math.ceil((PuppeteerHandlerService.circuitBreakerResetTime - timeSinceLastFailure) / 1000) : 0;
+    
     return {
       isInitialized: PuppeteerHandlerService.isClusterInitialized,
       instanceCount: PuppeteerHandlerService.instanceCount,
       isShuttingDown: PuppeteerHandlerService.isShuttingDown,
-      initializationInProgress: PuppeteerHandlerService.initializationPromise !== null
+      initializationInProgress: PuppeteerHandlerService.initializationPromise !== null,
+      circuitBreaker: {
+        isOpen: isCircuitBreakerOpen,
+        failureCount: PuppeteerHandlerService.failureCount,
+        lastFailureTime: PuppeteerHandlerService.lastFailureTime,
+        resetTimeLeft
+      },
+      healthStatus: {
+        lastHealthCheck: PuppeteerHandlerService.lastHealthCheck,
+        timeSinceLastCheck: now - PuppeteerHandlerService.lastHealthCheck
+      }
     };
   }
 }
