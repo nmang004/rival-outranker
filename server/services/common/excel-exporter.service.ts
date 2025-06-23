@@ -1029,12 +1029,15 @@ async function createLegacyPriorityActionsTab(workbook: Excel.Workbook, audit: R
 function getEnhancedCategoryData(audit: EnhancedRivalAudit): any[] {
   const categories = [];
   
+  // CRITICAL FIX: Use categoryScores from summary instead of individual category scores
+  const categoryScores = (audit.summary as any).categoryScores || {};
+  
   // Enhanced categories (priority)
   if (audit.contentQuality && audit.contentQuality.items) {
     categories.push({
       name: 'Content Quality',
       items: audit.contentQuality.items,
-      score: (audit.contentQuality as any).score || 0,
+      score: categoryScores['Content Quality'] || 0,
       icon: '📝',
       priorityOfiCount: audit.contentQuality.items.filter(item => item.status === 'Priority OFI').length,
       ofiCount: audit.contentQuality.items.filter(item => item.status === 'OFI').length,
@@ -1048,7 +1051,7 @@ function getEnhancedCategoryData(audit: EnhancedRivalAudit): any[] {
     categories.push({
       name: 'Technical SEO',
       items: audit.technicalSEO.items,
-      score: (audit.technicalSEO as any).score || 0,
+      score: categoryScores['Technical SEO'] || 0,
       icon: '⚙️',
       priorityOfiCount: audit.technicalSEO.items.filter(item => item.status === 'Priority OFI').length,
       ofiCount: audit.technicalSEO.items.filter(item => item.status === 'OFI').length,
@@ -1062,7 +1065,7 @@ function getEnhancedCategoryData(audit: EnhancedRivalAudit): any[] {
     categories.push({
       name: 'Local SEO & E-E-A-T',
       items: audit.localSEO.items,
-      score: (audit.localSEO as any).score || 0,
+      score: categoryScores['Local SEO & E-E-A-T'] || 0,
       icon: '📍',
       priorityOfiCount: audit.localSEO.items.filter(item => item.status === 'Priority OFI').length,
       ofiCount: audit.localSEO.items.filter(item => item.status === 'OFI').length,
@@ -1076,7 +1079,7 @@ function getEnhancedCategoryData(audit: EnhancedRivalAudit): any[] {
     categories.push({
       name: 'UX & Performance',
       items: audit.uxPerformance.items,
-      score: (audit.uxPerformance as any).score || 0,
+      score: categoryScores['UX & Performance'] || 0,
       icon: '🚀',
       priorityOfiCount: audit.uxPerformance.items.filter(item => item.status === 'Priority OFI').length,
       ofiCount: audit.uxPerformance.items.filter(item => item.status === 'OFI').length,

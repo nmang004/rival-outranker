@@ -521,6 +521,48 @@ class EnhancedAuditAnalyzer {
     results.summary.ofiCount = allClassifiedItems.filter(item => item.status === 'OFI').length;
     results.summary.okCount = allClassifiedItems.filter(item => item.status === 'OK').length;
     results.summary.naCount = allClassifiedItems.filter(item => item.status === 'N/A').length;
+
+    // CRITICAL FIX: Calculate categoryScores for Excel export compatibility
+    const categoryScores: Record<string, number> = {};
+    
+    // Calculate score for each enhanced category (0-100 based on completion percentage)
+    const categories = [
+      { name: 'Content Quality', items: results.contentQuality.items },
+      { name: 'Technical SEO', items: results.technicalSEO.items },
+      { name: 'Local SEO & E-E-A-T', items: results.localSEO.items },
+      { name: 'UX & Performance', items: results.uxPerformance.items }
+    ];
+
+    categories.forEach(category => {
+      if (category.items.length > 0) {
+        const okCount = category.items.filter(item => item.status === 'OK').length;
+        const totalCount = category.items.length;
+        const completionPercentage = Math.round((okCount / totalCount) * 100);
+        categoryScores[category.name] = completionPercentage;
+      } else {
+        categoryScores[category.name] = 0;
+      }
+    });
+
+    // Calculate overall score as weighted average of category scores
+    const overallScore = Math.round(
+      (categoryScores['Content Quality'] * 0.25) +
+      (categoryScores['Technical SEO'] * 0.30) +
+      (categoryScores['Local SEO & E-E-A-T'] * 0.25) +
+      (categoryScores['UX & Performance'] * 0.20)
+    );
+
+    // Add calculated scores to summary for Excel export compatibility
+    (results.summary as any).categoryScores = categoryScores;
+    (results.summary as any).overallScore = overallScore;
+
+    console.log(`[EnhancedAnalyzer] CATEGORY SCORES CALCULATED:`, {
+      contentQuality: categoryScores['Content Quality'],
+      technicalSEO: categoryScores['Technical SEO'],
+      localSEO: categoryScores['Local SEO & E-E-A-T'],
+      uxPerformance: categoryScores['UX & Performance'],
+      overallScore: overallScore
+    });
   }
 
   /**
