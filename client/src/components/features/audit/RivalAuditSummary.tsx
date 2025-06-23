@@ -78,10 +78,20 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
     ? getCategoryTotals(audit.serviceAreaPages.items) 
     : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
 
-  // Get category progress as percentage (excluding N/A items)
+  // Get category progress using balanced scoring system (matching backend logic)
   const getCategoryProgress = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }) => {
-    const relevantItems = totals.total - totals.na;
-    return relevantItems > 0 ? Math.round((totals.ok / relevantItems) * 100) : 0;
+    if (totals.total === 0) return 0;
+    
+    // Use same weighted scoring as backend:
+    // OK = 100 points, OFI = 60 points, Priority OFI = 15 points, N/A = 100 points
+    const weightedScore = (
+      (totals.ok * 100) + 
+      (totals.ofi * 60) + 
+      (totals.priorityOfi * 15) + 
+      (totals.na * 100)
+    ) / totals.total;
+    
+    return Math.round(weightedScore);
   };
 
   // Get category status
