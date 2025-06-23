@@ -39,3 +39,7 @@ pids
 # Temporary folders
 tmp/
 temp/
+
+# Cache directories
+node_modules/.vite/
+.config/.semgrep/semgrep_rules.json

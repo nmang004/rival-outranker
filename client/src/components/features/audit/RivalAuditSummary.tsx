@@ -161,12 +161,18 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
     return Math.round(weightedScore);
   };
 
-  // Get category status
-  const getCategoryStatus = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }) => {
-    if (totals.priorityOfi > 0) return "critical";
-    if (totals.ofi > 0) return "needs-improvement";
-    if (totals.ok > 0) return "good";
-    return "unknown";
+  // Get category status based on SEO score
+  const getCategoryStatus = (score: number) => {
+    if (score >= 80) return "good";
+    if (score >= 60) return "needs-improvement";
+    return "critical";
+  };
+  
+  // Legacy category status (for non-enhanced audits) - now using score-based logic
+  const getLegacyCategoryStatus = (score: number) => {
+    if (score >= 80) return "good";
+    if (score >= 60) return "needs-improvement";
+    return "critical";
   };
 
   // Calculate progress using either the updated summary or the original data
@@ -344,6 +350,12 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
   const localSEOTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.localSEO) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
   const uxPerformanceTotals = enhancedCategories ? getCategoryTotals(enhancedCategories.uxPerformance) : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
   
+  // Get backend-calculated category scores (importance-weighted)
+  const categoryScores = (audit.summary as any).categoryScores || {};
+  const getBackendCategoryScore = (categoryName: string) => {
+    return categoryScores[categoryName] || 0;
+  };
+  
   // Get total items - prioritize totalFactors for enhanced audits
   const totalItems = isEnhancedAudit && 'totalFactors' in audit.summary 
     ? audit.summary.totalFactors 
@@ -465,16 +477,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(contentQualityTotals, enhancedCategories?.contentQuality))}%
+                      {getBackendCategoryScore('Content Quality')}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(contentQualityTotals, enhancedCategories?.contentQuality)} 
+                    value={getBackendCategoryScore('Content Quality')} 
                     className={`h-2 ${
-                      getCategoryStatus(contentQualityTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(contentQualityTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getBackendCategoryScore('Content Quality')) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getBackendCategoryScore('Content Quality')) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -511,16 +523,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(technicalSEOTotals, enhancedCategories?.technicalSEO))}%
+                      {getBackendCategoryScore('Technical SEO')}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(technicalSEOTotals, enhancedCategories?.technicalSEO)} 
+                    value={getBackendCategoryScore('Technical SEO')} 
                     className={`h-2 ${
-                      getCategoryStatus(technicalSEOTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(technicalSEOTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getBackendCategoryScore('Technical SEO')) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getBackendCategoryScore('Technical SEO')) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -557,16 +569,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(localSEOTotals, enhancedCategories?.localSEO))}%
+                      {getBackendCategoryScore('Local SEO & E-E-A-T')}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(localSEOTotals, enhancedCategories?.localSEO)} 
+                    value={getBackendCategoryScore('Local SEO & E-E-A-T')} 
                     className={`h-2 ${
-                      getCategoryStatus(localSEOTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(localSEOTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getBackendCategoryScore('Local SEO & E-E-A-T')) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getBackendCategoryScore('Local SEO & E-E-A-T')) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -603,16 +615,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(uxPerformanceTotals, enhancedCategories?.uxPerformance))}%
+                      {getBackendCategoryScore('UX & Performance')}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(uxPerformanceTotals, enhancedCategories?.uxPerformance)} 
+                    value={getBackendCategoryScore('UX & Performance')} 
                     className={`h-2 ${
-                      getCategoryStatus(uxPerformanceTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(uxPerformanceTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getBackendCategoryScore('UX & Performance')) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getBackendCategoryScore('UX & Performance')) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -652,16 +664,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(onPageTotals))}%
+                      {Math.round(getCategoryProgress(onPageTotals, audit.onPage.items))}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(onPageTotals)} 
+                    value={getCategoryProgress(onPageTotals, audit.onPage.items)} 
                     className={`h-2 ${
-                      getCategoryStatus(onPageTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(onPageTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getCategoryProgress(onPageTotals, audit.onPage.items)) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getCategoryProgress(onPageTotals, audit.onPage.items)) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -698,16 +710,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(structureTotals))}%
+                      {Math.round(getCategoryProgress(structureTotals, audit.structureNavigation.items))}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(structureTotals)} 
+                    value={getCategoryProgress(structureTotals, audit.structureNavigation.items)} 
                     className={`h-2 ${
-                      getCategoryStatus(structureTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(structureTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getCategoryProgress(structureTotals, audit.structureNavigation.items)) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getCategoryProgress(structureTotals, audit.structureNavigation.items)) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -744,16 +756,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(contactTotals))}%
+                      {Math.round(getCategoryProgress(contactTotals, audit.contactPage.items))}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(contactTotals)} 
+                    value={getCategoryProgress(contactTotals, audit.contactPage.items)} 
                     className={`h-2 ${
-                      getCategoryStatus(contactTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(contactTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getCategoryProgress(contactTotals, audit.contactPage.items)) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getCategoryProgress(contactTotals, audit.contactPage.items)) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -790,16 +802,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(serviceTotals))}%
+                      {Math.round(getCategoryProgress(serviceTotals, audit.servicePages.items))}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(serviceTotals)} 
+                    value={getCategoryProgress(serviceTotals, audit.servicePages.items)} 
                     className={`h-2 ${
-                      getCategoryStatus(serviceTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(serviceTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getCategoryProgress(serviceTotals, audit.servicePages.items)) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getCategoryProgress(serviceTotals, audit.servicePages.items)) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -836,16 +848,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   <div className="flex justify-between mb-1">
-                    <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                    <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(locationTotals))}%
+                      {Math.round(getCategoryProgress(locationTotals, audit.locationPages.items))}/100
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(locationTotals)} 
+                    value={getCategoryProgress(locationTotals, audit.locationPages.items)} 
                     className={`h-2 ${
-                      getCategoryStatus(locationTotals) === "good" ? "bg-green-500/20" : 
-                      getCategoryStatus(locationTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                      getCategoryStatus(getCategoryProgress(locationTotals, audit.locationPages.items)) === "good" ? "bg-green-500/20" : 
+                      getCategoryStatus(getCategoryProgress(locationTotals, audit.locationPages.items)) === "needs-improvement" ? "bg-yellow-500/20" :
                       "bg-red-500/20"
                     }`}
                   />
@@ -883,16 +895,16 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
                 <CardContent className="px-3 sm:px-6">
                   <div className="space-y-2">
                     <div className="flex justify-between mb-1">
-                      <div className="text-xs sm:text-sm font-medium">Completion Status</div>
+                      <div className="text-xs sm:text-sm font-medium">SEO Score</div>
                       <div className="text-xs sm:text-sm font-medium">
-                        {Math.round(getCategoryProgress(serviceAreaTotals))}%
+                        {Math.round(getCategoryProgress(serviceAreaTotals, audit.serviceAreaPages?.items))}/100
                       </div>
                     </div>
                     <Progress 
-                      value={getCategoryProgress(serviceAreaTotals)} 
+                      value={getCategoryProgress(serviceAreaTotals, audit.serviceAreaPages?.items)} 
                       className={`h-2 ${
-                        getCategoryStatus(serviceAreaTotals) === "good" ? "bg-green-500/20" : 
-                        getCategoryStatus(serviceAreaTotals) === "needs-improvement" ? "bg-yellow-500/20" :
+                        getCategoryStatus(getCategoryProgress(serviceAreaTotals, audit.serviceAreaPages?.items)) === "good" ? "bg-green-500/20" : 
+                        getCategoryStatus(getCategoryProgress(serviceAreaTotals, audit.serviceAreaPages?.items)) === "needs-improvement" ? "bg-yellow-500/20" :
                         "bg-red-500/20"
                       }`}
                     />

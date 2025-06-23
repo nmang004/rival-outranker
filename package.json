@@ -61,7 +61,11 @@
     "test:watch": "vitest watch",
     "lint": "echo 'Linting passed - add eslint configuration if needed'",
     "monitor:logs": "tail -f logs/application-current.log",
-    "monitor:health": "curl -s http://localhost:3000/api/health | jq || curl -s http://localhost:3000/api/health"
+    "monitor:health": "curl -s http://localhost:3000/api/health | jq || curl -s http://localhost:3000/api/health",
+    "clean": "npm run clean:cache && npm run clean:build && npm run clean:logs",
+    "clean:cache": "rm -rf node_modules/.vite/ .config/.semgrep/semgrep_rules.json",
+    "clean:build": "rm -rf dist/*",
+    "clean:logs": "find logs/ -name '*.log' -mtime +7 -delete"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
