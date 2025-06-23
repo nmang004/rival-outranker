@@ -535,10 +535,26 @@ class EnhancedAuditAnalyzer {
 
     categories.forEach(category => {
       if (category.items.length > 0) {
+        // IMPROVED SCORING: Give partial credit to OFI items
         const okCount = category.items.filter(item => item.status === 'OK').length;
+        const ofiCount = category.items.filter(item => item.status === 'OFI').length;
+        const priorityOfiCount = category.items.filter(item => item.status === 'Priority OFI').length;
+        const naCount = category.items.filter(item => item.status === 'N/A').length;
         const totalCount = category.items.length;
-        const completionPercentage = Math.round((okCount / totalCount) * 100);
-        categoryScores[category.name] = completionPercentage;
+        
+        // Weighted scoring system:
+        // OK = 100 points (full credit)
+        // OFI = 60 points (partial credit - room for improvement)
+        // Priority OFI = 15 points (critical issue - major penalty)
+        // N/A = 100 points (not applicable - no penalty)
+        const weightedScore = (
+          (okCount * 100) + 
+          (ofiCount * 60) + 
+          (priorityOfiCount * 15) + 
+          (naCount * 100)
+        ) / totalCount;
+        
+        categoryScores[category.name] = Math.round(weightedScore);
       } else {
         categoryScores[category.name] = 0;
       }

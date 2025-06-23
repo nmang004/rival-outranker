@@ -1298,7 +1298,6 @@ export class PuppeteerHandlerService {
       instanceCount: PuppeteerHandlerService.instanceCount,
       isShuttingDown: PuppeteerHandlerService.isShuttingDown,
       initializationInProgress: PuppeteerHandlerService.initializationPromise !== null,
-      initializationLock: PuppeteerHandlerService.initializationLock,
       circuitBreaker: {
         state: circuitBreakerHealth.state,
         isHealthy: circuitBreakerHealth.isHealthy,
