@@ -539,43 +539,62 @@ class EnhancedAuditAnalyzer {
         let totalWeightedScore = 0;
         
         category.items.forEach(item => {
-          // Base status scores (reduced to allow room for importance modifiers)
-          let baseScore = 0;
+          let finalScore = 0;
+          
+          // SIMPLIFIED IMPORTANCE-BASED SCORING
           switch (item.status) {
             case 'OK':
-              baseScore = 85;
+              // OK items are always perfect regardless of importance
+              finalScore = 100;
               break;
-            case 'OFI':
-              baseScore = 45;
-              break;
-            case 'Priority OFI':
-              baseScore = 10;
-              break;
+              
             case 'N/A':
-              baseScore = 85;
+              // N/A items are always perfect (not applicable)
+              finalScore = 100;
               break;
+              
+            case 'OFI':
+              // OFI items: Base 60 points, minus importance penalty
+              let ofiPenalty = 0;
+              switch (item.importance) {
+                case 'High':
+                  ofiPenalty = 15; // 60 - 15 = 45 points
+                  break;
+                case 'Medium':
+                  ofiPenalty = 10; // 60 - 10 = 50 points
+                  break;
+                case 'Low':
+                  ofiPenalty = 5;  // 60 - 5 = 55 points
+                  break;
+                default:
+                  ofiPenalty = 10; // Default to Medium penalty
+              }
+              finalScore = 60 - ofiPenalty;
+              break;
+              
+            case 'Priority OFI':
+              // Priority OFI items: Base 30 points, minus importance penalty
+              let priorityPenalty = 0;
+              switch (item.importance) {
+                case 'High':
+                  priorityPenalty = 15; // 30 - 15 = 15 points
+                  break;
+                case 'Medium':
+                  priorityPenalty = 10; // 30 - 10 = 20 points
+                  break;
+                case 'Low':
+                  priorityPenalty = 5;  // 30 - 5 = 25 points
+                  break;
+                default:
+                  priorityPenalty = 10; // Default to Medium penalty
+              }
+              finalScore = 30 - priorityPenalty;
+              break;
+              
             default:
-              baseScore = 0;
+              finalScore = 0;
           }
           
-          // Importance modifiers
-          let importanceModifier = 0;
-          switch (item.importance) {
-            case 'High':
-              importanceModifier = 15;
-              break;
-            case 'Medium':
-              importanceModifier = 10;
-              break;
-            case 'Low':
-              importanceModifier = 5;
-              break;
-            default:
-              importanceModifier = 10; // Default to Medium if importance is missing
-          }
-          
-          // Final score = base + importance modifier
-          const finalScore = baseScore + importanceModifier;
           totalWeightedScore += finalScore;
         });
         
@@ -599,18 +618,22 @@ class EnhancedAuditAnalyzer {
     (results.summary as any).categoryScores = categoryScores;
     (results.summary as any).overallScore = overallScore;
 
-    console.log(`[EnhancedAnalyzer] IMPORTANCE-WEIGHTED CATEGORY SCORES:`, {
+    console.log(`[EnhancedAnalyzer] SIMPLIFIED IMPORTANCE-WEIGHTED SCORES:`, {
       contentQuality: categoryScores['Content Quality'],
       technicalSEO: categoryScores['Technical SEO'],
       localSEO: categoryScores['Local SEO & E-E-A-T'],
       uxPerformance: categoryScores['UX & Performance'],
       overallScore: overallScore,
-      scoringMethod: 'Importance-weighted (Base + Modifier)',
+      scoringMethod: 'Simplified Importance-weighted (Penalty-based)',
       scoreBreakdown: {
-        'OK High': '85+15=100pts',
-        'OFI High': '45+15=60pts', 
-        'Priority OFI High': '10+15=25pts',
-        'N/A High': '85+15=100pts'
+        'OK (any importance)': '100pts',
+        'OFI High': '60-15=45pts',
+        'OFI Medium': '60-10=50pts', 
+        'OFI Low': '60-5=55pts',
+        'Priority OFI High': '30-15=15pts',
+        'Priority OFI Medium': '30-10=20pts',
+        'Priority OFI Low': '30-5=25pts',
+        'N/A (any importance)': '100pts'
       }
     });
   }

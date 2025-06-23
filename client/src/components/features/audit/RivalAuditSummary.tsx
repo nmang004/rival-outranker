@@ -87,54 +87,75 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
       let totalWeightedScore = 0;
       
       items.forEach(item => {
-        // Base status scores (matching backend)
-        let baseScore = 0;
+        let finalScore = 0;
+        
+        // SIMPLIFIED IMPORTANCE-BASED SCORING (matching backend)
         switch (item.status) {
           case 'OK':
-            baseScore = 85;
+            // OK items are always perfect regardless of importance
+            finalScore = 100;
             break;
-          case 'OFI':
-            baseScore = 45;
-            break;
-          case 'Priority OFI':
-            baseScore = 10;
-            break;
+            
           case 'N/A':
-            baseScore = 85;
+            // N/A items are always perfect (not applicable)
+            finalScore = 100;
             break;
+            
+          case 'OFI':
+            // OFI items: Base 60 points, minus importance penalty
+            let ofiPenalty = 0;
+            switch (item.importance) {
+              case 'High':
+                ofiPenalty = 15; // 60 - 15 = 45 points
+                break;
+              case 'Medium':
+                ofiPenalty = 10; // 60 - 10 = 50 points
+                break;
+              case 'Low':
+                ofiPenalty = 5;  // 60 - 5 = 55 points
+                break;
+              default:
+                ofiPenalty = 10; // Default to Medium penalty
+            }
+            finalScore = 60 - ofiPenalty;
+            break;
+            
+          case 'Priority OFI':
+            // Priority OFI items: Base 30 points, minus importance penalty
+            let priorityPenalty = 0;
+            switch (item.importance) {
+              case 'High':
+                priorityPenalty = 15; // 30 - 15 = 15 points
+                break;
+              case 'Medium':
+                priorityPenalty = 10; // 30 - 10 = 20 points
+                break;
+              case 'Low':
+                priorityPenalty = 5;  // 30 - 5 = 25 points
+                break;
+              default:
+                priorityPenalty = 10; // Default to Medium penalty
+            }
+            finalScore = 30 - priorityPenalty;
+            break;
+            
           default:
-            baseScore = 0;
+            finalScore = 0;
         }
         
-        // Importance modifiers (matching backend)
-        let importanceModifier = 0;
-        switch (item.importance) {
-          case 'High':
-            importanceModifier = 15;
-            break;
-          case 'Medium':
-            importanceModifier = 10;
-            break;
-          case 'Low':
-            importanceModifier = 5;
-            break;
-          default:
-            importanceModifier = 10; // Default to Medium
-        }
-        
-        totalWeightedScore += (baseScore + importanceModifier);
+        totalWeightedScore += finalScore;
       });
       
       return Math.round(totalWeightedScore / items.length);
     }
     
-    // Fallback: Assume average importance (Medium) for legacy data
-    // OK = 85+10=95, OFI = 45+10=55, Priority OFI = 10+10=20, N/A = 85+10=95
+    // Fallback: Assume Medium importance for legacy data  
+    // OK = 100, OFI = 50 (60-10), Priority OFI = 20 (30-10), N/A = 100
     const weightedScore = (
-      (totals.ok * 95) + 
-      (totals.ofi * 55) + 
+      (totals.ok * 100) + 
+      (totals.ofi * 50) + 
       (totals.priorityOfi * 20) + 
-      (totals.na * 95)
+      (totals.na * 100)
     ) / totals.total;
     
     return Math.round(weightedScore);
