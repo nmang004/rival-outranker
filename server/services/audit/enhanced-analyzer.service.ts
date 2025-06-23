@@ -535,26 +535,53 @@ class EnhancedAuditAnalyzer {
 
     categories.forEach(category => {
       if (category.items.length > 0) {
-        // IMPROVED SCORING: Give partial credit to OFI items
-        const okCount = category.items.filter(item => item.status === 'OK').length;
-        const ofiCount = category.items.filter(item => item.status === 'OFI').length;
-        const priorityOfiCount = category.items.filter(item => item.status === 'Priority OFI').length;
-        const naCount = category.items.filter(item => item.status === 'N/A').length;
-        const totalCount = category.items.length;
+        // IMPORTANCE-WEIGHTED SCORING: Base score + importance modifier
+        let totalWeightedScore = 0;
         
-        // Weighted scoring system:
-        // OK = 100 points (full credit)
-        // OFI = 60 points (partial credit - room for improvement)
-        // Priority OFI = 15 points (critical issue - major penalty)
-        // N/A = 100 points (not applicable - no penalty)
-        const weightedScore = (
-          (okCount * 100) + 
-          (ofiCount * 60) + 
-          (priorityOfiCount * 15) + 
-          (naCount * 100)
-        ) / totalCount;
+        category.items.forEach(item => {
+          // Base status scores (reduced to allow room for importance modifiers)
+          let baseScore = 0;
+          switch (item.status) {
+            case 'OK':
+              baseScore = 85;
+              break;
+            case 'OFI':
+              baseScore = 45;
+              break;
+            case 'Priority OFI':
+              baseScore = 10;
+              break;
+            case 'N/A':
+              baseScore = 85;
+              break;
+            default:
+              baseScore = 0;
+          }
+          
+          // Importance modifiers
+          let importanceModifier = 0;
+          switch (item.importance) {
+            case 'High':
+              importanceModifier = 15;
+              break;
+            case 'Medium':
+              importanceModifier = 10;
+              break;
+            case 'Low':
+              importanceModifier = 5;
+              break;
+            default:
+              importanceModifier = 10; // Default to Medium if importance is missing
+          }
+          
+          // Final score = base + importance modifier
+          const finalScore = baseScore + importanceModifier;
+          totalWeightedScore += finalScore;
+        });
         
-        categoryScores[category.name] = Math.round(weightedScore);
+        // Calculate average weighted score for the category
+        const averageScore = totalWeightedScore / category.items.length;
+        categoryScores[category.name] = Math.round(averageScore);
       } else {
         categoryScores[category.name] = 0;
       }
@@ -572,12 +599,19 @@ class EnhancedAuditAnalyzer {
     (results.summary as any).categoryScores = categoryScores;
     (results.summary as any).overallScore = overallScore;
 
-    console.log(`[EnhancedAnalyzer] CATEGORY SCORES CALCULATED:`, {
+    console.log(`[EnhancedAnalyzer] IMPORTANCE-WEIGHTED CATEGORY SCORES:`, {
       contentQuality: categoryScores['Content Quality'],
       technicalSEO: categoryScores['Technical SEO'],
       localSEO: categoryScores['Local SEO & E-E-A-T'],
       uxPerformance: categoryScores['UX & Performance'],
-      overallScore: overallScore
+      overallScore: overallScore,
+      scoringMethod: 'Importance-weighted (Base + Modifier)',
+      scoreBreakdown: {
+        'OK High': '85+15=100pts',
+        'OFI High': '45+15=60pts', 
+        'Priority OFI High': '10+15=25pts',
+        'N/A High': '85+15=100pts'
+      }
     });
   }
 

@@ -78,17 +78,63 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
     ? getCategoryTotals(audit.serviceAreaPages.items) 
     : { priorityOfi: 0, ofi: 0, ok: 0, na: 0, total: 0 };
 
-  // Get category progress using balanced scoring system (matching backend logic)
-  const getCategoryProgress = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }) => {
+  // Get category progress using importance-weighted scoring (matching backend logic)
+  const getCategoryProgress = (totals: { priorityOfi: number, ofi: number, ok: number, na: number, total: number }, items?: any[]) => {
     if (totals.total === 0) return 0;
     
-    // Use same weighted scoring as backend:
-    // OK = 100 points, OFI = 60 points, Priority OFI = 15 points, N/A = 100 points
+    // If we have access to individual items with importance, use detailed calculation
+    if (items && items.length > 0) {
+      let totalWeightedScore = 0;
+      
+      items.forEach(item => {
+        // Base status scores (matching backend)
+        let baseScore = 0;
+        switch (item.status) {
+          case 'OK':
+            baseScore = 85;
+            break;
+          case 'OFI':
+            baseScore = 45;
+            break;
+          case 'Priority OFI':
+            baseScore = 10;
+            break;
+          case 'N/A':
+            baseScore = 85;
+            break;
+          default:
+            baseScore = 0;
+        }
+        
+        // Importance modifiers (matching backend)
+        let importanceModifier = 0;
+        switch (item.importance) {
+          case 'High':
+            importanceModifier = 15;
+            break;
+          case 'Medium':
+            importanceModifier = 10;
+            break;
+          case 'Low':
+            importanceModifier = 5;
+            break;
+          default:
+            importanceModifier = 10; // Default to Medium
+        }
+        
+        totalWeightedScore += (baseScore + importanceModifier);
+      });
+      
+      return Math.round(totalWeightedScore / items.length);
+    }
+    
+    // Fallback: Assume average importance (Medium) for legacy data
+    // OK = 85+10=95, OFI = 45+10=55, Priority OFI = 10+10=20, N/A = 85+10=95
     const weightedScore = (
-      (totals.ok * 100) + 
-      (totals.ofi * 60) + 
-      (totals.priorityOfi * 15) + 
-      (totals.na * 100)
+      (totals.ok * 95) + 
+      (totals.ofi * 55) + 
+      (totals.priorityOfi * 20) + 
+      (totals.na * 95)
     ) / totals.total;
     
     return Math.round(weightedScore);
@@ -400,11 +446,11 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
                   <div className="flex justify-between mb-1">
                     <div className="text-xs sm:text-sm font-medium">Completion Status</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(contentQualityTotals))}%
+                      {Math.round(getCategoryProgress(contentQualityTotals, enhancedCategories?.contentQuality))}%
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(contentQualityTotals)} 
+                    value={getCategoryProgress(contentQualityTotals, enhancedCategories?.contentQuality)} 
                     className={`h-2 ${
                       getCategoryStatus(contentQualityTotals) === "good" ? "bg-green-500/20" : 
                       getCategoryStatus(contentQualityTotals) === "needs-improvement" ? "bg-yellow-500/20" :
@@ -446,11 +492,11 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
                   <div className="flex justify-between mb-1">
                     <div className="text-xs sm:text-sm font-medium">Completion Status</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(technicalSEOTotals))}%
+                      {Math.round(getCategoryProgress(technicalSEOTotals, enhancedCategories?.technicalSEO))}%
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(technicalSEOTotals)} 
+                    value={getCategoryProgress(technicalSEOTotals, enhancedCategories?.technicalSEO)} 
                     className={`h-2 ${
                       getCategoryStatus(technicalSEOTotals) === "good" ? "bg-green-500/20" : 
                       getCategoryStatus(technicalSEOTotals) === "needs-improvement" ? "bg-yellow-500/20" :
@@ -492,11 +538,11 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
                   <div className="flex justify-between mb-1">
                     <div className="text-xs sm:text-sm font-medium">Completion Status</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(localSEOTotals))}%
+                      {Math.round(getCategoryProgress(localSEOTotals, enhancedCategories?.localSEO))}%
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(localSEOTotals)} 
+                    value={getCategoryProgress(localSEOTotals, enhancedCategories?.localSEO)} 
                     className={`h-2 ${
                       getCategoryStatus(localSEOTotals) === "good" ? "bg-green-500/20" : 
                       getCategoryStatus(localSEOTotals) === "needs-improvement" ? "bg-yellow-500/20" :
@@ -538,11 +584,11 @@ export default function RivalAuditSummary({ audit, updatedSummary }: RivalAuditS
                   <div className="flex justify-between mb-1">
                     <div className="text-xs sm:text-sm font-medium">Completion Status</div>
                     <div className="text-xs sm:text-sm font-medium">
-                      {Math.round(getCategoryProgress(uxPerformanceTotals))}%
+                      {Math.round(getCategoryProgress(uxPerformanceTotals, enhancedCategories?.uxPerformance))}%
                     </div>
                   </div>
                   <Progress 
-                    value={getCategoryProgress(uxPerformanceTotals)} 
+                    value={getCategoryProgress(uxPerformanceTotals, enhancedCategories?.uxPerformance)} 
                     className={`h-2 ${
                       getCategoryStatus(uxPerformanceTotals) === "good" ? "bg-green-500/20" : 
                       getCategoryStatus(uxPerformanceTotals) === "needs-improvement" ? "bg-yellow-500/20" :
