@@ -25,6 +25,7 @@ export class PuppeteerHandlerService {
   private static instanceCount = 0;
   private static isShuttingDown = false;
   private static isClusterInitialized = false;
+  private static initializationLock = false;
   
   // Circuit breaker for browser operations
   private static circuitBreaker: CircuitBreaker = CircuitBreakerFactory.createBrowserCircuitBreaker();
@@ -126,9 +127,10 @@ export class PuppeteerHandlerService {
       return;
     }
     
+    // Reset shutdown flag when explicitly initializing (recovery scenario)
     if (PuppeteerHandlerService.isShuttingDown) {
-      console.log(`[PuppeteerHandler-${this.instanceId}] System is shutting down, skipping cluster initialization`);
-      return;
+      console.log(`[PuppeteerHandler-${this.instanceId}] Resetting shutdown state for new initialization`);
+      PuppeteerHandlerService.isShuttingDown = false;
     }
     
     // Check circuit breaker
@@ -149,21 +151,55 @@ export class PuppeteerHandlerService {
       }
     }
     
+    // Atomic locking mechanism to prevent concurrent initializations
+    if (PuppeteerHandlerService.initializationLock) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Initialization lock active, waiting...`);
+      // Poll until lock is released or timeout
+      const maxWait = 30000; // 30 seconds
+      const startTime = Date.now();
+      while (PuppeteerHandlerService.initializationLock && (Date.now() - startTime) < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      // Check if cluster is now available after waiting
+      if (PuppeteerHandlerService.globalCluster && PuppeteerHandlerService.isClusterInitialized) {
+        console.log(`[PuppeteerHandler-${this.instanceId}] Cluster available after lock wait`);
+        return;
+      }
+    }
+    
     // If initialization is already in progress, wait for it
     if (PuppeteerHandlerService.initializationPromise) {
       console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization in progress, waiting...`);
       try {
         await PuppeteerHandlerService.initializationPromise;
+        // Verify cluster is actually available after promise resolution
+        if (!PuppeteerHandlerService.globalCluster || !PuppeteerHandlerService.isClusterInitialized) {
+          throw new Error('Initialization promise resolved but cluster is not available');
+        }
         return;
       } catch (error) {
         // If the concurrent initialization failed, we'll try again below
         console.log(`[PuppeteerHandler-${this.instanceId}] Concurrent initialization failed, will retry`);
+        PuppeteerHandlerService.initializationPromise = null;
       }
     }
     
-    // Start new initialization with retry logic
-    PuppeteerHandlerService.initializationPromise = this.doInitializeClusterWithRetry();
-    await PuppeteerHandlerService.initializationPromise;
+    // Acquire lock before starting initialization
+    PuppeteerHandlerService.initializationLock = true;
+    
+    try {
+      // Start new initialization with retry logic
+      PuppeteerHandlerService.initializationPromise = this.doInitializeClusterWithRetry();
+      await PuppeteerHandlerService.initializationPromise;
+      
+      // Verify cluster is available before marking as successful
+      if (!PuppeteerHandlerService.globalCluster || !PuppeteerHandlerService.isClusterInitialized) {
+        throw new Error('Cluster initialization completed but cluster is not available');
+      }
+    } finally {
+      // Always release the lock
+      PuppeteerHandlerService.initializationLock = false;
+    }
   }
 
   /**
@@ -181,6 +217,9 @@ export class PuppeteerHandlerService {
         
         // Success - circuit breaker will automatically track this
         console.log(`[PuppeteerHandler-${this.instanceId}] Cluster initialization successful on attempt ${attempt + 1}`);
+        
+        // Clear initialization promise only on successful completion
+        PuppeteerHandlerService.initializationPromise = null;
         return;
         
       } catch (error) {
@@ -386,9 +425,17 @@ export class PuppeteerHandlerService {
         }
       });
       
+    // Verify cluster is actually functional before marking as initialized
+    if (!PuppeteerHandlerService.globalCluster) {
+      throw new Error('Cluster launch completed but cluster instance is null');
+    }
+    
     console.log(`[PuppeteerHandler-${this.instanceId}] Puppeteer cluster launched successfully`);
     PuppeteerHandlerService.isClusterInitialized = true;
     PuppeteerHandlerService.lastHealthCheck = Date.now();
+    
+    // Ensure shutdown flag is false after successful initialization
+    PuppeteerHandlerService.isShuttingDown = false;
   }
   
   /**
@@ -415,6 +462,7 @@ export class PuppeteerHandlerService {
         isInitialized: PuppeteerHandlerService.isClusterInitialized,
         isShuttingDown: PuppeteerHandlerService.isShuttingDown,
         initializationInProgress: !!PuppeteerHandlerService.initializationPromise,
+        initializationLock: PuppeteerHandlerService.initializationLock,
         circuitBreakerState: circuitBreakerHealth.state,
         circuitBreakerFailureRate: circuitBreakerHealth.failureRate,
         originalError: error instanceof Error ? error.message : String(error)
@@ -428,10 +476,10 @@ export class PuppeteerHandlerService {
         this.USE_PUPPETEER_FOR_JS_SITES = false;
       }
       
-      throw error;
-    } finally {
-      // Always clear the initialization promise on completion (success or failure)
+      // Clear initialization promise on failure to allow retry
       PuppeteerHandlerService.initializationPromise = null;
+      
+      throw error;
     }
   }
   
@@ -510,6 +558,12 @@ export class PuppeteerHandlerService {
    * Clean up Puppeteer cluster
    */
   async closePuppeteerCluster(): Promise<void> {
+    // Acquire lock to prevent concurrent operations during shutdown
+    while (PuppeteerHandlerService.initializationLock) {
+      console.log(`[PuppeteerHandler-${this.instanceId}] Waiting for initialization to complete before shutdown...`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     // Mark system as shutting down to prevent new initializations
     PuppeteerHandlerService.isShuttingDown = true;
     PuppeteerHandlerService.isClusterInitialized = false;
@@ -541,6 +595,9 @@ export class PuppeteerHandlerService {
         PuppeteerHandlerService.circuitBreaker.reset();
         PuppeteerHandlerService.lastHealthCheck = 0;
         
+        // Clear initialization promise to allow fresh start
+        PuppeteerHandlerService.initializationPromise = null;
+        
         console.log(`[PuppeteerHandler-${this.instanceId}] Singleton Puppeteer cluster closed successfully`);
       } catch (error) {
         console.error(`[PuppeteerHandler-${this.instanceId}] Error closing Puppeteer cluster:`, error);
@@ -560,6 +617,9 @@ export class PuppeteerHandlerService {
           // Reset circuit breaker state on forced shutdown
           PuppeteerHandlerService.circuitBreaker.reset();
           PuppeteerHandlerService.lastHealthCheck = 0;
+          
+          // Clear initialization promise to allow fresh start
+          PuppeteerHandlerService.initializationPromise = null;
         }
       }
     } else {
@@ -1238,6 +1298,7 @@ export class PuppeteerHandlerService {
       instanceCount: PuppeteerHandlerService.instanceCount,
       isShuttingDown: PuppeteerHandlerService.isShuttingDown,
       initializationInProgress: PuppeteerHandlerService.initializationPromise !== null,
+      initializationLock: PuppeteerHandlerService.initializationLock,
       circuitBreaker: {
         state: circuitBreakerHealth.state,
         isHealthy: circuitBreakerHealth.isHealthy,
