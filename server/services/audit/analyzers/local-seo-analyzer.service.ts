@@ -454,39 +454,13 @@ export class LocalSEOAnalyzer {
   }
 
   private analyzeGoogleBusinessProfile(page: PageCrawlResult): AnalysisFactor {
-    // Check for Google Business Profile indicators in the content
-    const content = page.bodyText.toLowerCase();
-    const hasBusinessHours = /hours|open|closed|monday|tuesday|wednesday|thursday|friday|saturday|sunday/i.test(content);
-    const hasAddress = page.hasAddress;
-    const hasPhoneNumber = page.hasPhoneNumber;
-    const hasGoogleMaps = page.rawHtml.includes('maps.google.com') || page.rawHtml.includes('google.com/maps');
-    
-    const completenessScore = [hasBusinessHours, hasAddress, hasPhoneNumber, hasGoogleMaps].filter(Boolean).length;
-    
-    if (completenessScore === 0) {
-      return {
-        name: "Google Business Profile Setup Needed",
-        description: "No Google Business Profile integration or local business information found on the website.",
-        status: "Priority OFI",
-        importance: "High",
-        notes: `What: Your website lacks Google Business Profile integration and basic business information.\n\nWhy: Google Business Profile is essential for local search visibility and customer discovery.\n\nHow: Set up Google Business Profile, add complete business information, and integrate maps/hours on your website.`
-      };
-    } else if (completenessScore < 3) {
-      return {
-        name: "Google Business Profile Incomplete",
-        description: "Google Business Profile integration is incomplete - missing key business information.",
-        status: "OFI",
-        importance: "High",
-        notes: `What: Your business information is incomplete (${completenessScore}/4 elements found: ${hasAddress ? 'Address' : ''} ${hasPhoneNumber ? 'Phone' : ''} ${hasBusinessHours ? 'Hours' : ''} ${hasGoogleMaps ? 'Maps' : ''}).\n\nWhy: Incomplete business information hurts local search rankings and customer trust.\n\nHow: Add missing elements: business hours, address, phone number, and Google Maps integration.`
-      };
-    }
-    
+    // Always return N/A for now - Google Business Profile analysis to be implemented
     return {
-      name: "Google Business Profile Integration",
-      description: "Google Business Profile appears well-integrated with complete business information.",
-      status: "OK",
+      name: "Google Business Profile Incomplete",
+      description: "Google Business Profile analysis is not currently available.",
+      status: "N/A",
       importance: "High",
-      notes: `What: Your website has good local business information integration (${completenessScore}/4 elements present).\n\nWhy: Complete business information helps local search rankings and customer conversions.\n\nHow: Continue maintaining accurate information and consider adding customer reviews display.`
+      notes: "To be implemented."
     };
   }
 

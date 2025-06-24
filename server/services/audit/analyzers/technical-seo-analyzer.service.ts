@@ -471,38 +471,13 @@ export class TechnicalSEOAnalyzer {
   }
 
   private analyzePageSpeed(page: PageCrawlResult): AnalysisFactor {
-    const { score, firstContentfulPaint, largestContentfulPaint, totalBlockingTime } = page.pageLoadSpeed;
-    const fcpSeconds = firstContentfulPaint / 1000;
-    const lcpSeconds = largestContentfulPaint / 1000;
-    
-    // Critical thresholds based on Core Web Vitals
-    const isCriticalSpeed = score < 50 || lcpSeconds > 4.0 || fcpSeconds > 3.0;
-    const isSlowSpeed = score < 70 || lcpSeconds > 2.5 || fcpSeconds > 1.8;
-    
-    if (isCriticalSpeed) {
-      return {
-        name: "Critical Page Speed Issues",
-        description: "Page loading speed is critically slow, severely impacting user experience and SEO rankings.",
-        status: "Priority OFI",
-        importance: "High",
-        notes: `What: Your page has critical speed issues (Speed Score: ${score}/100, LCP: ${lcpSeconds.toFixed(1)}s, FCP: ${fcpSeconds.toFixed(1)}s).\n\nWhy: Very slow loading drives away visitors and severely hurts search rankings. Google prioritizes fast-loading sites.\n\nHow: Immediately optimize images, enable compression, minimize JavaScript, and consider a CDN. Target: LCP <2.5s, FCP <1.8s.`
-      };
-    } else if (isSlowSpeed) {
-      return {
-        name: "Page Speed Optimization Needed",
-        description: "Page loading speed could be improved for better user experience and SEO performance.",
-        status: "OFI",
-        importance: "High",
-        notes: `What: Your page speed needs improvement (Speed Score: ${score}/100, LCP: ${lcpSeconds.toFixed(1)}s, FCP: ${fcpSeconds.toFixed(1)}s).\n\nWhy: Slow loading reduces user engagement and can hurt search rankings.\n\nHow: Optimize images, enable compression, and minimize unnecessary scripts. Target: Speed Score >70, LCP <2.5s, FCP <1.8s.`
-      };
-    }
-    
+    // Always return N/A for now - page speed analysis to be implemented
     return {
-      name: "Page Speed Performance",
-      description: "Page loading speed meets performance standards for good user experience.",
-      status: "OK",
-      importance: "High", 
-      notes: `What: Your page loads at good speed (Speed Score: ${score}/100, LCP: ${lcpSeconds.toFixed(1)}s, FCP: ${fcpSeconds.toFixed(1)}s).\n\nWhy: Fast loading keeps visitors engaged and helps search rankings.\n\nHow: Continue monitoring performance and maintain current optimization. Consider further improvements to reach 90+ speed score.`
+      name: "Critical Page Speed Issues",
+      description: "Page loading speed analysis is not currently available.",
+      status: "N/A",
+      importance: "High",
+      notes: "To be implemented."
     };
   }
 
