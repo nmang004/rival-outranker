@@ -7,15 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Globe, Scan, FileSearch, Clipboard, CheckCircle2, FileText, Upload, Zap } from "lucide-react";
+import { Globe, Scan, FileSearch, Clipboard, CheckCircle2, FileText, Upload } from "lucide-react";
 import { useToast } from "@/hooks/ui/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 // Form schema for URL submission
 const rivalAuditFormSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
-  enhanced: z.boolean().default(false),
 });
 
 type RivalAuditFormValues = z.infer<typeof rivalAuditFormSchema>;
@@ -29,7 +27,6 @@ export default function RivalAuditPage() {
     resolver: zodResolver(rivalAuditFormSchema),
     defaultValues: {
       url: "",
-      enhanced: false,
     },
   });
 
@@ -37,8 +34,8 @@ export default function RivalAuditPage() {
     setIsSubmitting(true);
     
     try {
-      const endpoint = values.enhanced ? "/api/rival-audit/enhanced" : "/api/rival-audit";
-      const response = await apiRequest(endpoint, {
+      // All audits now use enhanced functionality by default
+      const response = await apiRequest("/api/rival-audit/enhanced", {
         method: "POST",
         data: { url: values.url },
       });
@@ -47,7 +44,7 @@ export default function RivalAuditPage() {
       const searchParams = new URLSearchParams({
         id: response.id,
         url: values.url,
-        ...(values.enhanced && { enhanced: 'true' })
+        enhanced: 'true'
       });
       navigate(`/rival-audit-results?${searchParams.toString()}`);
       
@@ -56,7 +53,7 @@ export default function RivalAuditPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: `Failed to start the ${values.enhanced ? 'enhanced ' : ''}rival audit. Please try again.`,
+        description: "Failed to start the enhanced rival audit. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -101,40 +98,12 @@ export default function RivalAuditPage() {
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="enhanced"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="flex items-center font-medium">
-                          <Zap className="w-4 h-4 mr-2 text-primary" />
-                          Enhanced Audit (200+ Factors)
-                        </FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Perform comprehensive analysis including content quality, advanced technical SEO, 
-                          local SEO & E-E-A-T signals, and UX performance metrics for deeper insights.
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                
                 <Button 
                   type="submit" 
                   disabled={isSubmitting}
                   className="w-full"
                 >
-                  {isSubmitting ? 
-                    `Starting ${form.watch('enhanced') ? 'Enhanced ' : ''}Audit...` : 
-                    `Start ${form.watch('enhanced') ? 'Enhanced ' : ''}Audit`
-                  }
+                  {isSubmitting ? 'Starting Enhanced Audit...' : 'Start Enhanced Audit'}
                 </Button>
               </form>
             </Form>
@@ -165,7 +134,7 @@ export default function RivalAuditPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Standard audit evaluates 44 key SEO factors. Enhanced audit analyzes 200+ factors including content quality, E-E-A-T signals, and advanced technical metrics.
+                Our comprehensive audit analyzes 200+ factors including content quality, E-E-A-T signals, advanced technical metrics, and UX performance.
               </p>
             </CardContent>
           </Card>

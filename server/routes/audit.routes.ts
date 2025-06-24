@@ -148,13 +148,13 @@ router.post("/enhanced", async (req: Request, res: Response) => {
           type: 'enhanced',
           summary: {
             ...auditResults.summary,
-            total: auditResults.summary.totalFactors || 0
+            total: (auditResults.summary as any).totalFactors || 0
           },
           // Explicitly include enhanced categories to ensure they're preserved
-          contentQuality: auditResults.contentQuality,
-          technicalSEO: auditResults.technicalSEO,
-          localSEO: auditResults.localSEO,
-          uxPerformance: auditResults.uxPerformance
+          contentQuality: (auditResults as any).contentQuality,
+          technicalSEO: (auditResults as any).technicalSEO,
+          localSEO: (auditResults as any).localSEO,
+          uxPerformance: (auditResults as any).uxPerformance
         };
         
         console.log(`[AuditRoute] Storing enhanced audit results with categories:`, {
@@ -182,7 +182,7 @@ router.post("/enhanced", async (req: Request, res: Response) => {
           auditResults.reachedMaxPages || false
         );
         
-        console.log(`Completed enhanced rival audit for ${url} with ID ${auditRecord.id} - analyzed ${auditResults.summary.totalFactors} factors`);
+        console.log(`Completed enhanced rival audit for ${url} with ID ${auditRecord.id} - analyzed ${(auditResults.summary as any).totalFactors} factors`);
         
       } catch (error) {
         console.error("Error performing enhanced rival audit:", error);
@@ -252,7 +252,7 @@ router.post("/", async (req: Request, res: Response) => {
       status: 'pending',
       userId: req.user?.id || null,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      metadata: { auditType: 'standard' }
+      metadata: { auditType: 'enhanced' }
     });
     
     console.log('🆔 Created audit ID:', auditRecord.id);
@@ -274,8 +274,9 @@ router.post("/", async (req: Request, res: Response) => {
     // Return the audit ID immediately
     const response = { 
       id: auditRecord.id, 
-      message: continueCrawl ? "Continuing audit" : "Audit started", 
-      url 
+      message: continueCrawl ? "Continuing enhanced audit" : "Enhanced audit started (200+ factors)", 
+      url,
+      type: "enhanced"
     };
     console.log('✅ Sending response:', response);
     res.status(202).json(response);
@@ -298,16 +299,16 @@ router.post("/", async (req: Request, res: Response) => {
           auditResults = await rivalAuditCrawler.continueCrawl(url);
           console.log(`Completed continued rival audit for ${url} with ID ${auditRecord.id}`);
         } else {
-          console.log(`Starting new rival audit for ${url} with ID ${auditRecord.id}`);
-          // Crawl and analyze the website using our new crawler with progress tracking
-          auditResults = await rivalAuditCrawler.crawlAndAudit(url, async (stage: string, progress: number) => {
+          console.log(`Starting new enhanced rival audit for ${url} with ID ${auditRecord.id}`);
+          // Use the enhanced audit service with progress tracking
+          auditResults = await auditService.crawlAndAuditEnhanced(url, async (stage: string, progress: number) => {
             console.log(`Audit ${auditRecord.id} progress: ${stage} (${progress}%)`);
             // Update database with progress
             try {
               await rivalAuditRepository.updateAudit(auditRecord.id, { 
                 metadata: { 
                   ...(auditRecord.metadata as object || {}),
-                  auditType: 'standard',
+                  auditType: 'enhanced',
                   currentStage: stage,
                   progress: progress
                 },
@@ -317,23 +318,43 @@ router.post("/", async (req: Request, res: Response) => {
               console.warn(`Failed to update progress for audit ${auditRecord.id}:`, progressError);
             }
           });
-          console.log(`Completed rival audit for ${url} with ID ${auditRecord.id}`);
+          console.log(`Completed enhanced rival audit for ${url} with ID ${auditRecord.id}`);
         }
         
-        // Store the results in database
+        // Store the results in database - ensure enhanced categories are preserved
+        const resultsToStore = {
+          ...auditResults,
+          type: 'enhanced',
+          summary: {
+            ...auditResults.summary,
+            total: (auditResults.summary as any).totalFactors || 0
+          },
+          // Explicitly include enhanced categories to ensure they're preserved
+          contentQuality: (auditResults as any).contentQuality,
+          technicalSEO: (auditResults as any).technicalSEO,
+          localSEO: (auditResults as any).localSEO,
+          uxPerformance: (auditResults as any).uxPerformance
+        };
+        
+        console.log(`[AuditRoute] Storing enhanced audit results with categories:`, {
+          contentQuality: resultsToStore.contentQuality?.items?.length || 0,
+          technicalSEO: resultsToStore.technicalSEO?.items?.length || 0,
+          localSEO: resultsToStore.localSEO?.items?.length || 0,
+          uxPerformance: resultsToStore.uxPerformance?.items?.length || 0
+        });
+        
         await rivalAuditRepository.completeAudit(
           auditRecord.id,
-          auditResults,
+          resultsToStore,
           auditResults.summary,
           ('total' in auditResults.summary ? (auditResults.summary as any).total : ('totalFactors' in auditResults.summary ? (auditResults.summary as any).totalFactors : 0)) || 0,
           auditResults.reachedMaxPages || false
         );
         
-        console.log(`Found ${auditResults.summary.priorityOfiCount} Priority OFIs, ${auditResults.summary.ofiCount} OFIs`);
-        console.log(`Stored audit results for ID ${auditRecord.id}`);
+        console.log(`Completed enhanced rival audit for ${url} with ID ${auditRecord.id} - analyzed ${(auditResults.summary as any).totalFactors} factors`);
         
       } catch (error) {
-        console.error("Error performing rival audit:", error);
+        console.error("Error performing enhanced rival audit:", error);
         
         try {
           // First update status to failed
@@ -344,12 +365,22 @@ router.post("/", async (req: Request, res: Response) => {
           const mockAudit = generateMockRivalAudit(url);
           await rivalAuditRepository.completeAudit(
             auditRecord.id,
-            mockAudit,
-            mockAudit.summary,
+            {
+              ...mockAudit,
+              type: 'enhanced',
+              summary: {
+                ...mockAudit.summary,
+                totalFactors: 142 // Mock enhanced factor count
+              }
+            },
+            {
+              ...mockAudit.summary,
+              totalFactors: 142
+            },
             45, // Mock page count
             false
           );
-          console.log(`Stored mock data for failed audit ${auditRecord.id}`);
+          console.log(`Stored mock enhanced data for failed audit ${auditRecord.id}`);
         } catch (dbError) {
           console.error(`Failed to handle audit failure for ${auditRecord.id}:`, dbError);
           // Try one more time to mark as failed

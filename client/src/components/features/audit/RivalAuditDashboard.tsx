@@ -576,17 +576,16 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle>
-              {isEnhancedAudit || isEnhancedAuditWithCategories ? 'Enhanced ' : ''}SEO Health & Performance Dashboard
+              SEO Health & Performance Dashboard
             </CardTitle>
             <CardDescription>
-              Comprehensive view of website's SEO health with {totalFactors} analyzed factors
-              {(isEnhancedAudit || isEnhancedAuditWithCategories) && ' including advanced content quality, technical SEO, and E-E-A-T analysis'}
+              Comprehensive view of website's SEO health with {totalFactors} analyzed factors including advanced content quality, technical SEO, and E-E-A-T analysis
             </CardDescription>
           </div>
           <ChartExport 
             chartRef={pieChartRef}
-            filename={(isEnhancedAudit || isEnhancedAuditWithCategories) ? "enhanced-seo-health-performance-dashboard" : "seo-health-performance-dashboard"}
-            title={`Export ${(isEnhancedAudit || isEnhancedAuditWithCategories) ? 'Enhanced ' : ''}SEO Dashboard`}
+            filename="seo-health-performance-dashboard"
+            title="Export SEO Dashboard"
             size="sm"
           />
         </CardHeader>
@@ -609,7 +608,7 @@ export default function RivalAuditDashboard({ audit, updatedSummary }: RivalAudi
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className="col-span-1">
                   <div className="text-lg font-semibold mb-2 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
-                    {(isEnhancedAudit || isEnhancedAuditWithCategories) ? 'Enhanced ' : ''}SEO Issue Distribution
+                    SEO Issue Distribution
                   </div>
                   <div className="h-[200px] sm:h-[250px]">
                     <ResponsiveContainer width="100%" height="100%">
